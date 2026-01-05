@@ -1,0 +1,12 @@
+npx create-next-app@latest frontend
+# TypeScript, ESLint, Tailwind CSS, App Router
+npm install zustand
+npm install next-intl
+npm install axios
+
+py -3.13 -m venv .venv
+./.venv/Scripts/activate
+pip install django djangorestframework djangorestframework-simplejwt django-cors-headers
+django-admin startproject backend
+cd backend
+django-admin startapp api
