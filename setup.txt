@@ -10,3 +10,5 @@ pip install django djangorestframework djangorestframework-simplejwt django-cors
 django-admin startproject backend
 cd backend
 django-admin startapp api
+pip install channels channels-redis daphne
+python manage.py startapp realtime
