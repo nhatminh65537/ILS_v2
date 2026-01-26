@@ -12,3 +12,6 @@ cd backend
 django-admin startapp api
 pip install channels channels-redis daphne
 python manage.py startapp realtime
+
+--- Later ---
+pip install psycopg2-binary

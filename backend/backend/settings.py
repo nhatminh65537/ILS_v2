@@ -79,6 +79,17 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'ils_test_db',
+#         'USER': 'ils_test_user',
+#         'PASSWORD': 'ils_test_strong_password',
+#         'HOST': 'rougitsune.top',
+#         'PORT': '5432',
+#     }
+# }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
