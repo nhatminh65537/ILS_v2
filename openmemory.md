@@ -57,6 +57,19 @@ Target: one instance per organization, no horizontal scale needed.
 - **notification_type** enum: manual/auto_challenge_complete/auto_course_complete/auto_quiz_complete/system
 - **user_notification**: notification_id NOT NULL, user_id NOT NULL
 
+## Requirements
+
+Full requirements documented in `REQUIREMENTS.md` (converted from `requirements.docx`).
+Key requirements by domain:
+- **Auth:** SSO (Authentik) + native login; admin configures enabled methods
+- **AuthZ:** API-based fine-grained RBAC; JWT claims; endpoint scan at startup; permission cache in DB
+- **Learn:** Course-folder-lesson tree; Outline integration; materialized path; progress tracking
+- **Challenge:** GitLab import; flag check on server; deployable instances (external system)
+- **Quiz:** WebSocket answer→check→next; single/multi/fill-in-blank; user session config
+- **User:** Profile page + settings page
+- **Notification:** Admin manual broadcast + auto (course/challenge/quiz complete)
+- **Statistics:** Leaderboard + admin detailed stats
+
 ## User Defined Namespaces
 
 - backend
