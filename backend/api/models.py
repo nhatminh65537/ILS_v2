@@ -168,9 +168,13 @@ class Challenge(FullAudit):
         MANUAL = 'manual', 'Manual'
         GITLAB = 'gitlab', 'GitLab'
 
+    slug = models.TextField(
+        unique=True,
+        help_text="URL-friendly identifier"
+    )
     title = models.TextField()
     description = models.TextField(blank=True, null=True)
-    
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -216,10 +220,12 @@ class Challenge(FullAudit):
     class Meta:
         db_table = 'challenge'
         indexes = [
+            models.Index(fields=['slug']),
             models.Index(fields=['title']),
             models.Index(fields=['category']),
             models.Index(fields=['status']),
             models.Index(fields=['difficulty']),
+            models.Index(fields=['source']),
         ]
 
     def __str__(self):
@@ -260,7 +266,7 @@ class ChallengeTag(BaseTag):
         verbose_name_plural = 'Challenge Tags'
 
 
-class ChallengeTagMap(FullAudit):
+class ChallengeTagMap(CreateAudit):
     """
     Many-to-Many relationship giữa Challenge và Tag
     """
@@ -354,6 +360,20 @@ class ChallengeInstance(FullAudit):
         default=InstanceStatus.RUNNING
     )
     terminated_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Thời gian hết hạn instance (TTL do admin cấu hình)"
+    )
+    challenge_flag = models.ForeignKey(
+        'ChallengeFlag',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='instances',
+        db_column='challenge_flag_id',
+        help_text="Flag template dùng để tạo flag cho instance này"
+    )
 
     class Meta:
         db_table = 'challenge_instance'
@@ -361,6 +381,14 @@ class ChallengeInstance(FullAudit):
             models.Index(fields=['challenge']),
             models.Index(fields=['user']),
             models.Index(fields=['user', 'challenge']),
+        ]
+        constraints = [
+            # Mỗi user chỉ được có 1 running instance per challenge
+            models.UniqueConstraint(
+                fields=['user', 'challenge'],
+                condition=models.Q(status='running'),
+                name='uq_challenge_instance_active'
+            )
         ]
 
     def __str__(self):
@@ -558,7 +586,7 @@ class CourseTag(BaseTag):
         verbose_name_plural = 'Course Tags'
 
 
-class CourseTagMap(FullAudit):
+class CourseTagMap(CreateAudit):
     """
     Many-to-Many relationship giữa Course và Tag
     """
@@ -600,6 +628,7 @@ class Lesson(FullAudit):
         MANUAL = 'manual', 'Manual'
         OUTLINE = 'outline', 'Outline'
 
+    title = models.TextField(help_text="Tiêu đề bài học")
     lesson_type = models.CharField(
         max_length=20,
         choices=LessonType.choices
@@ -632,7 +661,7 @@ class Lesson(FullAudit):
         db_table = 'lesson'
 
     def __str__(self):
-        return f"Lesson ({self.lesson_type})"
+        return self.title
 
 
 class CourseNode(BaseNode):
@@ -685,10 +714,15 @@ class LessonQuestion(FullAudit):
         related_name='lesson_mappings',
         db_column='question_id'
     )
+    position = models.IntegerField(
+        default=0,
+        help_text="Thứ tự câu hỏi trong lesson miniquiz"
+    )
 
     class Meta:
         db_table = 'lesson_question'
         unique_together = [['lesson', 'question']]
+        ordering = ['position']
         indexes = [
             models.Index(fields=['lesson']),
             models.Index(fields=['question']),
@@ -842,25 +876,32 @@ class Quiz(FullAudit):
         PUBLISHED = 'published', 'Published'
         ARCHIVED = 'archived', 'Archived'
 
-    node = models.OneToOneField(
-        QuizNode,
-        on_delete=models.CASCADE,
-        unique=True,
-        related_name='quiz_detail',
-        db_column='node_id'
-    )
     title = models.TextField()
     description = models.TextField(blank=True, null=True)
-    
+
+    # CRITICAL FIX: node_id removed — QuizNode.quiz_id → Quiz (one-way, see QuizNode.quiz field)
+    # Access via reverse relation: quiz.node (QuizNode has related_name='node')
+    category = models.ForeignKey(
+        QuizCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quizzes',
+        db_column='category_id'
+    )
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.DRAFT,
         db_index=True
     )
-    
+
     quiz_point = models.IntegerField(default=0)
-    total_questions = models.IntegerField(default=0)
+    total_questions = models.IntegerField(
+        default=0,
+        help_text="Denormalized: keep in sync with COUNT(quiz_question) via Django signal"
+    )
     time_limit_sec = models.IntegerField(
         null=True,
         blank=True,
@@ -870,7 +911,7 @@ class Quiz(FullAudit):
     class Meta:
         db_table = 'quiz'
         indexes = [
-            models.Index(fields=['node']),
+            models.Index(fields=['category']),
             models.Index(fields=['status']),
             models.Index(fields=['title']),
         ]
@@ -889,7 +930,7 @@ class QuizTag(BaseTag):
         verbose_name_plural = 'Quiz Tags'
 
 
-class QuizTagMap(FullAudit):
+class QuizTagMap(CreateAudit):
     """
     Many-to-Many relationship giữa Quiz và Tag
     """
@@ -996,7 +1037,7 @@ class QuizQuestionAnswer(FullAudit):
         db_column='question_id'
     )
     answer = models.TextField()
-    is_case_sensitive = models.BooleanField(default=True)
+    # case_sensitive is defined on QuizQuestion — apply quiz_question.case_sensitive when checking
 
     class Meta:
         db_table = 'quiz_question_answer'
@@ -1074,6 +1115,7 @@ class UserQuizAnswer(FullAudit):
 
     class Meta:
         db_table = 'user_quiz_answer'
+        unique_together = [['attempt', 'question']]
         indexes = [
             models.Index(fields=['attempt']),
             models.Index(fields=['question']),
@@ -1126,7 +1168,48 @@ class QuizConfig(FullAudit):
 
     class Meta:
         db_table = 'quiz_config'
+        unique_together = [['quiz', 'user']]
 
     def __str__(self):
         config_type = "Default" if self.is_default else "Custom"
         return f"{config_type} Config for {self.quiz.title} - {self.user.username}"
+
+
+class UserQuizProgress(FullAudit):
+    """
+    Tiến độ tổng hợp của user cho mỗi quiz (aggregate: best score, số lần attempt).
+    user_quiz_attempt lưu từng lần làm; bảng này lưu kết quả tổng hợp.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='quiz_progresses',
+        db_column='user_id'
+    )
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='user_progresses',
+        db_column='quiz_id'
+    )
+    best_score = models.IntegerField(default=0)
+    attempt_count = models.IntegerField(default=0)
+    first_attempted_at = models.DateTimeField(null=True, blank=True)
+    last_attempted_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'user_quiz_progress'
+        unique_together = [['user', 'quiz']]
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['quiz']),
+        ]
+
+    def __str__(self):
+        status = "Completed" if self.completed_at else "In Progress"
+        return f"{self.user.username} - {self.quiz.title} ({status})"
+
+    @property
+    def is_completed(self):
+        return self.completed_at is not None
