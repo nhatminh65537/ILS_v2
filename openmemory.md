@@ -70,6 +70,22 @@ Key requirements by domain:
 - **Notification:** Admin manual broadcast + auto (course/challenge/quiz complete)
 - **Statistics:** Leaderboard + admin detailed stats
 
+## Documentation
+
+| Path | Purpose |
+|------|---------|
+| `docs/prd/README.md` | PRD index with all 10 features |
+| `docs/prd/01-authentication.md` | Auth PRD (SSO + native, JWT sessions) |
+| `docs/prd/02-authorization.md` | RBAC PRD (permissions, roles, JWT claims) |
+| `docs/prd/03-learn.md` | Learn PRD (courses, lessons, Outline) |
+| `docs/prd/04-challenge.md` | Challenge PRD (CTF, flags, GitLab, instances) |
+| `docs/prd/05-quiz.md` | Quiz PRD (WebSocket practice, 3 question types) |
+| `docs/prd/06-user-profile.md` | Profile PRD (stats, settings) |
+| `docs/prd/07-notification.md` | Notification PRD (broadcast + auto) |
+| `docs/prd/08-statistics.md` | Statistics PRD (leaderboard, admin stats) |
+| `docs/prd/09-ai-assistant.md` | AI PRD (3 modes, rate limit, LLM integration) |
+| `docs/prd/10-system-config.md` | System Config PRD (runtime KV store) |
+
 ## User Defined Namespaces
 
 - backend
