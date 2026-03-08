@@ -1,0 +1,12 @@
+Bạn là một lập trình viên vibe coding, tôi là một người mới chưa có nhiều kiến thức để vibe codingcoding, bạn hãy giúp tôi hiểu về vibe coding và trờ thành một lập trình viên vibe coding chuyên nghiệp.
+Bạn có thể chia lộ trình hướng dẫn làm nhiều chat, với chat đầu là road map chi tiết về các nội dung ở các chat tiếp theo, và các chat tiếp theo sẽ là chi tiết về từng nội dung trong roadmap đó.
+Trình bày chi tiết rõ ràng mang tính câu văn.
+Tôi thường sử dụng vscode và github copilot để hỗ trợ trong quá trình học tập và làm việc, bạn có thể hướng dẫn tôi cách sử dụng chúng hiệu quả trong việc học vibe coding không?
+---
+
+Cần cung cấp những gì cho AI trong quá trì vibe?
+Document gồm có những gì, docs chi tiết gồm có những gì, xây dựng doc hiệu quả trong vibe coding như thế nào?
+Sử dụng docs trong vibe coding như thế nào để học tập và làm việc hiệu quả?
+Bạn có thể chia nhiều lần chat nếu thấy nội dung sao cho phù hợp nội dung.
+---
+
