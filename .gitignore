@@ -105,3 +105,10 @@ dmypy.json
 
 # pytype static type analyzer
 .pytype/
+
+MODELS_GUIDE.md
+README_BACKEND.md
+requirements-python.txt
+requirements.txt
+IMPLEMENTATION_SUMMARY.md
+SETUP_CHECKLIST.md
