@@ -74,6 +74,8 @@ Key requirements by domain:
 
 | Path | Purpose |
 |------|---------|
+| `docs/DATA_MODEL.md` | **Entity types, validation rules, storage schema, business rules** |
+| `docs/ARCHITECTURE.md` | **System design, folder structure, data flows, design decisions, what NOT to do** |
 | `docs/prd/README.md` | PRD index with all 10 features |
 | `docs/prd/01-authentication.md` | Auth PRD (SSO + native, JWT sessions) |
 | `docs/prd/02-authorization.md` | RBAC PRD (permissions, roles, JWT claims) |
