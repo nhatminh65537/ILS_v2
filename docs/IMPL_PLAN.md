@@ -34,15 +34,12 @@ Slice 0 (Foundation: bugs, User model, migrations)
 
 ## Slice 0 — Foundation
 
-### Task 0.1 — Fix known bugs
-**Files:** `backend/ai/serializers.py`, `backend/ai/models.py`, `backend/backend/settings.py`, `backend/backend/urls.py`
+### Task 0.1 — Fix known bugs ✅ COMPLETED (2026-03-09)
 
-| Bug | Location | Fix |
-|-----|----------|-----|
-| Typo `lern_assistant` | `ai/serializers.py:6` | `"learn_assistant"` |
-| Wrong field `self.mode` | `ai/models.py:18` | `self.context_type` |
-| `ai` missing | `settings.py` `INSTALLED_APPS` | append `"ai"` |
-| AI URLs not wired | `backend/urls.py` | `include("ai.url")` at prefix `/api/ai/` |
+All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
+
+> **Note:** The `ai` app is intentionally **not** in `INSTALLED_APPS` and its URLs are **not** wired.
+> AI is a deferred feature — see Slice 10 below and `docs/STATUS.md → Deferred Features`.
 
 ### Task 0.2 — Custom User model + initial migrations
 **Files:** `backend/api/models.py`, `backend/backend/settings.py`, `backend/api/migrations/`
@@ -79,13 +76,13 @@ Slice 0 (Foundation: bugs, User model, migrations)
       category = models.CharField(max_length=50)
       class Meta: db_table = 'system_config'
   ```
-- Management command `seed_config`:
+- Management command `seed_config` (canonical keys from `docs/CONFIG.md`):
   ```python
   DEFAULT_CONFIGS = [
-      {'key': 'auth.native_enabled', 'value': 'true', 'value_type': 'boolean', 'category': 'auth'},
+      {'key': 'auth.local_login_enabled', 'value': 'true', 'value_type': 'boolean', 'category': 'auth'},
       {'key': 'auth.sso_enabled', 'value': 'false', 'value_type': 'boolean', 'category': 'auth'},
       {'key': 'auth.link_accounts_enabled', 'value': 'false', 'value_type': 'boolean', 'category': 'auth'},
-      {'key': 'ai.daily_limit', 'value': '50', 'value_type': 'int', 'category': 'ai'},
+      # ai.* keys added when Slice 10 (AI) is activated
   ]
   ```
 - Helper `get_config(key, default=None)` trong `api/utils.py` để đọc system_config nhanh
@@ -690,7 +687,13 @@ app/(app)/notifications/page.tsx         → full inbox list + mark read
 
 ---
 
-## Slice 10 — AI Assistant
+## Slice 10 — AI Assistant ⚠️ DEFERRED
+
+> **Do NOT implement this slice until explicitly approved.**
+> The `ai` app scaffold exists but is intentionally inactive.
+> See `docs/STATUS.md → Deferred Features` for activation instructions.
+
+When approved, tasks will include:
 
 ### Task 10.1 — Real LLM client
 **File:** `backend/ai/services/llm_client.py`
@@ -698,7 +701,7 @@ app/(app)/notifications/page.tsx         → full inbox list + mark read
 Reads `ai.llm_endpoint`, `ai.llm_api_key`, `ai.llm_model` from system_config. OpenAI-compatible HTTP call.
 
 ### Task 10.2 — Rate limiting + logging
-- Per-user daily limit via cache counter vs `ai.daily_limit` config
+- Per-user rate limit via cache counter vs `ai.rate_limit_per_hour` config (see `docs/CONFIG.md`)
 - Log each `AIRequest` with token count
 
 ### Task 10.3 — Context loaders
@@ -712,6 +715,12 @@ Reads `ai.llm_endpoint`, `ai.llm_api_key`, `ai.llm_model` from system_config. Op
 **File:** `frontend/src/components/AIChatPanel/index.tsx`
 
 Floating slide-in panel in lesson/challenge pages. Mode selector, textarea input, markdown response display, usage indicator.
+
+**Activation checklist (when approved):**
+1. Uncomment `'ai'` in `settings.py` `INSTALLED_APPS`
+2. Uncomment AI URL in `backend/backend/urls.py`
+3. Add `ai.*` keys to `seed_config` command (see `docs/CONFIG.md` for canonical names)
+4. Run `python manage.py makemigrations ai && python manage.py migrate`
 
 ---
 
@@ -761,7 +770,7 @@ admin/stats/page.tsx → summary cards + user detail lookup
 - **Tree CRUD:** `pre_path__startswith` + `bulk_update` on move → same logic for Course/Challenge/Quiz
 - **FullAudit:** all domain models inherit → audit fields auto-populated
 - **TextChoices:** enums already in `models.py` → reuse in serializers
-- **Service layer:** mirror `ai/services/` pattern for auth, outline, gitlab services
+- **Service layer:** `<app>/services/` pattern — see `auth_app/services/` once created
 - **`get_config(key)`:** util in `api/utils.py` → single way to read `system_config`
 
 ## Verification Checklist
@@ -778,5 +787,5 @@ admin/stats/page.tsx → summary cards + user detail lookup
 | 7 | WS connect → answer all questions → `UserQuizProgress` updated |
 | 8 | `GET /api/users/me/` returns stats; `PUT` updates display_name |
 | 9 | Complete challenge → notification in bell within 2s (WS delivery) |
-| 10 | `POST /api/ai/ask/` → real LLM response (not hardcoded string) |
+| 10 | ⚠️ DEFERRED — `POST /api/ai/ask/` → real LLM response |
 | 11 | `GET /api/leaderboard/` → sorted list with correct scores |

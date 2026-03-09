@@ -45,14 +45,20 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 ILS_v2/
 ├── CLAUDE.md               # AI agent rules (OpenMemory integration) — DO NOT MODIFY
 ├── AGENT.md                # AI agent quick-reference guide
-├── README.md               # Empty placeholder
+├── README.md               # Project overview + quick start
+├── Makefile                # Common dev commands
+├── requirements.txt        # Python dependencies
 ├── setup.txt               # Setup commands reference
-├── prompt.txt              # Scratchpad (not project code)
 ├── openmemory.md           # OpenMemory project index (auto-managed)
 │
 ├── docs/                   # Project documentation
 │   ├── DATA_MODEL.md       # Entity types, validation rules, business rules
 │   ├── ARCHITECTURE.md     # This file — system design and data flows
+│   ├── CONFIG.md           # system_config canonical keys reference
+│   ├── STATUS.md           # Implementation status per slice
+│   ├── BUGS.md             # Known bugs and fix history
+│   ├── IMPL_PLAN.md        # Vertical slice implementation plan (Slices 0–11)
+│   ├── REQUIREMENTS.md     # Full project requirements
 │   └── prd/                # Product Requirements Documents
 │       ├── README.md       # PRD index
 │       ├── 01-authentication.md
@@ -83,12 +89,13 @@ ILS_v2/
 │   │   └── asgi.py         # ASGI entry for Daphne/Channels
 │   ├── api/                # Main app — all domain models
 │   │   └── models.py       # ~1195 lines — complete ORM for all domains
-│   ├── ai/                 # AI assistant feature
-│   │   ├── models.py       # AIRequest model
-│   │   ├── views.py        # AIAskView (POST /ask/)
-│   │   ├── serializers.py  # AIRequestSerializer
+│   ├── ai/                 # ⚠️  DEFERRED — AI Assistant (do NOT activate until approved)
+│   │   ├── models.py       # AIRequest model (scaffold only)
+│   │   ├── views.py        # AIAskView (scaffold only)
+│   │   ├── serializers.py  # AIRequestSerializer (scaffold only)
 │   │   ├── constants.py    # AImode enum
-│   │   ├── url.py          # path("ask/", AIAskView) — not yet wired into root urls.py
+│   │   ├── permissions.py  # HasAIPermission (uses JWT claims)
+│   │   ├── urls.py         # URL conf (NOT wired into root urls.py)
 │   │   └── services/
 │   │       ├── context_loader.py   # Loads Lesson/Challenge context from DB
 │   │       ├── prompt_builder.py   # Builds prompts for 3 AI modes
@@ -348,9 +355,10 @@ Client → POST /challenges/{slug}/submit { flag }
 │  JWT middleware       │  Daphne ASGI server                  │
 │  Custom RBAC          │                                      │
 │  ┌────────────────────┴──────────────────┐                  │
-│  │ Apps: api │ ai │ auth │ realtime      │                  │
+│  │ Apps: api │ auth_app │ realtime      │                  │
+│  │       (ai — DEFERRED, not active)    │                  │
 │  └───────────────────────────────────────┘                  │
-│  Service Layer: ai/services/, auth/services/, ...           │
+│  Service Layer: auth_app/services/, <app>/services/, ...    │
 └─────────────┬───────────────────────────────────────────────┘
               │ ORM queries
 ┌─────────────▼───────────────────────────────────────────────┐
@@ -390,8 +398,9 @@ Client → POST /challenges/{slug}/submit { flag }
 - ❌ **Never create the custom User model after the first migration** — `AUTH_USER_MODEL` must be set before `manage.py migrate`
 - ❌ **Never store secrets in `settings.py`** for production — use environment variables
 
-### AI
-- ❌ **Never return flag/challenge solutions from AI prompts** — `learn_assistant` mode must explicitly guard against this
+### AI (Deferred Feature)
+- ❌ **Never activate the `ai` app** without explicit approval — it is NOT in `INSTALLED_APPS` and its URLs are NOT wired
+- ❌ **When AI is eventually implemented:** never return flag/challenge solutions from AI prompts
 
 ---
 
@@ -408,7 +417,7 @@ Client → POST /challenges/{slug}/submit { flag }
 
 **Project Layout:**
 - New app URLs in `<app>/urls.py`, include into `backend/urls.py`
-- Services in `<app>/services/` (pattern from `ai/services/`)
+- Services in `<app>/services/`
 - API views use DRF `APIView` or `GenericAPIView`
 
 **Permission System:**
@@ -436,12 +445,16 @@ Client → POST /challenges/{slug}/submit { flag }
 
 ## 10. Implementation Order (Recommended)
 
-1. Fix known bugs (serializer typo, AIRequest field, INSTALLED_APPS, urls)
-2. Create custom `User` model in `api` app; set `AUTH_USER_MODEL = 'api.User'` in `settings.py`; run initial migrations
-3. Implement JWT auth: register, login, refresh, logout with `user_session` tracking
-4. Implement permission system: endpoint auto-discovery at startup, RBAC API endpoints, JWT encoding
-5. Implement `user_permission_cache` logic and invalidation
-6. Build CRUD APIs for courses, challenges, quizzes (following existing model patterns)
-7. Add Outline and GitLab integrations (read base URLs from `system_config`)
-8. Implement Quiz WebSocket with Django Channels
-9. Wire up frontend pages
+See **`docs/IMPL_PLAN.md`** for the full vertical slice plan (Slices 0–11).
+
+High-level sequence:
+1. Slice 0 — Foundation (User model, migrations, system_config seed)
+2. Slice 1 — Authentication (JWT, SSO, sessions)
+3. Slice 2 — Authorization (RBAC, permission auto-discovery, JWT encoding)
+4. Slice 3 — System Config CRUD API
+5. Slice 4 — Frontend Foundation (layout, stores, i18n)
+6. Slices 5–8 — Content features (Learn, Challenge, Quiz, Profile)
+7. Slices 9, 11 — Notifications, Statistics
+8. **Slice 10 (AI Assistant) — DEFERRED** — do not implement until explicitly approved
+
+> **⚠️ `docs/STATUS.md`** is the authoritative record of what is done and what is next.

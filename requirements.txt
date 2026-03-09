@@ -1,0 +1,27 @@
+# ILS v2 — Python dependencies
+# Install: pip install -r requirements.txt
+
+# ── Core ─────────────────────────────────────────────────────────────────────
+django>=6.0,<7.0
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+
+# ── Realtime ──────────────────────────────────────────────────────────────────
+channels
+daphne
+channels-redis       # required for production (Redis channel layer)
+
+# ── Database ─────────────────────────────────────────────────────────────────
+psycopg2-binary      # PostgreSQL adapter
+
+# ── Auth / Crypto ────────────────────────────────────────────────────────────
+itsdangerous         # HMAC-signed tokens for password reset
+
+# ── Dev & Testing ────────────────────────────────────────────────────────────
+pytest
+pytest-django
+pytest-asyncio       # for async Channels consumer tests
+factory-boy          # model factories for tests
+faker                # fake data in tests
+ruff                 # linter (replaces flake8 + isort)

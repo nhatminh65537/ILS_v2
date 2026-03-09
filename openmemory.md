@@ -19,16 +19,20 @@ Target: one instance per organization, no horizontal scale needed.
 | File | Purpose |
 |------|---------|
 | `design/database/vx/dbv3.sql` | **Authoritative schema** |
-| `backend/api/models.py` | All ORM models (~1133 lines) |
-| `backend/ai/` | AI assistant feature (3 modes, mock LLM) |
+| `backend/api/models.py` | All ORM models (~1195 lines) |
+| `backend/ai/` | ⚠️ DEFERRED — AI assistant scaffold (not active, not in INSTALLED_APPS) |
 | `backend/backend/settings.py` | Django config (SQLite dev, PostgreSQL commented out) |
-| `AGENT.md` | Full AI agent guide |
+| `docs/STATUS.md` | Implementation status per slice |
+| `docs/BUGS.md` | Known bugs and fix history |
+| `docs/CONFIG.md` | Canonical system_config keys |
+| `AGENT.md` | AI agent quick-reference guide |
 
 ## Components
 
 - **api app**: All domain models — Challenge, Course, Quiz + nodes, flags, progress (~1195 lines)
-- **ai app**: AIAskView (`POST /ask/`), 3 AI modes, service layer pattern
+- **ai app**: ⚠️ DEFERRED — scaffold only (AIAskView, 3 modes, mock LLM); NOT in INSTALLED_APPS; do not activate until approved
 - **realtime app**: Django Channels scaffold (empty logic)
+- **auth_app**: To be created in Slice 1 — JWT auth, SSO, session management
 - **Abstract ORM**: CreateAudit, UpdateAudit, FullAudit, SoftDeleteAudit, BaseNode, BaseCategory, BaseTag
 
 ## Patterns
@@ -38,7 +42,7 @@ Target: one instance per organization, no horizontal scale needed.
 - All models inherit FullAudit; explicit `db_table` and `db_column` on every model
 - **Join tables** (tag maps, role_permission): use **CreateAudit only** — no updated_at/updated_by
 - `TextChoices` for all enums (Status: draft/published/archived)
-- Services in `<app>/services/` (see ai/services/)
+- Services in `<app>/services/` directory pattern
 - Permission cache in `user_permission_cache` table; versioned with `user.permission_version`
 
 ## Key DB Decisions (2026-03-09 schema review)
@@ -85,7 +89,7 @@ Key requirements by domain:
 | `docs/prd/06-user-profile.md` | Profile PRD (stats, settings) |
 | `docs/prd/07-notification.md` | Notification PRD (broadcast + auto) |
 | `docs/prd/08-statistics.md` | Statistics PRD (leaderboard, admin stats) |
-| `docs/prd/09-ai-assistant.md` | AI PRD (3 modes, rate limit, LLM integration) |
+| `docs/prd/09-ai-assistant.md` | AI PRD (3 modes, rate limit, LLM integration) — DEFERRED |
 | `docs/prd/10-system-config.md` | System Config PRD (runtime KV store) |
 
 ## User Defined Namespaces

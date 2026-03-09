@@ -1,0 +1,166 @@
+# STATUS.md — ILS v2 Implementation Status
+
+> Living document. Update after each completed slice or major task.
+> Last updated: 2026-03-09
+
+---
+
+## Completed
+
+| Area | Notes |
+|------|-------|
+| Django project scaffold | Apps: `api`, `realtime` (active); `ai` (deferred — not in INSTALLED_APPS) |
+| All domain ORM models | Challenge, Course, Quiz + tree nodes, flags, progress, instances (`backend/api/models.py`) |
+| Abstract base models | `CreateAudit`, `UpdateAudit`, `FullAudit`, `SoftDeleteAudit`, `BaseNode`, `BaseCategory`, `BaseTag` |
+| Database schema review | All CRITICAL/HIGH/MEDIUM/LOW issues resolved in `dbv3.sql` and `models.py` (2026-03-09) |
+| Next.js scaffold | Default create-next-app; all runtime deps installed (Zustand, next-intl, Axios) |
+| PRD documents | 10 feature PRDs in `docs/prd/` |
+| Documentation suite | `ARCHITECTURE.md`, `DATA_MODEL.md`, `CONFIG.md`, `IMPL_PLAN.md`, `BUGS.md`, `STATUS.md` |
+| Dev infrastructure | `README.md`, `Makefile`, `requirements.txt`, `pytest.ini`, `conftest.py`, `.env.example`, `.gitignore` |
+| settings.py | DRF + SimpleJWT + CORS + Channels config added |
+
+---
+
+## In Progress
+
+*Nothing in progress — ready to start Slice 0.*
+
+---
+
+## Not Yet Implemented
+
+### Slice 0 — Foundation (start here)
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Custom `User` model + `AUTH_USER_MODEL` | **Critical** | Must be done before first migration |
+| Initial migrations | **Critical** | Run after User model is in place |
+| `SystemConfig` model + `seed_config` command | High | Seed all keys from `docs/CONFIG.md` |
+
+### Slice 1 — Authentication
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| JWT auth: register, login, refresh, logout | High | `auth_app` — new Django app |
+| `user_session` tracking | High | Hash refresh tokens before storing |
+| SSO / Authentik OIDC | High | Read from `system_config` |
+| Password change + reset (email token) | Medium | `itsdangerous` TimestampSigner |
+| Session management (list + revoke) | Medium | |
+| Frontend: Login / Register pages | Medium | |
+
+### Slice 2 — Authorization / RBAC
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Permission auto-discovery at startup | High | Scan URL patterns in `AppConfig.ready()` |
+| Role / Permission CRUD API | High | Admin-only |
+| `user_permission_cache` + JWT encoding | High | Encode permissions in access token |
+| `HasJWTPermission` DRF permission class | High | Check JWT claims, no DB hit |
+| Frontend: Admin RBAC UI | Low | |
+
+### Slice 3 — System Config
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| System Config API (GET / PATCH) | High | Secrets masked in GET; `is_editable=false` → 403 |
+| Frontend: Admin Config UI | Low | |
+
+### Slice 4 — Frontend Foundation
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| App directory structure | Medium | Route groups: `(auth)/`, `(app)/`, `admin/` |
+| Shared Axios instance + interceptors | Medium | Auto-refresh on 401 |
+| Zustand auth store | Medium | |
+| Shared Tree component | Medium | Lazy-load, reused in Learn/Challenge/Quiz |
+| i18n setup (next-intl, en + vi) | Low | |
+
+### Slice 5 — Learn (Courses)
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Course + Category CRUD API | Medium | |
+| CourseNode tree API | Medium | `pre_path` + `bulk_update` on move |
+| Lesson CRUD + Outline sync | Medium | |
+| User progress tracking signals | Medium | |
+| Frontend: Course catalog + tree | Low | |
+| Frontend: Lesson viewer (md/video/miniquiz) | Low | |
+
+### Slice 6 — Challenge (CTF)
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Challenge + Category CRUD API | Medium | |
+| ChallengeNode tree + ChallengeFlag CRUD | Medium | Flag values never returned to members |
+| Flag submission (server-side only) | Medium | Static, regex, instance-specific |
+| GitLab sync | Medium | Read base URL from `system_config` |
+| Frontend: Challenge browser + submit | Low | |
+
+### Slice 7 — Quiz
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Quiz + Question CRUD API | Medium | |
+| QuizNode tree API | Medium | No circular FK |
+| Django Channels WebSocket consumer | Medium | JWT in query string |
+| Quiz progress signals | Medium | `best_score`, `attempt_count` |
+| Frontend: Quiz browser + WS session | Low | |
+
+### Slice 8 — User Profile
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| User profile API (me + public) | Low | |
+| Admin user management API | Low | |
+| Frontend: Profile + settings pages | Low | |
+| Frontend: Admin user management | Low | |
+
+### Slice 9 — Notifications
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Notification API | Low | |
+| Auto-trigger via Django signals | Low | On challenge/quiz/course complete |
+| WebSocket notification delivery | Low | Per-user channel group |
+| Frontend: Notification bell + inbox | Low | |
+
+### Slice 11 — Statistics
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Leaderboard API | Low | |
+| Admin stats API | Low | |
+| Frontend: Leaderboard + admin stats | Low | |
+
+---
+
+## Deferred Features
+
+> These features are **not scheduled** for the current implementation phase.
+> Do NOT start implementing until explicitly agreed.
+
+| Feature | Slice | Reason |
+|---------|-------|--------|
+| AI Assistant | Slice 10 | Product decision deferred. Scaffold exists in `backend/ai/` but app is NOT active (`INSTALLED_APPS` commented out). **Do not activate without explicit approval.** |
+| Audit Log | — | Low priority; deferred post-MVP |
+| Theming | — | Low priority; deferred post-MVP |
+
+---
+
+## Recommended Start Order
+
+```
+Slice 0 (Foundation: User model + migrations + seed_config)
+  └── Slice 1 (Authentication)
+        └── Slice 2 (RBAC)
+              ├── Slice 3 (System Config)
+              ├── Slice 4 (Frontend Foundation)
+              │     ├── Slice 5 (Learn)
+              │     ├── Slice 6 (Challenge)
+              │     ├── Slice 7 (Quiz)
+              │     └── Slice 8 (User Profile)
+              ├── Slice 9  (Notifications — needs 5+6+7 signals)
+              └── Slice 11 (Statistics — needs 5+6+7 data)
+```
+
+Full task breakdown with per-task file lists: see `docs/IMPL_PLAN.md`.

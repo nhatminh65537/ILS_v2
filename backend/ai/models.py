@@ -7,9 +7,9 @@ class AIRequest(models.Model):
         on_delete = models.SET_NULL,
         null=True,
     )
-    node = models.CharField(max_length=50)
+    mode = models.CharField(max_length=50)
     input_text = models.TextField()
-    context_type = models.CharField(max_length=50)
+    context_type = models.CharField(max_length=50, blank=True, default='')
     context_id = models.IntegerField(null=True, blank=True)
     response_text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
