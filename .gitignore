@@ -1,5 +1,6 @@
 # ── AI agent rules (never commit) ────────────────────────────────────────────
 CLAUDE.md
+.claude/
 
 # ── Environment / Secrets ─────────────────────────────────────────────────────
 .env
@@ -7,6 +8,7 @@ CLAUDE.md
 .env.*.local
 *.pem
 *.key
+secrets.json
 
 # ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
@@ -24,12 +26,26 @@ build/
 .ruff_cache/
 htmlcov/
 .coverage
+.coverage.*
 coverage.xml
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.hypothesis/
+.tox/
 
 # ── Django ───────────────────────────────────────────────────────────────────
 backend/db.sqlite3
 backend/staticfiles/
 backend/media/
+local_settings.py
+*.log
+
+# ── Database backups ─────────────────────────────────────────────────────────
+*.sql
+*.dump
 
 # ── Node.js / Next.js ────────────────────────────────────────────────────────
 node_modules/
@@ -43,9 +59,18 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 desktop.ini
+*~
 
 # ── IDE ──────────────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 *.swo
+*.code-workspace
+
+# ── Project-specific generated/temp docs ─────────────────────────────────────
+MODELS_GUIDE.md
+README_BACKEND.md
+requirements-python.txt
+IMPLEMENTATION_SUMMARY.md
+SETUP_CHECKLIST.md

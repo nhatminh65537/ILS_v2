@@ -1,6 +1,10 @@
 from django.db import models
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.utils import timezone
+import hashlib
+import hmac
+import re
 
 # ABSTRACT BASE MODELS 
 
@@ -75,6 +79,7 @@ class BaseNode(FullAudit):
     """
     Abstract model cho cấu trúc cây (dùng cho challenge_node, course_node, quiz_node)
     Sử dụng Materialized Path pattern để tránh N+1 query
+    OOP: Encapsulate tree operations and invariants
     """
     parent = models.ForeignKey(
         'self',
@@ -104,6 +109,71 @@ class BaseNode(FullAudit):
 
     def __str__(self):
         return self.title
+    
+    # Domain methods - OOP: Tree operations with invariant enforcement
+    def rebuild_path(self):
+        """
+        Rebuild materialized path for this node and all descendants
+        Per OOP feedback: Encapsulate path calculation logic
+        """
+        if self.parent:
+            self.pre_path = f"{self.parent.pre_path}{self.parent.id}/"
+        else:
+            self.pre_path = "/"
+        self.save(update_fields=['pre_path'])
+        
+        # Recursively update children
+        for child in self.children.all():
+            child.rebuild_path()
+    
+    def move_to(self, new_parent):
+        """
+        Move this node to a new parent
+        Per OOP feedback: Ensure acyclic invariant
+        """
+        if new_parent:
+            # Check for cycle
+            if self.would_create_cycle(new_parent):
+                raise ValueError("Moving to this parent would create a cycle")
+        
+        self.parent = new_parent
+        self.save()
+        self.rebuild_path()
+    
+    def would_create_cycle(self, potential_parent):
+        """Check if setting potential_parent would create a cycle"""
+        current = potential_parent
+        while current:
+            if current.id == self.id:
+                return True
+            current = current.parent
+        return False
+    
+    def validate_acyclic(self):
+        """Validate that the tree structure is acyclic"""
+        visited = set()
+        current = self
+        while current:
+            if current.id in visited:
+                raise ValueError("Cycle detected in tree structure")
+            visited.add(current.id)
+            current = current.parent
+    
+    def get_descendants(self):
+        """Get all descendant nodes using materialized path"""
+        # This is efficient using the path index
+        return self.__class__.objects.filter(
+            pre_path__startswith=f"{self.pre_path}{self.id}/"
+        )
+    
+    def get_ancestors(self):
+        """Get all ancestor nodes"""
+        ancestors = []
+        current = self.parent
+        while current:
+            ancestors.append(current)
+            current = current.parent
+        return ancestors
 
 
 class BaseCategory(FullAudit):
@@ -337,7 +407,7 @@ class ChallengeInstance(FullAudit):
         db_column='challenge_id'
     )
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.CASCADE,
         related_name='challenge_instances',
         db_column='user_id'
@@ -351,7 +421,7 @@ class ChallengeInstance(FullAudit):
     flag_value = models.TextField(
         blank=True,
         null=True,
-        help_text="Flag value cho instance này (nếu random)"
+        help_text="Hashed flag value cho instance này (nếu random)"
     )
     
     status = models.CharField(
@@ -393,6 +463,53 @@ class ChallengeInstance(FullAudit):
 
     def __str__(self):
         return f"{self.user.username} - {self.challenge.title} ({self.status})"
+    
+    # Domain methods - OOP: Lifecycle management with proper encapsulation
+    def start(self):
+        """Start the instance (domain logic + infrastructure call)"""
+        if self.status == self.InstanceStatus.TERMINATED:
+            raise ValueError("Cannot start terminated instance")
+        
+        from .services.instance_service import InstanceService
+        result = InstanceService.start_instance(self)
+        
+        self.status = self.InstanceStatus.RUNNING
+        self.instance_info = result
+        self.save()
+        
+        self.log("Instance started")
+        return result
+    
+    def stop(self):
+        """Stop the instance"""
+        if self.status == self.InstanceStatus.TERMINATED:
+            raise ValueError("Cannot stop terminated instance")
+        
+        from .services.instance_service import InstanceService
+        InstanceService.stop_instance(self)
+        
+        self.status = self.InstanceStatus.STOPPED
+        self.save()
+        
+        self.log("Instance stopped")
+    
+    def terminate(self):
+        """Terminate the instance (cannot be restarted)"""
+        from .services.instance_service import InstanceService
+        InstanceService.terminate_instance(self)
+        
+        self.status = self.InstanceStatus.TERMINATED
+        self.terminated_at = timezone.now()
+        self.save()
+        
+        self.log("Instance terminated")
+    
+    def log(self, message):
+        """Add log entry for this instance"""
+        ChallengeInstanceLog.objects.create(
+            challenge_instance=self,
+            log_message=message
+        )
 
 
 class ChallengeInstanceLog(FullAudit):
@@ -429,7 +546,7 @@ class ChallengeFlag(FullAudit):
         related_name='flags',
         db_column='challenge_id'
     )
-    flag_value = models.TextField()
+    flag_value = models.TextField(help_text="Hashed flag value for security")
     is_case_sensitive = models.BooleanField(default=True)
     is_regex = models.BooleanField(default=False)
     random_tail_length = models.IntegerField(
@@ -445,6 +562,29 @@ class ChallengeFlag(FullAudit):
 
     def __str__(self):
         return f"Flag for {self.challenge.title}"
+    
+    # Domain methods - OOP: Polymorphic flag validation (Strategy pattern)
+    def validate_submission(self, submitted_value, instance_flag=None):
+        """
+        Validate submitted flag using appropriate strategy
+        Per OOP feedback: Encapsulate validation logic, use polymorphism
+        """
+        from .services.flag_validation_service import FlagValidationService
+        return FlagValidationService.validate(
+            self, 
+            submitted_value, 
+            instance_flag
+        )
+    
+    def hash_flag(self, plain_flag):
+        """Hash flag value for secure storage"""
+        salt = settings.SECRET_KEY.encode()
+        return hmac.new(salt, plain_flag.encode(), hashlib.sha256).hexdigest()
+    
+    def set_flag(self, plain_flag):
+        """Set flag with automatic hashing"""
+        self.flag_value = self.hash_flag(plain_flag)
+        self.save()
 
 
 class UserChallengeProgress(FullAudit):
@@ -618,6 +758,7 @@ class CourseTagMap(CreateAudit):
 class Lesson(FullAudit):
     """
     Bài học trong course
+    OOP: Polymorphic behavior based on lesson_type (Strategy pattern)
     """
     class LessonType(models.TextChoices):
         MARKDOWN = 'markdown', 'Markdown'
@@ -648,6 +789,11 @@ class Lesson(FullAudit):
         blank=True,
         null=True,
         help_text="URL video"
+    )
+    video_duration = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Video duration in seconds"
     )
     
     learning_point = models.IntegerField(default=0)
@@ -962,6 +1108,7 @@ class QuizTagMap(CreateAudit):
 class QuizQuestion(FullAudit):
     """
     Câu hỏi trong quiz
+    OOP: Polymorphic validation and scoring based on question_type
     """
     class QuestionType(models.TextChoices):
         SINGLE_CHOICE = 'single_choice', 'Single Choice'
@@ -999,6 +1146,70 @@ class QuizQuestion(FullAudit):
 
     def __str__(self):
         return f"Question {self.position} - {self.quiz.title}"
+    
+    # Domain methods - OOP: Polymorphic validation and scoring
+    def validate_answer(self, answer_payload):
+        """
+        Validate answer based on question type
+        Per OOP feedback: Polymorphic behavior
+        Returns: bool - True if answer is correct
+        """
+        if self.question_type == self.QuestionType.SINGLE_CHOICE:
+            return self._validate_single_choice(answer_payload)
+        elif self.question_type == self.QuestionType.MULTI_CHOICE:
+            return self._validate_multi_choice(answer_payload)
+        elif self.question_type == self.QuestionType.FILL_BLANK:
+            return self._validate_fill_blank(answer_payload)
+        raise ValueError(f"Unknown question type: {self.question_type}")
+    
+    def score_answer(self, answer_payload):
+        """
+        Score the answer
+        Per OOP feedback: Polymorphic scoring
+        Returns: int - score obtained (0 to self.score)
+        """
+        is_correct = self.validate_answer(answer_payload)
+        return self.score if is_correct else 0
+    
+    def _validate_single_choice(self, answer_payload):
+        """Validate single choice answer"""
+        try:
+            selected_id = int(answer_payload.get('option_id'))
+            correct_option = self.options.filter(is_correct=True).first()
+            return correct_option and correct_option.id == selected_id
+        except (ValueError, TypeError):
+            return False
+    
+    def _validate_multi_choice(self, answer_payload):
+        """
+        Validate multiple choice answer
+        Per teacher feedback: Must select ALL correct options to get points
+        """
+        try:
+            selected_ids = set(answer_payload.get('option_ids', []))
+            correct_ids = set(
+                self.options.filter(is_correct=True).values_list('id', flat=True)
+            )
+            return selected_ids == correct_ids
+        except (ValueError, TypeError):
+            return False
+    
+    def _validate_fill_blank(self, answer_payload):
+        """Validate fill in the blank answer"""
+        try:
+            submitted_answer = answer_payload.get('answer', '').strip()
+            
+            # Check against all possible answers
+            for ans in self.answers.all():
+                if ans.is_case_sensitive:
+                    if submitted_answer == ans.answer:
+                        return True
+                else:
+                    if submitted_answer.lower() == ans.answer.lower():
+                        return True
+            return False
+        except (AttributeError, TypeError):
+            return False
 
 
 class QuizQuestionOption(FullAudit):
@@ -1213,3 +1424,576 @@ class UserQuizProgress(FullAudit):
     @property
     def is_completed(self):
         return self.completed_at is not None
+class UserManager(BaseUserManager):
+    """Custom user manager"""
+    
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        if not username:
+            raise ValueError('Username field is required')
+        email = self.normalize_email(email) if email else None
+        user = self.model(username=username, email=email, **extra_fields)
+        if password:
+            user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True')
+        
+        return self.create_user(username, email, password, **extra_fields)
+
+
+class User(AbstractUser, CreateAudit, UpdateAudit):
+    """
+    Custom User model extending Django's AbstractUser
+    """
+    email = models.EmailField(unique=True, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    
+    objects = UserManager()
+    
+    class Meta:
+        db_table = 'user'
+        indexes = [
+            models.Index(fields=['username']),
+            models.Index(fields=['email']),
+        ]
+    
+    def __str__(self):
+        return self.username
+    
+    # Domain methods per OOP feedback
+    def compute_effective_permissions(self):
+        """
+        Compute effective permissions for user combining role-based and direct permissions
+        Direct permissions override role permissions
+        """
+        from .services.permission_service import PermissionService
+        return PermissionService.compute_user_permissions(self)
+    
+    def grant_permission(self, permission):
+        """Grant a permission directly to user"""
+        UserPermission.objects.get_or_create(
+            user=self,
+            permission=permission,
+            defaults={'is_allowed': True}
+        )
+        # Invalidate cache
+        self.invalidate_permission_cache()
+    
+    def revoke_permission(self, permission):
+        """Revoke a permission from user"""
+        UserPermission.objects.filter(user=self, permission=permission).delete()
+        # Invalidate cache
+        self.invalidate_permission_cache()
+    
+    def add_role(self, role):
+        """Add user to a role"""
+        UserRole.objects.get_or_create(user=self, role=role)
+        self.invalidate_permission_cache()
+    
+    def remove_role(self, role):
+        """Remove user from a role"""
+        UserRole.objects.filter(user=self, role=role).delete()
+        self.invalidate_permission_cache()
+    
+    def invalidate_permission_cache(self):
+        """Invalidate cached permissions"""
+        UserPermissionCache.objects.filter(user=self).update(is_valid=False)
+    
+    def has_permission(self, permission_code):
+        """Check if user has a specific permission"""
+        from .services.permission_service import PermissionService
+        return PermissionService.check_permission(self, permission_code)
+
+
+class UserProfile(FullAudit):
+    """
+    Extended user profile information
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='profile',
+        db_column='user_id'
+    )
+    bio = models.TextField(blank=True, null=True)
+    avatar_url = models.TextField(blank=True, null=True)
+    
+    total_lpoint = models.IntegerField(default=0, help_text="Total learning points")
+    total_cpoint = models.IntegerField(default=0, help_text="Total challenge points")
+    total_qpoint = models.IntegerField(default=0, help_text="Total quiz points")
+    
+    rank_lpoint = models.IntegerField(null=True, blank=True)
+    rank_cpoint = models.IntegerField(null=True, blank=True)
+    rank_qpoint = models.IntegerField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'user_profile'
+    
+    def __str__(self):
+        return f"Profile: {self.user.username}"
+    
+    def update_leaderboard_rank(self):
+        """Update user's rank on leaderboard"""
+        from .services.leaderboard_service import LeaderboardService
+        LeaderboardService.update_user_rank(self.user)
+
+
+class UserAuthProvider(FullAudit):
+    """
+    SSO / OAuth provider information for user
+    """
+    class Provider(models.TextChoices):
+        AUTHENTIK = 'authentik', 'Authentik'
+        GOOGLE = 'google', 'Google'
+        GITHUB = 'github', 'GitHub'
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='auth_providers',
+        db_column='user_id'
+    )
+    provider = models.CharField(
+        max_length=20,
+        choices=Provider.choices
+    )
+    provider_user_id = models.TextField()
+    provider_data = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Additional data from provider"
+    )
+    
+    class Meta:
+        db_table = 'user_auth_provider'
+        unique_together = [['provider', 'provider_user_id']]
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['provider', 'provider_user_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.provider}"
+
+
+# ============================================================================
+# AUTHORIZATION MODELS
+# ============================================================================
+
+class Permission(FullAudit, SoftDeleteAudit):
+    """
+    Permission model with hierarchical structure
+    Each permission corresponds to an API endpoint or group of endpoints
+    """
+    code = models.TextField(unique=True, help_text="Permission code (e.g., 'course.view')")
+    name = models.TextField(help_text="Human-readable name")
+    description = models.TextField(blank=True, null=True)
+    
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children',
+        db_column='parent_id'
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        help_text="If parent is disabled, children are also disabled"
+    )
+    
+    # For automatic sync from endpoints
+    endpoint_path = models.TextField(blank=True, null=True)
+    http_method = models.CharField(max_length=10, blank=True, null=True)
+    last_scanned = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'permission'
+        indexes = [
+            models.Index(fields=['code']),
+            models.Index(fields=['parent']),
+            models.Index(fields=['is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+    
+    # Domain methods per OOP feedback
+    def is_effective_active(self):
+        """
+        Check if permission is effectively active (considering parent hierarchy)
+        """
+        if not self.is_active:
+            return False
+        if self.parent:
+            return self.parent.is_effective_active()
+        return True
+    
+    def get_all_children(self):
+        """Get all descendant permissions"""
+        children = list(self.children.all())
+        for child in list(children):
+            children.extend(child.get_all_children())
+        return children
+    
+    def enable(self):
+        """Enable this permission"""
+        self.is_active = True
+        self.save()
+    
+    def disable(self):
+        """Disable this permission (children will be effectively disabled too)"""
+        self.is_active = False
+        self.save()
+
+
+class Role(FullAudit):
+    """
+    Role model - collection of permissions
+    """
+    name = models.TextField(unique=True)
+    description = models.TextField(blank=True, null=True)
+    is_system = models.BooleanField(
+        default=False,
+        help_text="System roles cannot be deleted"
+    )
+    
+    class Meta:
+        db_table = 'role'
+        indexes = [
+            models.Index(fields=['name']),
+        ]
+    
+    def __str__(self):
+        return self.name
+    
+    # Domain methods per OOP feedback
+    def grant(self, permission):
+        """Grant a permission to this role"""
+        RolePermission.objects.get_or_create(
+            role=self,
+            permission=permission
+        )
+        # Invalidate cache for all users with this role
+        self.invalidate_users_cache()
+    
+    def revoke(self, permission):
+        """Revoke a permission from this role"""
+        RolePermission.objects.filter(role=self, permission=permission).delete()
+        self.invalidate_users_cache()
+    
+    def invalidate_users_cache(self):
+        """Invalidate permission cache for all users with this role"""
+        user_ids = self.users.values_list('user_id', flat=True)
+        UserPermissionCache.objects.filter(user_id__in=user_ids).update(is_valid=False)
+    
+    def get_all_permissions(self):
+        """Get all permissions for this role"""
+        return Permission.objects.filter(
+            role_permissions__role=self,
+            is_deleted=False
+        ).distinct()
+
+
+class RolePermission(FullAudit):
+    """
+    Many-to-Many relationship between Role and Permission
+    """
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        related_name='role_permissions',
+        db_column='role_id'
+    )
+    permission = models.ForeignKey(
+        Permission,
+        on_delete=models.CASCADE,
+        related_name='role_permissions',
+        db_column='permission_id'
+    )
+    
+    class Meta:
+        db_table = 'role_permission'
+        unique_together = [['role', 'permission']]
+        indexes = [
+            models.Index(fields=['role']),
+            models.Index(fields=['permission']),
+        ]
+    
+    def __str__(self):
+        return f"{self.role.name} - {self.permission.code}"
+
+
+class UserRole(FullAudit):
+    """
+    Many-to-Many relationship between User and Role
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='user_roles',
+        db_column='user_id'
+    )
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        related_name='users',
+        db_column='role_id'
+    )
+    
+    class Meta:
+        db_table = 'user_role'
+        unique_together = [['user', 'role']]
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['role']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.role.name}"
+
+
+class UserPermission(FullAudit):
+    """
+    Direct permission assignment to user (overrides role permissions)
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='user_permissions',
+        db_column='user_id'
+    )
+    permission = models.ForeignKey(
+        Permission,
+        on_delete=models.CASCADE,
+        related_name='user_permissions',
+        db_column='permission_id'
+    )
+    is_allowed = models.BooleanField(
+        default=True,
+        help_text="True = allow, False = deny (deny takes precedence)"
+    )
+    
+    class Meta:
+        db_table = 'user_permission'
+        unique_together = [['user', 'permission']]
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['permission']),
+        ]
+    
+    def __str__(self):
+        access = "Allow" if self.is_allowed else "Deny"
+        return f"{self.user.username} - {self.permission.code} ({access})"
+
+
+class UserPermissionCache(CreateAudit):
+    """
+    Cached encoded permissions for user (used in JWT token)
+    Speeds up token generation/revocation
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='permission_cache',
+        db_column='user_id'
+    )
+    encoded_permissions = models.JSONField(
+        help_text="Pre-encoded permissions with hierarchy"
+    )
+    is_valid = models.BooleanField(
+        default=True,
+        help_text="Set to False when permissions change"
+    )
+    last_computed_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'user_permission_cache'
+    
+    def __str__(self):
+        status = "Valid" if self.is_valid else "Invalid"
+        return f"Cache for {self.user.username} ({status})"
+
+
+# ============================================================================
+# SYSTEM CONFIGURATION MODELS
+# ============================================================================
+
+class SystemConfig(FullAudit):
+    """
+    System-wide configuration key-value store
+    """
+    class ConfigType(models.TextChoices):
+        BOOLEAN = 'boolean', 'Boolean'
+        INTEGER = 'integer', 'Integer'
+        STRING = 'string', 'String'
+        JSON = 'json', 'JSON'
+    
+    key = models.TextField(unique=True)
+    value = models.TextField()
+    value_type = models.CharField(
+        max_length=20,
+        choices=ConfigType.choices,
+        default=ConfigType.STRING
+    )
+    description = models.TextField(blank=True, null=True)
+    is_public = models.BooleanField(
+        default=False,
+        help_text="If True, can be accessed without authentication"
+    )
+    
+    class Meta:
+        db_table = 'system_config'
+        indexes = [
+            models.Index(fields=['key']),
+        ]
+    
+    def __str__(self):
+        return f"{self.key} = {self.value}"
+    
+    def get_typed_value(self):
+        """Return value with correct type"""
+        if self.value_type == self.ConfigType.BOOLEAN:
+            return self.value.lower() in ('true', '1', 'yes')
+        elif self.value_type == self.ConfigType.INTEGER:
+            return int(self.value)
+        elif self.value_type == self.ConfigType.JSON:
+            import json
+            return json.loads(self.value)
+        return self.value
+
+
+# ============================================================================
+# NOTIFICATION MODELS
+# ============================================================================
+
+class Notification(FullAudit):
+    """
+    Notification model for user notifications
+    """
+    class NotificationType(models.TextChoices):
+        SYSTEM = 'system', 'System'
+        ACHIEVEMENT = 'achievement', 'Achievement'
+        COURSE = 'course', 'Course'
+        CHALLENGE = 'challenge', 'Challenge'
+        QUIZ = 'quiz', 'Quiz'
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        db_column='user_id',
+        null=True,
+        blank=True,
+        help_text="NULL for broadcast notifications"
+    )
+    
+    type = models.CharField(
+        max_length=20,
+        choices=NotificationType.choices
+    )
+    title = models.TextField()
+    message = models.TextField()
+    metadata = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Additional data (links, ids, etc.)"
+    )
+    
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    is_broadcast = models.BooleanField(
+        default=False,
+        help_text="If True, sent to all users"
+    )
+    
+    class Meta:
+        db_table = 'notification'
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['is_read']),
+            models.Index(fields=['is_broadcast']),
+        ]
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        target = "Broadcast" if self.is_broadcast else self.user.username
+        return f"{target} - {self.title}"
+    
+    def mark_as_read(self):
+        """Mark notification as read"""
+        self.is_read = True
+        self.read_at = timezone.now()
+        self.save()
+
+
+# ============================================================================
+# AUDIT LOG MODELS
+# ============================================================================
+
+class AuditLog(models.Model):
+    """
+    System-wide audit log for tracking important actions
+    """
+    class ActorType(models.TextChoices):
+        USER = 'user', 'User'
+        SYSTEM = 'system', 'System'
+        API = 'api', 'API'
+    
+    class AggregateType(models.TextChoices):
+        USER = 'user', 'User'
+        COURSE = 'course', 'Course'
+        LESSON = 'lesson', 'Lesson'
+        CHALLENGE = 'challenge', 'Challenge'
+        QUIZ = 'quiz', 'Quiz'
+        PERMISSION = 'permission', 'Permission'
+        ROLE = 'role', 'Role'
+        SYSTEM = 'system', 'System'
+    
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    
+    actor_type = models.CharField(max_length=20, choices=ActorType.choices)
+    actor_id = models.BigIntegerField(null=True, blank=True)
+    actor_username = models.TextField(null=True, blank=True)
+    
+    aggregate_type = models.CharField(max_length=20, choices=AggregateType.choices)
+    aggregate_id = models.BigIntegerField()
+    
+    action = models.TextField(help_text="Action performed (e.g., 'create', 'update', 'delete')")
+    
+    metadata = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Additional context (changed fields, old/new values, etc.)"
+    )
+    
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'audit_log'
+        indexes = [
+            models.Index(fields=['-timestamp']),
+            models.Index(fields=['actor_type', 'actor_id']),
+            models.Index(fields=['aggregate_type', 'aggregate_id']),
+            models.Index(fields=['action']),
+        ]
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        actor = self.actor_username or f"{self.actor_type}:{self.actor_id}"
+        return f"{actor} - {self.action} {self.aggregate_type}:{self.aggregate_id}"
