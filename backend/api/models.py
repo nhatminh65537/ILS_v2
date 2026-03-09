@@ -238,9 +238,13 @@ class Challenge(FullAudit):
         MANUAL = 'manual', 'Manual'
         GITLAB = 'gitlab', 'GitLab'
 
+    slug = models.TextField(
+        unique=True,
+        help_text="URL-friendly identifier"
+    )
     title = models.TextField()
     description = models.TextField(blank=True, null=True)
-    
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -286,10 +290,12 @@ class Challenge(FullAudit):
     class Meta:
         db_table = 'challenge'
         indexes = [
+            models.Index(fields=['slug']),
             models.Index(fields=['title']),
             models.Index(fields=['category']),
             models.Index(fields=['status']),
             models.Index(fields=['difficulty']),
+            models.Index(fields=['source']),
         ]
 
     def __str__(self):
@@ -330,7 +336,7 @@ class ChallengeTag(BaseTag):
         verbose_name_plural = 'Challenge Tags'
 
 
-class ChallengeTagMap(FullAudit):
+class ChallengeTagMap(CreateAudit):
     """
     Many-to-Many relationship giữa Challenge và Tag
     """
@@ -424,6 +430,20 @@ class ChallengeInstance(FullAudit):
         default=InstanceStatus.RUNNING
     )
     terminated_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Thời gian hết hạn instance (TTL do admin cấu hình)"
+    )
+    challenge_flag = models.ForeignKey(
+        'ChallengeFlag',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='instances',
+        db_column='challenge_flag_id',
+        help_text="Flag template dùng để tạo flag cho instance này"
+    )
 
     class Meta:
         db_table = 'challenge_instance'
@@ -431,6 +451,14 @@ class ChallengeInstance(FullAudit):
             models.Index(fields=['challenge']),
             models.Index(fields=['user']),
             models.Index(fields=['user', 'challenge']),
+        ]
+        constraints = [
+            # Mỗi user chỉ được có 1 running instance per challenge
+            models.UniqueConstraint(
+                fields=['user', 'challenge'],
+                condition=models.Q(status='running'),
+                name='uq_challenge_instance_active'
+            )
         ]
 
     def __str__(self):
@@ -698,7 +726,7 @@ class CourseTag(BaseTag):
         verbose_name_plural = 'Course Tags'
 
 
-class CourseTagMap(FullAudit):
+class CourseTagMap(CreateAudit):
     """
     Many-to-Many relationship giữa Course và Tag
     """
@@ -741,6 +769,7 @@ class Lesson(FullAudit):
         MANUAL = 'manual', 'Manual'
         OUTLINE = 'outline', 'Outline'
 
+    title = models.TextField(help_text="Tiêu đề bài học")
     lesson_type = models.CharField(
         max_length=20,
         choices=LessonType.choices
@@ -778,93 +807,7 @@ class Lesson(FullAudit):
         db_table = 'lesson'
 
     def __str__(self):
-        return f"Lesson ({self.lesson_type})"
-    
-    # Domain methods - OOP: Polymorphic behavior via Strategy pattern
-    def render(self):
-        """
-        Render lesson content based on type
-        Per OOP feedback: Polymorphic render behavior
-        """
-        if self.lesson_type == self.LessonType.MARKDOWN:
-            return self._render_markdown()
-        elif self.lesson_type == self.LessonType.VIDEO:
-            return self._render_video()
-        elif self.lesson_type == self.LessonType.MINIQUIZ:
-            return self._render_miniquiz()
-        raise ValueError(f"Unknown lesson type: {self.lesson_type}")
-    
-    def _render_markdown(self):
-        """Render markdown content"""
-        import markdown
-        return markdown.markdown(self.content_md or '')
-    
-    def _render_video(self):
-        """Render video content"""
-        return {
-            'url': self.video_url,
-            'duration': self.video_duration,
-            'type': 'video'
-        }
-    
-    def _render_miniquiz(self):
-        """Render mini quiz content"""
-        questions = self.question_mappings.select_related('question').all()
-        return {
-            'questions': [q.question for q in questions],
-            'type': 'miniquiz'
-        }
-    
-    def validate_metadata(self):
-        """
-        Validate lesson metadata based on type
-        Per OOP feedback: Type-specific validation
-        """
-        if self.lesson_type == self.LessonType.MARKDOWN:
-            if not self.content_md:
-                raise ValueError("Markdown lesson must have content_md")
-        elif self.lesson_type == self.LessonType.VIDEO:
-            if not self.video_url:
-                raise ValueError("Video lesson must have video_url")
-        elif self.lesson_type == self.LessonType.MINIQUIZ:
-            if not self.question_mappings.exists():
-                raise ValueError("Mini quiz lesson must have questions")
-    
-    def attach_quiz(self, question):
-        """Attach a quiz question to this lesson (for miniquiz type)"""
-        if self.lesson_type != self.LessonType.MINIQUIZ:
-            raise ValueError("Can only attach quiz to miniquiz type lesson")
-        
-        LessonQuestion.objects.create(lesson=self, question=question)
-    
-    def detach_quiz(self, question):
-        """Detach a quiz question from this lesson"""
-        LessonQuestion.objects.filter(lesson=self, question=question).delete()
-    
-    def mark_completed(self, user):
-        """Mark this lesson as completed by user"""
-        progress, created = UserLessonProgress.objects.get_or_create(
-            user=user,
-            lesson=self
-        )
-        if not progress.completed_at:
-            progress.completed_at = timezone.now()
-            if not progress.started_at:
-                progress.started_at = timezone.now()
-            progress.save()
-            
-            # Award learning points
-            user.profile.total_lpoint += self.learning_point
-            user.profile.save()
-            
-            # Create notification
-            Notification.objects.create(
-                user=user,
-                type=Notification.NotificationType.COURSE,
-                title="Lesson Completed",
-                message=f"You completed: {self.node.title}",
-                metadata={'lesson_id': self.id}
-            )
+        return self.title
 
 
 class CourseNode(BaseNode):
@@ -917,10 +860,15 @@ class LessonQuestion(FullAudit):
         related_name='lesson_mappings',
         db_column='question_id'
     )
+    position = models.IntegerField(
+        default=0,
+        help_text="Thứ tự câu hỏi trong lesson miniquiz"
+    )
 
     class Meta:
         db_table = 'lesson_question'
         unique_together = [['lesson', 'question']]
+        ordering = ['position']
         indexes = [
             models.Index(fields=['lesson']),
             models.Index(fields=['question']),
@@ -1074,25 +1022,32 @@ class Quiz(FullAudit):
         PUBLISHED = 'published', 'Published'
         ARCHIVED = 'archived', 'Archived'
 
-    node = models.OneToOneField(
-        QuizNode,
-        on_delete=models.CASCADE,
-        unique=True,
-        related_name='quiz_detail',
-        db_column='node_id'
-    )
     title = models.TextField()
     description = models.TextField(blank=True, null=True)
-    
+
+    # CRITICAL FIX: node_id removed — QuizNode.quiz_id → Quiz (one-way, see QuizNode.quiz field)
+    # Access via reverse relation: quiz.node (QuizNode has related_name='node')
+    category = models.ForeignKey(
+        QuizCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quizzes',
+        db_column='category_id'
+    )
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.DRAFT,
         db_index=True
     )
-    
+
     quiz_point = models.IntegerField(default=0)
-    total_questions = models.IntegerField(default=0)
+    total_questions = models.IntegerField(
+        default=0,
+        help_text="Denormalized: keep in sync with COUNT(quiz_question) via Django signal"
+    )
     time_limit_sec = models.IntegerField(
         null=True,
         blank=True,
@@ -1102,7 +1057,7 @@ class Quiz(FullAudit):
     class Meta:
         db_table = 'quiz'
         indexes = [
-            models.Index(fields=['node']),
+            models.Index(fields=['category']),
             models.Index(fields=['status']),
             models.Index(fields=['title']),
         ]
@@ -1121,7 +1076,7 @@ class QuizTag(BaseTag):
         verbose_name_plural = 'Quiz Tags'
 
 
-class QuizTagMap(FullAudit):
+class QuizTagMap(CreateAudit):
     """
     Many-to-Many relationship giữa Quiz và Tag
     """
@@ -1293,7 +1248,7 @@ class QuizQuestionAnswer(FullAudit):
         db_column='question_id'
     )
     answer = models.TextField()
-    is_case_sensitive = models.BooleanField(default=True)
+    # case_sensitive is defined on QuizQuestion — apply quiz_question.case_sensitive when checking
 
     class Meta:
         db_table = 'quiz_question_answer'
@@ -1371,6 +1326,7 @@ class UserQuizAnswer(FullAudit):
 
     class Meta:
         db_table = 'user_quiz_answer'
+        unique_together = [['attempt', 'question']]
         indexes = [
             models.Index(fields=['attempt']),
             models.Index(fields=['question']),
@@ -1423,586 +1379,48 @@ class QuizConfig(FullAudit):
 
     class Meta:
         db_table = 'quiz_config'
+        unique_together = [['quiz', 'user']]
 
     def __str__(self):
         config_type = "Default" if self.is_default else "Custom"
         return f"{config_type} Config for {self.quiz.title} - {self.user.username}"
 
 
-# ============================================================================
-# USER & AUTHENTICATION MODELS
-# ============================================================================
-
-class UserManager(BaseUserManager):
-    """Custom user manager"""
-    
-    def create_user(self, username, email=None, password=None, **extra_fields):
-        if not username:
-            raise ValueError('Username field is required')
-        email = self.normalize_email(email) if email else None
-        user = self.model(username=username, email=email, **extra_fields)
-        if password:
-            user.set_password(password)
-        user.save(using=self._db)
-        return user
-    
-    def create_superuser(self, username, email=None, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True)
-        
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True')
-        
-        return self.create_user(username, email, password, **extra_fields)
-
-
-class User(AbstractUser, CreateAudit, UpdateAudit):
+class UserQuizProgress(FullAudit):
     """
-    Custom User model extending Django's AbstractUser
+    Tiến độ tổng hợp của user cho mỗi quiz (aggregate: best score, số lần attempt).
+    user_quiz_attempt lưu từng lần làm; bảng này lưu kết quả tổng hợp.
     """
-    email = models.EmailField(unique=True, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
-    
-    objects = UserManager()
-    
-    class Meta:
-        db_table = 'user'
-        indexes = [
-            models.Index(fields=['username']),
-            models.Index(fields=['email']),
-        ]
-    
-    def __str__(self):
-        return self.username
-    
-    # Domain methods per OOP feedback
-    def compute_effective_permissions(self):
-        """
-        Compute effective permissions for user combining role-based and direct permissions
-        Direct permissions override role permissions
-        """
-        from .services.permission_service import PermissionService
-        return PermissionService.compute_user_permissions(self)
-    
-    def grant_permission(self, permission):
-        """Grant a permission directly to user"""
-        UserPermission.objects.get_or_create(
-            user=self,
-            permission=permission,
-            defaults={'is_allowed': True}
-        )
-        # Invalidate cache
-        self.invalidate_permission_cache()
-    
-    def revoke_permission(self, permission):
-        """Revoke a permission from user"""
-        UserPermission.objects.filter(user=self, permission=permission).delete()
-        # Invalidate cache
-        self.invalidate_permission_cache()
-    
-    def add_role(self, role):
-        """Add user to a role"""
-        UserRole.objects.get_or_create(user=self, role=role)
-        self.invalidate_permission_cache()
-    
-    def remove_role(self, role):
-        """Remove user from a role"""
-        UserRole.objects.filter(user=self, role=role).delete()
-        self.invalidate_permission_cache()
-    
-    def invalidate_permission_cache(self):
-        """Invalidate cached permissions"""
-        UserPermissionCache.objects.filter(user=self).update(is_valid=False)
-    
-    def has_permission(self, permission_code):
-        """Check if user has a specific permission"""
-        from .services.permission_service import PermissionService
-        return PermissionService.check_permission(self, permission_code)
-
-
-class UserProfile(FullAudit):
-    """
-    Extended user profile information
-    """
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        primary_key=True,
-        related_name='profile',
-        db_column='user_id'
-    )
-    bio = models.TextField(blank=True, null=True)
-    avatar_url = models.TextField(blank=True, null=True)
-    
-    total_lpoint = models.IntegerField(default=0, help_text="Total learning points")
-    total_cpoint = models.IntegerField(default=0, help_text="Total challenge points")
-    total_qpoint = models.IntegerField(default=0, help_text="Total quiz points")
-    
-    rank_lpoint = models.IntegerField(null=True, blank=True)
-    rank_cpoint = models.IntegerField(null=True, blank=True)
-    rank_qpoint = models.IntegerField(null=True, blank=True)
-    
-    class Meta:
-        db_table = 'user_profile'
-    
-    def __str__(self):
-        return f"Profile: {self.user.username}"
-    
-    def update_leaderboard_rank(self):
-        """Update user's rank on leaderboard"""
-        from .services.leaderboard_service import LeaderboardService
-        LeaderboardService.update_user_rank(self.user)
-
-
-class UserAuthProvider(FullAudit):
-    """
-    SSO / OAuth provider information for user
-    """
-    class Provider(models.TextChoices):
-        AUTHENTIK = 'authentik', 'Authentik'
-        GOOGLE = 'google', 'Google'
-        GITHUB = 'github', 'GitHub'
-    
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='auth_providers',
+        related_name='quiz_progresses',
         db_column='user_id'
     )
-    provider = models.CharField(
-        max_length=20,
-        choices=Provider.choices
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='user_progresses',
+        db_column='quiz_id'
     )
-    provider_user_id = models.TextField()
-    provider_data = models.JSONField(
-        null=True,
-        blank=True,
-        help_text="Additional data from provider"
-    )
-    
+    best_score = models.IntegerField(default=0)
+    attempt_count = models.IntegerField(default=0)
+    first_attempted_at = models.DateTimeField(null=True, blank=True)
+    last_attempted_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
-        db_table = 'user_auth_provider'
-        unique_together = [['provider', 'provider_user_id']]
+        db_table = 'user_quiz_progress'
+        unique_together = [['user', 'quiz']]
         indexes = [
             models.Index(fields=['user']),
-            models.Index(fields=['provider', 'provider_user_id']),
+            models.Index(fields=['quiz']),
         ]
-    
+
     def __str__(self):
-        return f"{self.user.username} - {self.provider}"
+        status = "Completed" if self.completed_at else "In Progress"
+        return f"{self.user.username} - {self.quiz.title} ({status})"
 
-
-# ============================================================================
-# AUTHORIZATION MODELS
-# ============================================================================
-
-class Permission(FullAudit, SoftDeleteAudit):
-    """
-    Permission model with hierarchical structure
-    Each permission corresponds to an API endpoint or group of endpoints
-    """
-    code = models.TextField(unique=True, help_text="Permission code (e.g., 'course.view')")
-    name = models.TextField(help_text="Human-readable name")
-    description = models.TextField(blank=True, null=True)
-    
-    parent = models.ForeignKey(
-        'self',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='children',
-        db_column='parent_id'
-    )
-    
-    is_active = models.BooleanField(
-        default=True,
-        help_text="If parent is disabled, children are also disabled"
-    )
-    
-    # For automatic sync from endpoints
-    endpoint_path = models.TextField(blank=True, null=True)
-    http_method = models.CharField(max_length=10, blank=True, null=True)
-    last_scanned = models.DateTimeField(null=True, blank=True)
-    
-    class Meta:
-        db_table = 'permission'
-        indexes = [
-            models.Index(fields=['code']),
-            models.Index(fields=['parent']),
-            models.Index(fields=['is_active']),
-        ]
-    
-    def __str__(self):
-        return f"{self.code} - {self.name}"
-    
-    # Domain methods per OOP feedback
-    def is_effective_active(self):
-        """
-        Check if permission is effectively active (considering parent hierarchy)
-        """
-        if not self.is_active:
-            return False
-        if self.parent:
-            return self.parent.is_effective_active()
-        return True
-    
-    def get_all_children(self):
-        """Get all descendant permissions"""
-        children = list(self.children.all())
-        for child in list(children):
-            children.extend(child.get_all_children())
-        return children
-    
-    def enable(self):
-        """Enable this permission"""
-        self.is_active = True
-        self.save()
-    
-    def disable(self):
-        """Disable this permission (children will be effectively disabled too)"""
-        self.is_active = False
-        self.save()
-
-
-class Role(FullAudit):
-    """
-    Role model - collection of permissions
-    """
-    name = models.TextField(unique=True)
-    description = models.TextField(blank=True, null=True)
-    is_system = models.BooleanField(
-        default=False,
-        help_text="System roles cannot be deleted"
-    )
-    
-    class Meta:
-        db_table = 'role'
-        indexes = [
-            models.Index(fields=['name']),
-        ]
-    
-    def __str__(self):
-        return self.name
-    
-    # Domain methods per OOP feedback
-    def grant(self, permission):
-        """Grant a permission to this role"""
-        RolePermission.objects.get_or_create(
-            role=self,
-            permission=permission
-        )
-        # Invalidate cache for all users with this role
-        self.invalidate_users_cache()
-    
-    def revoke(self, permission):
-        """Revoke a permission from this role"""
-        RolePermission.objects.filter(role=self, permission=permission).delete()
-        self.invalidate_users_cache()
-    
-    def invalidate_users_cache(self):
-        """Invalidate permission cache for all users with this role"""
-        user_ids = self.users.values_list('user_id', flat=True)
-        UserPermissionCache.objects.filter(user_id__in=user_ids).update(is_valid=False)
-    
-    def get_all_permissions(self):
-        """Get all permissions for this role"""
-        return Permission.objects.filter(
-            role_permissions__role=self,
-            is_deleted=False
-        ).distinct()
-
-
-class RolePermission(FullAudit):
-    """
-    Many-to-Many relationship between Role and Permission
-    """
-    role = models.ForeignKey(
-        Role,
-        on_delete=models.CASCADE,
-        related_name='role_permissions',
-        db_column='role_id'
-    )
-    permission = models.ForeignKey(
-        Permission,
-        on_delete=models.CASCADE,
-        related_name='role_permissions',
-        db_column='permission_id'
-    )
-    
-    class Meta:
-        db_table = 'role_permission'
-        unique_together = [['role', 'permission']]
-        indexes = [
-            models.Index(fields=['role']),
-            models.Index(fields=['permission']),
-        ]
-    
-    def __str__(self):
-        return f"{self.role.name} - {self.permission.code}"
-
-
-class UserRole(FullAudit):
-    """
-    Many-to-Many relationship between User and Role
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='user_roles',
-        db_column='user_id'
-    )
-    role = models.ForeignKey(
-        Role,
-        on_delete=models.CASCADE,
-        related_name='users',
-        db_column='role_id'
-    )
-    
-    class Meta:
-        db_table = 'user_role'
-        unique_together = [['user', 'role']]
-        indexes = [
-            models.Index(fields=['user']),
-            models.Index(fields=['role']),
-        ]
-    
-    def __str__(self):
-        return f"{self.user.username} - {self.role.name}"
-
-
-class UserPermission(FullAudit):
-    """
-    Direct permission assignment to user (overrides role permissions)
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='user_permissions',
-        db_column='user_id'
-    )
-    permission = models.ForeignKey(
-        Permission,
-        on_delete=models.CASCADE,
-        related_name='user_permissions',
-        db_column='permission_id'
-    )
-    is_allowed = models.BooleanField(
-        default=True,
-        help_text="True = allow, False = deny (deny takes precedence)"
-    )
-    
-    class Meta:
-        db_table = 'user_permission'
-        unique_together = [['user', 'permission']]
-        indexes = [
-            models.Index(fields=['user']),
-            models.Index(fields=['permission']),
-        ]
-    
-    def __str__(self):
-        access = "Allow" if self.is_allowed else "Deny"
-        return f"{self.user.username} - {self.permission.code} ({access})"
-
-
-class UserPermissionCache(CreateAudit):
-    """
-    Cached encoded permissions for user (used in JWT token)
-    Speeds up token generation/revocation
-    """
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        primary_key=True,
-        related_name='permission_cache',
-        db_column='user_id'
-    )
-    encoded_permissions = models.JSONField(
-        help_text="Pre-encoded permissions with hierarchy"
-    )
-    is_valid = models.BooleanField(
-        default=True,
-        help_text="Set to False when permissions change"
-    )
-    last_computed_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'user_permission_cache'
-    
-    def __str__(self):
-        status = "Valid" if self.is_valid else "Invalid"
-        return f"Cache for {self.user.username} ({status})"
-
-
-# ============================================================================
-# SYSTEM CONFIGURATION MODELS
-# ============================================================================
-
-class SystemConfig(FullAudit):
-    """
-    System-wide configuration key-value store
-    """
-    class ConfigType(models.TextChoices):
-        BOOLEAN = 'boolean', 'Boolean'
-        INTEGER = 'integer', 'Integer'
-        STRING = 'string', 'String'
-        JSON = 'json', 'JSON'
-    
-    key = models.TextField(unique=True)
-    value = models.TextField()
-    value_type = models.CharField(
-        max_length=20,
-        choices=ConfigType.choices,
-        default=ConfigType.STRING
-    )
-    description = models.TextField(blank=True, null=True)
-    is_public = models.BooleanField(
-        default=False,
-        help_text="If True, can be accessed without authentication"
-    )
-    
-    class Meta:
-        db_table = 'system_config'
-        indexes = [
-            models.Index(fields=['key']),
-        ]
-    
-    def __str__(self):
-        return f"{self.key} = {self.value}"
-    
-    def get_typed_value(self):
-        """Return value with correct type"""
-        if self.value_type == self.ConfigType.BOOLEAN:
-            return self.value.lower() in ('true', '1', 'yes')
-        elif self.value_type == self.ConfigType.INTEGER:
-            return int(self.value)
-        elif self.value_type == self.ConfigType.JSON:
-            import json
-            return json.loads(self.value)
-        return self.value
-
-
-# ============================================================================
-# NOTIFICATION MODELS
-# ============================================================================
-
-class Notification(FullAudit):
-    """
-    Notification model for user notifications
-    """
-    class NotificationType(models.TextChoices):
-        SYSTEM = 'system', 'System'
-        ACHIEVEMENT = 'achievement', 'Achievement'
-        COURSE = 'course', 'Course'
-        CHALLENGE = 'challenge', 'Challenge'
-        QUIZ = 'quiz', 'Quiz'
-    
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='notifications',
-        db_column='user_id',
-        null=True,
-        blank=True,
-        help_text="NULL for broadcast notifications"
-    )
-    
-    type = models.CharField(
-        max_length=20,
-        choices=NotificationType.choices
-    )
-    title = models.TextField()
-    message = models.TextField()
-    metadata = models.JSONField(
-        null=True,
-        blank=True,
-        help_text="Additional data (links, ids, etc.)"
-    )
-    
-    is_read = models.BooleanField(default=False)
-    read_at = models.DateTimeField(null=True, blank=True)
-    
-    is_broadcast = models.BooleanField(
-        default=False,
-        help_text="If True, sent to all users"
-    )
-    
-    class Meta:
-        db_table = 'notification'
-        indexes = [
-            models.Index(fields=['user', '-created_at']),
-            models.Index(fields=['is_read']),
-            models.Index(fields=['is_broadcast']),
-        ]
-        ordering = ['-created_at']
-    
-    def __str__(self):
-        target = "Broadcast" if self.is_broadcast else self.user.username
-        return f"{target} - {self.title}"
-    
-    def mark_as_read(self):
-        """Mark notification as read"""
-        self.is_read = True
-        self.read_at = timezone.now()
-        self.save()
-
-
-# ============================================================================
-# AUDIT LOG MODELS
-# ============================================================================
-
-class AuditLog(models.Model):
-    """
-    System-wide audit log for tracking important actions
-    """
-    class ActorType(models.TextChoices):
-        USER = 'user', 'User'
-        SYSTEM = 'system', 'System'
-        API = 'api', 'API'
-    
-    class AggregateType(models.TextChoices):
-        USER = 'user', 'User'
-        COURSE = 'course', 'Course'
-        LESSON = 'lesson', 'Lesson'
-        CHALLENGE = 'challenge', 'Challenge'
-        QUIZ = 'quiz', 'Quiz'
-        PERMISSION = 'permission', 'Permission'
-        ROLE = 'role', 'Role'
-        SYSTEM = 'system', 'System'
-    
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    
-    actor_type = models.CharField(max_length=20, choices=ActorType.choices)
-    actor_id = models.BigIntegerField(null=True, blank=True)
-    actor_username = models.TextField(null=True, blank=True)
-    
-    aggregate_type = models.CharField(max_length=20, choices=AggregateType.choices)
-    aggregate_id = models.BigIntegerField()
-    
-    action = models.TextField(help_text="Action performed (e.g., 'create', 'update', 'delete')")
-    
-    metadata = models.JSONField(
-        null=True,
-        blank=True,
-        help_text="Additional context (changed fields, old/new values, etc.)"
-    )
-    
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(null=True, blank=True)
-    
-    class Meta:
-        db_table = 'audit_log'
-        indexes = [
-            models.Index(fields=['-timestamp']),
-            models.Index(fields=['actor_type', 'actor_id']),
-            models.Index(fields=['aggregate_type', 'aggregate_id']),
-            models.Index(fields=['action']),
-        ]
-        ordering = ['-timestamp']
-    
-    def __str__(self):
-        actor = self.actor_username or f"{self.actor_type}:{self.actor_id}"
-        return f"{actor} - {self.action} {self.aggregate_type}:{self.aggregate_id}"
+    @property
+    def is_completed(self):
+        return self.completed_at is not None

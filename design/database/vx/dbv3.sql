@@ -11,6 +11,14 @@ CREATE TYPE question_type AS ENUM ('single_choice', 'multi_choice', 'fill_blank'
 
 CREATE TYPE config_type AS ENUM ('bool', 'int', 'string', 'json', 'secret');
 
+CREATE TYPE notification_type AS ENUM (
+    'manual',
+    'auto_challenge_complete',
+    'auto_course_complete',
+    'auto_quiz_complete',
+    'system'
+);
+
 -- ########### USER ############
 
 CREATE TABLE "user" (
@@ -27,7 +35,7 @@ CREATE TABLE "user" (
     is_staff BOOLEAN NOT NULL DEFAULT FALSE,
     is_superuser BOOLEAN NOT NULL DEFAULT FALSE,
 
-    date_joined TIMESTAMPTZ NOT NULL DEFAULT now()
+    -- FIX #13: date_joined removed — trùng với created_at (audit field)
 
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -44,7 +52,7 @@ CREATE TABLE user_profile (
     user_id BIGINT NOT NULL UNIQUE REFERENCES "user"(id) ON DELETE CASCADE,
 
     entry_year INT,
-    
+
     display_name VARCHAR(100),
     avatar_url TEXT,
     bio TEXT,
@@ -56,6 +64,7 @@ CREATE TABLE user_profile (
     theme VARCHAR(20) NOT NULL DEFAULT 'system',
     timezone VARCHAR(50) NOT NULL DEFAULT 'UTC',
 
+    -- TODO(LOW-22): denormalized counters — sync via Django signal or DB trigger
     total_learning_point INT NOT NULL DEFAULT 0,
     total_challenge_point INT NOT NULL DEFAULT 0,
     total_quiz_point INT NOT NULL DEFAULT 0,
@@ -70,7 +79,7 @@ CREATE TABLE user_profile (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable    
+    updated_by BIGINT REFERENCES "user"(id)      -- nullable
 );
 
 CREATE INDEX idx_user_profile_user_id ON user_profile(user_id);
@@ -98,7 +107,7 @@ CREATE TABLE user_identity (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id) ,     -- nullable
+    updated_by BIGINT REFERENCES "user"(id),      -- nullable
 
     CONSTRAINT uq_user_identity_provider UNIQUE (provider, external_id)
 );
@@ -118,7 +127,7 @@ CREATE TABLE user_session (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id),      -- nullable
+    updated_by BIGINT REFERENCES "user"(id)       -- nullable
 );
 CREATE INDEX idx_user_session_user_id ON user_session(user_id);
 
@@ -148,19 +157,23 @@ CREATE TABLE permission (
     parent_id BIGINT REFERENCES permission(id) ON DELETE SET NULL,
     pre_path VARCHAR(255) NOT NULL, -- logical permission path by api
 
+    -- FIX #15: is_active chỉ áp dụng LOCAL cho permission này.
+    -- Khi parent bị disable, check thực hiện ở application level khi encode JWT.
+    -- KHÔNG cascade update is_active xuống children trong DB.
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id),      -- nullable
+    updated_by BIGINT REFERENCES "user"(id)       -- nullable
 );
 
 CREATE INDEX idx_permission_name ON permission(name);
 CREATE INDEX idx_permission_path ON permission(pre_path);
 CREATE INDEX idx_permission_parent_id ON permission(parent_id);
 
+-- FIX #20 (LOW): join table — giữ created_at/by, bỏ updated_at/by
 CREATE TABLE role_permission (
     role_id BIGINT NOT NULL
         REFERENCES role(id) ON DELETE CASCADE,
@@ -170,11 +183,9 @@ CREATE TABLE role_permission (
 
     PRIMARY KEY (role_id, permission_id),
 
-    -- Audit fields
+    -- Audit fields (join table: insert/delete only, no update)
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+    created_by BIGINT REFERENCES "user"(id)      -- nullable
 );
 
 CREATE INDEX idx_role_permission_role_id ON role_permission(role_id);
@@ -212,7 +223,7 @@ CREATE TABLE user_permission (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id) ,     -- nullable
+    updated_by BIGINT REFERENCES "user"(id),      -- nullable
 
     PRIMARY KEY (user_id, permission_id)
 );
@@ -228,7 +239,8 @@ CREATE TABLE user_permission_cache (
     -- encoded permissions (flattened, ready for JWT)
     encoded_permissions JSONB NOT NULL,
 
-    -- version tại thời điểm encode
+    -- version tại thời điểm encode — so sánh với user.permission_version
+    -- FIX #21 (LOW): seed system_config key='permission_version' để track global version
     permission_version INT NOT NULL,
 
     generated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -254,6 +266,7 @@ CREATE INDEX idx_challenge_category_name ON challenge_category(name);
 
 CREATE TABLE challenge (
     id              BIGSERIAL PRIMARY KEY,
+    slug            TEXT UNIQUE NOT NULL,    -- FIX #11: URL-friendly identifier
     title           TEXT NOT NULL,
     description     TEXT,
 
@@ -278,10 +291,12 @@ CREATE TABLE challenge (
     FOREIGN KEY (category_id) REFERENCES challenge_category(id) ON DELETE SET NULL
 );
 
+CREATE INDEX idx_challenge_slug ON challenge(slug);
 CREATE INDEX idx_challenge_title ON challenge(title);
 CREATE INDEX idx_challenge_category_id ON challenge(category_id);
 CREATE INDEX idx_challenge_status ON challenge(status);
 CREATE INDEX idx_challenge_difficulty ON challenge(difficulty);
+CREATE INDEX idx_challenge_source ON challenge(source);                               -- FIX #19 (LOW)
 
 CREATE TABLE challenge_gitlab (
     challenge_id        BIGINT PRIMARY KEY REFERENCES challenge(id) ON DELETE CASCADE,
@@ -315,16 +330,15 @@ CREATE TABLE challenge_tag (
 
 CREATE INDEX idx_challenge_tag_name ON challenge_tag(name);
 
+-- FIX #20 (LOW): join table — bỏ updated_at/by
 CREATE TABLE challenge_tag_map (
-    challenge_id   BIGINT REFERENCES challenge(id) ON DELETE CASCADE,
-    tag_id         BIGINT REFERENCES challenge_tag(id) ON DELETE CASCADE,
+    challenge_id   BIGINT NOT NULL REFERENCES challenge(id) ON DELETE CASCADE,
+    tag_id         BIGINT NOT NULL REFERENCES challenge_tag(id) ON DELETE CASCADE,
     PRIMARY KEY (challenge_id, tag_id),
 
-    -- Audit fields
+    -- Audit fields (join table: insert/delete only)
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+    created_by BIGINT REFERENCES "user"(id)      -- nullable
 );
 
 CREATE INDEX idx_challenge_tag_map_challenge_id ON challenge_tag_map(challenge_id);
@@ -336,6 +350,7 @@ CREATE TABLE challenge_node (
 
     is_item         BOOLEAN NOT NULL, -- true nếu là item (challenge), false nếu là folder
     title           TEXT NOT NULL,
+    position        INTEGER NOT NULL DEFAULT 0,    -- FIX #3: thứ tự trong cùng parent
 
     pre_path           TEXT NOT NULL,
 
@@ -351,43 +366,6 @@ CREATE TABLE challenge_node (
 CREATE INDEX idx_challenge_node_parent_id ON challenge_node(parent_id);
 CREATE INDEX idx_challenge_node_challenge_id ON challenge_node(challenge_id);
 CREATE INDEX idx_challenge_node_path ON challenge_node(pre_path text_pattern_ops);
-
-CREATE TABLE challenge_instance (
-    id              BIGSERIAL PRIMARY KEY,
-    challenge_id    BIGINT NOT NULL REFERENCES challenge(id),
-    user_id         BIGINT NOT NULL REFERENCES "user"(id),
-
-    instance_info   JSONB,
-    flag_value      TEXT,
-
-    status          instance_status NOT NULL DEFAULT 'running',
-
-    terminated_at   TIMESTAMPTZ,
-    -- Audit fields
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
-);
-
-CREATE INDEX idx_challenge_instance_challenge_id ON challenge_instance(challenge_id);
-CREATE INDEX idx_challenge_instance_user_id ON challenge_instance(user_id);
-CREATE INDEX idx_challenge_instance_user_id_challenge_id ON challenge_instance(user_id, challenge_id);
-
-CREATE TABLE challenge_instance_log (
-    id                  BIGSERIAL PRIMARY KEY,
-    challenge_instance_id BIGINT NOT NULL REFERENCES challenge_instance(id) ON DELETE CASCADE,
-
-    log_time            TIMESTAMPTZ NOT NULL DEFAULT now(),
-    log_message         TEXT NOT NULL,
-    -- Audit fields
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
-);
-
-CREATE INDEX idx_challenge_instance_log_challenge_instance_id ON challenge_instance_log(challenge_instance_id);
 
 CREATE TABLE challenge_flag (
     id                  BIGSERIAL PRIMARY KEY,
@@ -406,6 +384,52 @@ CREATE TABLE challenge_flag (
 
 CREATE INDEX idx_challenge_flag_challenge_id ON challenge_flag(challenge_id);
 
+CREATE TABLE challenge_instance (
+    id              BIGSERIAL PRIMARY KEY,
+    challenge_id    BIGINT NOT NULL REFERENCES challenge(id),
+    user_id         BIGINT NOT NULL REFERENCES "user"(id),
+
+    instance_info   JSONB,
+    flag_value      TEXT,
+
+    -- FIX #18: challenge_flag_id biết flag template nào được dùng để tạo flag cho instance này
+    challenge_flag_id BIGINT REFERENCES challenge_flag(id),
+
+    status          instance_status NOT NULL DEFAULT 'running',
+
+    terminated_at   TIMESTAMPTZ,
+    expires_at      TIMESTAMPTZ,    -- FIX #9: TTL do admin cấu hình
+
+    -- Audit fields
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by BIGINT REFERENCES "user"(id),     -- nullable
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+);
+
+CREATE INDEX idx_challenge_instance_challenge_id ON challenge_instance(challenge_id);
+CREATE INDEX idx_challenge_instance_user_id ON challenge_instance(user_id);
+CREATE INDEX idx_challenge_instance_user_id_challenge_id ON challenge_instance(user_id, challenge_id);
+-- FIX #17: mỗi user chỉ 1 running instance per challenge
+CREATE UNIQUE INDEX idx_challenge_instance_active
+    ON challenge_instance(user_id, challenge_id)
+    WHERE status = 'running';
+
+CREATE TABLE challenge_instance_log (
+    id                  BIGSERIAL PRIMARY KEY,
+    challenge_instance_id BIGINT NOT NULL REFERENCES challenge_instance(id) ON DELETE CASCADE,
+
+    log_time            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    log_message         TEXT NOT NULL,
+    -- Audit fields
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by BIGINT REFERENCES "user"(id),     -- nullable
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+);
+
+CREATE INDEX idx_challenge_instance_log_challenge_instance_id ON challenge_instance_log(challenge_instance_id);
+
 CREATE TABLE user_challenge_progress (
     user_id         BIGINT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     challenge_id    BIGINT NOT NULL REFERENCES challenge(id) ON DELETE CASCADE,
@@ -416,7 +440,7 @@ CREATE TABLE user_challenge_progress (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+    updated_by BIGINT REFERENCES "user"(id),      -- nullable
 
     PRIMARY KEY (user_id, challenge_id)
 );
@@ -444,6 +468,7 @@ CREATE TABLE user_challenge_submit (
 CREATE INDEX idx_user_challenge_submit_user_id ON user_challenge_submit(user_id);
 CREATE INDEX idx_user_challenge_submit_challenge_id ON user_challenge_submit(challenge_id);
 CREATE INDEX idx_user_challenge_submit_user_id_challenge_id ON user_challenge_submit(user_id, challenge_id);
+CREATE INDEX idx_user_challenge_submit_submitted_at ON user_challenge_submit(submitted_at DESC);  -- FIX #19 (LOW)
 
 -- ########## COURSE ###########
 
@@ -476,12 +501,13 @@ CREATE TABLE course (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+    updated_by BIGINT REFERENCES "user"(id),      -- nullable
 
     FOREIGN KEY (category_id) REFERENCES course_category(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_course_category_id ON course(category_id);
+CREATE INDEX idx_course_status ON course(status);                                     -- FIX #19 (LOW)
 
 CREATE TABLE course_tag (
     id      BIGSERIAL PRIMARY KEY,
@@ -496,19 +522,69 @@ CREATE TABLE course_tag (
 
 CREATE INDEX idx_course_tag_name ON course_tag(name);
 
+-- FIX #20 (LOW): join table — bỏ updated_at/by
 CREATE TABLE course_tag_map (
-    course_id  BIGINT REFERENCES course(id) ON DELETE CASCADE,
-    tag_id     BIGINT REFERENCES course_tag(id) ON DELETE CASCADE,
+    course_id  BIGINT NOT NULL REFERENCES course(id) ON DELETE CASCADE,
+    tag_id     BIGINT NOT NULL REFERENCES course_tag(id) ON DELETE CASCADE,
+    PRIMARY KEY (course_id, tag_id),
+
+    -- Audit fields (join table: insert/delete only)
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by BIGINT REFERENCES "user"(id)      -- nullable
+);
+
+CREATE INDEX idx_course_tag_map_course_id ON course_tag_map(course_id);
+CREATE INDEX idx_course_tag_map_tag_id ON course_tag_map(tag_id);
+
+CREATE TABLE lesson (
+    id              BIGSERIAL PRIMARY KEY,
+    title           TEXT NOT NULL,              -- FIX #5: tiêu đề bài học
+    lesson_type     lesson_type NOT NULL,
+
+    source          lesson_source NOT NULL DEFAULT 'manual',
+
+    content_md      TEXT,      -- markdown
+    video_url       TEXT,      -- video
+
+    learning_point INTEGER DEFAULT 0,
+    learning_time INTEGER, -- phút
+
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_by BIGINT REFERENCES "user"(id)      -- nullable
-    PRIMARY KEY (course_id, tag_id)
 );
 
-CREATE INDEX idx_course_tag_map_course_id ON course_tag_map(course_id);
-CREATE INDEX idx_course_tag_map_tag_id ON course_tag_map(tag_id);
+CREATE TABLE lesson_question (
+    lesson_id       BIGINT NOT NULL REFERENCES lesson(id) ON DELETE CASCADE,
+    question_id     BIGINT NOT NULL REFERENCES quiz_question(id) ON DELETE CASCADE,
+    position        INTEGER NOT NULL DEFAULT 0,  -- FIX #4: thứ tự câu hỏi trong miniquiz
+    -- Audit fields
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by BIGINT REFERENCES "user"(id),     -- nullable
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by BIGINT REFERENCES "user"(id),      -- nullable
+    PRIMARY KEY (lesson_id, question_id)
+);
+
+CREATE INDEX idx_lesson_question_lesson_id ON lesson_question(lesson_id);
+CREATE INDEX idx_lesson_question_question_id ON lesson_question(question_id);
+
+CREATE TABLE lesson_outline (
+    lesson_id       BIGINT PRIMARY KEY REFERENCES lesson(id) ON DELETE CASCADE,
+
+    outline_doc_id  TEXT NOT NULL UNIQUE,
+    outline_url     TEXT NOT NULL,
+
+    last_synced_at  TIMESTAMPTZ,
+    revision        INTEGER,
+    -- Audit fields
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by BIGINT REFERENCES "user"(id),     -- nullable
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+);
 
 CREATE TABLE course_node (
     id              BIGSERIAL PRIMARY KEY,
@@ -540,54 +616,6 @@ CREATE INDEX idx_course_node_lesson_id ON course_node(lesson_id);
 CREATE INDEX idx_course_node_is_item ON course_node(is_item);
 CREATE INDEX idx_course_node_path ON course_node(pre_path text_pattern_ops);
 
-CREATE TABLE lesson (
-    id              BIGSERIAL PRIMARY KEY,
-    lesson_type     lesson_type NOT NULL,
-
-    source          lesson_source NOT NULL DEFAULT 'manual',
-
-    content_md      TEXT,      -- markdown
-    video_url       TEXT,      -- video
-
-    learning_point INTEGER DEFAULT 0,
-    learning_time INTEGER, -- phút
-
-    -- Audit fields
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
-);
-
-CREATE TABLE lesson_question (
-    lesson_id       BIGINT NOT NULL REFERENCES lesson(id) ON DELETE CASCADE,
-    question_id     BIGINT NOT NULL REFERENCES quiz_question(id) ON DELETE CASCADE,
-    -- Audit fields
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
-    PRIMARY KEY (lesson_id, question_id)
-);
-
-CREATE INDEX idx_lesson_question_lesson_id ON lesson_question(lesson_id);
-CREATE INDEX idx_lesson_question_question_id ON lesson_question(question_id);
-
-CREATE TABLE lesson_outline (
-    lesson_id       BIGINT PRIMARY KEY REFERENCES lesson(id) ON DELETE CASCADE,
-
-    outline_doc_id  TEXT NOT NULL UNIQUE,
-    outline_url     TEXT NOT NULL,
-
-    last_synced_at  TIMESTAMPTZ,
-    revision        INTEGER,
-    -- Audit fields
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
-);
-
 CREATE TABLE user_course_progress (
     user_id         BIGINT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     course_id       BIGINT NOT NULL REFERENCES course(id) ON DELETE CASCADE,
@@ -617,7 +645,7 @@ CREATE TABLE user_lesson_progress (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+    updated_by BIGINT REFERENCES "user"(id),      -- nullable
 
     PRIMARY KEY (user_id, lesson_id)
 );
@@ -625,7 +653,7 @@ CREATE TABLE user_lesson_progress (
 CREATE INDEX idx_user_lesson_progress_user_id ON user_lesson_progress(user_id);
 CREATE INDEX idx_user_lesson_progress_lesson_id ON user_lesson_progress(lesson_id);
 
--- ########## quiz ###########
+-- ########## QUIZ ###########
 
 CREATE TABLE quiz_category (
     id          BIGSERIAL PRIMARY KEY,
@@ -643,11 +671,14 @@ CREATE INDEX idx_quiz_category_name ON quiz_category(name);
 
 CREATE TABLE quiz (
     id              BIGSERIAL PRIMARY KEY,
-    node_id         BIGINT NOT NULL UNIQUE REFERENCES quiz_node(id) ON DELETE CASCADE,
+    -- CRITICAL FIX #1: node_id REMOVED — circular FK giữa quiz↔quiz_node.
+    -- Chỉ giữ quiz_node.quiz_id → quiz (một chiều). Truy cập node qua reverse relation.
     title           TEXT NOT NULL,
     description     TEXT,
     status          content_status  NOT NULL DEFAULT 'draft',
+    category_id     BIGINT REFERENCES quiz_category(id) ON DELETE SET NULL, -- FIX #2
     quiz_point      INT DEFAULT 0,
+    -- FIX #14 (MEDIUM): denormalized — sync via Django signal khi thêm/xóa quiz_question
     total_questions INT DEFAULT 0,
     time_limit_sec  INT,
     -- Audit fields
@@ -657,7 +688,7 @@ CREATE TABLE quiz (
     updated_by BIGINT REFERENCES "user"(id)      -- nullable
 );
 
-CREATE INDEX idx_quiz_node_id ON quiz(node_id);
+CREATE INDEX idx_quiz_category_id ON quiz(category_id);                               -- FIX #2
 CREATE INDEX idx_quiz_status ON quiz(status);
 CREATE INDEX idx_quiz_title ON quiz(title);
 
@@ -674,15 +705,15 @@ CREATE TABLE quiz_tag (
 
 CREATE INDEX idx_quiz_tag_name ON quiz_tag(name);
 
+-- FIX #20 (LOW): join table — bỏ updated_at/by
 CREATE TABLE quiz_tag_map (
     quiz_id BIGINT NOT NULL REFERENCES quiz(id) ON DELETE CASCADE,
     tag_id  BIGINT NOT NULL REFERENCES quiz_tag(id) ON DELETE CASCADE,
     PRIMARY KEY (quiz_id, tag_id),
-    -- Audit fields
+
+    -- Audit fields (join table: insert/delete only)
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by BIGINT REFERENCES "user"(id),     -- nullable
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by BIGINT REFERENCES "user"(id)      -- nullable
+    created_by BIGINT REFERENCES "user"(id)      -- nullable
 );
 
 CREATE INDEX idx_quiz_tag_map_quiz_id ON quiz_tag_map(quiz_id);
@@ -694,6 +725,7 @@ CREATE TABLE quiz_question (
     question_type   question_type NOT NULL,
     content         JSONB NOT NULL,
     explanation     TEXT,
+    -- FIX #12: case_sensitive chỉ trên question (per-question), KHÔNG lặp trên answer
     case_sensitive  BOOLEAN DEFAULT FALSE,
     score           INT DEFAULT 1,
     position        INT NOT NULL,
@@ -727,7 +759,7 @@ CREATE TABLE quiz_question_answer (
     id           BIGSERIAL PRIMARY KEY,
     question_id  BIGINT NOT NULL REFERENCES quiz_question(id) ON DELETE CASCADE,
     answer       TEXT NOT NULL,
-    is_case_sensitive BOOLEAN DEFAULT TRUE,
+    -- FIX #12: is_case_sensitive REMOVED — dùng quiz_question.case_sensitive thay thế
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
@@ -743,6 +775,7 @@ CREATE TABLE quiz_node (
 
     pre_path       TEXT NOT NULL,        -- ví dụ: /1/3/10/
     is_item     BOOLEAN NOT NULL,     -- true = quiz, false = folder
+    position    INTEGER NOT NULL DEFAULT 0,  -- FIX #3: thứ tự trong cùng parent
 
     quiz_id     BIGINT UNIQUE REFERENCES quiz(id) ON DELETE CASCADE,
 
@@ -783,6 +816,8 @@ CREATE TABLE user_quiz_answer (
     question_id         BIGINT NOT NULL REFERENCES quiz_question(id) ON DELETE CASCADE,
     answer_data         JSONB NOT NULL,  -- lưu trữ câu trả lời (option id, text,...)
     score_obtained     INT DEFAULT 0,
+    -- FIX #10: mỗi attempt chỉ trả lời 1 lần per question
+    UNIQUE (attempt_id, question_id),
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
@@ -792,6 +827,30 @@ CREATE TABLE user_quiz_answer (
 
 CREATE INDEX idx_user_quiz_answer_attempt_id ON user_quiz_answer(attempt_id);
 CREATE INDEX idx_user_quiz_answer_question_id ON user_quiz_answer(question_id);
+
+-- FIX #8: aggregate progress table (user_quiz_attempt lưu từng lần làm)
+CREATE TABLE user_quiz_progress (
+    user_id         BIGINT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    quiz_id         BIGINT NOT NULL REFERENCES quiz(id) ON DELETE CASCADE,
+
+    best_score      INT DEFAULT 0,
+    attempt_count   INT DEFAULT 0,
+
+    first_attempted_at  TIMESTAMPTZ,
+    last_attempted_at   TIMESTAMPTZ,
+    completed_at        TIMESTAMPTZ,
+
+    -- Audit fields
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by BIGINT REFERENCES "user"(id),     -- nullable
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by BIGINT REFERENCES "user"(id),      -- nullable
+
+    PRIMARY KEY (user_id, quiz_id)
+);
+
+CREATE INDEX idx_user_quiz_progress_user_id ON user_quiz_progress(user_id);
+CREATE INDEX idx_user_quiz_progress_quiz_id ON user_quiz_progress(quiz_id);
 
 CREATE TABLE quiz_config (
     id BIGSERIAL PRIMARY KEY,
@@ -814,13 +873,15 @@ CREATE TABLE quiz_config (
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
+    -- FIX #16: mỗi (quiz, user) chỉ có 1 config
+    UNIQUE (quiz_id, user_id),
+
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by BIGINT REFERENCES "user"(id),     -- nullable
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_by BIGINT REFERENCES "user"(id)      -- nullable
 );
-
 
 --- ############ CONFIG ############
 
@@ -844,6 +905,11 @@ CREATE TABLE system_config (
     updated_by BIGINT REFERENCES "user"(id)      -- nullable
 );
 
+-- FIX #21 (LOW): seed row để track global permission version
+-- INSERT INTO system_config(key, value, value_type, category, description, is_runtime, is_editable)
+-- VALUES ('permission_version', '1', 'int', 'auth',
+--         'Global permission version — increment khi admin thay đổi bất kỳ permission/role', TRUE, FALSE);
+
 CREATE INDEX idx_system_config_category ON system_config(category);
 CREATE INDEX idx_system_config_is_runtime ON system_config(is_runtime);
 CREATE INDEX idx_system_config_is_editable ON system_config(is_editable);
@@ -856,6 +922,8 @@ CREATE TABLE notification (
     payload JSONB,              -- optional extra data
     send_at TIMESTAMPTZ,
     is_broadcast BOOLEAN NOT NULL DEFAULT FALSE,
+    -- FIX #6: phân loại loại thông báo (manual vs auto-triggered)
+    notification_type notification_type NOT NULL DEFAULT 'manual',
 
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -864,10 +932,13 @@ CREATE TABLE notification (
     updated_by BIGINT REFERENCES "user"(id)      -- nullable
 );
 
+CREATE INDEX idx_notification_send_at ON notification(send_at);                       -- FIX #19 (LOW)
+
+-- FIX #7: notification_id và user_id phải NOT NULL (bảng join)
 CREATE TABLE user_notification (
     id BIGSERIAL PRIMARY KEY,
-    notification_id BIGINT REFERENCES notification(id) ON DELETE CASCADE,
-    user_id BIGINT REFERENCES "user"(id) ON DELETE CASCADE,
+    notification_id BIGINT NOT NULL REFERENCES notification(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     read_at TIMESTAMPTZ,
     -- Audit fields
@@ -878,6 +949,7 @@ CREATE TABLE user_notification (
 );
 CREATE INDEX idx_user_notification_user_id ON user_notification(user_id);
 CREATE INDEX idx_user_notification_user_id_is_read ON user_notification(user_id, is_read);
+CREATE INDEX idx_user_notification_notification_id ON user_notification(notification_id);  -- FIX #19 (LOW)
 
 -- ########## AUDIT LOG ##########
 CREATE TABLE audit_log (
@@ -897,7 +969,7 @@ CREATE INDEX idx_audit_log_target ON audit_log(target_table, target_id);
 -- - CreateAudit
 -- - UpdateAudit
 -- - SoftDeleteAudit
--- - BaseNode
+-- - BaseNode (has: parent, is_item, title, pre_path, position)
 -- - BaseCategory
 -- - BaseTag
 
@@ -907,5 +979,3 @@ CREATE INDEX idx_audit_log_target ON audit_log(target_table, target_id);
 -- Later version change
 -- - Hỗ trợ status cho node của course (only), lesson, question
 -- - user answer layer for quiz
-
--- Notes for chat
