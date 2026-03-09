@@ -10,6 +10,7 @@
 | Document | Purpose |
 |----------|---------|
 | `docs/ARCHITECTURE.md` | System design, folder structure, data flows, design decisions, what NOT to do |
+| `docs/REQUIREMENTS.md` | requirement for project |
 | `docs/DATA_MODEL.md` | Entity types, validation rules, storage schema, business rules |
 | `docs/prd/` | Product Requirements Documents (10 features) |
 | `design/database/vx/dbv3.sql` | **Authoritative schema** — when ORM and SQL conflict, SQL wins |
