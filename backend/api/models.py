@@ -809,6 +809,26 @@ class Lesson(FullAudit):
     def __str__(self):
         return self.title
 
+    def mark_completed(self, user):
+        """Mark this lesson as completed for user and award learning points"""
+        from django.utils import timezone
+        progress, created = UserLessonProgress.objects.get_or_create(
+            user=user,
+            lesson=self,
+            defaults={'started_at': timezone.now()}
+        )
+        if not progress.completed_at:
+            progress.completed_at = timezone.now()
+            if not progress.started_at:
+                progress.started_at = progress.completed_at
+            progress.save()
+
+            # Award learning points
+            profile = user.profile
+            profile.total_lpoint += self.learning_point
+            profile.save()
+            profile.update_leaderboard_rank()
+
 
 class CourseNode(BaseNode):
     """
@@ -1707,7 +1727,7 @@ class Role(FullAudit):
         ).distinct()
 
 
-class RolePermission(FullAudit):
+class RolePermission(CreateAudit):
     """
     Many-to-Many relationship between Role and Permission
     """
@@ -1736,7 +1756,7 @@ class RolePermission(FullAudit):
         return f"{self.role.name} - {self.permission.code}"
 
 
-class UserRole(FullAudit):
+class UserRole(CreateAudit):
     """
     Many-to-Many relationship between User and Role
     """
@@ -1854,7 +1874,11 @@ class SystemConfig(FullAudit):
         default=False,
         help_text="If True, can be accessed without authentication"
     )
-    
+    is_editable = models.BooleanField(
+        default=True,
+        help_text="If False, system-managed; API PATCH returns 403"
+    )
+
     class Meta:
         db_table = 'system_config'
         indexes = [

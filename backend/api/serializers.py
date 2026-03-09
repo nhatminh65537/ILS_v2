@@ -144,27 +144,39 @@ class CourseTagSerializer(serializers.ModelSerializer):
 class CourseListSerializer(serializers.ModelSerializer):
     """Course list serializer (minimal fields)"""
     category_name = serializers.CharField(source='category.name', read_only=True)
-    tags = CourseTagSerializer(many=True, read_only=True, source='tag_mappings.tag')
-    
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = Course
-        fields = ['id', 'slug', 'title', 'description', 'status', 
+        fields = ['id', 'slug', 'title', 'description', 'status',
                   'category', 'category_name', 'tags',
                   'estimated_time', 'learning_point', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+    def get_tags(self, obj):
+        return CourseTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True
+        ).data
 
 
 class CourseDetailSerializer(serializers.ModelSerializer):
     """Course detail serializer (with full data)"""
     category = CourseCategorySerializer(read_only=True)
-    tags = CourseTagSerializer(many=True, read_only=True, source='tag_mappings.tag')
-    
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = Course
         fields = ['id', 'slug', 'title', 'description', 'status',
                   'category', 'tags', 'estimated_time', 'learning_point',
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_tags(self, obj):
+        return CourseTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True
+        ).data
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -248,8 +260,8 @@ class ChallengeTagSerializer(serializers.ModelSerializer):
 class ChallengeListSerializer(serializers.ModelSerializer):
     """Challenge list serializer (minimal fields)"""
     category_name = serializers.CharField(source='category.name', read_only=True)
-    tags = ChallengeTagSerializer(many=True, read_only=True, source='tag_mappings.tag')
-    
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = Challenge
         fields = ['id', 'title', 'description', 'status', 'difficulty',
@@ -257,12 +269,18 @@ class ChallengeListSerializer(serializers.ModelSerializer):
                   'challenge_point', 'instance_required', 'created_at']
         read_only_fields = ['id', 'created_at']
 
+    def get_tags(self, obj):
+        return ChallengeTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True
+        ).data
+
 
 class ChallengeDetailSerializer(serializers.ModelSerializer):
     """Challenge detail serializer"""
     category = ChallengeCategorySerializer(read_only=True)
-    tags = ChallengeTagSerializer(many=True, read_only=True, source='tag_mappings.tag')
-    
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = Challenge
         fields = ['id', 'title', 'description', 'status', 'difficulty',
@@ -270,6 +288,12 @@ class ChallengeDetailSerializer(serializers.ModelSerializer):
                   'challenge_point', 'instance_required',
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_tags(self, obj):
+        return ChallengeTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True
+        ).data
 
 
 class ChallengeFlagSubmitSerializer(serializers.Serializer):
@@ -346,26 +370,38 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
 
 class QuizListSerializer(serializers.ModelSerializer):
     """Quiz list serializer"""
-    tags = QuizTagSerializer(many=True, read_only=True, source='tag_mappings.tag')
-    
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = Quiz
         fields = ['id', 'title', 'description', 'status', 'tags',
                   'quiz_point', 'total_questions', 'time_limit_sec']
         read_only_fields = ['id']
 
+    def get_tags(self, obj):
+        return QuizTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True
+        ).data
+
 
 class QuizDetailSerializer(serializers.ModelSerializer):
     """Quiz detail serializer with questions"""
     questions = QuizQuestionSerializer(many=True, read_only=True)
-    tags = QuizTagSerializer(many=True, read_only=True, source='tag_mappings.tag')
-    
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = Quiz
         fields = ['id', 'title', 'description', 'status', 'tags',
                   'quiz_point', 'total_questions', 'time_limit_sec',
                   'questions']
         read_only_fields = ['id']
+
+    def get_tags(self, obj):
+        return QuizTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True
+        ).data
 
 
 class QuizAnswerSubmitSerializer(serializers.Serializer):
