@@ -43,7 +43,7 @@
 | [Q-LEARN-09](#q-learn-09-lesson-start-trigger) | Lesson start: implicit or explicit | Slice 5 | **OPEN** |
 | [Q-LEARN-10](#q-learn-10-outline-sync-failure-handling) | Outline sync failure / timeout behavior | Slice 5 | **OPEN** |
 | [Q-CHALL-01](#q-chall-01-challenge-instance-scope) | Challenge instances in MVP or deferred | Slice 6 | **OPEN** |
-| [Q-CHALL-02](#q-chall-02-instance-deployment-protocol) | Instance deployment external system spec | Slice 6 | **OPEN** |
+| [Q-CHALL-02](#q-chall-02-instance-deployment-protocol) | Instance deployment external system spec | Slice 6 | **RESOLVED** → [R-ARCH-12](#r-arch-12-instance-deployment--strategy-pattern) |
 
 ---
 
@@ -564,20 +564,10 @@ Instance management may be a significant external integration effort. The questi
 
 ### Q-CHALL-02: Instance Deployment Protocol
 
-**Status:** OPEN
+**Status:** RESOLVED → See [R-ARCH-12](#r-arch-12-instance-deployment--strategy-pattern)
 **Blocks:** Slice 6 (Task 6.3 — instance management)
-**Prerequisite:** Q-CHALL-01 answered (instances in scope)
 
-**Problem:**
-How does ILS create, stop, and query the status of challenge instances? No external system is specified.
-
-**Decisions needed:**
-1. What is the external deployment system? (e.g., custom HTTP API, Kubernetes API, Docker API)
-2. What is the request/response format for creating an instance?
-3. How does the instance report its ready state and assigned flag back to ILS?
-4. Is instance lifecycle managed synchronously or via polling/webhook?
-
-**Decision:** _(not yet made — depends on infrastructure)_
+Instance deployment uses a Strategy pattern with `InstanceDeploymentBackend` Protocol. Current backend: `SocketDeploymentBackend`. Instance system is a **separate project**; ILS calls the interface only. See R-ARCH-12 for full decision.
 
 ---
 
@@ -605,15 +595,18 @@ Permissions are encoded in the access token at issue time. `user_permission_cach
 
 ---
 
-### R-ARCH-03: Materialized Path for Tree Structures
+### R-ARCH-03: Dot-Separated Path for Tree Structures
 
-**Decision date:** Pre-project
-**Source:** `docs/ARCHITECTURE.md §4.5`, PRD-03 AC-LEARN-05
+**Decision date:** 2026-03-12 (updated from pre-project)
+**Source:** `docs/ARCHITECTURE.md §4.5`, `docs/DATA_MODEL.md §3 BaseNode`
 
-Format: `/parent_id/child_id/` e.g. `/1/3/10/`  
-Subtree query: `pre_path__startswith='/1/3/'`  
-Move operation: bulk update `pre_path` for self + all descendants.  
-PostgreSQL requires `text_pattern_ops` index for LIKE performance.
+**Previous:** Materialized path `/parent_id/child_id/` e.g. `/1/3/10/`. **Superseded.**
+
+**Current:** Dot-separated `path` field. Format: `"parent_id.child_id"` e.g. `"1.3"`.
+- Lazy loading is primary: `parent_id` filter to get direct children.
+- `path` is for validation/depth checks, not primary navigation.
+- No `text_pattern_ops` index needed (path not used for LIKE queries).
+- Move operation: bulk update `path` for self + all descendants.
 
 ---
 
@@ -680,21 +673,35 @@ No DB storage for reset tokens. Uses `itsdangerous.TimestampSigner(settings.SECR
 
 ---
 
-### R-AUTH-04: Permission Hierarchy — Application-Level Cascade
+### R-AUTH-04: Flat Permissions — No Hierarchy
 
-**Decision date:** Pre-project
-**Source:** `docs/ARCHITECTURE.md §4.3`
+**Decision date:** 2026-03-12 (updated from pre-project)
+**Source:** `docs/ARCHITECTURE.md §4.3`, `docs/DATA_MODEL.md §2 permission`
 
-Disabling a parent permission disables all descendants at **encode time**, not via DB cascade. Re-enabling parent restores children to their individual `is_active` state.
+**Previous:** Permission hierarchy with `parent_id` — disabling parent disables children at encode time. **Superseded.**
+
+**Current:** Permissions are **flat** — no `parent_id`, no `pre_path`, no hierarchy.
+- Roles provide the only grouping mechanism.
+- `is_active=False` disables a single permission (no cascade).
+- No circular reference possible (no parent_id).
 
 ---
 
-### R-AUTH-05: Permission Auto-Discovery at Startup
+### R-AUTH-05: Permission Auto-Discovery & Built-in Roles at Startup
 
-**Decision date:** Pre-project
-**Source:** `docs/ARCHITECTURE.md §4.4`, `docs/IMPL_PLAN.md §Task 2.1`
+**Decision date:** 2026-03-12 (updated from pre-project)
+**Source:** `docs/ARCHITECTURE.md §4.4`, `docs/prd/02-authorization.md`
 
-All permissions are created by scanning URL patterns at startup (`AppConfig.ready()`). Permissions are never manually created. Format: `"domain.action"` e.g. `"learn.view"`, `"challenge.submit"`.
+**Previous:** Scan URL patterns at startup, format `"domain.action"`. **Updated.**
+
+**Current:**
+- Decorator `@add_role_granted('Admin', 'Editor', 'Member')` on view classes.
+- At startup (`AppConfig.ready()`): scan decorated views, auto-create permissions.
+- **Permission name format:** `{app_label}.{ViewClassName}.{http_method}` (e.g. `api.CourseDetailView.PUT`).
+- Built-in roles auto-created with `is_system=True` — cannot be deleted/renamed via API.
+- Permissions gán vào roles theo decorator arguments.
+- Permissions không còn trong code → `is_active=False`.
+- **Permissions are read-only via API** — no PATCH/POST/DELETE on permission records.
 
 ---
 
@@ -776,5 +783,111 @@ Every course has a hidden root node created automatically when the course is cre
 **Source:** `docs/prd/03-learn.md §FR-LEARN-08`
 
 `system_config[learn.max_folder_depth]` controls maximum nested folder count. Validate on **create** and on **move**. Violation returns HTTP 400 `"Maximum folder depth exceeded"`.
+
+---
+
+### R-AUTH-06: Binary Bitmap Permission Encoding
+
+**Decision date:** 2026-03-12
+**Source:** `docs/ARCHITECTURE.md §4.2`, `docs/DATA_MODEL.md §2 permission`, `docs/prd/02-authorization.md`
+
+Permissions encoded as binary bitmap (≤256 permissions = 256 bits = 32 bytes).
+- Each permission has auto-increment `id`. Bit at position `id` = 1 if granted.
+- Bitmap base64-encoded into JWT claims (≈44 chars).
+- JWT format: `{"permissions": "<base64>", "pv": <version>}`.
+- Check: decode base64 → test bit at `permission.id`.
+
+---
+
+### R-AUTH-07: Per-User Permission Version (Not Global)
+
+**Decision date:** 2026-03-12
+**Source:** `docs/ARCHITECTURE.md §4.2`, `docs/DATA_MODEL.md §2 user`, `docs/CONFIG.md`
+
+`user.permission_version` (INT, default 0) is per-user, NOT a global `system_config` key.
+- Incremented when admin changes any of: `user_role`, `user_permission`, `role_permission` affecting this user.
+- `user_permission_cache.permission_version` compared against `user.permission_version`.
+- Global `system_config['permission_version']` removed entirely.
+
+---
+
+### R-AUTH-08: Permissions Read-Only via API
+
+**Decision date:** 2026-03-12
+**Source:** `docs/ARCHITECTURE.md §4.1`, `docs/prd/02-authorization.md`
+
+Permission records are **read-only** via API. Admin can only GET (list/retrieve). No PATCH, POST, DELETE on `/api/authz/permissions/`. Permissions are managed solely by code (auto-discovery at startup).
+
+---
+
+### R-AUTH-09: User Permission Deny-Only (No Direct Grant)
+
+**Decision date:** 2026-03-12
+**Source:** `docs/DATA_MODEL.md §2 user_permission`, `docs/prd/02-authorization.md`
+
+`user_permission` table has **no `is_granted` column**. Existence of a row = deny. Only deny entries allowed. Constraint: deny entry only valid if user actually has the permission via a role. Clean up stale deny entries when user removed from role.
+
+---
+
+### R-AUTH-10: Built-in Roles via Decorator
+
+**Decision date:** 2026-03-12
+**Source:** `docs/ARCHITECTURE.md §4.4`, `docs/prd/02-authorization.md`
+
+Built-in roles (Admin, Editor, Member) are auto-created at startup via `@add_role_granted` decorator. Have `is_system=True` flag — cannot be deleted or renamed via API. Admin can still modify their permission assignments.
+
+---
+
+### R-ARCH-08: No Database Triggers
+
+**Decision date:** 2026-03-12
+**Source:** `docs/ARCHITECTURE.md §4.11`
+
+All denormalized field updates (counters, aggregates, progress) handled at Django application level (signals/service layer). No PostgreSQL triggers or stored procedures. Rationale: logic stays in codebase, testable, versionable.
+
+---
+
+### R-ARCH-09: No Circular FK Anywhere
+
+**Decision date:** 2026-03-12 (expanded from R-ARCH-06)
+**Source:** `docs/ARCHITECTURE.md §7`, `docs/DATA_MODEL.md`
+
+No circular foreign keys in any table. Quiz↔QuizNode: one-way FK only. Course↔CourseNode: one-way FK. Permission: no `parent_id` (flat). Access reverse direction via Django reverse relations.
+
+---
+
+### R-ARCH-10: Explicit Join Tables (No ManyToManyField)
+
+**Decision date:** 2026-03-12 (formalized from pattern)
+**Source:** `docs/ARCHITECTURE.md §8`, `openmemory.md`
+
+All M2M relationships use explicit join tables with `CreateAudit` — never Django `ManyToManyField`. This gives control over audit fields, constraints, and migration.
+
+---
+
+### R-ARCH-11: AUTH_USER_MODEL (AbstractBaseUser)
+
+**Decision date:** 2026-03-12
+**Source:** `docs/DATA_MODEL.md §2 user`
+
+Custom user model via `AUTH_USER_MODEL` setting, extending `AbstractBaseUser`. Provides password hashing (`set_password`/`check_password`), `createsuperuser` command, and Django admin compatibility.
+
+---
+
+### R-ARCH-12: Instance Deployment — Strategy Pattern
+
+**Decision date:** 2026-03-12
+**Source:** `docs/ARCHITECTURE.md §4.10`, `docs/REQUIREMENTS.md §2.4`
+
+Instance deployment uses Strategy pattern with a `Protocol` class (`InstanceDeploymentBackend`). Current implementation: `SocketDeploymentBackend` (required for university course). Replaceable with HTTP/gRPC backends later. Instance management is a **separate project** — ILS only calls the interface.
+
+---
+
+### R-DATA-07: Status on Lesson and Quiz Question
+
+**Decision date:** 2026-03-12
+**Source:** `docs/DATA_MODEL.md §2 lesson`, `docs/DATA_MODEL.md §2 quiz_question`
+
+Both `lesson` and `quiz_question` have `status content_status NOT NULL DEFAULT 'draft'`. Values: draft, published, archived. Published content visible to all members; draft/archived admin/editor only.
 
 ---

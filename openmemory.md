@@ -12,7 +12,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **Frontend**: Next.js 16 App Router + React 19 + TypeScript + Tailwind v4 + Zustand
 - **Database**: PostgreSQL (SQLite in dev)
 - **Auth**: JWT with permission claims encoded in token; SSO via Authentik
-- **Authorization**: API-based fine-grained RBAC; permissions stored in DB, encoded in JWT
+- **Authorization**: API-based flat RBAC; **bitmap encoding** (base64, ≤256 permissions) in JWT; per-user `permission_version`; built-in roles via `@add_role_granted` decorator
 
 ## Key Files
 
@@ -43,16 +43,20 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Patterns
 
-- Materialized Path (`pre_path`) for all tree structures — avoids N+1 queries
+- **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only
 - Explicit join tables for M2M (not Django ManyToManyField)
 - All models inherit FullAudit; explicit `db_table` and `db_column` on every model
 - **Join tables** (tag maps, role_permission): use **CreateAudit only** — no updated_at/updated_by
 - `TextChoices` for all enums (Status: draft/published/archived)
 - Services in `<app>/services/` directory pattern
-- Permission cache in `user_permission_cache` table; versioned with `user.permission_version`
+- Permission cache in `user_permission_cache` table; `encoded_permissions TEXT` (base64 bitmap); versioned with per-user `user.permission_version`
+- **Instance deployment**: Strategy pattern — `InstanceDeploymentBackend` Protocol; current: `SocketDeploymentBackend`; replaceable with HTTP/gRPC
+- **No DB triggers** — all denormalized updates at Django app level (signals/services)
+- `lesson.status` and `quiz_question.status` — both use `content_status` enum (draft/published/archived)
 
-## Key DB Decisions (2026-03-09 schema review)
+## Key DB Decisions
 
+### 2026-03-09 schema review
 - **Quiz↔QuizNode**: one-way FK — `quiz_node.quiz_id → quiz`. Access node from quiz via `quiz.node` (reverse accessor)
 - **Quiz.category_id** → quiz_category (added)
 - **challenge.slug** — unique URL identifier (required)
@@ -67,14 +71,24 @@ Target: one instance per organization, no horizontal scale needed.
 - **notification_type** enum: manual/auto_challenge_complete/auto_course_complete/auto_quiz_complete/system
 - **user_notification**: notification_id NOT NULL, user_id NOT NULL
 
+### 2026-03-12 design review
+- **Permission**: flat (no parent_id, no pre_path); name format `{app_label}.{ViewClassName}.{http_method}`; read-only via API
+- **role.is_system**: TRUE for built-in roles (Admin/Editor/Member) — cannot delete/rename via API
+- **user_permission**: deny-only (no is_granted column); only valid if user has permission via role
+- **user_permission_cache.encoded_permissions**: TEXT (base64 bitmap), not JSONB
+- **user.permission_version**: per-user INT (removed global system_config key)
+- **BaseNode.path**: dot-separated e.g. `"1.3"` (replaces `pre_path` with `/1/3/10/` format)
+- **lesson.status**: `content_status NOT NULL DEFAULT 'draft'`
+- **quiz_question.status**: `content_status NOT NULL DEFAULT 'draft'`
+
 ## Requirements
 
 Full requirements documented in `REQUIREMENTS.md` (converted from `requirements.docx`).
 Key requirements by domain:
 - **Auth:** SSO (Authentik) + native login; admin configures enabled methods
-- **AuthZ:** API-based fine-grained RBAC; JWT claims; endpoint scan at startup; permission cache in DB
-- **Learn:** Course-folder-lesson tree; Outline integration; materialized path; progress tracking
-- **Challenge:** GitLab import; flag check on server; deployable instances (external system)
+- **AuthZ:** API-based flat RBAC; `@add_role_granted` decorator; binary bitmap permissions in JWT; deny-only user_permission; per-user permission_version; read-only permission API
+- **Learn:** Course-folder-lesson tree; Outline integration; dot-separated `path`; lazy loading; progress tracking; lesson status (draft/published/archived)
+- **Challenge:** GitLab import; flag check on server; deployable instances via Strategy pattern (SocketDeploymentBackend; separate project)
 - **Quiz:** WebSocket answer→check→next; single/multi/fill-in-blank; user session config
 - **User:** Profile page + settings page
 - **Notification:** Admin manual broadcast + auto (course/challenge/quiz complete)

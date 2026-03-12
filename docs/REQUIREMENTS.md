@@ -43,35 +43,48 @@
 **Thiết kế:**
 - **API-based authorization** (không phải resource-based) — phù hợp với quy mô nhỏ, người dùng được truy cập mọi tài nguyên đã publish
 - **Permission-based / Scope-based (fine-grained RBAC):**
-  - Mỗi API hoặc nhóm API tương ứng một permission/scope
+  - Mỗi API endpoint tương ứng một permission
   - Role là tập hợp các permission
-  - Permission có thể có cha; nếu cha bị disable thì con cũng bị disable
-- **Token-based permission check (JWT claims):** encode permission vào token, kiểm tra tại server
+  - Permission là **flat** (không phân cấp) — roles cung cấp nhóm quyền
+- **Token-based permission check (JWT claims):** encode permission dưới dạng binary bitmap (base64) vào token, kiểm tra tại server
 
 **Cơ chế vận hành:**
 - Permission được tạo tự động khi khởi động — scan toàn bộ endpoint bằng metaprogramming
-- Permission không thể xóa dù là admin; khi xóa API và restart, permission đó bị đánh dấu `uncheck`
-- Encode thứ bậc permission vào token (tốn nhẹ lúc revoke, nhanh lúc check)
-- Cache encoded permission của user trong database (`user_permission_cache`); cập nhật khi admin thay đổi quyền
-- Quyền trực tiếp của user ưu tiên hơn quyền từ role/group
+- Permission name tự động sinh từ tên class và method: `{app_label}.{ViewClassName}.{http_method}`
+- Permission không thể xóa dù là admin; khi xóa API và restart, permission đó bị đánh dấu `is_active=FALSE`
+- Permission là **read-only** qua API — admin không thể tạo/sửa/xóa permission
+- Encode permission dưới dạng **bitmap nhị phân** (≤256 permissions = 32 bytes → base64 ≈ 44 ký tự)
+- Mỗi permission `id` tương ứng một bit position; bit = 1 → có quyền
+- Cache encoded bitmap của user trong database (`user_permission_cache`); version **per-user** (không global)
+- Quyền trực tiếp (deny) của user ưu tiên hơn quyền từ role — chỉ có deny override, không có grant override
+- Entry trong `user_permission` chỉ tồn tại nếu user đã có quyền đó qua role (deny entries hợp lệ)
+
+**Built-in roles:**
+- Sử dụng decorator `@add_role_granted('Admin', 'Editor', 'Member')` trên mỗi endpoint
+- Các role được scan tự động từ decorator và tạo khi khởi động (idempotent)
+- Built-in roles (`is_system=TRUE`) không thể xóa/sửa permissions qua API
+- Admin có thể tạo custom roles (`is_system=FALSE`) với full management qua API
 
 **Admin có thể:**
-- Gán quyền vào role, tạo role, gán user vào role
-- Gán quyền trực tiếp cho user
+- Tạo custom role, gán permissions vào custom role
+- Gán user vào role (cả built-in và custom)
+- Gán deny permission trực tiếp cho user (override role)
 
 **Các câu hỏi thiết kế (đã chốt):**
 
 | # | Câu hỏi | Quyết định |
 |---|---------|------------|
 | Q1 | Resource-based hay API-based? | API-based |
-| Q2 | Tổ chức permission như thế nào? | Fine-grained RBAC (permission/scope per API) |
-| Q3 | Cơ chế kiểm tra? | JWT claims (token-based) |
-| Q4 | Đánh đổi thời gian revoke vs check? | Encode thứ bậc → hơi chậm khi revoke, nhanh khi check |
-| Q5 *(optional)* | Update quyền realtime với JWT? | Chưa chốt |
-| Q6 | Permission tạo khi nào? Có thể xóa không? | Runtime scan, không xóa được |
-| Q7 *(optional)* | Cần cache check permission? | Không cần (quy mô nhỏ) |
-| Q8 | Tăng tốc revoke token? | Cache encoded permission trong DB, update khi admin sửa |
-| Q9 | Thứ tự ưu tiên quyền? | Quyền trực tiếp > quyền từ group |
+| Q2 | Tổ chức permission như thế nào? | Fine-grained RBAC — flat, không phân cấp; roles nhóm quyền |
+| Q3 | Cơ chế kiểm tra? | JWT claims — binary bitmap base64 |
+| Q4 | Đánh đổi thời gian revoke vs check? | Bitmap encode nhanh O(1) check, version per-user invalidate khi cần |
+| Q5 | Update quyền realtime với JWT? | Không — có hiệu lực khi refresh token |
+| Q6 | Permission tạo khi nào? Có thể xóa không? | Runtime scan, không xóa được, read-only qua API |
+| Q7 | Cần cache check permission? | Bitmap cache trong DB + JWT, check O(1) |
+| Q8 | Tăng tốc revoke token? | Cache bitmap trong DB, version per-user, rebuild khi mismatch |
+| Q9 | Thứ tự ưu tiên quyền? | Direct deny > role grant |
+| Q10 | Permission hierarchy? | Không — flat permissions, roles nhóm quyền |
+| Q11 | Permission naming? | Auto-generated: `{app_label}.{ViewClassName}.{http_method}` |
 
 ---
 
@@ -81,6 +94,7 @@
 - Course → nhiều folder (có thể lồng nhau) + lesson
 - Folder và lesson có thứ tự và tên
 - Course có: category, tag, learning point (lpoint), filter theo các trường, tìm kiếm theo tên
+- Course và lesson đều có **trạng thái**: draft / published / archived
 
 **Loại bài học (lesson):**
 - Văn bản (Markdown)
@@ -106,8 +120,9 @@
 
 | # | Câu hỏi | Quyết định |
 |---|---------|------------|
-| Q1 | Bài học được load như thế nào? | Load cây lazy (mở rộng theo yêu cầu), cache content bài đang học trong context |
-| Q2 | Giải quyết N+1 query trong load cây? | Materialized Path — node có `pre_path`, mọi thao tác qua node |
+| Q1 | Bài học được load như thế nào? | Load cây lazy (mở rộng theo yêu cầu), `parent_id` filter cho direct children |
+| Q2 | Giải quyết N+1 query trong load cây? | Dot-separated path (`path` field, e.g. `1.3.10`), lazy load chính, subtree query cho validate |
+| Q3 | Lesson có status không? | Có — draft/published/archived, giống course |
 
 ---
 
@@ -129,7 +144,8 @@
 
 **Deployable challenges:**
 - Người dùng có thể yêu cầu khởi tạo instance (mỗi người một instance)
-- Cần hệ thống riêng để tạo và quản lý instance
+- Hệ thống tạo instance là **project riêng** (không thuộc phạm vi dự án này) — ILS chỉ định nghĩa **interface** giao tiếp
+- Giao tiếp qua **Strategy pattern**: hiện tại dùng raw socket (yêu cầu môn học), sau hoàn thành môn có thể thay bằng HTTP/gRPC mà không sửa code gọi
 - Sử dụng khi kết hợp với GitLab
 
 **Admin có thể:**
@@ -145,8 +161,9 @@
 
 | # | Câu hỏi | Quyết định |
 |---|---------|------------|
-| Q1 | Cơ chế instance? | Mỗi user một instance riêng; quản lý qua hệ thống deploy ngoài |
+| Q1 | Cơ chế instance? | Mỗi user một instance riêng; giao tiếp qua Strategy pattern (socket → HTTP/gRPC) |
 | Q2 | Import GitLab như thế nào? | Sync metadata + README; nút sync thủ công khi update |
+| Q3 | Instance system thuộc phạm vi dự án? | Không — ILS chỉ định nghĩa interface, implementation là external |
 
 ---
 
@@ -155,6 +172,7 @@
 **Tổ chức nội dung:**
 - Cấu trúc folder + quiz (tương tự challenge)
 - Quiz có: category, tag, quiz point; filter
+- Quiz và quiz_question đều có **trạng thái**: draft / published / archived
 
 **Loại câu hỏi:**
 - Single choice

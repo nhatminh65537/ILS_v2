@@ -61,7 +61,7 @@ Chưa có API hay giao diện nào cho challenge. Editor không thể tạo/qu�
 - List với pagination, filter, search.
 
 ### FR-CHAL-02: Folder/Node Tree
-- Tương tự Course: `challenge_node` với `pre_path` materialized path.
+- Tương tự Course: `challenge_node` với dot-separated `path` (e.g., `"1.3"`).
 - Folder và challenge đều là node.
 - CRUD node, reorder, move.
 
@@ -181,7 +181,7 @@ GET    /api/challenge/progress/                  # My overall progress
 -- challenge: id, slug, title, description, status, difficulty, category_id,
 --            source, storage_path, gitlab_path, challenge_point, instance_required
 -- challenge_gitlab: challenge_id, project_id, project_url, default_branch, last_commit_sha, last_synced_at
--- challenge_node: id, parent_id, is_item, title, position, pre_path, challenge_id
+-- challenge_node: id, parent_id, is_item, title, position, path, challenge_id
 -- challenge_flag: id, challenge_id, flag_value, is_case_sensitive, is_regex, random_tail_length
 -- challenge_instance: id, challenge_id, user_id, instance_info JSONB, flag_value,
 --                     challenge_flag_id, status, terminated_at, expires_at

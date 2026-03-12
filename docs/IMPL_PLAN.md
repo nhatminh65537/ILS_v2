@@ -519,7 +519,7 @@ PUT  /api/courses/{slug}/tree/{node_id}/    → rename, reorder, move
 DELETE /api/courses/{slug}/tree/{node_id}/  → delete node + subtree
 ```
 
-**Move node:** update `pre_path` for self + all descendants using `bulk_update`.
+**Move node:** update `path` for self + all descendants using `bulk_update`.
 
 ### Task 5.3 — Lesson CRUD + Outline sync
 **Endpoints:**
@@ -811,7 +811,7 @@ admin/stats/page.tsx → summary cards + user detail lookup
 
 ## Reusable Patterns
 
-- **Tree CRUD:** `pre_path__startswith` + `bulk_update` on move → same logic for Course/Challenge/Quiz
+- **Tree CRUD:** `filter(parent_id=X)` for lazy loading; `path__startswith` + `bulk_update` on move → same logic for Course/Challenge/Quiz
 - **FullAudit:** all domain models inherit → audit fields auto-populated
 - **TextChoices:** enums already in `models.py` → reuse in serializers
 - **Service layer:** `<app>/services/` pattern — see `auth_app/services/` once created

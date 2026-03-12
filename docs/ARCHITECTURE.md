@@ -141,7 +141,7 @@ Chosen because:
 - All published content is accessible to all members — no per-object ownership model
 - Role-based: Admin, Editor, Member; not per-resource ACL
 
-**Implementation:** Every API endpoint requires a specific permission. Permissions are hierarchical (parent/child). Roles are bundles of permissions.
+**Implementation:** Every API endpoint requires a specific permission. Permissions are **flat** (no hierarchy). Roles are bundles of permissions. Built-in roles (Admin, Editor, Member) are auto-created via `@add_role_granted` decorator scan at startup.
 
 **Decision record:** See `requirements.docx` Q1-Q9 in section 2.2.
 
@@ -153,45 +153,65 @@ Permissions are encoded into the **access token** at login time. Every API reque
 
 **Why:** Fast permission checks at scale; acceptable trade-off for small org use case.
 
-**Cache strategy:** `user_permission_cache` table stores the pre-encoded permission set per user. On JWT issue, use cache if `permission_version` matches; otherwise recompute.
+**Cache strategy:** `user_permission_cache` table stores the pre-encoded permission bitmap (base64) per user. On JWT issue, use cache if `user.permission_version` matches; otherwise recompute.
 
-**Token invalidation:** When admin changes a user's permissions, the cache is invalidated (version mismatch). The user gets updated permissions on their next token refresh.
+**Bitmap encoding:** Permissions are encoded as a binary bitmap (≤256 permissions = 32 bytes → base64 ≈ 44 chars). Each permission `id` maps to a bit position. JWT claims: `{"permissions": "<base64>", "pv": <version>}`.
 
----
-
-### 4.3 Permission Hierarchy — Application-Level Cascade
-
-When a parent permission is disabled, all descendants are effectively disabled too. This is NOT enforced by a DB cascade — it's resolved at **application level during JWT encoding**.
-
-**Why not DB cascade:** Re-enabling a parent would require re-enabling all children, which may not reflect original intent. Application-level resolution always reads current `is_active` state and walks the tree.
-
-**Trade-off:** Slight overhead at permission encode time (walk tree). Acceptable given small permission tree depth and infrequent encode (only on cache miss or admin change).
+**Token invalidation:** When admin changes a user's permissions, `user.permission_version` is incremented (per-user, not global). The user gets updated permissions on their next token refresh.
 
 ---
 
-### 4.4 Permission Auto-Discovery at Startup
+### 4.3 Flat Permissions — No Hierarchy
+
+Permissions are **flat** — no `parent_id` or tree structure. Roles provide sufficient grouping.
+
+**Why no hierarchy:**
+- With `@add_role_granted` and built-in roles, grouping is already handled at the role level.
+- Hierarchy only served "disable parent → disable all children" which is no longer needed (admin cannot toggle `is_active` via API — it's fully controlled by startup scan).
+- Eliminates tree-walk overhead during permission encoding and circular reference validation.
+
+---
+
+### 4.4 Permission Auto-Discovery & Built-in Roles at Startup
 
 Permissions are created automatically by scanning all registered API endpoints at Django startup (metaprogramming). This means:
 - Permissions are never manually created by admins
 - Permissions cannot be deleted (they become inactive if endpoint is removed)
+- Permissions are **read-only via API** — only `GET` is allowed (no `PATCH`/`PUT`/`POST`/`DELETE`)
 - On startup: all existing permissions set to `is_active=FALSE`, then re-scan marks found ones active again
+- Permission `name` is auto-generated from view class and HTTP method: `{app_label}.{ViewClassName}.{http_method}`. Optional override via `permission_code` attribute on view.
+
+**Built-in roles** via `@add_role_granted('Admin', 'Editor', 'Member')` decorator:
+- Decorator on each view/method declares which built-in roles should have this permission
+- Startup scan collects all decorators → auto-creates roles (with `is_system=TRUE`) if not exist
+- Built-in role → permission mappings are synced on every startup (idempotent)
+- Built-in roles cannot be deleted or have permissions modified via API
+- Custom roles (admin-created, `is_system=FALSE`) are fully manageable via API
+
+**Startup sequence:**
+1. Scan all endpoints → upsert permissions (set `is_active`)
+2. Scan `@add_role_granted` decorators → upsert built-in roles → sync `role_permission`
 
 ---
 
-### 4.5 Materialized Path for Tree Structures
+### 4.5 Dot-Separated Path for Tree Structures
 
-All tree structures (CourseNode, ChallengeNode, QuizNode) use a `pre_path` field storing the full ancestor path:
+All tree structures (CourseNode, ChallengeNode, QuizNode) use a `path` field storing the dot-separated ancestor IDs:
 
 ```
-Example: /1/3/10/
-→ node id=10, whose parent is 3, whose parent is 1
+Example: "1.3" on node id=10
+→ node id=10, whose parent is id=3, whose grandparent is id=1
+Root nodes: path = "" (empty string)
 ```
 
-**Why:** Avoids recursive SQL and N+1 queries for subtree operations.
+**Primary access pattern: Lazy loading** — load direct children via `filter(parent_id=X)`. No subtree prefix query needed for normal operations.
 
-**Subtree query:** `Node.objects.filter(pre_path__startswith='/1/3/')` — O(1) index lookup.
+**When path is used:**
+- **Depth validation:** `depth = 0 if path == '' else path.count('.') + 1`
+- **Move validation:** Prevent moving a node under itself: check `target.path` does not start with `source.path + '.' + str(source.id)`
+- **Subtree queries** (rare): `filter(path__startswith=node.path + '.' + str(node.id))`
 
-**Maintenance:** Update `pre_path` on create and on move (self + all descendants). Requires `text_pattern_ops` index in PostgreSQL for LIKE queries.
+**Maintenance:** Update `path` on create and on move (self + all descendants). Format: `parent.path + '.' + str(parent.id)` (if parent exists, else `""`).
 
 ---
 
@@ -227,6 +247,35 @@ Many-to-many join tables (tag maps, role_permission) use **CreateAudit only** (n
 
 ---
 
+### 4.10 Instance Deployment Interface (Strategy Pattern)
+
+The instance deployment system (spinning up challenge containers) is an **external system** — not part of this project's scope. ILS defines a **clean interface** to communicate with it.
+
+**Design:** Strategy pattern with swappable backends:
+```python
+class InstanceDeploymentBackend(Protocol):
+    async def deploy(self, challenge_id: int, user_id: int) -> InstanceResult: ...
+    async def status(self, instance_id: str) -> InstanceStatus: ...
+    async def stop(self, instance_id: str) -> bool: ...
+    async def logs(self, instance_id: str) -> list[LogEntry]: ...
+```
+
+**Current implementation:** `SocketDeploymentBackend` (raw TCP socket — required by course curriculum). The interface is designed so that after the course, the socket backend can be replaced with `HttpDeploymentBackend`, `GrpcDeploymentBackend`, etc. without touching any calling code.
+
+**Backend selection:** Configured via Django settings (not `system_config`), since switching transport protocol is a code-level decision, not a runtime admin decision. Connection parameters (URL, token) are in `system_config`.
+
+**Key constraint:** The interface must be **conceptually synchronous** (request → response) regardless of transport. Use `async/await` to abstract the transport layer.
+
+---
+
+### 4.11 No Database Triggers
+
+All denormalized field updates (counters, aggregates, path maintenance) are done at **application level** via Django signals or explicit service method calls. **No PostgreSQL triggers** are used.
+
+**Why:** Logic is visible in Python code, easy to test, easy to debug. Triggers hide logic in DB layer, making it harder to trace, test, and maintain.
+
+---
+
 ## 5. Data Flows
 
 ### 5.1 Authentication Flow (Native Login)
@@ -259,11 +308,13 @@ Authentik → Callback: GET /auth/sso/authentik/callback?code=...
 
 ```
 Request → Extract Bearer token
-  → Decode JWT, read encoded_permissions claim
-  → Check if required permission key is present and active in claim
-      → Granted: proceed
-      → Denied: return 403
-  → No DB hit for permission check
+  → Decode JWT, read `permissions` claim (base64 bitmap) and `pv` claim (version)
+  → Decode base64 → bitmap
+  → Look up permission.id for the required permission name
+  → Check bit at position permission.id in bitmap
+      → Bit set (1): granted, proceed
+      → Bit unset (0): return 403
+  → No DB hit for permission check (permission.id cached in memory at startup)
 ```
 
 ### 5.4 Permission Cache Invalidation Flow
@@ -271,13 +322,13 @@ Request → Extract Bearer token
 ```
 Admin changes user role/permission
   → Update user_role or user_permission table
-  → Increment system_config['permission_version'] (global)
-  → Mark user_permission_cache as stale (set permission_version = -1 or delete row)
+  → Increment user.permission_version (per-user, NOT global)
+  → If role_permission changed: increment permission_version for ALL users with that role
 Next token refresh by user
-  → Server sees cache stale
-  → Recompute from DB
-  → Update user_permission_cache with new version
-  → Issue new access_token with updated permissions
+  → Compare user.permission_version with user_permission_cache.permission_version
+  → Mismatch: recompute from DB (roles + direct denies + is_active filter)
+  → Encode as bitmap, update user_permission_cache with new version
+  → Issue new access_token with updated bitmap + version
 ```
 
 ### 5.5 Course Tree Load Flow
@@ -378,14 +429,17 @@ Client → POST /challenges/{slug}/submit { flag }
 
 ### Authorization
 - ❌ **Never use Django's built-in permission system** (`django.contrib.auth` permissions / `has_perm()`) — this project uses a custom API-based RBAC
-- ❌ **Never check permissions by hitting DB per request** — permissions are encoded in JWT; check the token claim
-- ❌ **Never cascade `is_active=FALSE` to permission children in DB** — cascade is application-level at JWT encode time only
+- ❌ **Never check permissions by hitting DB per request** — permissions are encoded as bitmap in JWT; check the bit
+- ❌ **Never allow modifying permissions via API** — permissions are read-only; `is_active` is controlled only by startup scan
 - ❌ **Never allow deleting permissions** — they become inactive but stay in DB
+- ❌ **Never allow deleting or modifying built-in roles** (`is_system=TRUE`) via API — their permissions are synced at startup
+- ❌ **Never use permission hierarchy** (parent/child) — permissions are flat; roles provide grouping
+- ❌ **Never use DB triggers for denormalized field updates** — all sync via Django signals at app level
 
 ### Tree / Nodes
 - ❌ **Never bypass Node models to access content directly** — all tree operations go through `*Node` models
-- ❌ **Never use recursive SQL** for subtree queries — use `pre_path__startswith` with materialized path
-- ❌ **Never forget to update `pre_path` on node move** — update self and ALL descendants
+- ❌ **Never use recursive SQL** for subtree queries — use `path` field + `parent_id` filter for lazy loading
+- ❌ **Never forget to update `path` on node move** — update self and ALL descendants
 
 ### Database
 - ❌ **Never store plaintext refresh tokens** — always hash before storing in `user_session.refresh_token_hash`
@@ -422,8 +476,11 @@ Client → POST /challenges/{slug}/submit { flag }
 
 **Permission System:**
 - Auto-discover on startup (scan registered endpoints)
-- Encode in JWT access token
-- Check JWT claims in DRF permission class (no DB hit)
+- Permission names auto-generated from `{app_label}.{ViewClassName}.{http_method}`
+- Built-in roles auto-created via `@add_role_granted('Admin', 'Editor', 'Member')` decorator
+- Encode as binary bitmap (base64) in JWT access token
+- Check bitmap bit in DRF permission class (no DB hit)
+- Permissions are read-only via API (no admin PATCH/DELETE)
 
 ---
 

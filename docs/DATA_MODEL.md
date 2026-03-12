@@ -57,6 +57,7 @@ Primary authentication record.
 | `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
 | `is_staff` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | `is_superuser` | BOOLEAN | NOT NULL, DEFAULT FALSE |
+| `permission_version` | INT | NOT NULL, DEFAULT 0 — incremented when roles/permissions change |
 | *(audit fields)* | | |
 
 **Indexes:** `username`, `email`
@@ -95,7 +96,7 @@ One-to-one extended profile. Created automatically on user creation.
 
 **Indexes:** `user_id`, `total_learning_point DESC`, `total_challenge_point DESC`, `total_quiz_point DESC`
 
-**Business rule:** Counter fields (`total_*`, `*_completed`) are **denormalized**. Must be synced via Django signal or DB trigger. See TODO(LOW-22) in schema.
+**Business rule:** Counter fields (`total_*`, `*_completed`) are **denormalized**. Must be synced via Django signals (no DB triggers).
 
 ---
 
@@ -148,30 +149,36 @@ Named collection of permissions.
 | `id` | BIGSERIAL | PK |
 | `name` | VARCHAR(100) | NOT NULL, UNIQUE |
 | `description` | TEXT | nullable |
+| `is_system` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | *(audit fields)* | | |
+
+**Business rules:**
+- `is_system=TRUE`: built-in role (e.g., Admin, Editor, Member), auto-created at startup via `@add_role_granted` decorator scan. Cannot be deleted or have permissions modified via API.
+- `is_system=FALSE`: custom role created by admin via API, fully manageable.
 
 ---
 
 #### `permission`
-Hierarchical API-scoped permission. Auto-discovered at startup via endpoint scan.
+Flat API-scoped permission. Auto-discovered at startup via endpoint scan. **No hierarchy** — roles provide grouping.
 
 | Field | Type | Constraints |
 |-------|------|-------------|
-| `id` | BIGSERIAL | PK |
+| `id` | BIGSERIAL | PK, auto-increment — used as bit index for bitmap encoding |
 | `name` | VARCHAR(150) | NOT NULL, UNIQUE |
 | `description` | TEXT | nullable |
-| `parent_id` | BIGINT | nullable, FK → permission(id) SET NULL |
-| `pre_path` | VARCHAR(255) | NOT NULL — logical path by API |
 | `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
 | *(audit fields)* | | |
 
-**Indexes:** `name`, `pre_path`, `parent_id`
+**Indexes:** `name`
 
 **Business rules:**
-- Permissions **cannot be deleted** (even by superuser). When an API is removed, its permission becomes inactive (`is_active=FALSE`) and stays in DB.
-- `is_active` is **local only** — disabling a parent does NOT cascade to children in DB. The cascade is enforced at **application level during JWT encoding**.
-- When a parent is disabled, all effective children are also disabled; when re-enabled, children regain permissions automatically (hierarchy resolution at encode time).
-- Permissions are **created at startup** via endpoint scan (metaprogramming).
+- Permissions **cannot be deleted** (even by superuser). When an API endpoint is removed, its permission becomes inactive (`is_active=FALSE`) and stays in DB.
+- `is_active` is controlled **only by startup scan**: `TRUE` = endpoint exists in code, `FALSE` = endpoint removed. Admin **cannot** toggle `is_active` via API.
+- Permissions are **read-only via API** — only `GET` is allowed. No `PATCH`/`PUT`/`POST`/`DELETE`.
+- Permission `name` is **auto-generated** from view class and HTTP method: `{app_label}.{ViewClassName}.{http_method}` (e.g., `api.ChallengeSubmitView.post`). Optional override via `permission_code` attribute on view.
+- Permission `id` serves as the **bit index** for bitmap encoding (≤ 256 permissions). IDs are auto-increment, never reused.
+- Permissions are **created at startup** via endpoint scan (metaprogramming). All existing permissions set to `is_active=FALSE` first, then re-scan marks found ones active.
+- **No hierarchy:** `parent_id` and `pre_path` removed. Roles provide sufficient grouping.
 
 ---
 
@@ -197,33 +204,38 @@ Hierarchical API-scoped permission. Auto-discovered at startup via endpoint scan
 ---
 
 #### `user_permission` (join table)
-Direct permission grants/denies for a user (overrides role-based permissions).
+Direct permission deny overrides for a user. **Deny-only** — row existence = deny. No `is_granted` column.
 
 | Field | Type | Constraints |
 |-------|------|-------------|
 | `user_id` | BIGINT | PK part, FK → user(id) CASCADE |
 | `permission_id` | BIGINT | PK part, FK → permission(id) CASCADE |
-| `is_granted` | BOOLEAN | NOT NULL, DEFAULT TRUE |
 | *(audit fields)* | | |
 
-**Business rule:** Direct user permissions take **priority** over role-assigned permissions. `is_granted=FALSE` explicitly revokes a permission even if granted via role.
+**Business rules:**
+- An entry **only exists if** the user has the permission via at least one role. If the user does not have the permission via any role, no deny entry is allowed.
+- Row existence explicitly revokes the permission even if granted via role (deny > role grant).
+- When a user is removed from a role, orphaned deny entries (for permissions no longer granted by any remaining role) are **automatically cleaned up** at app level.
+- Deny entries take **priority** over role-assigned permissions.
 
 ---
 
 #### `user_permission_cache`
-Pre-encoded permission set for fast JWT generation. One row per user.
+Pre-encoded permission bitmap for fast JWT generation. One row per user.
 
 | Field | Type | Constraints |
 |-------|------|-------------|
 | `user_id` | BIGINT | PK, FK → user(id) CASCADE |
-| `encoded_permissions` | JSONB | NOT NULL — flattened, ready for JWT |
-| `permission_version` | INT | NOT NULL — must match `system_config.permission_version` |
+| `encoded_permissions` | TEXT | NOT NULL — base64-encoded binary bitmap (max 32 bytes = 256 bits) |
+| `permission_version` | INT | NOT NULL — must match `user.permission_version` (per-user) |
 | `generated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT now() |
 
 **Business rules:**
 - Cache is **invalidated** when admin changes a user's roles or permissions.
-- `permission_version` is compared against `system_config` key `'permission_version'` (global INT). If stale, regenerate before issuing new tokens.
+- `permission_version` is compared against `user.permission_version` (per-user INT, not global). If stale, regenerate before issuing new tokens.
 - On cache miss or version mismatch: recompute permissions from DB, store, then issue token.
+- **Bitmap format:** Each permission `id` maps to a bit position. If the bit is set (1), the user has that permission. Encoded as base64 string for compact storage and JWT claim.
+- **JWT claims:** `{"permissions": "<base64-bitmap>", "pv": <permission_version>}` — separate claims for bitmap and version.
 
 ---
 
@@ -299,17 +311,20 @@ Tree node for challenge folder/item hierarchy. Extends `BaseNode`.
 | `is_item` | BOOLEAN | NOT NULL — TRUE=challenge item, FALSE=folder |
 | `title` | TEXT | NOT NULL |
 | `position` | INTEGER | NOT NULL, DEFAULT 0 — order within same parent |
-| `pre_path` | TEXT | NOT NULL — materialized path e.g. `/1/3/10/` |
+| `path` | TEXT | NOT NULL, DEFAULT '' — dot-separated ancestor IDs e.g. `1.3.10` |
 | `challenge_id` | BIGINT | UNIQUE, nullable, FK → challenge(id) CASCADE |
 | *(audit fields)* | | |
 
-**Indexes:** `parent_id`, `challenge_id`, `pre_path` (text_pattern_ops for LIKE queries)
+**Indexes:** `parent_id`, `challenge_id`, `path`
 
 **Business rules:**
 - `is_item=FALSE` → folder node, `challenge_id` must be NULL
 - `is_item=TRUE` → leaf node, `challenge_id` must be set (UNIQUE ensures 1 node per challenge)
-- `pre_path` format: `/parent_id/.../self_id/` — maintained on create/move; all descendants updated on move
-- Use `pre_path__startswith='/1/3/'` for subtree queries (never recursive SQL)
+- `path` format: dot-separated ancestor IDs (not including self). Root nodes: `path = ""`. Child of node id=1: `path = "1"`. Grandchild: `path = "1.3"`
+- Depth = 0 if `path` is empty, else `path.count('.') + 1`
+- On create: `path = parent.path + "." + str(parent.id)` (if parent exists, else `""`)
+- On move: update `path` for self AND all descendants
+- Lazy loading: load direct children via `parent_id` filter (no subtree prefix query needed for normal operations)
 
 ---
 
@@ -439,6 +454,7 @@ A single learning unit. Can be shared across courses (referenced via `course_nod
 | `title` | TEXT | NOT NULL |
 | `lesson_type` | lesson_type | NOT NULL — `markdown`, `video`, `miniquiz` |
 | `source` | lesson_source | NOT NULL, DEFAULT 'manual' |
+| `status` | content_status | NOT NULL, DEFAULT 'draft' |
 | `content_md` | TEXT | nullable — markdown content (for markdown type) |
 | `video_url` | TEXT | nullable — video URL (for video type) |
 | `learning_point` | INTEGER | DEFAULT 0 |
@@ -491,11 +507,11 @@ Tree node for course folder/lesson hierarchy. Extends `BaseNode`.
 | `title` | TEXT | NOT NULL |
 | `position` | INTEGER | NOT NULL, DEFAULT 0 |
 | `course_id` | BIGINT | NOT NULL, FK → course(id) CASCADE |
-| `pre_path` | TEXT | NOT NULL |
+| `path` | TEXT | NOT NULL, DEFAULT '' — dot-separated ancestor IDs |
 | `lesson_id` | BIGINT | UNIQUE, nullable, FK → lesson(id) CASCADE |
 | *(audit fields)* | | |
 
-**Indexes:** `course_id`, `parent_id`, `lesson_id`, `is_item`, `pre_path` (text_pattern_ops)
+**Indexes:** `course_id`, `parent_id`, `lesson_id`, `is_item`, `path`
 
 **Note:** Unlike `challenge_node`, `course_node` has an explicit `course_id` FK. Every node belongs to a course (including folder nodes). This allows efficient course-subtree queries.
 
@@ -571,6 +587,7 @@ A single question within a quiz.
 | `id` | BIGSERIAL | PK |
 | `quiz_id` | BIGINT | NOT NULL, FK → quiz(id) CASCADE |
 | `question_type` | question_type | NOT NULL |
+| `status` | content_status | NOT NULL, DEFAULT 'draft' |
 | `content` | JSONB | NOT NULL — question body (format varies by type) |
 | `explanation` | TEXT | nullable — shown after answering |
 | `case_sensitive` | BOOLEAN | DEFAULT FALSE — **only for fill_blank** |
@@ -626,14 +643,14 @@ Tree node for quiz folder/quiz hierarchy. Extends `BaseNode`.
 |-------|------|-------------|
 | `id` | BIGSERIAL | PK |
 | `parent_id` | BIGINT | nullable, FK → quiz_node(id) CASCADE |
-| `pre_path` | TEXT | NOT NULL |
+| `path` | TEXT | NOT NULL, DEFAULT '' — dot-separated ancestor IDs |
 | `is_item` | BOOLEAN | NOT NULL |
 | `position` | INTEGER | NOT NULL, DEFAULT 0 |
 | `quiz_id` | BIGINT | UNIQUE, nullable, FK → quiz(id) CASCADE |
 | `title` | TEXT | NOT NULL |
 | *(audit fields)* | | |
 
-**Indexes:** `parent_id`, `quiz_id`, `pre_path` (text_pattern_ops)
+**Indexes:** `parent_id`, `quiz_id`, `path`
 
 ---
 
@@ -745,7 +762,7 @@ Runtime key-value configuration store. Primary key is the config key string.
 
 | Key | Type | Purpose |
 |-----|------|---------|
-| `permission_version` | int | Global permission version; increment on any permission/role change |
+
 | `outline_base_url` | string | Outline instance base URL |
 | `gitlab_base_url` | string | GitLab instance base URL |
 | `instance_ttl_seconds` | int | Default TTL for challenge instances |
@@ -814,30 +831,37 @@ Immutable event log for sensitive admin actions.
 ## 4. Cross-Cutting Business Rules
 
 ### 4.1 Content Lifecycle
-- All content (course, challenge, quiz) starts as `draft`
+- All content (course, challenge, quiz, lesson, quiz_question) starts as `draft`
 - Only `published` content is visible to members
 - `archived` content is hidden but preserved; can be re-published
+- Lesson `draft` in a `published` course: hidden from members, skipped in progress calculation
+- Question `draft` in a `published` quiz: excluded from practice sessions
 
 ### 4.2 Permission Resolution Priority
-When computing effective permissions for JWT encoding:
-1. Start with all permissions from user's roles
-2. Apply direct `user_permission` grants/revokes (direct > role)
-3. Resolve parent hierarchy: if parent `is_active=FALSE`, mark all descendants as inactive
-4. Encode result into `user_permission_cache.encoded_permissions`
+When computing effective permissions for JWT encoding (flat, no hierarchy):
+1. Start with all permissions from user's roles (union of all role_permission entries)
+2. Apply direct `user_permission` deny overrides (row existence → remove permission from set)
+3. Filter out `is_active=FALSE` permissions (endpoint removed from code)
+4. Encode result as binary bitmap into `user_permission_cache.encoded_permissions` (base64)
+5. Each permission `id` maps to a bit position in the bitmap; bit set = granted
 
-### 4.3 Materialized Path Maintenance
-- `pre_path` format: `/grandparent_id/parent_id/self_id/`
-- On **node create**: `pre_path = parent.pre_path + str(new_id) + '/'`
-- On **node move**: update self AND all descendant `pre_path` values
-- Subtree query: `filter(pre_path__startswith='/1/3/')` — requires `text_pattern_ops` index in PostgreSQL
+### 4.3 Path Maintenance (Dot-Separated)
+- `path` format: dot-separated ancestor IDs (not including self). Root nodes: `path = ""`. Child of node id=1: `path = "1"`. Deep node: `path = "1.3.10"`
+- On **node create**: `path = parent.path + "." + str(parent.id)` (if parent exists, else `""`)
+- On **node move**: update self AND all descendant `path` values
+- **Depth** = 0 if `path == ""`, else `path.count('.') + 1`
+- **Lazy loading**: load direct children via `filter(parent_id=X)` — no subtree prefix query needed for normal operations
+- **Subtree queries** (rare, e.g., move validation): `filter(path__startswith=node.path + "." + str(node.id))` — still works but not the primary access pattern
 
-### 4.4 Denormalized Counters (must sync via signals)
+### 4.4 Denormalized Counters (must sync via Django signals — no DB triggers)
 | Counter field | Trigger |
 |---------------|---------|
 | `user_profile.total_*_point` | When progress completed |
 | `user_profile.*_completed` | When course/challenge/quiz marked complete |
-| `quiz.total_questions` | When quiz_question added/deleted |
+| `quiz.total_questions` | When quiz_question added/deleted (only count `status=published`) |
 | `user_quiz_progress.best_score`, `attempt_count` | When user_quiz_attempt saved |
+
+**Note:** All denormalized field updates are done at **application level** via Django signals or explicit service method calls. **No DB triggers** are used in this project.
 
 ### 4.5 Security Invariants
 - **Never** store plaintext refresh tokens — always hash (e.g., SHA-256) before storing in `user_session.refresh_token_hash`
@@ -857,7 +881,7 @@ All in `backend/api/models.py`:
 | `UpdateAudit` | `updated_at`, `updated_by` | (rare standalone) |
 | `FullAudit(CreateAudit, UpdateAudit)` | all 4 audit fields | All domain entities |
 | `SoftDeleteAudit` | `deleted_at`, `deleted_by`, `is_deleted` property | (not yet used in v3 schema) |
-| `BaseNode(FullAudit)` | `parent`, `is_item`, `title`, `pre_path`, `position` | All tree nodes |
+| `BaseNode(FullAudit)` | `parent`, `is_item`, `title`, `path`, `position` | All tree nodes |
 | `BaseCategory(FullAudit)` | `name` (unique), `description` | All category models |
 | `BaseTag(FullAudit)` | `name` (unique), `description` | All tag models |
 
@@ -870,5 +894,3 @@ Items noted in schema but deferred:
 | Item | Note |
 |------|------|
 | `user_point_log` | Per-event point history (planned for later version) |
-| `status` on course nodes, lessons, questions | Later version |
-| `user answer layer for quiz` | Later version |

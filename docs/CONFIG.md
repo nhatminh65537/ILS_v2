@@ -187,14 +187,6 @@ Optional CDN for serving uploaded challenge files and course media assets.
 
 ---
 
-### `permission_version` — System-Managed (Not Editable)
-
-| Key | Type | Default | Editable | Runtime | Description |
-|-----|------|---------|----------|---------|-------------|
-| `permission_version` | int | `1` | ❌ | ✅ | Global permission version counter. Incremented by the system whenever an admin changes any role or permission assignment. Used to detect stale `user_permission_cache` entries. **Never edit directly.** |
-
----
-
 ## Changes from Initial Proposal
 
 The following changes were made relative to the initial config list:
@@ -223,7 +215,7 @@ The following changes were made relative to the initial config list:
 | Added | — | `ai.*` group (6 keys) | Entire AI assistant config group missing from proposal |
 | Added | — | `cdn.enabled` | Toggle flag for CDN; avoids partially-configured CDN being active |
 | Added | — | `system.maintenance_mode` | Standard self-hosted platform operational config |
-| Added | — | `permission_version` | System-managed key required for permission cache invalidation (see ARCHITECTURE §5.4) |
+| Removed | `permission_version` | — | Global permission version replaced by per-user `permission_version` field on user model; no system_config entry needed |
 
 ---
 
@@ -231,7 +223,7 @@ The following changes were made relative to the initial config list:
 
 On Django startup (`AppConfig.ready()`), all keys in this document are seeded with their default values using `INSERT ... ON CONFLICT DO NOTHING`. Existing values are **never overwritten**.
 
-**Seed order matters for foreign keys:** `permission_version` must be seeded before any permission or role is created.
+
 
 ---
 
@@ -239,5 +231,5 @@ On Django startup (`AppConfig.ready()`), all keys in this document are seeded wi
 
 - **`secret` values** are encrypted using AES with a key derived from Django's `SECRET_KEY`. Changing `SECRET_KEY` in production will make all stored secrets unreadable — rotate secrets explicitly before changing `SECRET_KEY`.
 - **GET responses** for `secret` keys return `"***"`. Internal service code uses `ConfigService.get(key)` which decrypts on access.
-- **`is_editable=false` keys** (`permission_version`) cannot be updated via API. Only the application modifies them programmatically.
+
 - Rate-limit configs (`system.rate_limit.*`) are `is_runtime=true` — changes take effect immediately without restart.

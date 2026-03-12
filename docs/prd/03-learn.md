@@ -8,7 +8,7 @@
 
 ## Context
 
-Tính năng Learn cho phép tổ chức nội dung học tập theo cấu trúc cây: **Course → Folder (lồng nhau) → Lesson**. Lesson có 3 loại: markdown, video, và mini-quiz nhúng. Nội dung có thể tạo thủ công hoặc lấy từ Outline (wiki nội bộ). Hệ thống theo dõi progress của người dùng theo từng lesson và course. Cấu trúc cây dùng Materialized Path để tránh N+1 query.
+Tính năng Learn cho phép tổ chức nội dung học tập theo cấu trúc cây: **Course → Folder (lồng nhau) → Lesson**. Lesson có 3 loại: markdown, video, và mini-quiz nhúng. Nội dung có thể tạo thủ công hoặc lấy từ Outline (wiki nội bộ). Hệ thống theo dõi progress của người dùng theo từng lesson và course. Cấu trúc cây dùng **dot-separated `path`** (ví dụ: `"1.3"`); lazy loading là thao tác chính.
 
 ---
 
@@ -66,9 +66,8 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 - Mỗi course có root node ẩn (tự tạo khi tạo course).
 - Tạo folder: tạo `course_node` với `is_item=False`.
 - Tạo lesson node: tạo `lesson` + `course_node` với `is_item=True`.
-- `pre_path` được tính và cập nhật tự động khi tạo/di chuyển node.
-- Lấy cây: dùng `pre_path__startswith` để subtree query.
-- Lazy loading: load children của một node theo yêu cầu.
+- `path` được tính và cập nhật tự động khi tạo/di chuyển node (dot-separated, e.g., `"1.3"`).
+- Lazy loading: load children của một node theo yêu cầu bằng `filter(parent_id=X)`.
 - Sắp xếp: `position` field; reorder trả về danh sách positions mới.
 
 ### FR-LEARN-04: Lesson Types
@@ -107,7 +106,7 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 | Case | Handling |
 |------|----------|
 | Course publish nhưng không có lesson nào | Cho phép, cảnh báo khi publish |
-| Di chuyển node sang folder khác | Cập nhật `pre_path` của node đó và toàn bộ descendants |
+| Di chuyển node sang folder khác | Cập nhật `path` của node đó và toàn bộ descendants |
 | Xóa folder có children | Cascade delete toàn bộ subtree (nodes + lessons) |
 | Outline document bị xóa trên Outline | Sync trả lỗi, hiển thị warning; content cũ vẫn còn |
 | Lesson mini-quiz: question bị xóa | Lesson vẫn hiển thị, question bị ẩn khỏi mini-quiz |
@@ -165,7 +164,7 @@ POST   /api/learn/lessons/{id}/progress/complete/ # Mark lesson complete
 -- course_category: id, name, description
 -- course_tag: id, name
 -- course_tag_map: course_id, tag_id
--- course_node: id, parent_id, is_item, title, position, course_id, pre_path, lesson_id
+-- course_node: id, parent_id, is_item, title, position, course_id, path, lesson_id
 -- lesson: id, title, lesson_type, source, content_md, video_url, learning_point, learning_time
 -- lesson_question: lesson_id, question_id, position
 -- lesson_outline: lesson_id, outline_doc_id, outline_url, last_synced_at, revision
@@ -215,7 +214,7 @@ Given: Editor đã xác thực với permission "learn.course.create"
 When: POST /api/learn/courses/ với title và category
   And: POST /api/learn/courses/{slug}/nodes/ tạo folder và lesson
 Then: Course được tạo với status=draft
-  And: Nodes được tạo với pre_path đúng
+  And: Nodes được tạo với `path` đúng
 ```
 
 ### AC-LEARN-02: Member Sees Only Published
@@ -243,18 +242,19 @@ Then: user_course_progress.completed_at được set
   And: user_profile.total_learning_point tăng thêm course.learning_point
 ```
 
-### AC-LEARN-05: Materialized Path
+### AC-LEARN-05: Dot-Separated Path
 ```
-Given: Node cấu trúc: Root(id=1) → Folder(id=5, pre_path="/1/") → Lesson(id=10, pre_path="/1/5/")
-When: GET subtree của Folder id=5
-Then: Query dùng pre_path LIKE '/1/5/%' trả về Lesson id=10
+Given: Node cấu trúc: Root(id=1) → Folder(id=5, path="1") → Lesson(id=10, path="1.5")
+When: Lazy load children của Folder id=5
+Then: Query dùng filter(parent_id=5) trả về Lesson id=10
+And: depth = path.count('.') + 1 = 1 cho Folder, 2 cho Lesson
 ```
 
-### AC-LEARN-06: Node Move Updates pre_path
+### AC-LEARN-06: Node Move Updates path
 ```
-Given: Lesson node id=10 với pre_path="/1/5/10/"
-When: POST /api/learn/courses/{slug}/nodes/10/move/ với new_parent_id=7 (pre_path="/1/7/")
-Then: Node 10 có pre_path="/1/7/10/"
+Given: Lesson node id=10 với path="1.5"
+When: POST /api/learn/courses/{slug}/nodes/10/move/ với new_parent_id=7 (path="1")
+Then: Node 10 có path="1.7"
   And: Tất cả descendants của 10 được cập nhật tương ứng
 ```
 

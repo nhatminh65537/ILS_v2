@@ -102,7 +102,7 @@ Full details in **`docs/DECISIONS.md`**.
 | Task | Priority | Notes |
 |------|----------|-------|
 | Course + Category CRUD API | Medium | |
-| CourseNode tree API | Medium | `pre_path` + `bulk_update` on move |
+| CourseNode tree API | Medium | dot-separated `path` + `bulk_update` on move |
 | Lesson CRUD + Outline sync | Medium | |
 | User progress tracking signals | Medium | |
 | Frontend: Course catalog + tree | Low | |

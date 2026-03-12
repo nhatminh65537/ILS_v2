@@ -56,7 +56,7 @@ Chưa có hệ thống quiz. Không có WebSocket logic. Member không có cách
 - List với filter, search.
 
 ### FR-QUIZ-02: Folder/Node Tree
-- `quiz_node` với `pre_path` materialized path.
+- `quiz_node` với dot-separated `path` (e.g., `"1.3"`).
 - Giống challenge tree pattern.
 - CRUD node, reorder, move.
 
@@ -216,7 +216,7 @@ ws://{host}/ws/quiz/{quiz_id}/
 
 ```sql
 -- quiz: id, title, description, status, category_id, quiz_point, total_questions, time_limit_sec
--- quiz_node: id, parent_id, pre_path, is_item, position, quiz_id, title
+-- quiz_node: id, parent_id, path, is_item, position, quiz_id, title
 -- quiz_question: id, quiz_id, question_type, content JSONB, explanation, case_sensitive, score, position
 -- quiz_question_option: id, question_id, content, is_correct, position
 -- quiz_question_answer: id, question_id, answer
