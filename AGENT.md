@@ -120,6 +120,69 @@ DATABASES = {
 
 ---
 
+## Session Completion — Report Requirement
+
+**When the programmer signals that an implementation session is complete**, the agent MUST generate a report in `docs/reports/` before closing out the session.
+
+### Report File Naming
+
+```
+docs/reports/YYYY-MM-DD_<short-slug>.md
+```
+
+Example: `docs/reports/2026-03-12_slice2-permission-api.md`
+
+### Report Structure
+
+```markdown
+# Session Report: <Title>
+
+**Date:** YYYY-MM-DD
+**Slices / Areas:** e.g. Slice 2 – Permissions API
+
+## Summary
+
+One-paragraph overview of what was accomplished this session.
+
+## Completed Items
+
+- [ done item 1 ]
+- [ done item 2 ]
+- ...
+
+## Key Implementations
+
+For each non-trivial piece of logic, document the algorithm/flow concisely.
+
+### <Feature / Component Name>
+
+1. Step one — what happens and why
+2. Step two — key decision or transformation
+3. Step three — edge cases or final result
+
+(Repeat for every important implementation in the session.)
+
+## Files Changed
+
+| File | Change Summary |
+|------|---------------|
+| `path/to/file.py` | Added X, modified Y |
+
+## Notes / Caveats
+
+Any warnings, deferred work, known limitations, or follow-up tasks.
+```
+
+### Rules
+
+- **Always create the report** when the programmer says the session is done — do NOT skip it.
+- Keep algorithm descriptions short but precise (3–6 numbered steps each).
+- Only document **non-trivial** logic; skip boilerplate CRUD.
+- Reference the slice number from `docs/IMPL_PLAN.md` when applicable.
+- After writing the report, update `docs/STATUS.md` to reflect newly completed items.
+
+---
+
 ## Code Conventions (Key Points)
 
 > Full architecture rules and what-NOT-to-do: see `docs/ARCHITECTURE.md` §7–8
