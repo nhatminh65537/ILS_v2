@@ -171,12 +171,12 @@ Full details in **`docs/DECISIONS.md`**.
 
 ## Recommended Start Order
 
-> **Nguyên tắc:** Ưu tiên yêu cầu chức năng trước, yêu cầu phi chức năng chỉ triển khai khi cần thiết.
-> Xem [R-DEV-02](DECISIONS.md) — Functional Requirements Priority.
+> **Principle:** Prioritize functional requirements first; non-functional requirements are implemented only when necessary.
+> See [R-DEV-02](DECISIONS.md) — Functional Requirements Priority.
 
-> **AuthZ Bypass:** Với `auth.authorization_enabled=false`, các feature slices (3–9, 11)
-> có thể phát triển **song song** với Slice 2 (RBAC).
-> Xem [R-DEV-01](DECISIONS.md) — Authorization Bypass Toggle.
+> **AuthZ Bypass:** With `auth.authorization_enabled=false`, feature slices (3–9, 11)
+> can be developed **in parallel** with Slice 2 (RBAC).
+> See [R-DEV-01](DECISIONS.md) — Authorization Bypass Toggle.
 
 ```
 Slice 0 (Foundation: User model + migrations + seed_config)

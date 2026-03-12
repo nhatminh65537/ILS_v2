@@ -5,37 +5,37 @@
 
 ## Context
 
-ILS v2 là nền tảng học bảo mật mạng tự triển khai (~100 thành viên). Codebase hiện có:
-- Domain models đầy đủ (`backend/api/models.py` ~1200 dòng)
+ILS v2 is a self-hosted cybersecurity learning platform (~100 members). The current codebase includes:
+- Complete domain models (`backend/api/models.py` ~1200 lines)
 - Django scaffold (apps: `api`, `ai`, `realtime`), Next.js scaffold
 - SQL schema legacy reference (`design/database/vx/dbv3.sql`) — `docs/DATA_MODEL.md` is authoritative
-- **Chưa có:** API views, serializers, URLs, auth, frontend pages, migrations
+- **Not yet implemented:** API views, serializers, URLs, auth, frontend pages, migrations
 
-Mỗi **slice** = feature hoàn chỉnh DB → API → Frontend.
-Mỗi **task** = hoàn thành trong 1 session (2–4 giờ).
+Each **slice** = a complete feature from DB → API → Frontend.
+Each **task** = completed in one session (2–4 hours).
 
-### ⚠️ Nguyên tắc ưu tiên triển khai
+### ⚠️ Implementation Priority Principle
 
-> **Yêu cầu chức năng (ưu tiên cao) > Yêu cầu phi chức năng (ưu tiên thấp)**
+> **Functional requirements (high priority) > Non-functional requirements (low priority)**
 >
-> Các yêu cầu phi chức năng (logging, rate limiting, i18n, theming, CDN, pagination
-> optimization, caching, etc.) chỉ được triển khai khi:
-> 1. Chúng là điều kiện tiên quyết để tính năng chạy được (ví dụ: JWT auth chi login)
-> 2. Đã xong hết yêu cầu chức năng của slice đó
-> 3. Được yêu cầu rõ ràng bởi team
+> Non-functional requirements (logging, rate limiting, i18n, theming, CDN, pagination
+> optimization, caching, etc.) should only be implemented when:
+> 1. They are prerequisites for a feature to run (for example, JWT auth for login)
+> 2. All functional requirements of that slice are complete
+> 3. They are explicitly requested by the team
 >
-> Xem decision: [R-DEV-02](DECISIONS.md) — Functional Requirements Priority
+> See decision: [R-DEV-02](DECISIONS.md) — Functional Requirements Priority
 
-### ⚠️ AuthZ Bypass cho Development
+### ⚠️ AuthZ Bypass for Development
 
-> `system_config[auth.authorization_enabled]` (default `true`) cho phép tắt kiểm tra RBAC
-> để phát triển các feature slices mà không cần Slice 2 hoàn thành. Khi `false`:
-> - Mọi user đã đăng nhập đều bypass permission check
-> - Authentication vẫn bắt buộc
-> - **MUST** `true` trong production
+> `system_config[auth.authorization_enabled]` (default `true`) allows RBAC checks to be disabled
+> so feature slices can be developed without waiting for Slice 2 to finish. When `false`:
+> - Any authenticated user bypasses permission checks
+> - Authentication is still required
+> - **MUST** be `true` in production
 >
-> Xem: [R-DEV-01](DECISIONS.md) — Authorization Bypass Toggle
-> Xem: `docs/CONFIG.md` → `auth.authorization_enabled`
+> See: [R-DEV-01](DECISIONS.md) — Authorization Bypass Toggle
+> See: `docs/CONFIG.md` → `auth.authorization_enabled`
 
 ---
 
@@ -59,9 +59,9 @@ Slice 0 (Foundation: bugs, User model, migrations)
 
 ### Parallel Development Note
 
-Với `auth.authorization_enabled=false`, các feature slices (3–9, 11) có thể được phát triển
-**song song với Slice 2** miễn là Slice 0 + Slice 1 đã hoàn thành. Slice 2 chỉ bắt buộc
-hoàn thành trước khi deploy production (bật `auth.authorization_enabled=true`).
+With `auth.authorization_enabled=false`, feature slices (3–9, 11) can be developed
+**in parallel with Slice 2** as long as Slice 0 + Slice 1 are complete. Slice 2 only must be
+completed before production deployment (with `auth.authorization_enabled=true`).
 
 ```
 Parallel dev path (with authZ bypass):
@@ -78,13 +78,13 @@ Slice 0 → Slice 1 →─┬─ Slice 2 (RBAC)           ───────�
                     └─ Slice 11 (Statistics)     ─────────┘
 ```
 
-### Ưu tiên trong mỗi slice
+### Priority Within Each Slice
 
-Trong mỗi slice, ưu tiên thứ tự:
-1. **Backend API (functional)** — CRUD, logic nghiệp vụ, signals
-2. **Backend API (non-functional)** — rate limiting, caching, logging (chỉ khi cần)
-3. **Frontend (functional)** — giao diện cơ bản, forms, data display
-4. **Frontend (non-functional)** — i18n, theming, animation, accessibility (chỉ khi cần)
+Within each slice, prioritize in this order:
+1. **Backend API (functional)** — CRUD, business logic, signals
+2. **Backend API (non-functional)** — rate limiting, caching, logging (only when needed)
+3. **Frontend (functional)** — basic UI, forms, data display
+4. **Frontend (non-functional)** — i18n, theming, animation, accessibility (only when needed)
 
 ---
 
@@ -102,7 +102,7 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 ### Task 0.2 — Custom User model + initial migrations
 **Files:** `backend/api/models.py`, `backend/backend/settings.py`, `backend/api/migrations/`
 
-- Thêm `User(AbstractBaseUser, PermissionsMixin)` vào `api/models.py`:
+- Add `User(AbstractBaseUser, PermissionsMixin)` to `api/models.py`:
   ```python
   class User(AbstractBaseUser):
       username = models.CharField(max_length=150, unique=True, db_column='username')
@@ -116,15 +116,15 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
       class Meta:
           db_table = 'user'
   ```
-- Set `AUTH_USER_MODEL = 'api.User'` trong `settings.py`
+- Set `AUTH_USER_MODEL = 'api.User'` in `settings.py`
 - Verify `UserProfile`, `UserIdentity`, `UserSession` models match dbv3.sql schema
-- Chạy: `python manage.py makemigrations api && python manage.py migrate`
-- Tạo `UserManager` với `create_user()`, `create_superuser()`
+- Run: `python manage.py makemigrations api && python manage.py migrate`
+- Create `UserManager` with `create_user()`, `create_superuser()`
 
 ### Task 0.3 — SystemConfig + seed command
 **Files:** `backend/api/management/commands/seed_config.py`, `backend/api/models.py`
 
-- Verify `SystemConfig` model trong `api/models.py` match dbv3.sql:
+- Verify `SystemConfig` model in `api/models.py` matches dbv3.sql:
   ```python
   class SystemConfig(CreateAudit):
       key = models.CharField(max_length=100, unique=True)
@@ -146,7 +146,7 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
       # ai.* keys added when Slice 10 (AI) is activated
   ]
   ```
-- Helper `get_config(key, default=None)` trong `api/utils.py` để đọc system_config nhanh
+- Helper `get_config(key, default=None)` in `api/utils.py` for fast system_config reads
 
 ---
 
@@ -161,7 +161,7 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 > - [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — SSO-only lockout fallback
 >
 > **PRD:** `docs/prd/01-authentication.md`
-> **New app:** `backend/auth_app/` (để tránh conflict với Python `auth`)
+> **New app:** `backend/auth_app/` (to avoid conflict with Python `auth`)
 
 ### Task 1.1 — auth_app setup + native login/register/logout
 
@@ -214,7 +214,7 @@ urlpatterns = [
 - Extract refresh token from body
 - Hash it → query `UserSession` → set `revoked_at = now()`
 
-### Task 1.2 — JWT với permission claims + token refresh
+### Task 1.2 — JWT with permission claims + token refresh
 
 **File:** `backend/auth_app/services/token_service.py`
 
@@ -276,7 +276,7 @@ class AuthentikSSOService:
 
 **Endpoints:**
 - `GET /api/auth/sso/redirect/` — check `auth.sso_enabled`, redirect
-- `GET /api/auth/sso/callback/` — exchange code, issue JWT, redirect frontend với token
+- `GET /api/auth/sso/callback/` — exchange code, issue JWT, redirect frontend with token
 - `POST /api/auth/identity/link/` — add UserIdentity to authenticated user
 
 ### Task 1.4 — Password change/reset + session management

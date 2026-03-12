@@ -533,11 +533,11 @@ Client → POST /challenges/{slug}/submit { flag }
 
 See **`docs/IMPL_PLAN.md`** for the full vertical slice plan (Slices 0–11).
 
-> **⚠️ Nguyên tắc ưu tiên:** Yêu cầu chức năng trước; phi chức năng chỉ khi cần thiết hoặc đã xong hết chức năng.
-> Xem `docs/DECISIONS.md` → R-DEV-02.
+> **⚠️ Priority principle:** Functional requirements first; non-functional requirements only when necessary or after all functional requirements are complete.
+> See `docs/DECISIONS.md` → R-DEV-02.
 
-> **⚠️ AuthZ Bypass:** `auth.authorization_enabled=false` cho phép phát triển feature slices mà không cần Slice 2 hoàn thành.
-> Xem `docs/DECISIONS.md` → R-DEV-01.
+> **⚠️ AuthZ Bypass:** `auth.authorization_enabled=false` allows feature slices to be developed without waiting for Slice 2 to be completed.
+> See `docs/DECISIONS.md` → R-DEV-01.
 
 High-level sequence:
 1. Slice 0 — Foundation (User model, migrations, system_config seed)

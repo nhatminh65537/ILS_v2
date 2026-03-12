@@ -301,7 +301,7 @@ If an admin sets `auth.local_login_enabled=false` and `auth.sso_enabled=true`, b
 **Blocks:** Slice 5 (Task 5.2 — CourseNode tree API, Task 5.3 — Lesson CRUD)
 
 **Problem:**
-The PRD says: _"Tạo lesson node: tạo `lesson` + `course_node` với `is_item=True`"_ — implied to be one atomic operation.  
+The PRD says: _"Create a lesson node: create `lesson` + `course_node` with `is_item=True`"_ — implied to be one atomic operation.  
 IMPL_PLAN has **separate endpoints**: `POST /api/courses/{slug}/tree/` (create node) and `POST /api/lessons/` (create lesson).
 
 Two possible flows:
@@ -385,7 +385,7 @@ When new lessons are added to a published course, or existing lessons are delete
 **Blocks:** Slice 5 (Task 5.1 — Course CRUD)
 
 **Problem:**
-PRD says: _"Soft-delete hoặc archive"_ without choosing. The codebase has `SoftDeleteAudit` model (adds `deleted_at`) AND a `status` field with `archived` value. These are two different mechanisms.
+PRD says: _"Soft-delete or archive"_ without choosing. The codebase has `SoftDeleteAudit` model (adds `deleted_at`) AND a `status` field with `archived` value. These are two different mechanisms.
 
 **Options:**
 | Option | Mechanism | Behavior |
@@ -429,7 +429,7 @@ Slugs are auto-generated from `title`. If two courses have the same or similar t
 **Blocks:** Slice 5 (Task 5.3 — Lesson CRUD, Outline integration)
 
 **Problem:**
-PRD says: _"URL học liệu trong content dùng Outline base URL từ system_config (không hardcode)"_  
+PRD says: _"Learning-content URLs in content use the Outline base URL from system_config (no hardcoding)"_  
 `system_config[outline.url]` contains the base URL of the Outline server.
 
 Frontend needs the Outline base URL to render links inside lesson content. But `outline.api_token` is secret.
@@ -472,7 +472,7 @@ PRD specifies CRUD for `course_tag` but does not define which role can create/de
 **Blocks:** Slice 5 (Task 5.4 — progress tracking), Slice 5 (frontend lesson viewer)
 
 **Problem:**
-PRD says: _"Khi member nhấn 'Complete' (sau scroll)"_ — implying the complete button only appears after the user has scrolled to the bottom.
+PRD says: _"When a member clicks 'Complete' (after scrolling)"_ — implying the complete button only appears after the user has scrolled to the bottom.
 
 **Options:**
 | Option | Approach |
@@ -495,7 +495,7 @@ PRD says: _"Khi member nhấn 'Complete' (sau scroll)"_ — implying the complet
 **Blocks:** Slice 5 (Task 5.4 — progress tracking)
 
 **Problem:**
-PRD says: _"Khi member bắt đầu đọc lesson: upsert `user_lesson_progress` với `started_at`"_  
+PRD says: _"When a member starts reading a lesson: upsert `user_lesson_progress` with `started_at`"_  
 The API has `POST /api/learn/lessons/{id}/progress/start/` but it's unclear if the frontend calls this:
 - **Automatically** on page load (implicit), or
 - **Manually** via an explicit user action
@@ -519,7 +519,7 @@ The API has `POST /api/learn/lessons/{id}/progress/start/` but it's unclear if t
 
 **Problem:**
 When `POST /api/learn/lessons/{id}/sync-outline/` is called but Outline is unreachable:
-- PRD edge case: _"Outline document bị xóa trên Outline → Sync trả lỗi, hiển thị warning; content cũ vẫn còn"_
+- PRD edge case: _"Outline document is deleted on Outline → Sync returns an error, shows a warning; old content remains"_
 - No timeout value specified.
 - No retry mechanism specified.
 
@@ -699,8 +699,8 @@ No DB storage for reset tokens. Uses `itsdangerous.TimestampSigner(settings.SECR
 - At startup (`AppConfig.ready()`): scan decorated views, auto-create permissions.
 - **Permission name format:** `{app_label}.{ViewClassName}.{http_method}` (e.g. `api.CourseDetailView.PUT`).
 - Built-in roles auto-created with `is_system=True` — cannot be deleted/renamed via API.
-- Permissions gán vào roles theo decorator arguments.
-- Permissions không còn trong code → `is_active=False`.
+- Permissions are assigned to roles based on decorator arguments.
+- Permissions no longer present in code are set to `is_active=False`.
 - **Permissions are read-only via API** — no PATCH/POST/DELETE on permission records.
 
 ---
