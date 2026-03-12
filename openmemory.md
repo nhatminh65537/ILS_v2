@@ -98,6 +98,7 @@ Key requirements by domain:
 | `docs/prd/08-statistics.md` | Statistics PRD (leaderboard, admin stats) |
 | `docs/prd/09-ai-assistant.md` | AI PRD (3 modes, rate limit, LLM integration) — DEFERRED |
 | `docs/prd/10-system-config.md` | System Config PRD (runtime KV store) |
+| `DEV_WORKFLOW.md` | **Dev session workflow** — checklist for all devs: pick task → plan → code → update docs → commit |
 
 ## User Defined Namespaces
 
