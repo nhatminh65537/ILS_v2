@@ -1,5 +1,8 @@
 # ILS v2 — Implementation Plan (Vertical Slice)
 
+> **Open questions and resolved decisions are tracked in `docs/DECISIONS.md`.**
+> Before starting any slice, resolve all open questions tagged for that slice.
+
 ## Context
 
 ILS v2 là nền tảng học bảo mật mạng tự triển khai (~100 thành viên). Codebase hiện có:
@@ -33,6 +36,8 @@ Slice 0 (Foundation: bugs, User model, migrations)
 ---
 
 ## Slice 0 — Foundation
+
+> **Decision prerequisites:** [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) (first admin setup)
 
 ### Task 0.1 — Fix known bugs ✅ COMPLETED (2026-03-09)
 
@@ -91,6 +96,14 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 
 ## Slice 1 — Authentication
 
+> **Decision prerequisites (must resolve before coding):**
+> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix (flat vs namespaced)
+> - [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email backend for password reset
+> - [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend for login rate limiting
+> - [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Client-side token storage method
+> - [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for newly registered users
+> - [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — SSO-only lockout fallback
+>
 > **PRD:** `docs/prd/01-authentication.md`
 > **New app:** `backend/auth_app/` (để tránh conflict với Python `auth`)
 
@@ -267,6 +280,9 @@ interface AuthState {
 
 ## Slice 2 — Authorization / RBAC
 
+> **Decision prerequisites (must resolve before coding):**
+> - [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role + seed roles strategy
+>
 > **PRD:** `docs/prd/02-authorization.md`
 
 ### Task 2.1 — Permission auto-discovery at startup
@@ -401,6 +417,12 @@ Secret values: `is_secret=True` → return `"***"` in GET.
 
 ## Slice 4 — Frontend Foundation
 
+> **Decision prerequisites (must resolve before coding):**
+> - [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — Frontend src/ directory layout
+> - [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Token storage method
+> - [Q-INFRA-07](DECISIONS.md#q-infra-07-i18n-language-strategy) — i18n languages and timing
+> - [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library choice
+
 ### Task 4.1 — App structure + shared infrastructure
 
 **Directory structure:**
@@ -455,6 +477,19 @@ interface TreeProps {
 ---
 
 ## Slice 5 — Learn (Courses)
+
+> **Decision prerequisites (must resolve before coding):**
+> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix (`/api/courses/` vs `/api/learn/courses/`)
+> - [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node creation: 1-step or 2-step
+> - [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source (shared Quiz or separate)
+> - [Q-LEARN-03](DECISIONS.md#q-learn-03-course-progress-on-structure-change) — Progress when course structure changes
+> - [Q-LEARN-04](DECISIONS.md#q-learn-04-course-delete-strategy) — Course delete: soft-delete or archive
+> - [Q-LEARN-05](DECISIONS.md#q-learn-05-slug-conflict-resolution) — Slug conflict resolution strategy
+> - [Q-LEARN-06](DECISIONS.md#q-learn-06-outline-url-frontend-exposure) — Outline URL config exposure
+> - [Q-LEARN-07](DECISIONS.md#q-learn-07-tag-creation-permissions) — Who can create/delete tags
+> - [Q-LEARN-08](DECISIONS.md#q-learn-08-lesson-completion-trigger) — Lesson completion trigger (scroll enforcement)
+> - [Q-LEARN-09](DECISIONS.md#q-learn-09-lesson-start-trigger) — Lesson start: implicit or explicit
+> - [Q-LEARN-10](DECISIONS.md#q-learn-10-outline-sync-failure-handling) — Outline sync failure and timeout
 
 ### Task 5.1 — Course + Category CRUD API
 **Files:** `backend/api/views/course.py`, `backend/api/serializers/course.py`, `backend/api/urls.py`
@@ -523,6 +558,11 @@ learn/[slug]/page.tsx      → course detail with Tree component (lazy expand)
 
 ## Slice 6 — Challenge (CTF)
 
+> **Decision prerequisites (must resolve before coding):**
+> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention
+> - [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances: MVP or deferred
+> - [Q-CHALL-02](DECISIONS.md#q-chall-02-instance-deployment-protocol) — Instance deployment external system spec (if instances in MVP)
+
 ### Task 6.1 — Challenge CRUD API
 **Files:** `backend/api/views/challenge.py`, `backend/api/serializers/challenge.py`
 
@@ -575,6 +615,10 @@ challenge/[slug]/page.tsx     → detail + flag submit form
 ---
 
 ## Slice 7 — Quiz
+
+> **Decision prerequisites (must resolve before coding):**
+> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention
+> - [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth method
 
 ### Task 7.1 — Quiz + Question CRUD API
 **Files:** `backend/api/views/quiz.py`, `backend/api/serializers/quiz.py`

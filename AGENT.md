@@ -16,6 +16,7 @@
 | `docs/STATUS.md` | Implementation status per slice (what's done, in progress, not yet started) |
 | `docs/BUGS.md` | Known bugs and fix history |
 | `docs/IMPL_PLAN.md` | Vertical slice implementation plan (Slices 0–11) |
+| `docs/DECISIONS.md` | **Open questions + resolved decisions** — must read before starting any slice |
 | `docs/prd/` | Product Requirements Documents (10 features) |
 | `design/database/vx/dbv3.sql` | **Authoritative schema** — when ORM and SQL conflict, SQL wins |
 | `backend/api/models.py` | All domain ORM models (~1195 lines) |
@@ -48,12 +49,13 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 ## Before Coding — Checklist
 
 1. **Read `docs/STATUS.md`** — know what's done and what's next before touching anything
-2. **Check `docs/BUGS.md`** — active bugs to avoid or fix first
-3. **Read `docs/ARCHITECTURE.md`** — understand design decisions and what NOT to do
-4. **Read `docs/DATA_MODEL.md`** — understand entity types and business rules
-5. **Read `design/database/vx/dbv3.sql`** — authoritative schema; the ORM must match it
-6. **Check `backend/api/models.py`** — all domain models exist; work ahead is API layer
-7. **Check `CLAUDE.md`** — OpenMemory integration rules; search memory before implementing
+2. **Read `docs/DECISIONS.md`** — check open questions for the slice; do NOT code if blockers are OPEN
+3. **Check `docs/BUGS.md`** — active bugs to avoid or fix first
+4. **Read `docs/ARCHITECTURE.md`** — understand design decisions and what NOT to do
+5. **Read `docs/DATA_MODEL.md`** — understand entity types and business rules
+6. **Read `design/database/vx/dbv3.sql`** — authoritative schema; the ORM must match it
+7. **Check `backend/api/models.py`** — all domain models exist; work ahead is API layer
+8. **Check `CLAUDE.md`** — OpenMemory integration rules; search memory before implementing
 
 ---
 

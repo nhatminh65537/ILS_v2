@@ -1,7 +1,29 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-03-09
+> Last updated: 2026-03-12
+
+---
+
+## ⚠️ Pre-Implementation Gate
+
+Before Slice 0 coding can begin, the following **open questions must be resolved by the team**.
+Full details in **`docs/DECISIONS.md`**.
+
+| Question | Blocks | Status |
+|----------|--------|--------|
+| [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention | All API slices | **OPEN** |
+| [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for new users | Slice 1–2 | **OPEN** |
+| [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) — First admin creation | Slice 0 | **OPEN** |
+| [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend | Slice 1 | **OPEN** |
+| [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email for password reset | Slice 1 | **OPEN** |
+| [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — Frontend src/ layout | Slice 4 | **OPEN** |
+| [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Token storage | Slice 1, 4 | **OPEN** |
+| [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library | Slice 4 | **OPEN** |
+| [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node atomicity | Slice 5 | **OPEN** |
+| [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source | Slice 5 | **OPEN** |
+| [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances in MVP | Slice 6 | **OPEN** |
+| [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth | Slice 7 | **OPEN** |
 
 ---
 
@@ -15,7 +37,7 @@
 | Database schema review | All CRITICAL/HIGH/MEDIUM/LOW issues resolved in `dbv3.sql` and `models.py` (2026-03-09) |
 | Next.js scaffold | Default create-next-app; all runtime deps installed (Zustand, next-intl, Axios) |
 | PRD documents | 10 feature PRDs in `docs/prd/` |
-| Documentation suite | `ARCHITECTURE.md`, `DATA_MODEL.md`, `CONFIG.md`, `IMPL_PLAN.md`, `BUGS.md`, `STATUS.md` |
+| Documentation suite | `ARCHITECTURE.md`, `DATA_MODEL.md`, `CONFIG.md`, `IMPL_PLAN.md`, `BUGS.md`, `STATUS.md`, `DECISIONS.md` |
 | Dev infrastructure | `README.md`, `Makefile`, `requirements.txt`, `pytest.ini`, `conftest.py`, `.env.example`, `.gitignore` |
 | settings.py | DRF + SimpleJWT + CORS + Channels config added |
 
@@ -23,7 +45,7 @@
 
 ## In Progress
 
-*Nothing in progress — ready to start Slice 0.*
+*Nothing in progress — resolving open questions before Slice 0.*
 
 ---
 

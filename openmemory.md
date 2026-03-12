@@ -35,6 +35,12 @@ Target: one instance per organization, no horizontal scale needed.
 - **auth_app**: To be created in Slice 1 — JWT auth, SSO, session management
 - **Abstract ORM**: CreateAudit, UpdateAudit, FullAudit, SoftDeleteAudit, BaseNode, BaseCategory, BaseTag
 
+## Status
+
+- All domain ORM models complete; no API views exist yet
+- **Pre-implementation gate active**: 12+ open questions in `docs/DECISIONS.md` must be resolved by humans before coding starts
+- Next action: resolve open questions → start Slice 0
+
 ## Patterns
 
 - Materialized Path (`pre_path`) for all tree structures — avoids N+1 queries
@@ -80,6 +86,7 @@ Key requirements by domain:
 |------|---------|
 | `docs/DATA_MODEL.md` | **Entity types, validation rules, storage schema, business rules** |
 | `docs/ARCHITECTURE.md` | **System design, folder structure, data flows, design decisions, what NOT to do** |
+| `docs/DECISIONS.md` | **Open questions + resolved decisions — must check before any slice** |
 | `docs/prd/README.md` | PRD index with all 10 features |
 | `docs/prd/01-authentication.md` | Auth PRD (SSO + native, JWT sessions) |
 | `docs/prd/02-authorization.md` | RBAC PRD (permissions, roles, JWT claims) |
