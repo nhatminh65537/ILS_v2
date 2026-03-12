@@ -63,7 +63,7 @@ Trước khi viết code, đọc nhanh:
 - [`AGENT.md`](AGENT.md) — quick reference (stack, cách chạy project)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — nguyên tắc thiết kế, **những gì KHÔNG làm**
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — business rules, validation
-- [`design/database/vx/dbv3.sql`](design/database/vx/dbv3.sql) — schema chuẩn (ORM phải khớp SQL này)
+- [`design/database/vx/dbv3.sql`](design/database/vx/dbv3.sql) — ⚠️ legacy schema reference; `docs/DATA_MODEL.md` là authoritative
 
 ---
 

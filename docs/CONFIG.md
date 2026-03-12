@@ -45,9 +45,15 @@
 | `auth.sso_client_id` | string | `""` | ✅ | ❌ | `"ils-app"` | OAuth2 client ID registered in Authentik. |
 | `auth.sso_client_secret` | secret | `""` | ✅ | ❌ | `"<client-secret>"` | OAuth2 client secret registered in Authentik. Stored encrypted. |
 | `auth.link_accounts_enabled` | bool | `true` | ✅ | ✅ | `true` | Allow users to link an SSO identity to an existing local account (and vice versa). |
+| `auth.authorization_enabled` | bool | `true` | ✅ | ✅ | `false` | Enable RBAC permission checks on API endpoints. When `false`, all authenticated users bypass permission checks (treated as having all permissions). **Dev-only toggle** — must be `true` in production. |
 
 > **Note:** Both `auth.local_login_enabled` and `auth.sso_enabled` can be `true` simultaneously.
 > Setting both to `false` will lock all users out — the API will guard against this and reject the second disable.
+>
+> **Note:** `auth.authorization_enabled=false` disables RBAC permission checks entirely — all authenticated
+> users can access all endpoints regardless of role. This is intended **only for development/testing** to
+> allow working on features (Learn, Challenge, Quiz, etc.) before RBAC is fully implemented. **Never
+> deploy to production with this set to `false`.**
 
 ---
 

@@ -8,11 +8,34 @@
 ILS v2 là nền tảng học bảo mật mạng tự triển khai (~100 thành viên). Codebase hiện có:
 - Domain models đầy đủ (`backend/api/models.py` ~1200 dòng)
 - Django scaffold (apps: `api`, `ai`, `realtime`), Next.js scaffold
-- SQL schema authoritative (`design/database/vx/dbv3.sql`)
+- SQL schema legacy reference (`design/database/vx/dbv3.sql`) — `docs/DATA_MODEL.md` is authoritative
 - **Chưa có:** API views, serializers, URLs, auth, frontend pages, migrations
 
 Mỗi **slice** = feature hoàn chỉnh DB → API → Frontend.
 Mỗi **task** = hoàn thành trong 1 session (2–4 giờ).
+
+### ⚠️ Nguyên tắc ưu tiên triển khai
+
+> **Yêu cầu chức năng (ưu tiên cao) > Yêu cầu phi chức năng (ưu tiên thấp)**
+>
+> Các yêu cầu phi chức năng (logging, rate limiting, i18n, theming, CDN, pagination
+> optimization, caching, etc.) chỉ được triển khai khi:
+> 1. Chúng là điều kiện tiên quyết để tính năng chạy được (ví dụ: JWT auth chi login)
+> 2. Đã xong hết yêu cầu chức năng của slice đó
+> 3. Được yêu cầu rõ ràng bởi team
+>
+> Xem decision: [R-DEV-02](DECISIONS.md) — Functional Requirements Priority
+
+### ⚠️ AuthZ Bypass cho Development
+
+> `system_config[auth.authorization_enabled]` (default `true`) cho phép tắt kiểm tra RBAC
+> để phát triển các feature slices mà không cần Slice 2 hoàn thành. Khi `false`:
+> - Mọi user đã đăng nhập đều bypass permission check
+> - Authentication vẫn bắt buộc
+> - **MUST** `true` trong production
+>
+> Xem: [R-DEV-01](DECISIONS.md) — Authorization Bypass Toggle
+> Xem: `docs/CONFIG.md` → `auth.authorization_enabled`
 
 ---
 
@@ -21,17 +44,47 @@ Mỗi **task** = hoàn thành trong 1 session (2–4 giờ).
 ```
 Slice 0 (Foundation: bugs, User model, migrations)
   └── Slice 1 (Authentication: login, JWT, SSO, sessions)
-        └── Slice 2 (Authorization: RBAC, permissions, JWT claims)
-              ├── Slice 3 (System Config CRUD)
-              ├── Slice 4 (Frontend Foundation: layout, stores, i18n)
-              │     ├── Slice 5 (Learn: courses, lessons, progress)
-              │     ├── Slice 6 (Challenge: CTF, flags, instances)
-              │     ├── Slice 7 (Quiz: WebSocket Q&A)
-              │     └── Slice 8 (User Profile & admin)
-              ├── Slice 9  (Notifications)   ← needs 5+6+7 signals
-              ├── Slice 10 (AI Assistant)    ← needs 5+6 context
-              └── Slice 11 (Statistics)      ← needs 5+6+7 data
+        ├── Slice 2 (Authorization: RBAC, permissions, JWT claims)
+        │     ├── Slice 3 (System Config CRUD)
+        │     └── [authZ fully enforced in production]
+        ├── Slice 4 (Frontend Foundation: layout, stores, i18n)
+        │     ├── Slice 5 (Learn: courses, lessons, progress)
+        │     ├── Slice 6 (Challenge: CTF, flags, instances)
+        │     ├── Slice 7 (Quiz: WebSocket Q&A)
+        │     └── Slice 8 (User Profile & admin)
+        ├── Slice 9  (Notifications)   ← needs 5+6+7 signals
+        ├── Slice 10 (AI Assistant)    ← needs 5+6 context ← DEFERRED
+        └── Slice 11 (Statistics)      ← needs 5+6+7 data
 ```
+
+### Parallel Development Note
+
+Với `auth.authorization_enabled=false`, các feature slices (3–9, 11) có thể được phát triển
+**song song với Slice 2** miễn là Slice 0 + Slice 1 đã hoàn thành. Slice 2 chỉ bắt buộc
+hoàn thành trước khi deploy production (bật `auth.authorization_enabled=true`).
+
+```
+Parallel dev path (with authZ bypass):
+
+Slice 0 → Slice 1 →─┬─ Slice 2 (RBAC)           ─────────┬─ production deploy
+                    │                                     │
+                    ├─ Slice 3 (System Config)  ─────────┤
+                    ├─ Slice 4 (Frontend Found) ─┬───────┤
+                    │                            ├─ S5    │
+                    │                            ├─ S6    │
+                    │                            ├─ S7    │
+                    │                            └─ S8    │
+                    ├─ Slice 9  (Notifications)  ─────────┤
+                    └─ Slice 11 (Statistics)     ─────────┘
+```
+
+### Ưu tiên trong mỗi slice
+
+Trong mỗi slice, ưu tiên thứ tự:
+1. **Backend API (functional)** — CRUD, logic nghiệp vụ, signals
+2. **Backend API (non-functional)** — rate limiting, caching, logging (chỉ khi cần)
+3. **Frontend (functional)** — giao diện cơ bản, forms, data display
+4. **Frontend (non-functional)** — i18n, theming, animation, accessibility (chỉ khi cần)
 
 ---
 
@@ -76,17 +129,20 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
   class SystemConfig(CreateAudit):
       key = models.CharField(max_length=100, unique=True)
       value = models.TextField()
-      value_type = models.CharField(...)  # string/boolean/int/json
-      is_secret = models.BooleanField(default=False)
+      value_type = models.CharField(...)  # bool/int/string/secret/json
       category = models.CharField(max_length=50)
+      is_editable = models.BooleanField(default=True)
+      is_runtime = models.BooleanField(default=True)
       class Meta: db_table = 'system_config'
   ```
 - Management command `seed_config` (canonical keys from `docs/CONFIG.md`):
   ```python
   DEFAULT_CONFIGS = [
       {'key': 'auth.local_login_enabled', 'value': 'true', 'value_type': 'boolean', 'category': 'auth'},
+      {'key': 'auth.registration_enabled', 'value': 'true', 'value_type': 'boolean', 'category': 'auth'},
       {'key': 'auth.sso_enabled', 'value': 'false', 'value_type': 'boolean', 'category': 'auth'},
       {'key': 'auth.link_accounts_enabled', 'value': 'false', 'value_type': 'boolean', 'category': 'auth'},
+      {'key': 'auth.authorization_enabled', 'value': 'true', 'value_type': 'boolean', 'category': 'auth'},
       # ai.* keys added when Slice 10 (AI) is activated
   ]
   ```
@@ -136,12 +192,13 @@ urlpatterns = [
 **Register** (`POST /api/auth/register/`):
 - Input: `{username, password, email?}`
 - Validate: username unique, len(password) >= 8
+- Check `system_config[auth.registration_enabled]` → 403 if false
+- Check `system_config[auth.local_login_enabled]` → 403 if false
 - Create: `User` + `UserProfile(user=user)` in transaction
-- Check `system_config[auth.native_enabled]` → 403 if false
 - Return: `{access, refresh, user: {id, username}}`
 
 **Login** (`POST /api/auth/login/`):
-- Check `system_config[auth.native_enabled]`
+- Check `system_config[auth.local_login_enabled]`
 - Authenticate via `check_password()`
 - Rate limiting: cache-based counter:
   ```
@@ -345,6 +402,9 @@ class HasJWTPermission(BasePermission):
         self.permission_key = permission_key
 
     def has_permission(self, request, view):
+        # Dev bypass: skip permission check if authZ disabled
+        if not get_config('auth.authorization_enabled', True):
+            return True
         token_permissions = request.auth.get('permissions', [])
         return self.permission_key in token_permissions
 ```
@@ -530,7 +590,7 @@ GET/POST /api/lessons/{id}/questions/       → LessonQuestion CRUD
 GET/PUT/DELETE /api/lesson-questions/{id}/
 ```
 
-**Outline sync** reads `integrations.outline_url` from system_config.
+**Outline sync** reads `outline.url` from system_config.
 
 ### Task 5.4 — User progress tracking
 **Endpoints:**
@@ -600,7 +660,7 @@ On correct: update `UserChallengeProgress` → signal → `UserProfile` counters
 ```
 POST /api/challenges/{slug}/gitlab-sync/   → admin/editor only
 ```
-Reads `integrations.gitlab_url` from system_config.
+Reads `challenge.git.url` from system_config.
 
 ### Task 6.5 — Frontend: Challenge browser + tree
 ```

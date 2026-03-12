@@ -1,8 +1,9 @@
 # DATA_MODEL.md — ILS v2 Data Model Reference
 
-> Source of truth: `design/database/vx/dbv3.sql`
+> **This file is the authoritative data model reference.**
 > ORM implementation: `backend/api/models.py`
-> When SQL and ORM conflict, **SQL wins**.
+> Legacy SQL: `design/database/vx/dbv3.sql` (historical reference only — pre-normalization)
+> When DATA_MODEL.md and ORM conflict, **DATA_MODEL.md wins**.
 
 ---
 

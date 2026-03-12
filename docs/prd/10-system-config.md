@@ -73,33 +73,47 @@ Toàn bộ cấu hình tích hợp (Outline URL, GitLab URL, AI API key, v.v.) b
 
 ### FR-CFG-05: Predefined Config Keys
 
+> **Authoritative reference:** See `docs/CONFIG.md` for the complete config catalog with all keys,
+> types, defaults, and descriptions. The table below is a summary — if conflicts exist, CONFIG.md wins.
+
 | Key | Type | Category | Default | Description |
 |-----|------|----------|---------|-------------|
-| `auth.native_enabled` | bool | auth | true | Enable native login/register |
+| `auth.local_login_enabled` | bool | auth | true | Enable native login/register |
+| `auth.registration_enabled` | bool | auth | true | Allow new users to self-register |
 | `auth.sso_enabled` | bool | auth | false | Enable SSO via Authentik |
 | `auth.sso_client_id` | string | auth | "" | Authentik OAuth2 client ID |
 | `auth.sso_client_secret` | secret | auth | "" | Authentik OAuth2 client secret |
 | `auth.sso_base_url` | string | auth | "" | Authentik base URL |
 | `auth.link_accounts_enabled` | bool | auth | true | Allow SSO-native linking |
-| `auth.email_host` | string | auth | "" | SMTP host |
-| `auth.email_port` | int | auth | 587 | SMTP port |
-| `auth.email_from` | string | auth | "" | From email address |
-| `auth.email_password` | secret | auth | "" | SMTP password |
-| `learn.max_folder_depth` | int | learn | 5 | Max folder depth in course tree |
-| `outline.url` | string | learn | "" | Outline instance base URL |
-| `outline.api_token` | secret | learn | "" | Outline API token |
-| `challenge.deploy_enabled` | bool | challenge | false | Enable instance deployment |
-| `challenge.deploy_api_url` | string | challenge | "" | Deploy server API URL |
-| `challenge.deploy_api_token` | secret | challenge | "" | Deploy server API token |
+| `auth.authorization_enabled` | bool | auth | true | Enable RBAC permission checks (dev toggle) |
+| `auth.email.host` | string | auth | "" | SMTP host |
+| `auth.email.port` | int | auth | 587 | SMTP port |
+| `auth.email.use_tls` | bool | auth | true | Use STARTTLS for SMTP |
+| `auth.email.username` | string | auth | "" | SMTP auth username |
+| `auth.email.password` | secret | auth | "" | SMTP password |
+| `auth.email.sender_name` | string | auth | "ILS Platform" | Display name in From field |
+| `auth.email.sender_address` | string | auth | "" | From email address |
+| `learn.max_tree_depth` | int | learn | 5 | Max folder depth in course tree |
+| `learn.max_nodes_per_course` | int | learn | 500 | Max total nodes per course |
+| `outline.enabled` | bool | outline | false | Enable Outline integration |
+| `outline.url` | string | outline | "" | Outline instance base URL |
+| `outline.api_token` | secret | outline | "" | Outline API token |
+| `challenge.deploy.enabled` | bool | challenge | false | Enable instance deployment |
+| `challenge.deploy.api_url` | string | challenge | "" | Deploy server API URL |
+| `challenge.deploy.api_token` | secret | challenge | "" | Deploy server API token |
 | `challenge.instance_ttl_minutes` | int | challenge | 60 | Instance TTL in minutes |
-| `gitlab.url` | string | challenge | "" | GitLab instance URL |
-| `gitlab.token` | secret | challenge | "" | GitLab API token |
+| `challenge.git.enabled` | bool | challenge | false | Enable GitLab integration |
+| `challenge.git.url` | string | challenge | "" | GitLab instance URL |
+| `challenge.git.token` | secret | challenge | "" | GitLab API token |
+| `ai.enabled` | bool | ai | false | Enable AI assistant |
 | `ai.provider` | string | ai | "openai" | LLM provider |
 | `ai.model` | string | ai | "gpt-4o-mini" | LLM model name |
 | `ai.api_key` | secret | ai | "" | LLM API key |
 | `ai.base_url` | string | ai | "" | Custom LLM base URL |
 | `ai.rate_limit_per_hour` | int | ai | 20 | Max AI requests per user per hour |
-| `permission_version` | int | auth | 1 | Global permission version tracker |
+
+> **Note:** `permission_version` is per-user (field on `user` model), NOT a system_config key.
+> See [R-AUTH-07](../DECISIONS.md) for the resolved decision.
 
 ---
 
@@ -131,7 +145,7 @@ PATCH /api/admin/config/{key}/        # Update value
 ```json
 {
   "auth": [
-    { "key": "auth.native_enabled", "value": true, "value_type": "bool", "is_editable": true, "description": "Enable native login/register" },
+    { "key": "auth.local_login_enabled", "value": true, "value_type": "bool", "is_editable": true, "description": "Enable native login/register" },
     { "key": "auth.sso_client_secret", "value": "***", "value_type": "secret", "is_editable": true }
   ],
   "learn": [
@@ -143,7 +157,7 @@ PATCH /api/admin/config/{key}/        # Update value
 ### Config Update Request
 
 ```json
-PATCH /api/admin/config/auth.native_enabled/
+PATCH /api/admin/config/auth.local_login_enabled/
 { "value": false }
 ```
 
@@ -168,15 +182,15 @@ Then: Tất cả predefined config keys được tạo với default values
 
 ### AC-CFG-02: Update Bool Config
 ```
-Given: auth.native_enabled = true
-When: PATCH /api/admin/config/auth.native_enabled/ với {"value": false}
+Given: auth.local_login_enabled = true
+When: PATCH /api/admin/config/auth.local_login_enabled/ với {"value": false}
 Then: Response 200 với updated value
   And: Ngay sau đó POST /api/auth/login/ trả 403
 ```
 
 ### AC-CFG-03: Type Validation
 ```
-Given: auth.email_port is type=int
+Given: auth.email.port is type=int
 When: PATCH với {"value": "not-a-number"}
 Then: Response 400 "Value must be an integer"
 ```
@@ -190,8 +204,8 @@ Then: Response {"value": "***"} (không trả giá trị thực)
 
 ### AC-CFG-05: Non-Editable Config
 ```
-Given: permission_version config với is_editable=False
-When: PATCH /api/admin/config/permission_version/
+Given: A config key with is_editable=False
+When: PATCH /api/admin/config/{key}/
 Then: Response 403 "Config is not editable"
 ```
 

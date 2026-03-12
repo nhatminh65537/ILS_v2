@@ -118,6 +118,15 @@ Chưa có cơ chế kiểm soát quyền truy cập. Mọi user đều có thể
   - Mismatch → recompute bitmap, update cache.
 - **Không dùng `system_config` global** — chỉ per-user version.
 
+### FR-AUTHZ-09: Authorization Bypass Toggle (Development)
+- `system_config[auth.authorization_enabled]` (bool, default `true`) cho phép tắt kiểm tra quyền.
+- Khi `false`: mọi user đã đăng nhập đều bypass permission check — tất cả endpoint đều truy cập được.
+- Authentication vẫn bắt buộc (unauthenticated → 401).
+- Permission auto-discovery và role sync vẫn chạy bình thường khi startup.
+- JWT vẫn chứa bitmap — chỉ là không kiểm tra.
+- **Mục đích:** Cho phép phát triển các feature slices (Learn, Challenge, Quiz…) mà không cần Slice 2 (RBAC) hoàn thành.
+- **⚠️ Production:** PHẢI đặt `true` trong production. Default value = `true`.
+
 ---
 
 ## Edge Cases
@@ -325,4 +334,19 @@ Then: 10 user_role records bị xóa
 Given: User alice có role "Editor" (không có permission Y)
 When: Admin POST /api/authz/users/{alice_id}/permissions/ với permission_id = Y
 Then: Response 400 Bad Request "User does not have this permission via any role"
+```
+
+### AC-AUTHZ-10: Authorization Bypass Toggle
+```
+Given: system_config['auth.authorization_enabled'] = false
+  And: User bob đã đăng nhập (có JWT hợp lệ) nhưng không có role nào
+When: Bob gửi GET /api/courses/
+Then: Response 200 OK — permission check bị bypass
+```
+
+### AC-AUTHZ-11: Authorization Bypass Does Not Bypass Authentication
+```
+Given: system_config['auth.authorization_enabled'] = false
+When: Request gửi đến GET /api/courses/ KHÔNG có JWT
+Then: Response 401 Unauthorized — authentication vẫn bắt buộc
 ```

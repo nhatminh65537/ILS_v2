@@ -78,7 +78,7 @@ ILS_v2/
 │   │   ├── v1/             # Per-table SQL files (historical)
 │   │   └── vx/
 │   │       ├── dbv2.sql    # Intermediate schema (historical)
-│   │       └── dbv3.sql    # AUTHORITATIVE schema — source of truth
+│   │       └── dbv3.sql    # ⚠️ LEGACY ARTIFACT — pre-normalization; `DATA_MODEL.md` is authoritative
 │   └── ui/                 # UI designs (to be filled)
 │
 ├── backend/
@@ -268,7 +268,35 @@ class InstanceDeploymentBackend(Protocol):
 
 ---
 
-### 4.11 No Database Triggers
+### 4.11 Authorization Bypass for Development
+
+`system_config[auth.authorization_enabled]` (bool, default `true`) controls whether RBAC permission checks are enforced on API endpoints.
+
+When set to `false`:
+- All **authenticated** users bypass permission checks — every endpoint is accessible regardless of role.
+- Authentication (login/JWT) is still required — unauthenticated requests are still rejected with 401.
+- Permission auto-discovery and role sync still run at startup (DB data stays consistent).
+- JWT still includes the `permissions` bitmap — it is simply not checked.
+
+**Purpose:** Allow developers to work on feature slices (Learn, Challenge, Quiz, etc.) without needing a fully functional RBAC system. This decouples feature development from Slice 2 (Authorization).
+
+**Implementation:** The `HasJWTPermission` DRF permission class (or equivalent middleware) checks `get_config('auth.authorization_enabled', True)` before evaluating the bitmap. If `False`, the check returns `True` immediately.
+
+```python
+class HasJWTPermission(BasePermission):
+    def has_permission(self, request, view):
+        # Bypass if authZ is disabled (dev mode)
+        if not get_config('auth.authorization_enabled', True):
+            return True
+        # Normal bitmap check
+        ...
+```
+
+**⚠️ Production rule:** `auth.authorization_enabled` MUST be `true` in production. The `seed_config` command sets it to `true` by default. Setting it to `false` in production is a critical security misconfiguration.
+
+---
+
+### 4.13 No Database Triggers
 
 All denormalized field updates (counters, aggregates, path maintenance) are done at **application level** via Django signals or explicit service method calls. **No PostgreSQL triggers** are used.
 
@@ -414,7 +442,7 @@ Client → POST /challenges/{slug}/submit { flag }
               │ ORM queries
 ┌─────────────▼───────────────────────────────────────────────┐
 │                      PostgreSQL Database                     │
-│  Schema: dbv3.sql (authoritative)                           │
+│  Schema: DATA_MODEL.md (authoritative); dbv3.sql (legacy)   │
 └─────────────────────────────────────────────────────────────┘
               │                    │                    │
 ┌─────────────▼──┐    ┌───────────▼──┐    ┌───────────▼──┐
@@ -435,6 +463,7 @@ Client → POST /challenges/{slug}/submit { flag }
 - ❌ **Never allow deleting or modifying built-in roles** (`is_system=TRUE`) via API — their permissions are synced at startup
 - ❌ **Never use permission hierarchy** (parent/child) — permissions are flat; roles provide grouping
 - ❌ **Never use DB triggers for denormalized field updates** — all sync via Django signals at app level
+- ❌ **Never deploy with `auth.authorization_enabled=false` in production** — dev-only bypass for testing other features
 
 ### Tree / Nodes
 - ❌ **Never bypass Node models to access content directly** — all tree operations go through `*Node` models
@@ -504,10 +533,16 @@ Client → POST /challenges/{slug}/submit { flag }
 
 See **`docs/IMPL_PLAN.md`** for the full vertical slice plan (Slices 0–11).
 
+> **⚠️ Nguyên tắc ưu tiên:** Yêu cầu chức năng trước; phi chức năng chỉ khi cần thiết hoặc đã xong hết chức năng.
+> Xem `docs/DECISIONS.md` → R-DEV-02.
+
+> **⚠️ AuthZ Bypass:** `auth.authorization_enabled=false` cho phép phát triển feature slices mà không cần Slice 2 hoàn thành.
+> Xem `docs/DECISIONS.md` → R-DEV-01.
+
 High-level sequence:
 1. Slice 0 — Foundation (User model, migrations, system_config seed)
 2. Slice 1 — Authentication (JWT, SSO, sessions)
-3. Slice 2 — Authorization (RBAC, permission auto-discovery, JWT encoding)
+3. Slice 2 — Authorization (RBAC, permission auto-discovery, JWT encoding) — *can be parallel with 3–8 using authZ bypass*
 4. Slice 3 — System Config CRUD API
 5. Slice 4 — Frontend Foundation (layout, stores, i18n)
 6. Slices 5–8 — Content features (Learn, Challenge, Quiz, Profile)

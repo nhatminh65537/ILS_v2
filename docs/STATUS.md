@@ -171,18 +171,25 @@ Full details in **`docs/DECISIONS.md`**.
 
 ## Recommended Start Order
 
+> **Nguyên tắc:** Ưu tiên yêu cầu chức năng trước, yêu cầu phi chức năng chỉ triển khai khi cần thiết.
+> Xem [R-DEV-02](DECISIONS.md) — Functional Requirements Priority.
+
+> **AuthZ Bypass:** Với `auth.authorization_enabled=false`, các feature slices (3–9, 11)
+> có thể phát triển **song song** với Slice 2 (RBAC).
+> Xem [R-DEV-01](DECISIONS.md) — Authorization Bypass Toggle.
+
 ```
 Slice 0 (Foundation: User model + migrations + seed_config)
   └── Slice 1 (Authentication)
-        └── Slice 2 (RBAC)
-              ├── Slice 3 (System Config)
-              ├── Slice 4 (Frontend Foundation)
-              │     ├── Slice 5 (Learn)
-              │     ├── Slice 6 (Challenge)
-              │     ├── Slice 7 (Quiz)
-              │     └── Slice 8 (User Profile)
-              ├── Slice 9  (Notifications — needs 5+6+7 signals)
-              └── Slice 11 (Statistics — needs 5+6+7 data)
+        ├── Slice 2 (RBAC) ──────── required before production deploy
+        ├── Slice 3 (System Config) ← can start with authZ bypass
+        ├── Slice 4 (Frontend Foundation) ← can start with authZ bypass
+        │     ├── Slice 5 (Learn)
+        │     ├── Slice 6 (Challenge)
+        │     ├── Slice 7 (Quiz)
+        │     └── Slice 8 (User Profile)
+        ├── Slice 9  (Notifications — needs 5+6+7 signals)
+        └── Slice 11 (Statistics — needs 5+6+7 data)
 ```
 
 Full task breakdown with per-task file lists: see `docs/IMPL_PLAN.md`.

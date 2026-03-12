@@ -72,7 +72,7 @@ ILS_v2/
 │   └── backend/      # Django config (settings, urls, asgi)
 ├── frontend/         # Next.js app (App Router)
 ├── design/
-│   └── database/vx/dbv3.sql   # Authoritative DB schema
+│   └── database/vx/dbv3.sql   # ⚠️ Legacy schema (DATA_MODEL.md is authoritative)
 └── docs/
     ├── ARCHITECTURE.md         # System design + data flows
     ├── DATA_MODEL.md           # Entity reference
@@ -92,7 +92,7 @@ ILS_v2/
 | `docs/DATA_MODEL.md` | Before touching DB models or serializers |
 | `docs/CONFIG.md` | Before using `system_config` keys |
 | `docs/IMPL_PLAN.md` | Before starting a new slice — dependency order and task breakdown |
-| `design/database/vx/dbv3.sql` | **Authoritative schema** — ORM must match SQL |
+| `design/database/vx/dbv3.sql` | ⚠️ **Legacy schema** — historical reference; `docs/DATA_MODEL.md` is authoritative |
 
 ---
 

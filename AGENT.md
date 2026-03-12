@@ -149,6 +149,13 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 
 See **`docs/IMPL_PLAN.md`** for the full vertical slice plan (Slices 0–11).
 
+> **⚠️ Nguyên tắc ưu tiên:** Yêu cầu chức năng trước, phi chức năng chỉ khi cần thiết.
+> Xem `docs/DECISIONS.md` → R-DEV-02.
+
+> **⚠️ AuthZ Bypass:** Đặt `auth.authorization_enabled=false` trong `system_config` để bypass
+> RBAC permission checks khi phát triển. Cho phép làm Slice 3–11 song song với Slice 2.
+> **MUST be `true` in production.** Xem `docs/DECISIONS.md` → R-DEV-01.
+
 > **⚠️ Slice 10 (AI Assistant) is DEFERRED.**
 > Do NOT implement any AI feature until explicitly agreed.
 > See `docs/STATUS.md → Deferred Features` for details.

@@ -782,7 +782,7 @@ Every course has a hidden root node created automatically when the course is cre
 **Decision date:** Pre-project
 **Source:** `docs/prd/03-learn.md §FR-LEARN-08`
 
-`system_config[learn.max_folder_depth]` controls maximum nested folder count. Validate on **create** and on **move**. Violation returns HTTP 400 `"Maximum folder depth exceeded"`.
+`system_config[learn.max_tree_depth]` controls maximum nested folder count. Validate on **create** and on **move**. Violation returns HTTP 400 `"Maximum folder depth exceeded"`.
 
 ---
 
@@ -889,5 +889,44 @@ Instance deployment uses Strategy pattern with a `Protocol` class (`InstanceDepl
 **Source:** `docs/DATA_MODEL.md §2 lesson`, `docs/DATA_MODEL.md §2 quiz_question`
 
 Both `lesson` and `quiz_question` have `status content_status NOT NULL DEFAULT 'draft'`. Values: draft, published, archived. Published content visible to all members; draft/archived admin/editor only.
+
+---
+
+### R-DEV-01: Authorization Bypass Toggle for Development
+
+**Decision date:** 2026-03-12
+**Source:** `docs/CONFIG.md`, `docs/ARCHITECTURE.md §4.11`
+
+`system_config[auth.authorization_enabled]` (bool, default `true`) allows disabling RBAC permission checks at runtime.
+
+**When `false`:**
+- All authenticated users bypass permission checks — every endpoint accessible.
+- Authentication is still required (401 for unauthenticated).
+- Permission auto-discovery and role sync still happen at startup.
+- JWT still contains bitmap — just not checked.
+
+**Purpose:** Enables feature development (Slices 3–9, 11) without needing Slice 2 (Authorization) fully complete. Decouples feature slices from RBAC implementation.
+
+**Constraint:** Must be `true` in production. Default value is `true` (seed_config sets this).
+
+---
+
+### R-DEV-02: Functional Requirements Priority Over Non-Functional
+
+**Decision date:** 2026-03-12
+**Source:** Project implementation strategy
+
+**Decision:** During implementation, **functional requirements take priority** over non-functional requirements. Non-functional requirements (logging, rate limiting, i18n, theming, CDN, etc.) are implemented only when:
+1. They are essential for the functional feature to work (e.g., JWT auth is needed for login).
+2. All functional requirements for a slice are complete.
+3. Explicitly requested by the team.
+
+**Rationale:** Limited development time — focus on delivering working features first. Non-functional polish can be layered in after the core feature set is functional.
+
+**What this means for implementation:**
+- Slice 1 (Auth): Implement login/register/JWT first. Password policy enforcement, SMTP email, advanced rate limiting → defer until core auth works.
+- Slice 2 (RBAC): Implement permission discovery + role CRUD + JWT encoding. Fine-tuned cache invalidation optimization → defer.
+- Slices 5–7: Implement CRUD + progress tracking. Caching, pagination optimization, advanced filtering → defer.
+- Frontend slices: Implement working views first. i18n, theming, animation, accessibility → defer.
 
 ---

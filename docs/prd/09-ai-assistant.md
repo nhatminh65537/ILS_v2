@@ -55,7 +55,7 @@ ILS v2 có tính năng AI assistant với 3 chế độ hoạt động: **learn_
 
 ### FR-AI-02: LLM Integration
 - `ai/services/llm_client.py` gọi LLM API thực.
-- Config: `system_config[ai.provider]` (openai/ollama), `system_config[ai.model]`, `system_config[ai.api_key]` (secret).
+- Config: `system_config[ai.enabled]`, `system_config[ai.provider]` (openai/anthropic), `system_config[ai.model]`, `system_config[ai.api_key]` (secret).
 - Timeout, error handling (LLM unavailable → trả lỗi 503).
 
 ### FR-AI-03: Mode: learn_assistant
@@ -131,12 +131,15 @@ GET  /api/ai/admin/logs/          # Admin: view AI request logs
 ### AI Config (system_config keys)
 
 ```
-ai.provider       = "openai" | "ollama"
+ai.enabled        = false          (bật/tắt toàn bộ AI assistant)
+ai.provider       = "openai" | "anthropic"
 ai.model          = "gpt-4o-mini"
 ai.api_key        = "<secret>"  (value_type=secret)
 ai.base_url       = "https://api.openai.com/v1"  (cho custom endpoints)
 ai.rate_limit_per_hour = 20
 ```
+
+> **Canonical reference:** `docs/CONFIG.md` — AI group.
 
 ### AIRequest Model Fields
 

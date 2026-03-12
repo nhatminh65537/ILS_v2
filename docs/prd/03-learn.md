@@ -96,7 +96,7 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 - Node trong course draft không accessible với member.
 
 ### FR-LEARN-08: Max Depth Config
-- `system_config[learn.max_folder_depth]` kiểm soát số cấp folder tối đa.
+- `system_config[learn.max_tree_depth]` kiểm soát số cấp folder tối đa.
 - Khi tạo folder: validate depth không vượt quá giới hạn.
 
 ---

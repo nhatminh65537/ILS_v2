@@ -72,7 +72,7 @@ Chưa có API hay giao diện nào cho challenge. Editor không thể tạo/qu�
 - Challenge có thể có nhiều flags (bất kỳ flag nào đúng = passed).
 
 ### FR-CHAL-04: GitLab Import
-- Admin cấu hình `system_config[gitlab.url]` và `system_config[gitlab.token]`.
+- Admin cấu hình `system_config[challenge.git.url]` và `system_config[challenge.git.token]`.
 - Editor chọn GitLab project: fetch metadata (title, description) + README.
 - Tạo `challenge` với `source=gitlab` và `challenge_gitlab` record.
 - Sync: gọi lại GitLab API, cập nhật `challenge.description` từ README, cập nhật `last_synced_at`.
@@ -89,7 +89,7 @@ Chưa có API hay giao diện nào cho challenge. Editor không thể tạo/qu�
 - Nếu đã complete rồi: vẫn accept nhưng không cộng điểm lại.
 
 ### FR-CHAL-06: Instance Deployment
-- Chỉ khi `challenge.instance_required=True` và `system_config[challenge.deploy_enabled]=True`.
+- Chỉ khi `challenge.instance_required=True` và `system_config[challenge.deploy.enabled]=True`.
 - Member request deploy: gọi external deploy API (cấu hình qua `system_config`).
 - Tạo `challenge_instance` với `status=running`, `expires_at` (TTL từ config), `flag_value` (nếu instance-specific).
 - Partial unique index: chỉ 1 instance `running` per (user, challenge).
@@ -112,7 +112,7 @@ Chưa có API hay giao diện nào cho challenge. Editor không thể tạo/qu�
 |------|----------|
 | Submit flag khi đã solved | Ghi lại submission nhưng không cộng điểm |
 | Submit flag rỗng | Trả lỗi 400 validation |
-| Deploy instance khi deploy_enabled=False | Trả lỗi 403 "Instance deployment disabled" |
+| Deploy instance khi deploy.enabled=False | Trả lỗi 403 "Instance deployment disabled" |
 | Request deploy khi đã có running instance | Trả lỗi 409 "Instance already running" |
 | GitLab project không tồn tại / không có quyền | Trả lỗi 400 với GitLab error message |
 | Instance hết hạn (expires_at) | Background task set status=terminated |
@@ -288,7 +288,7 @@ Then: challenge.description được cập nhật
 
 ### AC-CHAL-07: Deploy Disabled
 ```
-Given: system_config[challenge.deploy_enabled] = false
+Given: system_config[challenge.deploy.enabled] = false
 When: POST /api/challenge/challenges/{slug}/instance/
 Then: Response 403 "Instance deployment is disabled"
 ```

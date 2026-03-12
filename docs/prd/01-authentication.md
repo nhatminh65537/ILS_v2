@@ -53,7 +53,7 @@ Hệ thống chưa có cơ chế xác thực nào được triển khai. Ngườ
 - Validate username unique, password strength (min 8 ký tự).
 - Tạo bản ghi `user` và `user_profile`.
 - Trả về access token + refresh token.
-- Chỉ hoạt động khi `system_config[auth.native_enabled] = true`.
+- Chỉ hoạt động khi `system_config[auth.local_login_enabled] = true` và `system_config[auth.registration_enabled] = true`.
 
 ### FR-AUTH-02: Native Login
 - Nhận `username` + `password`.
@@ -102,7 +102,8 @@ Hệ thống chưa có cơ chế xác thực nào được triển khai. Ngườ
 
 ### FR-AUTH-10: Admin Config
 - CRUD `system_config` cho category `auth`.
-- Keys: `auth.native_enabled`, `auth.sso_enabled`, `auth.link_accounts_enabled`, `auth.email_host`, `auth.email_port`, `auth.email_from`.
+- Keys: `auth.local_login_enabled`, `auth.registration_enabled`, `auth.sso_enabled`, `auth.link_accounts_enabled`, `auth.email.host`, `auth.email.port`, `auth.email.sender_address`.
+  - Xem `docs/CONFIG.md` để biết đầy đủ canonical key names.
 
 ---
 
@@ -111,7 +112,7 @@ Hệ thống chưa có cơ chế xác thực nào được triển khai. Ngườ
 | Case | Handling |
 |------|----------|
 | SSO user cố đăng nhập native (password = NULL) | Trả lỗi 400: "Account uses SSO only" |
-| Native login khi `native_enabled = false` | Trả lỗi 403: "Native login disabled" |
+| Native login khi `local_login_enabled = false` | Trả lỗi 403: "Native login disabled" |
 | SSO callback với `external_id` đã liên kết user khác | Reject, trả lỗi 409 |
 | Refresh token đã bị revoke | Trả 401 Unauthorized |
 | Refresh token hết hạn | Trả 401 Unauthorized |
@@ -231,7 +232,7 @@ Then: Response 403 "SSO login is disabled"
 
 ### AC-AUTH-07: Native Disabled
 ```
-Given: system_config[auth.native_enabled] = false
+Given: system_config[auth.local_login_enabled] = false
 When: POST /api/auth/login/
 Then: Response 403 "Native login is disabled"
 ```

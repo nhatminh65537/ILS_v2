@@ -13,12 +13,13 @@ Target: one instance per organization, no horizontal scale needed.
 - **Database**: PostgreSQL (SQLite in dev)
 - **Auth**: JWT with permission claims encoded in token; SSO via Authentik
 - **Authorization**: API-based flat RBAC; **bitmap encoding** (base64, ≤256 permissions) in JWT; per-user `permission_version`; built-in roles via `@add_role_granted` decorator
+- **AuthZ Bypass**: `system_config[auth.authorization_enabled]` (default `true`) — set to `false` to bypass RBAC for dev/testing; MUST be `true` in production
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `design/database/vx/dbv3.sql` | **Authoritative schema** |
+| `design/database/vx/dbv3.sql` | **Legacy artifact** — historical schema, not authoritative |
 | `backend/api/models.py` | All ORM models (~1195 lines) |
 | `backend/ai/` | ⚠️ DEFERRED — AI assistant scaffold (not active, not in INSTALLED_APPS) |
 | `backend/backend/settings.py` | Django config (SQLite dev, PostgreSQL commented out) |
@@ -40,6 +41,9 @@ Target: one instance per organization, no horizontal scale needed.
 - All domain ORM models complete; no API views exist yet
 - **Pre-implementation gate active**: 12+ open questions in `docs/DECISIONS.md` must be resolved by humans before coding starts
 - Next action: resolve open questions → start Slice 0
+- **New decisions (2026-03-12):** R-DEV-01 (AuthZ bypass toggle), R-DEV-02 (Functional requirements priority)
+- **Implementation principle:** Functional requirements first; non-functional only when needed or all functional done
+- **Doc consistency (2026-03-12):** All config keys across 16 docs normalized to match `CONFIG.md` canonical names; `DATA_MODEL.md` header fixed to be self-authoritative (was incorrectly pointing to `dbv3.sql`)
 
 ## Patterns
 
@@ -53,6 +57,10 @@ Target: one instance per organization, no horizontal scale needed.
 - **Instance deployment**: Strategy pattern — `InstanceDeploymentBackend` Protocol; current: `SocketDeploymentBackend`; replaceable with HTTP/gRPC
 - **No DB triggers** — all denormalized updates at Django app level (signals/services)
 - `lesson.status` and `quiz_question.status` — both use `content_status` enum (draft/published/archived)
+- **AuthZ bypass check**: `HasJWTPermission` checks `get_config('auth.authorization_enabled', True)` before bitmap check; returns `True` immediately if disabled
+- **Functional-first priority**: Backend API functional → Backend non-functional → Frontend functional → Frontend non-functional
+- **Config key authority chain**: `CONFIG.md` (canonical) → PRDs reference it → `IMPL_PLAN.md` seed_config matches it → `PRD-10` summary table matches it
+- **AI provider**: `openai` / `anthropic` (NOT `ollama`) — see `CONFIG.md` ai.* group
 
 ## Key DB Decisions
 
