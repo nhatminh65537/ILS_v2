@@ -83,7 +83,7 @@ class UserAuthProviderSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserAuthProvider
-        fields = ['id', 'provider', 'provider_user_id', 'created_at']
+        fields = ['id', 'provider', 'external_id', 'is_primary', 'is_active', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -96,9 +96,8 @@ class PermissionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Permission
-        fields = ['id', 'code', 'name', 'description', 'parent', 'is_active',
-                  'endpoint_path', 'http_method']
-        read_only_fields = ['id', 'endpoint_path', 'http_method', 'last_scanned']
+        fields = ['id', 'name', 'description', 'is_active']
+        read_only_fields = ['id']
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -205,9 +204,9 @@ class CourseNodeSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CourseNode
-        fields = ['id', 'course', 'parent', 'is_item', 'title', 'position',
+        fields = ['id', 'course', 'parent', 'is_item', 'title', 'position', 'path',
                   'lesson', 'children']
-        read_only_fields = ['id', 'pre_path']
+        read_only_fields = ['id', 'path']
     
     def get_children(self, obj):
         if obj.is_item:
@@ -430,7 +429,7 @@ class SystemConfigSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = SystemConfig
-        fields = ['id', 'key', 'value', 'value_type', 'description', 'is_public']
+        fields = ['id', 'key', 'value', 'value_type', 'category', 'description', 'is_editable', 'is_runtime']
         read_only_fields = ['id']
 
 

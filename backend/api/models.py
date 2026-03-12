@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
+from django.db.models import F
 import hashlib
 import hmac
 import re
@@ -78,7 +79,7 @@ class SoftDeleteAudit(models.Model):
 class BaseNode(FullAudit):
     """
     Abstract model cho cấu trúc cây (dùng cho challenge_node, course_node, quiz_node)
-    Sử dụng Materialized Path pattern để tránh N+1 query
+    Sử dụng dot-separated path để hỗ trợ validate depth/subtree
     OOP: Encapsulate tree operations and invariants
     """
     parent = models.ForeignKey(
@@ -94,9 +95,10 @@ class BaseNode(FullAudit):
         help_text="True nếu là item (challenge/lesson/quiz), False nếu là folder"
     )
     title = models.TextField()
-    pre_path = models.TextField(
+    path = models.TextField(
+        default='',
         db_index=True,
-        help_text="Materialized path để query nhanh (ví dụ: /1/3/10/)"
+        help_text="Dot-separated ancestor IDs (ví dụ: 1.3)"
     )
     position = models.IntegerField(
         default=0,
@@ -113,14 +115,17 @@ class BaseNode(FullAudit):
     # Domain methods - OOP: Tree operations with invariant enforcement
     def rebuild_path(self):
         """
-        Rebuild materialized path for this node and all descendants
+        Rebuild path for this node and all descendants
         Per OOP feedback: Encapsulate path calculation logic
         """
         if self.parent:
-            self.pre_path = f"{self.parent.pre_path}{self.parent.id}/"
+            if self.parent.path:
+                self.path = f"{self.parent.path}.{self.parent.id}"
+            else:
+                self.path = str(self.parent.id)
         else:
-            self.pre_path = "/"
-        self.save(update_fields=['pre_path'])
+            self.path = ''
+        self.save(update_fields=['path'])
         
         # Recursively update children
         for child in self.children.all():
@@ -160,10 +165,10 @@ class BaseNode(FullAudit):
             current = current.parent
     
     def get_descendants(self):
-        """Get all descendant nodes using materialized path"""
-        # This is efficient using the path index
+        """Get all descendant nodes using dot-separated path prefix"""
+        prefix = f"{self.path}.{self.id}" if self.path else str(self.id)
         return self.__class__.objects.filter(
-            pre_path__startswith=f"{self.pre_path}{self.id}/"
+            path__startswith=prefix
         )
     
     def get_ancestors(self):
@@ -384,7 +389,7 @@ class ChallengeNode(BaseNode):
         indexes = [
             models.Index(fields=['parent']),
             models.Index(fields=['challenge']),
-            models.Index(fields=['pre_path'], opclasses=['text_pattern_ops']),
+            models.Index(fields=['path']),
         ]
 
     def __str__(self):
@@ -407,7 +412,7 @@ class ChallengeInstance(FullAudit):
         db_column='challenge_id'
     )
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='challenge_instances',
         db_column='user_id'
@@ -857,7 +862,7 @@ class CourseNode(BaseNode):
             models.Index(fields=['parent']),
             models.Index(fields=['lesson']),
             models.Index(fields=['is_item']),
-            models.Index(fields=['pre_path'], opclasses=['text_pattern_ops']),
+            models.Index(fields=['path']),
         ]
 
     def __str__(self):
@@ -1026,7 +1031,7 @@ class QuizNode(BaseNode):
         indexes = [
             models.Index(fields=['parent']),
             models.Index(fields=['quiz']),
-            models.Index(fields=['pre_path'], opclasses=['text_pattern_ops']),
+            models.Index(fields=['path']),
         ]
 
     def __str__(self):
@@ -1474,9 +1479,10 @@ class User(AbstractUser, CreateAudit, UpdateAudit):
     """
     Custom User model extending Django's AbstractUser
     """
-    email = models.EmailField(unique=True, null=True, blank=True)
+    email = models.EmailField(blank=True, default='')
     is_active = models.BooleanField(default=True)
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    permission_version = models.IntegerField(default=0)
     
     objects = UserManager()
     
@@ -1500,13 +1506,11 @@ class User(AbstractUser, CreateAudit, UpdateAudit):
         return PermissionService.compute_user_permissions(self)
     
     def grant_permission(self, permission):
-        """Grant a permission directly to user"""
+        """Create an explicit deny entry for user/permission override."""
         UserPermission.objects.get_or_create(
             user=self,
-            permission=permission,
-            defaults={'is_allowed': True}
+            permission=permission
         )
-        # Invalidate cache
         self.invalidate_permission_cache()
     
     def revoke_permission(self, permission):
@@ -1526,8 +1530,10 @@ class User(AbstractUser, CreateAudit, UpdateAudit):
         self.invalidate_permission_cache()
     
     def invalidate_permission_cache(self):
-        """Invalidate cached permissions"""
-        UserPermissionCache.objects.filter(user=self).update(is_valid=False)
+        """Invalidate permission cache by bumping per-user version."""
+        type(self).objects.filter(pk=self.pk).update(permission_version=F('permission_version') + 1)
+        UserPermissionCache.objects.filter(user=self).delete()
+        self.refresh_from_db(fields=['permission_version'])
     
     def has_permission(self, permission_code):
         """Check if user has a specific permission"""
@@ -1540,7 +1546,7 @@ class UserProfile(FullAudit):
     Extended user profile information
     """
     user = models.OneToOneField(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         primary_key=True,
         related_name='profile',
@@ -1579,7 +1585,7 @@ class UserAuthProvider(FullAudit):
         GITHUB = 'github', 'GitHub'
     
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='auth_providers',
         db_column='user_id'
@@ -1588,19 +1594,21 @@ class UserAuthProvider(FullAudit):
         max_length=20,
         choices=Provider.choices
     )
-    provider_user_id = models.TextField()
-    provider_data = models.JSONField(
+    external_id = models.TextField()
+    extra_data = models.JSONField(
         null=True,
         blank=True,
         help_text="Additional data from provider"
     )
+    is_primary = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     
     class Meta:
-        db_table = 'user_auth_provider'
-        unique_together = [['provider', 'provider_user_id']]
+        db_table = 'user_identity'
+        unique_together = [['provider', 'external_id']]
         indexes = [
             models.Index(fields=['user']),
-            models.Index(fields=['provider', 'provider_user_id']),
+            models.Index(fields=['provider', 'external_id']),
         ]
     
     def __str__(self):
@@ -1611,70 +1619,36 @@ class UserAuthProvider(FullAudit):
 # AUTHORIZATION MODELS
 # ============================================================================
 
-class Permission(FullAudit, SoftDeleteAudit):
+class Permission(FullAudit):
     """
-    Permission model with hierarchical structure
-    Each permission corresponds to an API endpoint or group of endpoints
+    Flat permission model. Name is canonical permission key:
+    {app_label}.{ViewClassName}.{http_method}
     """
-    code = models.TextField(unique=True, help_text="Permission code (e.g., 'course.view')")
-    name = models.TextField(help_text="Human-readable name")
+    name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)
-    
-    parent = models.ForeignKey(
-        'self',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='children',
-        db_column='parent_id'
-    )
-    
     is_active = models.BooleanField(
         default=True,
-        help_text="If parent is disabled, children are also disabled"
+        help_text="Synced by startup endpoint scan"
     )
-    
-    # For automatic sync from endpoints
-    endpoint_path = models.TextField(blank=True, null=True)
-    http_method = models.CharField(max_length=10, blank=True, null=True)
-    last_scanned = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         db_table = 'permission'
         indexes = [
-            models.Index(fields=['code']),
-            models.Index(fields=['parent']),
+            models.Index(fields=['name']),
             models.Index(fields=['is_active']),
         ]
     
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return self.name
     
     # Domain methods per OOP feedback
-    def is_effective_active(self):
-        """
-        Check if permission is effectively active (considering parent hierarchy)
-        """
-        if not self.is_active:
-            return False
-        if self.parent:
-            return self.parent.is_effective_active()
-        return True
-    
-    def get_all_children(self):
-        """Get all descendant permissions"""
-        children = list(self.children.all())
-        for child in list(children):
-            children.extend(child.get_all_children())
-        return children
-    
     def enable(self):
         """Enable this permission"""
         self.is_active = True
         self.save()
     
     def disable(self):
-        """Disable this permission (children will be effectively disabled too)"""
+        """Disable this permission"""
         self.is_active = False
         self.save()
 
@@ -1723,7 +1697,7 @@ class Role(FullAudit):
         """Get all permissions for this role"""
         return Permission.objects.filter(
             role_permissions__role=self,
-            is_deleted=False
+            is_active=True
         ).distinct()
 
 
@@ -1753,7 +1727,7 @@ class RolePermission(CreateAudit):
         ]
     
     def __str__(self):
-        return f"{self.role.name} - {self.permission.code}"
+        return f"{self.role.name} - {self.permission.name}"
 
 
 class UserRole(CreateAudit):
@@ -1761,7 +1735,7 @@ class UserRole(CreateAudit):
     Many-to-Many relationship between User and Role
     """
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='user_roles',
         db_column='user_id'
@@ -1787,12 +1761,12 @@ class UserRole(CreateAudit):
 
 class UserPermission(FullAudit):
     """
-    Direct permission assignment to user (overrides role permissions)
+    Deny-only direct override. Row existence means denied.
     """
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='user_permissions',
+        related_name='permission_overrides',
         db_column='user_id'
     )
     permission = models.ForeignKey(
@@ -1801,11 +1775,6 @@ class UserPermission(FullAudit):
         related_name='user_permissions',
         db_column='permission_id'
     )
-    is_allowed = models.BooleanField(
-        default=True,
-        help_text="True = allow, False = deny (deny takes precedence)"
-    )
-    
     class Meta:
         db_table = 'user_permission'
         unique_together = [['user', 'permission']]
@@ -1815,37 +1784,32 @@ class UserPermission(FullAudit):
         ]
     
     def __str__(self):
-        access = "Allow" if self.is_allowed else "Deny"
-        return f"{self.user.username} - {self.permission.code} ({access})"
+        return f"{self.user.username} - {self.permission.name} (Deny)"
 
 
-class UserPermissionCache(CreateAudit):
+class UserPermissionCache(models.Model):
     """
     Cached encoded permissions for user (used in JWT token)
     Speeds up token generation/revocation
     """
     user = models.OneToOneField(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         primary_key=True,
         related_name='permission_cache',
         db_column='user_id'
     )
-    encoded_permissions = models.JSONField(
-        help_text="Pre-encoded permissions with hierarchy"
+    encoded_permissions = models.TextField(
+        help_text="Base64 encoded permission bitmap"
     )
-    is_valid = models.BooleanField(
-        default=True,
-        help_text="Set to False when permissions change"
-    )
-    last_computed_at = models.DateTimeField(auto_now=True)
+    permission_version = models.IntegerField()
+    generated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'user_permission_cache'
     
     def __str__(self):
-        status = "Valid" if self.is_valid else "Invalid"
-        return f"Cache for {self.user.username} ({status})"
+        return f"Cache for {self.user.username} (v{self.permission_version})"
 
 
 # ============================================================================
@@ -1857,27 +1821,26 @@ class SystemConfig(FullAudit):
     System-wide configuration key-value store
     """
     class ConfigType(models.TextChoices):
-        BOOLEAN = 'boolean', 'Boolean'
-        INTEGER = 'integer', 'Integer'
+        BOOL = 'bool', 'Bool'
+        INT = 'int', 'Int'
         STRING = 'string', 'String'
         JSON = 'json', 'JSON'
+        SECRET = 'secret', 'Secret'
     
-    key = models.TextField(unique=True)
-    value = models.TextField()
+    key = models.CharField(max_length=150, unique=True)
+    value = models.JSONField(default=dict)
     value_type = models.CharField(
         max_length=20,
         choices=ConfigType.choices,
         default=ConfigType.STRING
     )
+    category = models.CharField(max_length=50, blank=True)
     description = models.TextField(blank=True, null=True)
-    is_public = models.BooleanField(
-        default=False,
-        help_text="If True, can be accessed without authentication"
-    )
     is_editable = models.BooleanField(
         default=True,
         help_text="If False, system-managed; API PATCH returns 403"
     )
+    is_runtime = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'system_config'
@@ -1890,13 +1853,10 @@ class SystemConfig(FullAudit):
     
     def get_typed_value(self):
         """Return value with correct type"""
-        if self.value_type == self.ConfigType.BOOLEAN:
-            return self.value.lower() in ('true', '1', 'yes')
-        elif self.value_type == self.ConfigType.INTEGER:
+        if self.value_type == self.ConfigType.BOOL:
+            return bool(self.value)
+        elif self.value_type == self.ConfigType.INT:
             return int(self.value)
-        elif self.value_type == self.ConfigType.JSON:
-            import json
-            return json.loads(self.value)
         return self.value
 
 
@@ -1916,7 +1876,7 @@ class Notification(FullAudit):
         QUIZ = 'quiz', 'Quiz'
     
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='notifications',
         db_column='user_id',

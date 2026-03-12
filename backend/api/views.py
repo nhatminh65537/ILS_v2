@@ -465,14 +465,8 @@ class LeaderboardViewSet(viewsets.ViewSet):
 class SystemConfigViewSet(viewsets.ReadOnlyModelViewSet):
     """System configuration viewset"""
     serializer_class = SystemConfigSerializer
+    permission_classes = [permissions.IsAdminUser]
     
     def get_queryset(self):
-        if self.request.user.is_authenticated and self.request.user.is_staff:
-            return SystemConfig.objects.all()
-        return SystemConfig.objects.filter(is_public=True)
-    
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [permissions.IsAdminUser()]
+        return SystemConfig.objects.all()
 

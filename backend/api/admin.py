@@ -52,9 +52,9 @@ class UserProfileAdmin(admin.ModelAdmin):
 @admin.register(UserAuthProvider)
 class UserAuthProviderAdmin(admin.ModelAdmin):
     """UserAuthProvider admin"""
-    list_display = ['user', 'provider', 'provider_user_id', 'created_at']
+    list_display = ['user', 'provider', 'external_id', 'is_primary', 'is_active', 'created_at']
     list_filter = ['provider']
-    search_fields = ['user__username', 'provider_user_id']
+    search_fields = ['user__username', 'external_id']
 
 
 # ============================================================================
@@ -64,10 +64,10 @@ class UserAuthProviderAdmin(admin.ModelAdmin):
 @admin.register(Permission)
 class PermissionAdmin(admin.ModelAdmin):
     """Permission admin"""
-    list_display = ['code', 'name', 'parent', 'is_active', 'endpoint_path']
-    list_filter = ['is_active', 'parent']
-    search_fields = ['code', 'name']
-    ordering = ['code']
+    list_display = ['name', 'is_active', 'created_at']
+    list_filter = ['is_active']
+    search_fields = ['name']
+    ordering = ['name']
 
 
 @admin.register(Role)
@@ -91,15 +91,14 @@ class RolePermissionAdmin(admin.ModelAdmin):
     """RolePermission admin"""
     list_display = ['role', 'permission', 'created_at']
     list_filter = ['role']
-    search_fields = ['role__name', 'permission__code']
+    search_fields = ['role__name', 'permission__name']
 
 
 @admin.register(UserPermission)
 class UserPermissionAdmin(admin.ModelAdmin):
     """UserPermission admin"""
-    list_display = ['user', 'permission', 'is_allowed', 'created_at']
-    list_filter = ['is_allowed']
-    search_fields = ['user__username', 'permission__code']
+    list_display = ['user', 'permission', 'created_at']
+    search_fields = ['user__username', 'permission__name']
 
 
 # ============================================================================
@@ -265,8 +264,8 @@ class UserQuizAttemptAdmin(admin.ModelAdmin):
 @admin.register(SystemConfig)
 class SystemConfigAdmin(admin.ModelAdmin):
     """SystemConfig admin"""
-    list_display = ['key', 'value_type', 'is_public', 'updated_at']
-    list_filter = ['value_type', 'is_public']
+    list_display = ['key', 'value_type', 'category', 'is_editable', 'is_runtime', 'updated_at']
+    list_filter = ['value_type', 'category', 'is_editable', 'is_runtime']
     search_fields = ['key']
 
 
