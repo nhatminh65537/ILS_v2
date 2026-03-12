@@ -293,7 +293,7 @@ Client clicks folder to expand
 Client opens a lesson
   → GET /lessons/{lesson_id}
   → Load lesson content (content_md or video_url)
-  → If lesson_type='miniquiz': load lesson_question + quiz_question data
+  → If lesson_type='miniquiz': load lesson_question data
   → Mark user_lesson_progress.started_at if first visit
 ```
 

@@ -269,6 +269,39 @@ Any warnings, deferred work, known limitations, or follow-up tasks.
 
 ---
 
+## Session Completion — Memory Update (MANDATORY for AI agent)
+
+After the report and `STATUS.md` update, execute **Phase 3** from `CLAUDE.md`:
+
+### Step 1 — Update `openmemory.md`
+
+Edit `openmemory.md` with anything new from this session:
+
+| Created / Changed | Section to update |
+|-------------------|-------------------|
+| New model / app / service | `## Components` |
+| New pattern / architectural flow | `## Patterns` |
+| Schema / design decision | `## Key DB Decisions` or `## Architecture` |
+| Project status change | `## Status` |
+
+### Step 2 — Store via OpenMemory MCP
+
+Call `add-memory` at least once. Choose the right pattern:
+
+| What to store | user_preference | project_id | memory_types |
+|---------------|----------------|------------|--------------|
+| New component / service | ❌ | ✅ | `["component"]` |
+| Implementation flow | ❌ | ✅ | `["implementation"]` |
+| Bug fix | ❌ | ✅ | `["debug"]` |
+| Technical decision | ❌ | ✅ | `["project_info"]` |
+| Coding preference learned | ✅ | ✅ or ❌ | `["user_preference"]` |
+
+**Minimum threshold:** If 3+ files were changed OR a non-obvious flow was implemented → memory store is **required**.
+
+> See `CLAUDE.md → Phase 3` for full rules and storage intelligence table.
+
+---
+
 ## Code Conventions (Key Points)
 
 > Full architecture rules and what-NOT-to-do: see `docs/ARCHITECTURE.md` §7–8

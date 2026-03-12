@@ -8,7 +8,8 @@
       "mcp__desktop-commander__read_file",
       "mcp__lightrag-cybersec__insert_document",
       "mcp__openmemory__search_memory",
-      "mcp__openmemory__add_memories"
+      "mcp__openmemory__add_memories",
+      "Bash(Move-Item \"D:\\\\PBL5\\\\ILS_v2\\\\backend\\\\ai\\\\permissons.py\" \"D:\\\\PBL5\\\\ILS_v2\\\\backend\\\\ai\\\\permissions.py\")"
     ]
   }
 }

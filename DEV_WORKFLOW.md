@@ -94,7 +94,41 @@ Sau khi code xong, cập nhật:
 
 ---
 
-## 7. Commit cuối session (bắt buộc)
+## 7. Cập nhật Memory (bắt buộc với AI agent, khuyến nghị với dev)
+
+Sau khi code + tài liệu xong, đồng bộ lại project memory:
+
+### a. Cập nhật `openmemory.md`
+
+Nếu session tạo ra component mới, pattern mới, hoặc quyết định kỹ thuật mới — cập nhật `openmemory.md`:
+
+| Thay đổi trong session | Cập nhật section trong `openmemory.md` |
+|------------------------|----------------------------------------|
+| Thêm model / app mới | `## Components` |
+| Thêm service / pattern mới | `## Patterns` |
+| Quyết định schema / thiết kế | `## Key DB Decisions` hoặc `## Architecture` |
+| Thay đổi trạng thái dự án | `## Status` |
+
+### b. Lưu vào OpenMemory MCP (AI agent)
+
+AI agent **phải** gọi `add-memory` ít nhất 1 lần cuối session:
+
+```
+# Các loại memory nên lưu:
+- Component mới tạo → memory_types: ["component"]
+- Pattern / flow đáng nhớ → memory_types: ["implementation"]
+- Bug đã fix → memory_types: ["debug"]
+- Quyết định kỹ thuật → memory_types: ["project_info"]
+
+# Format: project_id ONLY (không dùng user_preference cho facts)
+```
+
+> **Rule:** Nếu session tạo ≥ 3 file hoặc có flow phức tạp → bắt buộc lưu memory.
+> AI agent: xem `CLAUDE.md → Phase 3` để biết đầy đủ.
+
+---
+
+## 8. Commit cuối session (bắt buộc)
 
 Mỗi session kết thúc **phải có 1 commit**:
 
@@ -122,14 +156,16 @@ git commit -m "slice0/task0.2: add custom User model + initial migrations
 ## Tóm tắt nhanh (checklist 1 session)
 
 ```
-[ ] 1. Đọc STATUS.md → chọn task chưa có người làm
-[ ] 2. Kiểm tra DECISIONS.md → không có OPEN question mới
-[ ] 3. Claim task trong STATUS.md (thêm tên + In Progress)
-[ ] 4. Viết plan (files + bước làm + test) — TRƯỚC khi code
-[ ] 5. Đọc AGENT.md + ARCHITECTURE.md + DATA_MODEL.md liên quan
-[ ] 6. Implement đúng 1 task, viết test
-[ ] 7. Chạy test → xanh hết
-[ ] 8. Cập nhật STATUS.md (COMPLETED), BUGS.md nếu cần
-[ ] 9. git commit với message đúng format
-[ ] 10. Push lên branch
+[ ] 1.  Đọc STATUS.md → chọn task chưa có người làm
+[ ] 2.  Kiểm tra DECISIONS.md → không có OPEN question mới
+[ ] 3.  Claim task trong STATUS.md (thêm tên + In Progress)
+[ ] 4.  Viết plan (files + bước làm + test) — TRƯỚC khi code          [AI: search memory trước]
+[ ] 5.  Đọc AGENT.md + ARCHITECTURE.md + DATA_MODEL.md liên quan
+[ ] 6.  Implement đúng 1 task, viết test
+[ ] 7.  Chạy test → xanh hết
+[ ] 8.  Cập nhật STATUS.md (COMPLETED), BUGS.md nếu cần
+[ ] 9.  Cập nhật openmemory.md nếu có component/pattern mới         [AI: add-memory qua MCP]
+[ ] 10. git commit với message đúng format
+[ ] 11. Push lên branch
+[ ] 12. (AI agent) Tạo session report trong docs/reports/
 ```
