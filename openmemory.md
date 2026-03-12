@@ -98,6 +98,42 @@ Key requirements by domain:
 | `docs/prd/08-statistics.md` | Statistics PRD (leaderboard, admin stats) |
 | `docs/prd/09-ai-assistant.md` | AI PRD (3 modes, rate limit, LLM integration) — DEFERRED |
 | `docs/prd/10-system-config.md` | System Config PRD (runtime KV store) |
+
+## Document Dependency Tree
+
+Tier hierarchy (Tier 1 = source of truth, Tier 6 = aggregated index):
+
+```
+Tier 1 (human-authored, require human decision):
+  docs/REQUIREMENTS.md  ←→  docs/prd/*.md    [SIBLINGS — update together]
+    REQUIREMENTS = basic ideas/scope (genesis doc)
+    prd/*.md = detailed analysis/acceptance criteria
+  docs/DECISIONS.md      (open questions + resolved decisions)
+
+Tier 2 (core design):
+  docs/DATA_MODEL.md    ← AUTHORITATIVE for all entity/schema (DATA_MODEL wins conflicts)
+  docs/ARCHITECTURE.md  ← REQUIREMENTS + prd/*.md + DECISIONS
+  docs/CONFIG.md        ← prd/10-system-config.md + DECISIONS
+
+Tier 3 (implementation reference):
+  backend/api/models.py          ← DATA_MODEL.md (primary)
+  design/database/vx/dbv3.sql   ⚠️ LEGACY ARTIFACT — pre-normalization; no longer authoritative
+
+Tier 4 (planning):
+  docs/IMPL_PLAN.md     ← ARCHITECTURE + DATA_MODEL + DECISIONS
+
+Tier 5 (living trackers):
+  docs/STATUS.md        ← mirrors IMPL_PLAN.md
+  docs/BUGS.md          ← cross-refs backend code
+
+Tier 6 (agent index):
+  AGENT.md + openmemory.md
+```
+
+**Conflict resolution:** DATA_MODEL.md > models.py | REQUIREMENTS ↔ prd/*.md (siblings, must agree) | DECISIONS.md(RESOLVED) > ARCHITECTURE.md > IMPL_PLAN.md | dbv3.sql = legacy, always loses
+**Propagation rule:** Parent change MUST propagate to dependents in same session, or defer to a named normalization session tracked in STATUS.md.
+**OPEN question in DECISIONS.md = BLOCKER — never implement past an open question.**
+**Full propagation guide in AGENT.md §Document Dependency Tree.**
 | `DEV_WORKFLOW.md` | **Dev session workflow** — checklist for all devs: pick task → plan → code → update docs → commit |
 
 ## User Defined Namespaces

@@ -18,8 +18,94 @@
 | `docs/IMPL_PLAN.md` | Vertical slice implementation plan (Slices 0–11) |
 | `docs/DECISIONS.md` | **Open questions + resolved decisions** — must read before starting any slice |
 | `docs/prd/` | Product Requirements Documents (10 features) |
-| `design/database/vx/dbv3.sql` | **Authoritative schema** — when ORM and SQL conflict, SQL wins |
-| `backend/api/models.py` | All domain ORM models (~1195 lines) |
+| `design/database/vx/dbv3.sql` | ⚠️ **Legacy artifact** — pre-normalization schema, kept for reference only; no longer authoritative |
+| `backend/api/models.py` | All domain ORM models (~1195 lines); must stay in sync with `docs/DATA_MODEL.md` |
+
+---
+
+## Document Dependency Tree
+
+> **Purpose:** When a document changes, consult this tree to know which other documents must be reviewed and potentially updated. Prevents conflicts and ensures consistency across the doc suite.
+>
+> **⚠️ Propagation rule:** Any change at a parent tier **MUST** be propagated to all dependents in the same session — or explicitly deferred to a dedicated normalization session and noted in `docs/STATUS.md`.
+
+### Tier Hierarchy
+
+```
+Tier 1 — Human-authored Sources (require human decision to change)
+├── docs/REQUIREMENTS.md       (genesis doc — original basic ideas; co-authored with PRDs)
+│   ┆  NOTE: REQUIREMENTS and prd/*.md are SIBLINGS — update together.
+│   ┆  REQUIREMENTS holds the "what/why" (basic idea + scope).
+│   ┆  prd/*.md holds the "how/detail" (analysis, acceptance criteria).
+├── docs/prd/*.md              (10 PRDs — detailed analysis derived from REQUIREMENTS ideas)
+└── docs/DECISIONS.md          (open questions + resolved decisions)
+
+Tier 2 — Core Design (derived from Tier 1)
+├── docs/DATA_MODEL.md    ← AUTHORITATIVE for all entity/schema detail (DATA_MODEL.md wins conflicts)
+├── docs/ARCHITECTURE.md  ← derived from: REQUIREMENTS.md + prd/*.md + DECISIONS.md
+└── docs/CONFIG.md        ← derived from: prd/10-system-config.md + DECISIONS.md
+
+Tier 3 — Implementation Reference (derived from Tier 2)
+├── backend/api/models.py          ← derived from: DATA_MODEL.md
+└── design/database/vx/dbv3.sql   ⚠️ HISTORICAL ARTIFACT — legacy pre-normalization schema;
+                                      no longer authoritative; kept for reference only
+
+Tier 4 — Planning (derived from Tier 2 + resolved DECISIONS.md)
+└── docs/IMPL_PLAN.md     ← derived from: ARCHITECTURE.md + DATA_MODEL.md + DECISIONS.md
+
+Tier 5 — Living Trackers (continuously updated)
+├── docs/STATUS.md        ← mirrors: IMPL_PLAN.md task state
+└── docs/BUGS.md          ← cross-references: backend code + models.py
+
+Tier 6 — Agent Index (aggregates all above)
+├── AGENT.md              ← quick reference to everything
+└── openmemory.md         ← auto-managed project index (OpenMemory MCP)
+```
+
+### Conflict Resolution Rules
+
+| Conflict | Winner | Action |
+|----------|--------|--------|
+| `DATA_MODEL.md` vs `backend/api/models.py` | **DATA_MODEL.md wins** | Update ORM to match DATA_MODEL.md |
+| `docs/prd/*.md` vs `REQUIREMENTS.md` | **Both must agree** | Update the outdated one; they are siblings — keep in sync |
+| `DECISIONS.md` (RESOLVED) vs `ARCHITECTURE.md` | **DECISIONS.md wins** | Update `ARCHITECTURE.md` to reflect decision |
+| `DECISIONS.md` (RESOLVED) vs `IMPL_PLAN.md` | **DECISIONS.md wins** | Update slice prerequisites in `IMPL_PLAN.md` |
+| `ARCHITECTURE.md` vs `IMPL_PLAN.md` | **ARCHITECTURE.md wins** | Update `IMPL_PLAN.md` to match design |
+| `DATA_MODEL.md` vs `CONFIG.md` (SystemConfig entity) | **DATA_MODEL.md wins** | Update `CONFIG.md` entity section |
+| Any doc vs **OPEN question in DECISIONS.md** | **BLOCKED** | Do NOT implement; resolve the question first |
+| `dbv3.sql` vs anything | **dbv3.sql loses** | dbv3.sql is a legacy artifact; ignore its conflicts |
+
+### Update Propagation Guide
+
+**When you update a document, also check/update the downstream documents in the same session (or defer to a normalization session):**
+
+| Document Changed | Must Also Review / Update |
+|-----------------|--------------------------|
+| `docs/REQUIREMENTS.md` | → `docs/prd/*.md` (check detailed specs still align with updated basic ideas) |
+| `docs/prd/*.md` | → `docs/REQUIREMENTS.md` (check basic ideas still consistent), `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md` |
+| `docs/DATA_MODEL.md` | → `backend/api/models.py` (resync ORM), `docs/CONFIG.md` §SystemConfig if SystemConfig changed |
+| `docs/CONFIG.md` | → `docs/DATA_MODEL.md` §SystemConfig (keep entity section consistent) |
+| `docs/ARCHITECTURE.md` | → `docs/IMPL_PLAN.md` (resync plan if design changed), `AGENT.md` (update tech stack/conventions if changed) |
+| `docs/DECISIONS.md` (new RESOLVED) | → `docs/IMPL_PLAN.md` (remove blocker from slice header), `docs/STATUS.md` (unblock gate), possibly `docs/ARCHITECTURE.md` |
+| `docs/IMPL_PLAN.md` | → `docs/STATUS.md` (add/remove tasks to match) |
+| `docs/STATUS.md` | → `AGENT.md` if new pre-implementation gates are added |
+| `backend/api/models.py` | → Verify against `docs/DATA_MODEL.md` (ORM must stay in sync) |
+
+> **Normalization session:** If propagation cannot be done immediately (too large), create a task in `docs/STATUS.md` titled "Doc normalization: [trigger]" and complete it before the next coding slice.
+
+### Quick Cheatsheet: Who Owns What
+
+| Question | Answer | Document |
+|----------|--------|---------|
+| What are the business rules / enums / schema? | Data model doc | `docs/DATA_MODEL.md` |
+| What are the original high-level requirements? | Genesis doc | `docs/REQUIREMENTS.md` |
+| What are the detailed feature specs? | PRD suite | `docs/prd/*.md` |
+| How is the system designed? | Architecture doc | `docs/ARCHITECTURE.md` |
+| What are the runtime config keys? | Config reference | `docs/CONFIG.md` |
+| Has this design question been resolved? | Decision log | `docs/DECISIONS.md` |
+| How do the slices break down? | Implementation plan | `docs/IMPL_PLAN.md` |
+| What's done / blocked / next? | Status tracker | `docs/STATUS.md` |
+| What bugs are known? | Bug tracker | `docs/BUGS.md` |
 
 ---
 
@@ -52,9 +138,9 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 2. **Read `docs/DECISIONS.md`** — check open questions for the slice; do NOT code if blockers are OPEN
 3. **Check `docs/BUGS.md`** — active bugs to avoid or fix first
 4. **Read `docs/ARCHITECTURE.md`** — understand design decisions and what NOT to do
-5. **Read `docs/DATA_MODEL.md`** — understand entity types and business rules
-6. **Read `design/database/vx/dbv3.sql`** — authoritative schema; the ORM must match it
-7. **Check `backend/api/models.py`** — all domain models exist; work ahead is API layer
+5. **Read `docs/DATA_MODEL.md`** — authoritative entity types, schema, business rules; ORM must match this
+6. **Check `backend/api/models.py`** — all domain models exist; work ahead is API layer
+7. *(Optional)* `design/database/vx/dbv3.sql` — legacy reference only; do NOT treat as authority
 8. **Check `CLAUDE.md`** — OpenMemory integration rules; search memory before implementing
 
 ---
