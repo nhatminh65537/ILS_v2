@@ -296,7 +296,7 @@ class ChallengeViewSet(viewsets.ModelViewSet):
                 
                 # Award points
                 profile = request.user.profile
-                profile.total_cpoint += challenge.challenge_point
+                profile.total_challenge_point += challenge.challenge_point
                 profile.save()
                 profile.update_leaderboard_rank()
                 

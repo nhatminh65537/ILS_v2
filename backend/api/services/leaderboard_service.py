@@ -17,18 +17,11 @@ class LeaderboardService:
         Update user's rank on all leaderboards
         Called when user completes content and gains points
         """
-        profile = user.profile
-        
-        # Update learning points rank
-        profile.rank_lpoint = cls.get_user_rank_by_lpoint(user)
-        
-        # Update challenge points rank
-        profile.rank_cpoint = cls.get_user_rank_by_cpoint(user)
-        
-        # Update quiz points rank
-        profile.rank_qpoint = cls.get_user_rank_by_qpoint(user)
-        
-        profile.save()
+        return {
+            'learning_rank': cls.get_user_rank_by_lpoint(user),
+            'challenge_rank': cls.get_user_rank_by_cpoint(user),
+            'quiz_rank': cls.get_user_rank_by_qpoint(user),
+        }
     
     @classmethod
     def get_user_rank_by_lpoint(cls, user) -> int:
@@ -36,7 +29,7 @@ class LeaderboardService:
         from api.models import UserProfile
         
         rank = UserProfile.objects.filter(
-            total_lpoint__gt=user.profile.total_lpoint
+            total_learning_point__gt=user.profile.total_learning_point
         ).count() + 1
         
         return rank
@@ -47,7 +40,7 @@ class LeaderboardService:
         from api.models import UserProfile
         
         rank = UserProfile.objects.filter(
-            total_cpoint__gt=user.profile.total_cpoint
+            total_challenge_point__gt=user.profile.total_challenge_point
         ).count() + 1
         
         return rank
@@ -58,7 +51,7 @@ class LeaderboardService:
         from api.models import UserProfile
         
         rank = UserProfile.objects.filter(
-            total_qpoint__gt=user.profile.total_qpoint
+            total_quiz_point__gt=user.profile.total_quiz_point
         ).count() + 1
         
         return rank
@@ -76,9 +69,9 @@ class LeaderboardService:
         from api.models import UserProfile, User
         
         field_map = {
-            'lpoint': 'total_lpoint',
-            'cpoint': 'total_cpoint',
-            'qpoint': 'total_qpoint'
+            'lpoint': 'total_learning_point',
+            'cpoint': 'total_challenge_point',
+            'qpoint': 'total_quiz_point'
         }
         
         if board_type not in field_map:

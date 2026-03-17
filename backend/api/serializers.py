@@ -7,7 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .models import (
     # User models
-    User, UserProfile, UserAuthProvider,
+    User, UserProfile, UserAuthProvider, UserSession,
     # Authorization models
     Permission, Role, UserRole, RolePermission, UserPermission, UserPermissionCache,
     # Course models
@@ -71,11 +71,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserProfile
-        fields = ['user_id', 'username', 'bio', 'avatar_url',
-                  'total_lpoint', 'total_cpoint', 'total_qpoint',
-                  'rank_lpoint', 'rank_cpoint', 'rank_qpoint']
-        read_only_fields = ['user_id', 'total_lpoint', 'total_cpoint', 'total_qpoint',
-                           'rank_lpoint', 'rank_cpoint', 'rank_qpoint']
+        fields = [
+            'user_id', 'username', 'entry_year', 'display_name', 'avatar_url', 'bio',
+            'location', 'website', 'language', 'theme', 'timezone',
+            'total_learning_point', 'total_challenge_point', 'total_quiz_point',
+            'course_completed', 'challenge_completed', 'quiz_completed',
+            'last_active_at'
+        ]
+        read_only_fields = [
+            'user_id', 'total_learning_point', 'total_challenge_point', 'total_quiz_point',
+            'course_completed', 'challenge_completed', 'quiz_completed', 'last_active_at'
+        ]
 
 
 class UserAuthProviderSerializer(serializers.ModelSerializer):
@@ -85,6 +91,18 @@ class UserAuthProviderSerializer(serializers.ModelSerializer):
         model = UserAuthProvider
         fields = ['id', 'provider', 'external_id', 'is_primary', 'is_active', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    """User session serializer"""
+
+    class Meta:
+        model = UserSession
+        fields = [
+            'id', 'user', 'device_info', 'refresh_token_hash', 'last_used_at',
+            'expires_at', 'revoked_at', 'revoked_by', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 # ============================================================================

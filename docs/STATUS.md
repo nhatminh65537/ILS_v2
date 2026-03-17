@@ -14,7 +14,7 @@ Full details in **`docs/DECISIONS.md`**.
 |----------|--------|--------|
 | [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention | All API slices | **OPEN** |
 | [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for new users | Slice 1–2 | **OPEN** |
-| [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) — First admin creation | Slice 0 | **OPEN** |
+| [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) — First admin creation | Slice 0 | **RESOLVED** |
 | [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend | Slice 1 | **OPEN** |
 | [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email for password reset | Slice 1 | **OPEN** |
 | [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — Frontend src/ layout | Slice 4 | **OPEN** |
@@ -41,12 +41,13 @@ Full details in **`docs/DECISIONS.md`**.
 | Dev infrastructure | `README.md`, `Makefile`, `requirements.txt`, `pytest.ini`, `conftest.py`, `.env.example`, `.gitignore` |
 | settings.py | DRF + SimpleJWT + CORS + Channels config added |
 | Code-doc consistency sync (2026-03-12) | Existing backend scaffold aligned with current docs for tree path (`path`), flat RBAC direction, deny-only user permission override, permission cache versioning, and system config schema; `manage.py check` passes |
+| Slice 0 / Task 0.2 (2026-03-17) | Q-AUTH-02 resolved (Option B seed_admin), User domain aligned for Task 0.2: `UserSession` model added, `UserProfile` fields renamed/expanded to DATA_MODEL naming, initial migrations generated/applied, `manage.py check` passes |
 
 ---
 
 ## In Progress
 
-*Nothing in progress — resolving open questions before Slice 0.*
+- Slice 0 / Task 0.3: `SystemConfig` + `seed_config` command
 
 ---
 
@@ -56,8 +57,6 @@ Full details in **`docs/DECISIONS.md`**.
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Custom `User` model + `AUTH_USER_MODEL` | **Critical** | Must be done before first migration |
-| Initial migrations | **Critical** | Run after User model is in place |
 | `SystemConfig` model + `seed_config` command | High | Seed all keys from `docs/CONFIG.md` |
 
 ### Slice 1 — Authentication

@@ -6,7 +6,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     # User models
-    User, UserProfile, UserAuthProvider,
+    User, UserProfile, UserAuthProvider, UserSession,
     # Authorization models
     Permission, Role, UserRole, RolePermission, UserPermission, UserPermissionCache,
     # Course models
@@ -43,10 +43,12 @@ class UserAdmin(BaseUserAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     """UserProfile admin"""
-    list_display = ['user', 'total_lpoint', 'total_cpoint', 'total_qpoint']
+    list_display = ['user', 'total_learning_point', 'total_challenge_point', 'total_quiz_point']
     search_fields = ['user__username']
-    readonly_fields = ['total_lpoint', 'total_cpoint', 'total_qpoint',
-                      'rank_lpoint', 'rank_cpoint', 'rank_qpoint']
+    readonly_fields = [
+        'total_learning_point', 'total_challenge_point', 'total_quiz_point',
+        'course_completed', 'challenge_completed', 'quiz_completed'
+    ]
 
 
 @admin.register(UserAuthProvider)
@@ -55,6 +57,14 @@ class UserAuthProviderAdmin(admin.ModelAdmin):
     list_display = ['user', 'provider', 'external_id', 'is_primary', 'is_active', 'created_at']
     list_filter = ['provider']
     search_fields = ['user__username', 'external_id']
+
+
+@admin.register(UserSession)
+class UserSessionAdmin(admin.ModelAdmin):
+    """UserSession admin"""
+    list_display = ['user', 'last_used_at', 'expires_at', 'revoked_at', 'created_at']
+    list_filter = ['revoked_at']
+    search_fields = ['user__username', 'refresh_token_hash']
 
 
 # ============================================================================

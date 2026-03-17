@@ -35,12 +35,14 @@ Target: one instance per organization, no horizontal scale needed.
 - **realtime app**: Django Channels scaffold (empty logic)
 - **auth_app**: To be created in Slice 1 — JWT auth, SSO, session management
 - **Abstract ORM**: CreateAudit, UpdateAudit, FullAudit, SoftDeleteAudit, BaseNode, BaseCategory, BaseTag
+- **UserSession model**: Added in `api` for refresh-token session tracking (`user_session` table)
 
 ## Status
 
 - All domain ORM models complete; no API views exist yet
-- **Pre-implementation gate active**: 12+ open questions in `docs/DECISIONS.md` must be resolved by humans before coding starts
-- Next action: resolve open questions → start Slice 0
+- Q-AUTH-02 resolved on 2026-03-17 (Option B: `seed_admin` command as first-admin bootstrap)
+- Slice 0 Task 0.2 implemented: user-domain alignment + initial migration applied
+- Local dev DB initialized (`backend/db.sqlite3`) after first migrate
 - **New decisions (2026-03-12):** R-DEV-01 (AuthZ bypass toggle), R-DEV-02 (Functional requirements priority)
 - **Implementation principle:** Functional requirements first; non-functional only when needed or all functional done
 - **Doc consistency (2026-03-12):** All config keys across 16 docs normalized to match `CONFIG.md` canonical names; `DATA_MODEL.md` header fixed to be self-authoritative (was incorrectly pointing to `dbv3.sql`)
@@ -63,6 +65,8 @@ Target: one instance per organization, no horizontal scale needed.
 - **Config key authority chain**: `CONFIG.md` (canonical) → PRDs reference it → `IMPL_PLAN.md` seed_config matches it → `PRD-10` summary table matches it
 - **AI provider**: `openai` / `anthropic` (NOT `ollama`) — see `CONFIG.md` ai.* group
 - **ORM naming alignment**: Prefer schema-aligned field names from docs (`path`, `external_id`, `encoded_permissions` as TEXT-like payload) and keep permission model flat (no hierarchy).
+- **User profile naming alignment**: Use `total_learning_point`, `total_challenge_point`, `total_quiz_point` naming in code and serializers.
+- **Auth session storage**: Track refresh tokens in `user_session` using hashed values only.
 
 ## Key DB Decisions
 

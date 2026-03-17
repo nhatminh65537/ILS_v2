@@ -30,7 +30,7 @@
 | [Q-INFRA-07](#q-infra-07-i18n-language-strategy) | i18n language and timing | Slice 4 | **OPEN** |
 | [Q-INFRA-08](#q-infra-08-frontend-ui-component-library) | Frontend UI component library | Slice 4 | **OPEN** |
 | [Q-AUTH-01](#q-auth-01-default-role-for-new-users) | Default role for newly registered users | Slice 1–2 | **OPEN** |
-| [Q-AUTH-02](#q-auth-02-first-admin-creation-mechanism) | First admin account creation | Slice 0–1 | **OPEN** |
+| [Q-AUTH-02](#q-auth-02-first-admin-creation-mechanism) | First admin account creation | Slice 0–1 | **RESOLVED** → [R-AUTH-11](#r-auth-11-first-admin-bootstrap-via-seed_admin) |
 | [Q-AUTH-03](#q-auth-03-sso-only-lockout-fallback) | SSO-only lockout fallback | Slice 1 | **OPEN** |
 | [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **OPEN** |
 | [Q-LEARN-02](#q-learn-02-mini-quiz-question-source) | Mini-quiz question source | Slice 5 | **OPEN** |
@@ -257,7 +257,7 @@ The RBAC system requires roles to be assigned; no code specifies what role new r
 
 ### Q-AUTH-02: First Admin Account Creation
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 0 (foundation) and Slice 1 (auth)
 
 **Problem:**
@@ -272,7 +272,20 @@ After running migrations and `seed_config`, there is no admin user. `createsuper
 
 **Sub-question:** Should `is_superuser=True` Django users bypass all RBAC checks automatically?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose **Option B**. Implement `seed_admin` management command as the canonical first-admin bootstrap flow.
+
+---
+
+### R-AUTH-11: First Admin Bootstrap via `seed_admin`
+
+**Decision date:** 2026-03-17
+**Source:** Session decision, `docs/IMPL_PLAN.md` Slice 0 prerequisites
+
+Use `python manage.py seed_admin` as the standard first-admin setup path.
+- Command must be idempotent (safe to re-run).
+- Command creates initial admin user if missing, or updates existing user flags if present.
+- Keep Django `createsuperuser` available as fallback tooling, but not the documented default bootstrap path.
+- During bootstrap and early setup, `is_superuser=True` users may bypass RBAC checks.
 
 ---
 

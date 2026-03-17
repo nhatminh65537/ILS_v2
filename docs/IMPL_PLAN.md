@@ -90,7 +90,7 @@ Within each slice, prioritize in this order:
 
 ## Slice 0 — Foundation
 
-> **Decision prerequisites:** [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) (first admin setup)
+> **Decision prerequisites:** [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) (first admin setup) — **RESOLVED (2026-03-17)**
 
 ### Task 0.1 — Fix known bugs ✅ COMPLETED (2026-03-09)
 

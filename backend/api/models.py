@@ -830,7 +830,7 @@ class Lesson(FullAudit):
 
             # Award learning points
             profile = user.profile
-            profile.total_lpoint += self.learning_point
+            profile.total_learning_point += self.learning_point
             profile.save()
             profile.update_leaderboard_rank()
 
@@ -1548,23 +1548,35 @@ class UserProfile(FullAudit):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        primary_key=True,
         related_name='profile',
         db_column='user_id'
     )
+    entry_year = models.IntegerField(null=True, blank=True)
+    display_name = models.CharField(max_length=100, null=True, blank=True)
     bio = models.TextField(blank=True, null=True)
     avatar_url = models.TextField(blank=True, null=True)
-    
-    total_lpoint = models.IntegerField(default=0, help_text="Total learning points")
-    total_cpoint = models.IntegerField(default=0, help_text="Total challenge points")
-    total_qpoint = models.IntegerField(default=0, help_text="Total quiz points")
-    
-    rank_lpoint = models.IntegerField(null=True, blank=True)
-    rank_cpoint = models.IntegerField(null=True, blank=True)
-    rank_qpoint = models.IntegerField(null=True, blank=True)
+    location = models.CharField(max_length=100, null=True, blank=True)
+    website = models.TextField(null=True, blank=True)
+    language = models.CharField(max_length=10, default='vi')
+    theme = models.CharField(max_length=20, default='system')
+    timezone = models.CharField(max_length=50, default='UTC')
+
+    total_learning_point = models.IntegerField(default=0)
+    total_challenge_point = models.IntegerField(default=0)
+    total_quiz_point = models.IntegerField(default=0)
+    course_completed = models.IntegerField(default=0)
+    challenge_completed = models.IntegerField(default=0)
+    quiz_completed = models.IntegerField(default=0)
+    last_active_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         db_table = 'user_profile'
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['-total_learning_point']),
+            models.Index(fields=['-total_challenge_point']),
+            models.Index(fields=['-total_quiz_point']),
+        ]
     
     def __str__(self):
         return f"Profile: {self.user.username}"
@@ -1613,6 +1625,43 @@ class UserAuthProvider(FullAudit):
     
     def __str__(self):
         return f"{self.user.username} - {self.provider}"
+
+
+class UserSession(FullAudit):
+    """
+    Multi-device refresh token tracking
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sessions',
+        db_column='user_id'
+    )
+    device_info = models.TextField(null=True, blank=True)
+    refresh_token_hash = models.TextField()
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='revoked_sessions',
+        db_column='revoked_by'
+    )
+
+    class Meta:
+        db_table = 'user_session'
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['refresh_token_hash']),
+            models.Index(fields=['revoked_at']),
+            models.Index(fields=['expires_at']),
+        ]
+
+    def __str__(self):
+        return f"Session {self.id} for {self.user.username}"
 
 
 # ============================================================================
