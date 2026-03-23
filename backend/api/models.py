@@ -1883,7 +1883,7 @@ class SystemConfig(FullAudit):
         choices=ConfigType.choices,
         default=ConfigType.STRING
     )
-    category = models.CharField(max_length=50, blank=True)
+    category = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
     is_editable = models.BooleanField(
         default=True,
@@ -1895,6 +1895,9 @@ class SystemConfig(FullAudit):
         db_table = 'system_config'
         indexes = [
             models.Index(fields=['key']),
+            models.Index(fields=['category']),
+            models.Index(fields=['is_runtime']),
+            models.Index(fields=['is_editable']),
         ]
     
     def __str__(self):
@@ -1903,9 +1906,16 @@ class SystemConfig(FullAudit):
     def get_typed_value(self):
         """Return value with correct type"""
         if self.value_type == self.ConfigType.BOOL:
+            if isinstance(self.value, bool):
+                return self.value
+            if isinstance(self.value, str):
+                return self.value.strip().lower() in {'1', 'true', 'yes', 'on'}
             return bool(self.value)
         elif self.value_type == self.ConfigType.INT:
-            return int(self.value)
+            try:
+                return int(self.value)
+            except (TypeError, ValueError):
+                return 0
         return self.value
 
 

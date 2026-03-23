@@ -114,17 +114,10 @@ class InstanceService:
     @classmethod
     def _get_instance_config(cls) -> Dict[str, Any]:
         """Get instance management configuration from SystemConfig"""
-        from api.models import SystemConfig
-        
-        try:
-            enabled = SystemConfig.objects.get(key='instance.enabled').get_typed_value()
-            api_url = SystemConfig.objects.get(key='instance.api_url').value
-            api_token = SystemConfig.objects.get(key='instance.api_token').value
-            
-            return {
-                'enabled': enabled,
-                'api_url': api_url,
-                'api_token': api_token
-            }
-        except SystemConfig.DoesNotExist:
-            return {'enabled': False}
+        from api.utils import get_config
+
+        return {
+            'enabled': get_config('challenge.deploy.enabled', False),
+            'api_url': get_config('challenge.deploy.api_url', ''),
+            'api_token': get_config('challenge.deploy.api_token', ''),
+        }
