@@ -4,7 +4,7 @@
 > **OPEN** = needs human decision before coding can begin.
 > **RESOLVED** = decision made; implementation must follow it.
 >
-> Last updated: 2026-03-12
+> Last updated: 2026-03-24
 
 ---
 
@@ -21,17 +21,25 @@
 
 | ID | Topic | Blocks | Status |
 |----|-------|--------|--------|
-| [Q-INFRA-01](#q-infra-01-frontend-source-directory) | Frontend src/ directory layout | Slice 4–11 | **OPEN** |
-| [Q-INFRA-02](#q-infra-02-api-url-prefix-convention) | API URL prefix convention | Slice 1–11 | **OPEN** |
-| [Q-INFRA-03](#q-infra-03-email-backend-for-password-reset) | Email backend for password reset | Slice 1 | **OPEN** |
-| [Q-INFRA-04](#q-infra-04-cache-backend-for-rate-limiting) | Cache backend for rate limiting | Slice 1 | **OPEN** |
+| [Q-INFRA-01](#q-infra-01-frontend-source-directory) | Frontend src/ directory layout | Slice 1 (Task 1.5), Slice 4–11 | **RESOLVED** (Option A) |
+| [Q-SLICE1-01](#q-slice1-01-member-role-seeding) | Member role seeding at bootstrap | Slice 1 (Task 1.1, 0.3) | **RESOLVED** (Option A) |
+| [Q-AUTH-04](#q-auth-04-jwt-token-expiry-and-refresh-strategy) | JWT token expiry + refresh window | Slice 1 (Tasks 1.2, 1.5) | **RESOLVED** (Option A) |
+| [Q-AUTH-05](#q-auth-05-first-login-admin-ceremony) | First-login admin credential ceremony | Slice 0 (Task 0.4 new), Slice 1 | **RESOLVED** (Option C) |
+| [Q-INFRA-02](#q-infra-02-api-url-prefix-convention) | API URL prefix convention | Slice 1–11 | **RESOLVED** |
+| [Q-INFRA-03](#q-infra-03-email-backend-for-password-reset) | Email backend for password reset | Slice 1 | **RESOLVED** |
+| [Q-INFRA-04](#q-infra-04-cache-backend-for-rate-limiting) | Cache backend for rate limiting | Slice 1 | **RESOLVED** |
 | [Q-INFRA-05](#q-infra-05-websocket-jwt-auth-method) | WebSocket JWT auth method | Slice 7 | **OPEN** |
-| [Q-INFRA-06](#q-infra-06-client-side-token-storage) | Client-side token storage | Slice 1, 4 | **OPEN** |
+| [Q-INFRA-06](#q-infra-06-client-side-token-storage) | Client-side token storage | Slice 1, 4 | **RESOLVED** |
 | [Q-INFRA-07](#q-infra-07-i18n-language-strategy) | i18n language and timing | Slice 4 | **OPEN** |
 | [Q-INFRA-08](#q-infra-08-frontend-ui-component-library) | Frontend UI component library | Slice 4 | **OPEN** |
-| [Q-AUTH-01](#q-auth-01-default-role-for-new-users) | Default role for newly registered users | Slice 1–2 | **OPEN** |
+| [Q-AUTH-01](#q-auth-01-default-role-for-new-users) | Default role for newly registered users | Slice 1–2 | **RESOLVED** |
 | [Q-AUTH-02](#q-auth-02-first-admin-creation-mechanism) | First admin account creation | Slice 0–1 | **RESOLVED** → [R-AUTH-11](#r-auth-11-first-admin-bootstrap-via-seed_admin) |
-| [Q-AUTH-03](#q-auth-03-sso-only-lockout-fallback) | SSO-only lockout fallback | Slice 1 | **OPEN** |
+| [Q-AUTH-03](#q-auth-03-sso-only-lockout-fallback) | SSO-only lockout fallback | Slice 1 | **RESOLVED** |
+| [Q-AUTH-06](#q-auth-06-sso-account-linking-strategy) | SSO account linking: merge or separate | Slice 1 (Task 1.3) | **OPEN** |
+| [Q-AUTH-07](#q-auth-07-device-logout-granularity) | Device logout: one session or all | Slice 1 (Task 1.4 deferred) | **OPEN** |
+| [Q-INFRA-09](#q-infra-09-cors-and-domain-configuration) | CORS policy + frontend/backend domain | Slice 1 (Task 1.5), Slice 4 | **OPEN** |
+| [Q-ARCH-01](#q-arch-01-max-permissions-bitmap-capacity) | Max permissions bitmap encode size | Slice 2 (permission design) | **OPEN** |
+| [Q-CONFIG-01](#q-config-01-default-systemconfig-auth-values) | Default auth.* system_config values at seed | Slice 0, 1 | **OPEN** |
 | [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **OPEN** |
 | [Q-LEARN-02](#q-learn-02-mini-quiz-question-source) | Mini-quiz question source | Slice 5 | **OPEN** |
 | [Q-LEARN-03](#q-learn-03-course-progress-on-structure-change) | Course progress when structure changes | Slice 5 | **OPEN** |
@@ -47,13 +55,221 @@
 
 ---
 
+### Q-AUTH-06: SSO Account Linking Strategy
+
+**Status:** RESOLVED
+**Blocks:** Slice 1 (Task 1.3 — SSO callback flow)
+
+**Problem:**
+When a user registers via SSO (Authentik), how does the system handle existing local accounts?
+- Option A: One User can have multiple UserIdentity entries (link SSO to existing local account)
+- Option B: SSO-only identity (separate User per auth method, no linking)
+
+**Impact:** Affects UserIdentity schema, Task 1.1 + 1.3 logic, and UX.
+
+**Options:**
+| Option | Flow | Pros | Cons |
+|--------|------|------|------|
+| A | Allow linking | User can use either auth method on same account | Complex linking UX, multiple UserIdentity per User |
+| B | Separate by identity | Simpler logic, cleaner schema | User must choose one auth method, or get duplicate accounts |
+
+**Decision:** Choose Option A. Add an idempotent `seed_roles` bootstrap command (Task 0.3.5) so Member role exists before registration starts.
+
+---
+
+### Q-AUTH-07: Device Logout Granularity
+
+**Status:** RESOLVED
+**Blocks:** Slice 1 (Task 1.4 deferred — session management, revisit when implementing)
+
+**Problem:**
+Task 1.4 deferred password reset but session management still needs clarity:
+- GET `/api/auth/sessions/` lists active sessions
+- DELETE `/api/auth/sessions/{id}/` revokes one session
+- **Missing:** "Logout all devices" endpoint?
+
+**Options:**
+| Option | Features | Pros | Cons |
+|--------|----------|------|------|
+| A | Revoke one session only | Granular control | User must click each device |
+| B | Add "logout all" endpoint | Common UX pattern, password-reset-triggered logout | Extra endpoint |
+| C | Both A and B | Complete control | Scope creep for Task 1.4 |
+
+**Decision:** Choose Option A. Use 15-minute access tokens, 7-day refresh tokens, and silent refresh behavior when access token expires.
+
+---
+
+### Q-INFRA-09: CORS and Domain Configuration
+
+**Status:** RESOLVED
+**Blocks:** Slice 1 (Task 1.5 frontend API calls)
+
+**Problem:**
+Memory-only token storage requires frontend to call `/api/auth/token/refresh/` endpoint. CORS policy depends on deployment:
+- **Same domain:** Frontend and Django on same origin → CORS not needed, set `SameSite=Lax` on any cookies
+- **Different domain:** Frontend and Django on different origins → CORS required, JS credentials in requests
+
+**Decision needed:** Assume same domain in production, or allow cross-origin?
+
+**Options:**
+| Option | Deployment | CORS | Frontend credentials | Notes |
+|--------|------------|------|----------------------|-------|
+| A | Same domain (e.g., app.example.com → both served) | No | Not needed | Simpler, common for internal tools |
+| B | Different domains (e.g., app.example.com vs api.example.com) | Yes | `credentials: 'include'` on fetch | More flexible, requires CORS setup |
+
+**Decision:** Choose Option A. Assume same-domain deployment by default, so CORS is not required for Slice 1.
+
+---
+
+### Q-ARCH-01: Max Permissions Bitmap Capacity
+
+**Status:** OPEN
+**Blocks:** Slice 2 (authorization design, but informs Slice 1 JWT structure)
+
+**Problem:**
+Permissions use base64-encoded bitmap in JWT token. Current decision: text-encoded, no size limit enforced. But:
+- Too many permissions → large JWT payload → slow requests
+- Need explicit cap for design clarity
+
+**Options:**
+| Option | Max Permissions | Encoding | Notes |
+|--------|-----------------|----------|-------|
+| A | Unlimited (text base64) | Base64("perm1,perm2,...") | Simple, but no bound check |
+| B | 256 (1 byte bitmap) | Base64(byte[32]) | Tight packing, but need explicit bit mapping |
+| C | 512 (2 byte bitmap) | Base64(byte[64]) | More room, still compact |
+| D | 1024 (4 byte bitmap) | Base64(byte[128]) | Very flexible, payload larger |
+
+**Decision:** _(not yet made)_
+
+---
+
+### Q-CONFIG-01: Default System Config Auth Values at Seed
+
+**Status:** OPEN
+**Blocks:** Slice 0 (Task 0.3 — seed_config completion) and Slice 1 (default auth behavior)
+
+**Problem:**
+Task 0.3 seeds 42 canonical keys from CONFIG.md. Current defaults:
+- `auth.local_login_enabled = true` 
+- `auth.sso_enabled = false`
+- `auth.authorization_enabled = true`
+
+**Question:** Are these defaults right for first-time deployment? For example:
+- Should SSO be pre-enabled if Authentik not yet configured (would break login)?
+- Should AuthZ be `false` by default in dev (as per R-DEV-01 bypass policy)?
+
+**Decision needed:** Confirm or adjust 3 auth.* seed values.
+
+**Options:**
+| Option | local_login | sso_enabled | authz_enabled | Rationale |
+|--------|-------------|------------|---------------|----------|
+| A (current) | true | false | true | Native login works out of box; SSO opt-in; RBAC enforced |
+| B (dev-friendly) | true | false | **false** | Unblock feature dev without RBAC complexity |
+| C (production-ready) | **true** | **true** | true | Assume Authentik will be configured; allow fallback |
+
+**Decision:** _(not yet made)_
+
+---
+
+## CRITICAL Block Issues (Discovered 2026-03-24)
+
+These 4 questions emerged during Slice 1 planning and must be resolved BEFORE Task implementation begins:
+
+---
+
+### Q-SLICE1-01: Member Role Seeding
+
+**Status:** RESOLVED
+**Blocks:** Slice 0 (Task 0.3 update) and Slice 1 (Task 1.1 register flow)
+
+**Problem:**
+Q-AUTH-01 resolves to auto-assign "Member" role on user registration. However, the Member role must exist in the database before registration can succeed. Currently:
+- Task 0.3 (`seed_config`) is complete and creates 42 system_config keys
+- There is NO `seed_roles` command to create Admin/Editor/Member roles
+- Task 1.1 (register endpoint) will fail with FK constraint violation if Member role missing
+
+**Options:**
+| Option | Approach | Pros | Cons |
+|--------|----------|------|------|
+| A | Add `seed_roles` command to Slice 0 (Task 0.3.5) | One-shot setup, idempotent | Extra work in foundation |
+| B | Auto-create Member role in Task 1.1 if missing | Defers to implementation time | Less explicit, harder to test in isolation |
+| C | Require manual `manage.py seed_roles` before testing | Minimal scope | Extra step, easy to forget |
+
+**Decision:** Choose Option A. Add an idempotent `seed_roles` bootstrap command (Task 0.3.5) so Member role exists before registration starts.
+
+---
+
+### Q-AUTH-04: JWT Token Expiry and Refresh Strategy
+
+**Status:** RESOLVED
+**Blocks:** Slice 1 (Task 1.2 JWT logic, Task 1.5 frontend refresh flow)
+
+**Problem:**
+Q-INFRA-06 chose memory-only token storage + refresh endpoint. Requires explicit decision on:
+1. **Access token lifespan:** How long before token expires? (affects refresh frequency)
+2. **Refresh token lifespan:** How long until user must re-login? (affects security expiry)
+3. **Refresh window:** Auto-refresh on 401, or user-triggered?
+
+**Options:**
+| Option | Access | Refresh | Auto-refresh? | Trade-off |
+|--------|--------|---------|---------------|----------|
+| A | 15 min | 7 days | Yes (silent) | Current token always fresh, user "never" logs out (7 days) |
+| B | 1 hour | 7 days | Yes (silent) | Less refresh calls, but UX stale if not used for hour |
+| C | 1 hour | 24 hours | Manual (on 401 redirect) | Simple, forces explicit refresh, shorter session |
+
+**Decision:** Choose Option A. Use 15-minute access tokens, 7-day refresh tokens, and silent refresh behavior when access token expires.
+
+---
+
+### Q-AUTH-05: First-Login Admin Ceremony
+
+**Status:** RESOLVED
+**Blocks:** Slice 0 (new Task 0.4 — admin bootstrap UX) and Slice 1
+
+**Problem:**
+R-AUTH-11 defines `seed_admin` command to create first admin. However, **what password/credential does this admin use on first login?** Current state:
+- `seed_admin` creates a User with email/username but **no explicit password mechanism documented**
+- Need decision: how does first admin log in initially?
+
+**Options:**
+| Option | Approach | Pros | Cons |
+|--------|----------|------|------|
+| A | Create random password, force reset on first login | Secure by default | Extra UX step, password complexity unknown |
+| B | Create with empty/null password, SSO-only admin | Assumes SSO available | Not suitable if Authentik not ready |
+| C | Seed with default password (e.g., "changeme123"), must reset | Simple, testable | Security risk if seed not removed, weak default |
+| D | Generate 1-time token, send via email, click to set password | Best UX | Requires email working, extra complexity |
+
+**Decision:** Choose Option C for implementation speed: `seed_admin` uses a temporary default password (for example `changeme123`) and requires immediate password reset on first login.
+
+---
+
+### Q-INFRA-01: Frontend Source Directory (ESCALATED)
+
+**Status:** RESOLVED (escalation closed)
+**Blocks:** Slice 1 (Task 1.5 — frontend auth pages), then Slice 4–11
+
+**Problem:**
+Task 1.5 references `frontend/src/app/`, `frontend/src/components/`, `frontend/src/store/` but current frontend has code at `frontend/app/` (Next.js 16 default). Decision is required to unblock Task 1.5 file creation.
+
+**Options:**
+| Option | Layout | Action | Effort |
+|--------|--------|--------|--------|
+| A | Keep `frontend/app/` | Update all IMPL_PLAN references from `src/` to no `src/` | ~30 min |
+| B | Migrate to `frontend/src/app/` | Move files, update tsconfig.json paths, IMPL_PLAN already correct | ~1 hour |
+
+**Recommendation:** Decide TODAY to avoid re-do.
+
+**Decision:** Choose Option A. Keep Next.js default `frontend/app/` layout and align implementation plan paths that still point to `frontend/src/`.
+
+---
+
 ## OPEN Questions
 
 ---
 
 ### Q-INFRA-01: Frontend Source Directory
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 4 (Frontend Foundation) and all frontend slices
 
 **Problem:**
@@ -66,7 +282,7 @@ The current Next.js scaffold has code at `frontend/app/` (Next.js default flat l
 | A | `frontend/app/` (current) | No migration needed; fewer directories | Harder to separate app code from config at root |
 | B | `frontend/src/app/` (IMPL_PLAN) | Clean separation; standard convention for large projects | Need to move existing files; update `tsconfig.json` paths |
 
-**Decision:** _(not yet made — choose A or B)_
+**Decision:** Choose Option A. Keep current `frontend/app/` structure.
 
 **Impact on IMPL_PLAN:** Slice 4, 5, 6, 7, 8, 9, 10, 11 all reference `frontend/src/`.
 
@@ -74,7 +290,7 @@ The current Next.js scaffold has code at `frontend/app/` (Next.js default flat l
 
 ### Q-INFRA-02: API URL Prefix Convention
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** All API slices (Slice 1–11)
 
 **Problem:**
@@ -94,13 +310,13 @@ The same conflict may exist for challenges and quiz PRDs. A consistent scheme mu
 - Should auth endpoints be `/api/auth/` (IMPL_PLAN) or `/auth/`?
 - Should admin-only endpoints be nested under `/api/admin/` or use permissions at the same path?
 
-**Decision:** _(not yet made — choose A or B, apply consistently to all domains)_
+**Decision:** Choose namespaced API paths by domain (Option B pattern). Apply `/api/auth/*` for auth endpoints and use domain namespaces for feature routes (for example `/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`).
 
 ---
 
 ### Q-INFRA-03: Email Backend for Password Reset
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 1 (Task 1.4 — password reset flow)
 
 **Problem:**
@@ -118,13 +334,13 @@ The password reset flow sends an HMAC-signed link via email (1-hour expiry). No 
   (Current CONFIG.md does not list any `email.*` keys.)
 - Is email-based reset required for initial launch?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option C for current phase: defer password reset email flow (Task 1.4) to a follow-up session so Slice 1 core auth can proceed. SMTP configuration decision is postponed with Task 1.4.
 
 ---
 
 ### Q-INFRA-04: Cache Backend for Rate Limiting
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 1 (Task 1.1 — login rate limiting)
 
 **Problem:**
@@ -141,7 +357,7 @@ Login rate limiting uses `cache.get/set`. Django's default `LocMemCache` is per-
 - Is Redis required from the start or only needed for production?
 - If Redis: add `django-redis` to `requirements.txt` and configure in `settings.py`?
 
-**Decision:** _(not yet made)_
+**Decision:** Use LocMemCache for development now, with explicit limitation note (per-process counters). Require Redis-backed cache for production deployment to ensure accurate distributed rate limiting.
 
 ---
 
@@ -168,7 +384,7 @@ IMPL_PLAN says: `ws://host/ws/quiz/{quiz_id}/?token={jwt}` — JWT in query stri
 
 ### Q-INFRA-06: Client-Side Token Storage
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 1 (frontend), Slice 4 (auth store)
 
 **Problem:**
@@ -186,7 +402,7 @@ JWT access and refresh tokens need to be stored somewhere on the client. Each st
 - Is XSS protection a priority given the platform is internal-only (~100 users)?
 - If cookies: does the Next.js frontend and Django backend share the same domain in production (affecting cookie setup)?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose memory-only storage (Option D) with refresh flow. Keep tokens in runtime store (no local/session storage persistence), re-issue access token via refresh endpoint when needed.
 
 ---
 
@@ -235,7 +451,7 @@ IMPL_PLAN mentions both `en.json` and `vi.json`. `next-intl` is already installe
 
 ### Q-AUTH-01: Default Role for Newly Registered Users
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 1 (register) and Slice 2 (RBAC system)
 
 **Problem:**
@@ -251,7 +467,7 @@ The RBAC system requires roles to be assigned; no code specifies what role new r
 
 **Sub-question:** Should there be a seed command or migration that creates default roles (Member, Editor)?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option B: auto-assign default Member role on successful registration.
 
 ---
 
@@ -291,7 +507,7 @@ Use `python manage.py seed_admin` as the standard first-admin setup path.
 
 ### Q-AUTH-03: SSO-Only Lockout Fallback
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 1 (SSO setup), Slice 3 (system config)
 
 **Problem:**
@@ -304,7 +520,7 @@ If an admin sets `auth.local_login_enabled=false` and `auth.sso_enabled=true`, b
 | B | Emergency local login bypass via settings.py flag (not in system_config) | Harder to accidentally enable; requires server access |
 | C | Always allow local login for `is_superuser=True` users regardless of system_config | Small scope; superusers can always get in |
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option C: always allow local login for `is_superuser=True` as an emergency fallback when SSO-only setup is unavailable.
 
 ---
 

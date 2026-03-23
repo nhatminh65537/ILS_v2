@@ -152,13 +152,17 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 
 ## Slice 1 — Authentication
 
-> **Decision prerequisites (must resolve before coding):**
-> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix (flat vs namespaced)
-> - [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email backend for password reset
-> - [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend for login rate limiting
-> - [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Client-side token storage method
-> - [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for newly registered users
-> - [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — SSO-only lockout fallback
+> **Decision prerequisites:** all blockers for Slice 1 were resolved by 2026-03-24.
+> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — RESOLVED: namespaced domain routes (`/api/auth/*`, `/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`)
+> - [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — RESOLVED: defer password reset email flow (Task 1.4) to follow-up session
+> - [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — RESOLVED: LocMem in dev, Redis required for production-grade rate limiting
+> - [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — RESOLVED: memory-only token storage + refresh flow
+> - [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — RESOLVED: auto-assign Member role on registration
+> - [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — RESOLVED: always allow local login for `is_superuser=True` as emergency fallback
+> - [Q-SLICE1-01](DECISIONS.md#q-slice1-01-member-role-seeding) — RESOLVED (Option A): add idempotent `seed_roles` bootstrap step before registration flow
+> - [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — RESOLVED (Option A): keep `frontend/app/` layout and align plan paths accordingly
+> - [Q-AUTH-04](DECISIONS.md#q-auth-04-jwt-token-expiry-and-refresh-strategy) — RESOLVED (Option A): 15m access / 7d refresh with silent refresh on 401
+> - [Q-AUTH-05](DECISIONS.md#q-auth-05-first-login-admin-ceremony) — RESOLVED (Option C): temporary default bootstrap password + forced reset on first login
 >
 > **PRD:** `docs/prd/01-authentication.md`
 > **New app:** `backend/auth_app/` (to avoid conflict with Python `auth`)
@@ -280,6 +284,8 @@ class AuthentikSSOService:
 - `POST /api/auth/identity/link/` — add UserIdentity to authenticated user
 
 ### Task 1.4 — Password change/reset + session management
+
+> **Status note (2026-03-23):** Password reset email flow is deferred per [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset). Password change and session management can still proceed.
 
 **Endpoints:**
 ```
