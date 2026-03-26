@@ -67,15 +67,15 @@ completed before production deployment (with `auth.authorization_enabled=true`).
 Parallel dev path (with authZ bypass):
 
 Slice 0 → Slice 1 →─┬─ Slice 2 (RBAC)           ─────────┬─ production deploy
-                    │                                     │
+                    │                                    │
                     ├─ Slice 3 (System Config)  ─────────┤
                     ├─ Slice 4 (Frontend Found) ─┬───────┤
-                    │                            ├─ S5    │
-                    │                            ├─ S6    │
-                    │                            ├─ S7    │
-                    │                            └─ S8    │
-                    ├─ Slice 9  (Notifications)  ─────────┤
-                    └─ Slice 11 (Statistics)     ─────────┘
+                    │                            ├─ S5   │
+                    │                            ├─ S6   │
+                    │                            ├─ S7   │
+                    │                            └─ S8   │
+                    ├─ Slice 9  (Notifications)  ────────┤
+                    └─ Slice 11 (Statistics)     ────────┘
 ```
 
 ### Priority Within Each Slice

@@ -21,8 +21,8 @@ Exclusion rules:
 - Exclude AI endpoints from active APIs while AI slice remains deferred.
 
 Primary references:
-- Runtime routing: `backend/backend/urls.py`, `backend/api/urls.py`
-- Endpoint behavior: `backend/api/views.py`
+- Runtime routing: `backend/backend/urls.py`, `backend/api/urls.py`, `backend/auth_app/urls.py`
+- Endpoint behavior: `backend/api/views.py`, `backend/auth_app/views.py`
 - Project progress gate: `docs/STATUS.md`, `docs/IMPL_PLAN.md`
 
 ---
@@ -37,10 +37,10 @@ Primary references:
 
 ### Auth behavior in current code
 
-- Login endpoint: `/api/auth/login/`
-- Refresh endpoint: `/api/auth/refresh/`
+- Active auth endpoints are served by `auth_app` under `/api/auth/*`.
 - Current JWT access lifetime in code: `1 hour`
 - Current JWT refresh lifetime in code: `7 days`
+- Token refresh endpoint for auth_app flow is planned under Slice 1 Task 1.2 and not active yet.
 
 ---
 
@@ -54,8 +54,10 @@ Legend:
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| POST | `/api/auth/login/` | No | Partial | Uses `CustomTokenObtainPairView`; returns JWT + basic user info. |
-| POST | `/api/auth/refresh/` | No | Stable | Uses SimpleJWT `TokenRefreshView`. |
+| POST | `/api/auth/register/` | No | Stable | Creates user + profile, auto-assigns Member role, returns access/refresh tokens. |
+| POST | `/api/auth/login/` | No | Stable | Local login with cache-based rate limit and session creation. |
+| POST | `/api/auth/logout/` | Yes | Stable | Revokes current session by refresh token hash. |
+| POST | `/api/auth/logout-all/` | Yes | Stable | Revokes all active sessions for authenticated user. |
 
 ### 3.2 Users
 
@@ -149,9 +151,7 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 
 ### 4.1 Slice 1 — Authentication
 
-- `POST /api/auth/register/`
-- `POST /api/auth/logout/`
-- `POST /api/auth/logout-all/`
+- `POST /api/auth/token/refresh/`
 - `POST /api/auth/change-password/`
 - `POST /api/auth/reset-password/`
 - `POST /api/auth/reset-password/confirm/`

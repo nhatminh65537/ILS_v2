@@ -31,16 +31,17 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Components
 
-- **api app**: All domain models — Challenge, Course, Quiz + nodes, flags, progress (~1195 lines)
+- **api app**: All domain models and current domain viewsets for users, courses, lessons, challenges, quizzes, notifications, leaderboard, and system config.
 - **ai app**: ⚠️ DEFERRED — scaffold only (AIAskView, 3 modes, mock LLM); NOT in INSTALLED_APPS; do not activate until approved
 - **realtime app**: Django Channels scaffold (empty logic)
-- **auth_app**: To be created in Slice 1 — JWT auth, SSO, session management
+- **auth_app**: Implemented for Slice 1 Task 1.1 native auth endpoints (`/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/logout-all`) with session hash tracking in `user_session`.
 - **Abstract ORM**: CreateAudit, UpdateAudit, FullAudit, SoftDeleteAudit, BaseNode, BaseCategory, BaseTag
 - **UserSession model**: Added in `api` for refresh-token session tracking (`user_session` table)
 
 ## Status
 
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
+- Slice 1 Task 1.1 implemented on 2026-03-26: `auth_app` now serves `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, and `/api/auth/logout-all` with hashed refresh-token session tracking and endpoint tests.
 - Q-AUTH-02 resolved on 2026-03-17 (Option B: `seed_admin` command as first-admin bootstrap)
 - Slice 1 decision gate resolved on 2026-03-23 for implementation readiness: namespaced API routes (`/api/auth/*`, `/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`), password reset email flow deferred with Task 1.4, LocMem (dev) + Redis (prod) cache policy for rate limiting, memory-only token storage with refresh flow, auto-assign Member role on register, and superuser local-login emergency fallback for SSO-only outage.
 - Four CRITICAL Slice 1 blockers resolved on 2026-03-24: Q-SLICE1-01 Option A (bootstrap role seeding), Q-INFRA-01 Option A (keep `frontend/app/`), Q-AUTH-04 Option A (15m access + 7d refresh with silent refresh), and Q-AUTH-05 Option C (temporary default bootstrap password + forced reset).

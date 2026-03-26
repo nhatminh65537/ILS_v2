@@ -19,6 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/', include('auth_app.urls')),
     path('api/', include('api.urls')),
     # path('api/ai/', include('ai.urls')),  # DEFERRED — AI feature not yet active.
 ]

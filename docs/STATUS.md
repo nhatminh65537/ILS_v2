@@ -67,6 +67,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Code-doc consistency sync (2026-03-12) | Existing backend scaffold aligned with current docs for tree path (`path`), flat RBAC direction, deny-only user permission override, permission cache versioning, and system config schema; `manage.py check` passes |
 | Slice 0 / Task 0.2 (2026-03-17) | Q-AUTH-02 resolved (Option B seed_admin), User domain aligned for Task 0.2: `UserSession` model added, `UserProfile` fields renamed/expanded to DATA_MODEL naming, initial migrations generated/applied, `manage.py check` passes |
 | Slice 0 / Task 0.3 (2026-03-23) | `SystemConfig` aligned and indexed (`category`, `is_runtime`, `is_editable`), `seed_config` command implemented (42 canonical keys from `CONFIG.md`, excluding `ai.*` per current scope), `api.utils.get_config()` added, `InstanceService` switched to canonical `challenge.deploy.*` keys, migration + idempotent seed verified |
+| Slice 1 / Task 1.1 (2026-03-26) | New `auth_app` implemented and wired at `/api/auth/*` with native `register`, `login`, `logout`, `logout-all`; session hash storage in `user_session`; login rate-limit; endpoint tests added and passing (`6 passed`) |
 
 ---
 
@@ -97,11 +98,10 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| JWT auth: register, login, refresh, logout | High | `auth_app` — new Django app |
-| `user_session` tracking | High | Hash refresh tokens before storing |
+| JWT auth: token refresh + rotation flow | High | Remaining Slice 1.2 work in `auth_app` |
+| Session listing/revoke APIs | Medium | `GET /api/auth/sessions/`, revoke-by-id not implemented yet |
 | SSO / Authentik OIDC | High | Read from `system_config` |
 | Password change + reset (email token) | Medium | `itsdangerous` TimestampSigner |
-| Session management (list + revoke) | Medium | |
 | Frontend: Login / Register pages | Medium | |
 
 ### Slice 2 — Authorization / RBAC

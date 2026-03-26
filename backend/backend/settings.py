@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'channels',
     # Local apps
     'api',
+    'auth_app',
     # 'ai',       # DEFERRED — AI Assistant feature. Do NOT activate until explicitly agreed.
     #             # See docs/STATUS.md → Deferred Features.
     'realtime',
