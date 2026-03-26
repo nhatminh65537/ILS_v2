@@ -26,6 +26,7 @@ Target: one instance per organization, no horizontal scale needed.
 | `docs/STATUS.md` | Implementation status per slice |
 | `docs/BUGS.md` | Known bugs and fix history |
 | `docs/CONFIG.md` | Canonical system_config keys |
+| `docs/API.md` | Canonical API reference by implementation progress |
 | `AGENT.md` | AI agent quick-reference guide |
 
 ## Components
@@ -39,7 +40,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Status
 
-- All domain ORM models complete; no API views exist yet
+- All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
 - Q-AUTH-02 resolved on 2026-03-17 (Option B: `seed_admin` command as first-admin bootstrap)
 - Slice 1 decision gate resolved on 2026-03-23 for implementation readiness: namespaced API routes (`/api/auth/*`, `/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`), password reset email flow deferred with Task 1.4, LocMem (dev) + Redis (prod) cache policy for rate limiting, memory-only token storage with refresh flow, auto-assign Member role on register, and superuser local-login emergency fallback for SSO-only outage.
 - Four CRITICAL Slice 1 blockers resolved on 2026-03-24: Q-SLICE1-01 Option A (bootstrap role seeding), Q-INFRA-01 Option A (keep `frontend/app/`), Q-AUTH-04 Option A (15m access + 7d refresh with silent refresh), and Q-AUTH-05 Option C (temporary default bootstrap password + forced reset).
@@ -49,6 +50,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **Implementation principle:** Functional requirements first; non-functional only when needed or all functional done
 - **Doc consistency (2026-03-12):** All config keys across 16 docs normalized to match `CONFIG.md` canonical names; `DATA_MODEL.md` header fixed to be self-authoritative (was incorrectly pointing to `dbv3.sql`)
 - **Code consistency (2026-03-12):** Core ORM and authz service updated toward docs: tree nodes use `path` (dot-separated), permissions are flat + deny-only override, `user_permission_cache` uses text payload with per-user versioning, and `system_config` schema moved to canonical `config_type` + runtime/editable flags. `manage.py check` passes.
+- API documentation baseline created on 2026-03-26: `docs/API.md` is canonical for endpoint inventory by maturity (`Stable`/`Partial`/`Planned`/`Deferred`) and excludes deferred AI routes from active scope.
 
 ## Patterns
 

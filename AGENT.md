@@ -13,6 +13,7 @@
 | `docs/REQUIREMENTS.md` | Requirements for project |
 | `docs/DATA_MODEL.md` | Entity types, validation rules, storage schema, business rules |
 | `docs/CONFIG.md` | All `system_config` keys with canonical names, types, and descriptions |
+| `docs/API.md` | Canonical API reference by implementation progress (`Stable` / `Partial` / `Planned` / `Deferred`) |
 | `docs/STATUS.md` | Implementation status per slice (what's done, in progress, not yet started) |
 | `docs/BUGS.md` | Known bugs and fix history |
 | `docs/IMPL_PLAN.md` | Vertical slice implementation plan (Slices 0–11) |
@@ -89,7 +90,9 @@ Tier 6 — Agent Index (aggregates all above)
 | `docs/DECISIONS.md` (new RESOLVED) | → `docs/IMPL_PLAN.md` (remove blocker from slice header), `docs/STATUS.md` (unblock gate), possibly `docs/ARCHITECTURE.md` |
 | `docs/IMPL_PLAN.md` | → `docs/STATUS.md` (add/remove tasks to match) |
 | `docs/STATUS.md` | → `AGENT.md` if new pre-implementation gates are added |
+| `docs/API.md` | → `docs/STATUS.md` (sync active vs planned endpoint status), `docs/IMPL_PLAN.md` (sync slice task contracts if changed), `AGENT.md` (if API doc governance or dependency rules change) |
 | `backend/api/models.py` | → Verify against `docs/DATA_MODEL.md` (ORM must stay in sync) |
+| `backend/api/urls.py` / `backend/api/views.py` | → `docs/API.md` (update endpoint inventory and maturity tags in same session) |
 
 > **Normalization session:** If propagation cannot be done immediately (too large), create a task in `docs/STATUS.md` titled "Doc normalization: [trigger]" and complete it before the next coding slice.
 

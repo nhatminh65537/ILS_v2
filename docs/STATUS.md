@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-03-24
+> Last updated: 2026-03-26
 
 ---
 
@@ -61,7 +61,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Database schema review | All CRITICAL/HIGH/MEDIUM/LOW issues resolved in `dbv3.sql` and `models.py` (2026-03-09) |
 | Next.js scaffold | Default create-next-app; all runtime deps installed (Zustand, next-intl, Axios) |
 | PRD documents | 10 feature PRDs in `docs/prd/` |
-| Documentation suite | `ARCHITECTURE.md`, `DATA_MODEL.md`, `CONFIG.md`, `IMPL_PLAN.md`, `BUGS.md`, `STATUS.md`, `DECISIONS.md` |
+| Documentation suite | `ARCHITECTURE.md`, `DATA_MODEL.md`, `CONFIG.md`, `API.md`, `IMPL_PLAN.md`, `BUGS.md`, `STATUS.md`, `DECISIONS.md` |
 | Dev infrastructure | `README.md`, `Makefile`, `requirements.txt`, `pytest.ini`, `conftest.py`, `.env.example`, `.gitignore` |
 | settings.py | DRF + SimpleJWT + CORS + Channels config added |
 | Code-doc consistency sync (2026-03-12) | Existing backend scaffold aligned with current docs for tree path (`path`), flat RBAC direction, deny-only user permission override, permission cache versioning, and system config schema; `manage.py check` passes |
@@ -73,6 +73,15 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 ## In Progress
 
 - None
+
+---
+
+## API Documentation Baseline
+
+- Canonical API reference is now `docs/API.md`.
+- Active endpoint inventory in `docs/API.md` only includes APIs aligned with current implementation progress.
+- Planned and deferred APIs are tracked in separate sections in `docs/API.md` and are not considered active.
+- AI endpoints remain deferred and are excluded from active API scope while `api/ai` routing stays disabled in root URL config.
 
 ---
 

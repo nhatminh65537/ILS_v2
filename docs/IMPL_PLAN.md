@@ -9,7 +9,7 @@ ILS v2 is a self-hosted cybersecurity learning platform (~100 members). The curr
 - Complete domain models (`backend/api/models.py` ~1200 lines)
 - Django scaffold (apps: `api`, `ai`, `realtime`), Next.js scaffold
 - SQL schema legacy reference (`design/database/vx/dbv3.sql`) — `docs/DATA_MODEL.md` is authoritative
-- **Not yet implemented:** API views, serializers, URLs, auth, frontend pages, migrations
+- **Partially implemented:** API views/serializers/URLs exist for core domains; auth app contracts and many slice contracts remain pending
 
 Each **slice** = a complete feature from DB → API → Frontend.
 Each **task** = completed in one session (2–4 hours).
@@ -85,6 +85,13 @@ Within each slice, prioritize in this order:
 2. **Backend API (non-functional)** — rate limiting, caching, logging (only when needed)
 3. **Frontend (functional)** — basic UI, forms, data display
 4. **Frontend (non-functional)** — i18n, theming, animation, accessibility (only when needed)
+
+### API Documentation Workflow
+
+After completing any endpoint implementation or endpoint contract change:
+1. Update `docs/API.md` in the same session.
+2. Reconcile active/planned status in `docs/STATUS.md`.
+3. If sequencing or scope changed, update the affected slice tasks in this plan.
 
 ---
 

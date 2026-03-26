@@ -58,6 +58,7 @@ ILS_v2/
 │   ├── STATUS.md           # Implementation status per slice
 │   ├── BUGS.md             # Known bugs and fix history
 │   ├── IMPL_PLAN.md        # Vertical slice implementation plan (Slices 0–11)
+│   ├── API.md              # Canonical API reference by implementation progress
 │   ├── REQUIREMENTS.md     # Full project requirements
 │   └── prd/                # Product Requirements Documents
 │       ├── README.md       # PRD index
@@ -85,7 +86,7 @@ ILS_v2/
 │   ├── manage.py
 │   ├── backend/            # Django project config
 │   │   ├── settings.py     # SQLite dev; PostgreSQL config commented out
-│   │   ├── urls.py         # Root URLconf (only admin/ wired currently)
+│   │   ├── urls.py         # Root URLconf (`/admin/`, `/api/`; AI route deferred)
 │   │   └── asgi.py         # ASGI entry for Daphne/Channels
 │   ├── api/                # Main app — all domain models
 │   │   └── models.py       # ~1195 lines — complete ORM for all domains
