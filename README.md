@@ -56,7 +56,7 @@ daphne -p 8000 backend.asgi:application
 cd frontend
 # .env.local already present with defaults
 npm install
-npm run dev                          # http://localhost:3000
+npm run dev                          # http://localhost:4000
 ```
 
 ---

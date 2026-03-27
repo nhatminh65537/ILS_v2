@@ -225,7 +225,7 @@ urlpatterns = [
 - Extract refresh token from body
 - Hash it → query `UserSession` → set `revoked_at = now()`
 
-### Task 1.2 — JWT with permission claims + token refresh
+### Task 1.2 — JWT with permission claims + token refresh ✅ COMPLETED (2026-03-27)
 
 **File:** `backend/auth_app/services/token_service.py`
 
@@ -254,6 +254,12 @@ Input: {refresh: "<raw_token>"}
 5. issue new access token (check permission cache)
 6. optional token rotation: new refresh + revoke old session
 ```
+
+**Implemented details (2026-03-27):**
+- Session hash validation in `user_session` with `revoked_at IS NULL` check
+- Refresh token/session rotation implemented atomically
+- Per-user refresh rate limit (`10 requests / 60s`) via cache key `refresh_rate:{user_id}`
+- Access token TTL aligned to 15 minutes and refresh token TTL kept at 7 days
 
 **JWT Payload schema:**
 ```json

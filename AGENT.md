@@ -186,7 +186,7 @@ daphne -p 8000 backend.asgi:application
 
 ```bash
 cd frontend
-npm run dev                      # http://localhost:3000
+npm run dev                      # http://localhost:4000
 ```
 
 ### Make shortcuts

@@ -26,6 +26,16 @@ class LogoutRequestSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
 
+class TokenRefreshRequestSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    device_info = serializers.CharField(required=False, allow_blank=True)
+
+
+class TokenRefreshResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+
+
 class AuthUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

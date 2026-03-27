@@ -18,8 +18,10 @@ from auth_app.serializers import (
     LoginRequestSerializer,
     LogoutRequestSerializer,
     RegisterRequestSerializer,
+    TokenRefreshRequestSerializer,
+    TokenRefreshResponseSerializer,
 )
-from auth_app.services.token_service import TokenService
+from auth_app.services.token_service import RefreshRateLimitError, RefreshTokenError, TokenService
 
 
 User = get_user_model()
@@ -103,6 +105,31 @@ class LoginView(APIView):
             'user': AuthUserSerializer(user).data,
         }
         return Response(AuthTokenResponseSerializer(payload).data, status=status.HTTP_200_OK)
+
+
+class TokenRefreshView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = TokenRefreshRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        device_info = serializer.validated_data.get('device_info') or request.META.get('HTTP_USER_AGENT', '')
+
+        try:
+            tokens = TokenService().refresh_tokens(
+                refresh_token=serializer.validated_data['refresh'],
+                device_info=device_info,
+            )
+        except RefreshRateLimitError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        except PermissionError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except RefreshTokenError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        payload = {'access': tokens['access'], 'refresh': tokens['refresh']}
+        return Response(TokenRefreshResponseSerializer(payload).data, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):

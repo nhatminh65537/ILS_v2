@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-03-26
+> Last updated: 2026-03-27
 
 ---
 
@@ -38,9 +38,9 @@ Primary references:
 ### Auth behavior in current code
 
 - Active auth endpoints are served by `auth_app` under `/api/auth/*`.
-- Current JWT access lifetime in code: `1 hour`
+- Current JWT access lifetime in code: `15 minutes`
 - Current JWT refresh lifetime in code: `7 days`
-- Token refresh endpoint for auth_app flow is planned under Slice 1 Task 1.2 and not active yet.
+- Token refresh endpoint for auth_app flow is active with session hash validation, token rotation, and per-user refresh rate limit (10 requests/minute).
 
 ---
 
@@ -56,6 +56,7 @@ Legend:
 |---|---|---|---|---|
 | POST | `/api/auth/register/` | No | Stable | Creates user + profile, auto-assigns Member role, returns access/refresh tokens. |
 | POST | `/api/auth/login/` | No | Stable | Local login with cache-based rate limit and session creation. |
+| POST | `/api/auth/token/refresh/` | No | Stable | Validates refresh hash in `user_session`, rotates refresh token/session, and enforces per-user refresh rate limit (10/min). |
 | POST | `/api/auth/logout/` | Yes | Stable | Revokes current session by refresh token hash. |
 | POST | `/api/auth/logout-all/` | Yes | Stable | Revokes all active sessions for authenticated user. |
 
@@ -151,7 +152,6 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 
 ### 4.1 Slice 1 — Authentication
 
-- `POST /api/auth/token/refresh/`
 - `POST /api/auth/change-password/`
 - `POST /api/auth/reset-password/`
 - `POST /api/auth/reset-password/confirm/`
