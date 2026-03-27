@@ -106,7 +106,7 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 > **Note:** The `ai` app is intentionally **not** in `INSTALLED_APPS` and its URLs are **not** wired.
 > AI is a deferred feature — see Slice 10 below and `docs/STATUS.md → Deferred Features`.
 
-### Task 0.2 — Custom User model + initial migrations
+### Task 0.2 — Custom User model + initial migrations ✅ COMPLETED (2026-03-17)
 **Files:** `backend/api/models.py`, `backend/backend/settings.py`, `backend/api/migrations/`
 
 - Add `User(AbstractBaseUser, PermissionsMixin)` to `api/models.py`:
@@ -128,7 +128,7 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 - Run: `python manage.py makemigrations api && python manage.py migrate`
 - Create `UserManager` with `create_user()`, `create_superuser()`
 
-### Task 0.3 — SystemConfig + seed command
+### Task 0.3 — SystemConfig + seed command ✅ COMPLETED (2026-03-23)
 **Files:** `backend/api/management/commands/seed_config.py`, `backend/api/models.py`
 
 - Verify `SystemConfig` model in `api/models.py` matches dbv3.sql:
@@ -174,7 +174,7 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 > **PRD:** `docs/prd/01-authentication.md`
 > **New app:** `backend/auth_app/` (to avoid conflict with Python `auth`)
 
-### Task 1.1 — auth_app setup + native login/register/logout
+### Task 1.1 — auth_app setup + native login/register/logout ✅ COMPLETED (2026-03-26)
 
 **Files to create:**
 ```
