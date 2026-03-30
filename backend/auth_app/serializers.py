@@ -36,6 +36,23 @@ class TokenRefreshResponseSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
 
+class SSOCallbackQuerySerializer(serializers.Serializer):
+    code = serializers.CharField()
+    state = serializers.CharField()
+
+
+class IdentityLinkRequestSerializer(serializers.Serializer):
+    provider = serializers.ChoiceField(
+        choices=['authentik', 'google', 'github'],
+        required=False,
+        default='authentik',
+    )
+    external_id = serializers.CharField()
+    email = serializers.EmailField(required=False, allow_blank=True)
+    name = serializers.CharField(required=False, allow_blank=True)
+    extra_data = serializers.JSONField(required=False)
+
+
 class AuthUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

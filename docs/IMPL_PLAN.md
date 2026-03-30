@@ -273,28 +273,38 @@ Input: {refresh: "<raw_token>"}
 }
 ```
 
-### Task 1.3 — SSO / Authentik OIDC
+### Task 1.3 — SSO / Authentik OIDC ✅ COMPLETED (2026-03-30)
 
 **File:** `backend/auth_app/services/sso_service.py`
 
 ```python
 class AuthentikSSOService:
-    def get_redirect_url(self) -> str:
-        # Read from system_config: auth.authentik_host, auth.client_id
-        # Build OIDC authorization URL with state + nonce (store in session/cache)
+    def get_redirect_url(self, callback_url: str) -> dict:
+        # Read from system_config: auth.sso_base_url, auth.sso_client_id, auth.sso_client_secret
+        # Build OIDC authorization URL with state + nonce (cache TTL = 300s)
 
-    def handle_callback(self, code: str) -> User:
+    def handle_callback(self, code: str, state: str, callback_url: str, device_info: str = '') -> dict:
         # Exchange code → id_token via Authentik token endpoint
-        # Extract: external_id (sub), email, name
-        # Look up UserIdentity(provider='authentik', external_id=sub)
-        # If not found: create User + UserProfile + UserIdentity
-        # Return user
+        # Validate state + nonce and resolve user identity
+        # Auto-link existing local user by email when auth.link_accounts_enabled=true
+        # Return access/refresh + user and create user_session entry
 ```
 
 **Endpoints:**
 - `GET /api/auth/sso/redirect/` — check `auth.sso_enabled`, redirect
-- `GET /api/auth/sso/callback/` — exchange code, issue JWT, redirect frontend with token
-- `POST /api/auth/identity/link/` — add UserIdentity to authenticated user
+- `GET /api/auth/sso/callback/` — exchange code, issue JWT as JSON payload (frontend redirect deferred)
+- `POST /api/auth/identity/link/` — add `UserAuthProvider` to authenticated user
+
+**Implemented details (2026-03-30):**
+- Added `AuthentikSSOService` with OIDC discovery, redirect URL generation, callback code exchange, id_token decode, and account-link resolution.
+- Added state/nonce anti-replay validation using cache key `sso:state:{state}` with 5-minute TTL and consume-once behavior.
+- Added SSO endpoints in `auth_app`:
+    - `GET /api/auth/sso/redirect/`
+    - `GET /api/auth/sso/callback/`
+    - `POST /api/auth/identity/link/`
+- Callback flow now reuses existing `TokenService` issuance + `UserSession` creation pattern.
+- Added conflict/idempotency handling for identity linking (`409` when external identity belongs to another user).
+- Added automated test coverage for redirect, callback new-user flow, callback existing-user auto-link flow, invalid state, disabled SSO, idempotent link, and conflict link scenarios.
 
 ### Task 1.4 — Password change/reset + session management
 

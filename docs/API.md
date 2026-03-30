@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-03-27
+> Last updated: 2026-03-30
 
 ---
 
@@ -59,6 +59,9 @@ Legend:
 | POST | `/api/auth/token/refresh/` | No | Stable | Validates refresh hash in `user_session`, rotates refresh token/session, and enforces per-user refresh rate limit (10/min). |
 | POST | `/api/auth/logout/` | Yes | Stable | Revokes current session by refresh token hash. |
 | POST | `/api/auth/logout-all/` | Yes | Stable | Revokes all active sessions for authenticated user. |
+| GET | `/api/auth/sso/redirect/` | No | Stable | Builds OIDC authorization URL from system config and returns HTTP redirect to Authentik. |
+| GET | `/api/auth/sso/callback/` | No | Stable | Validates OIDC state/nonce, exchanges auth code, links/creates user, and returns access/refresh tokens. |
+| POST | `/api/auth/identity/link/` | Yes | Stable | Links authenticated user to an external identity (`provider`, `external_id`) with conflict protection and idempotent retry behavior. |
 
 ### 3.2 Users
 
@@ -157,8 +160,6 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 - `POST /api/auth/reset-password/confirm/`
 - `GET /api/auth/sessions/`
 - `POST /api/auth/sessions/{id}/revoke/`
-- `GET /api/auth/sso/authorize/`
-- `GET /api/auth/sso/callback/`
 
 ### 4.2 Slice 2 — Authorization/RBAC
 
