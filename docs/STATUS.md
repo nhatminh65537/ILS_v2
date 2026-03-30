@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-03-27
+> Last updated: 2026-03-30
 
 ---
 
@@ -69,6 +69,8 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 0 / Task 0.3 (2026-03-23) | `SystemConfig` aligned and indexed (`category`, `is_runtime`, `is_editable`), `seed_config` command implemented (42 canonical keys from `CONFIG.md`, excluding `ai.*` per current scope), `api.utils.get_config()` added, `InstanceService` switched to canonical `challenge.deploy.*` keys, migration + idempotent seed verified |
 | Slice 1 / Task 1.1 (2026-03-26) | New `auth_app` implemented and wired at `/api/auth/*` with native `register`, `login`, `logout`, `logout-all`; session hash storage in `user_session`; login rate-limit; endpoint tests added and passing (`6 passed`) |
 | Slice 1 / Task 1.2 (2026-03-27) | `POST /api/auth/token/refresh/` implemented with session-hash validation, token/session rotation, per-user refresh rate limit (`10/min`), updated JWT access lifetime (`15m`), CORS dev frontend port (`4000`), and expanded auth tests (`15 passed`) |
+| Slice 3 / Task 3.1 (2026-03-30) | System Config backend API completed: `GET /api/admin/config/` (grouped by category), `GET /api/admin/config/{key}/`, `PATCH /api/admin/config/{key}/`; secret masking (`***`), `is_editable=false` protection (403), cache invalidation after update, and automated tests passing |
+| Phase 1B support work (2026-03-30) | Auth API review completed for current scope: `POST /api/auth/login/` and `POST /api/auth/refresh/` verified via automated tests and runtime check; contract snapshot documented for frontend coordination |
 
 ---
 
@@ -118,7 +120,6 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| System Config API (GET / PATCH) | High | Secrets masked in GET; `is_editable=false` → 403 |
 | Frontend: Admin Config UI | Low | |
 
 ### Slice 4 — Frontend Foundation

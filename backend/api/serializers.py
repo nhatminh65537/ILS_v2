@@ -2,6 +2,8 @@
 Serializers for API
 Handles data serialization/deserialization for all models
 """
+import json
+
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -444,11 +446,60 @@ class UserQuizAttemptSerializer(serializers.ModelSerializer):
 
 class SystemConfigSerializer(serializers.ModelSerializer):
     """System configuration serializer"""
+
+    value = serializers.JSONField(required=False)
     
     class Meta:
         model = SystemConfig
         fields = ['id', 'key', 'value', 'value_type', 'category', 'description', 'is_editable', 'is_runtime']
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'key', 'value_type', 'category', 'description', 'is_editable', 'is_runtime']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.value_type == SystemConfig.ConfigType.SECRET:
+            data['value'] = '***'
+        return data
+
+    def validate_value(self, value):
+        instance = self.instance
+        if not instance:
+            return value
+
+        value_type = instance.value_type
+
+        if value_type == SystemConfig.ConfigType.BOOL:
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str) and value.strip().lower() in {'true', 'false'}:
+                return value.strip().lower() == 'true'
+            raise serializers.ValidationError('Value must be a boolean')
+
+        if value_type == SystemConfig.ConfigType.INT:
+            if isinstance(value, int) and not isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                try:
+                    return int(value.strip())
+                except (TypeError, ValueError):
+                    pass
+            raise serializers.ValidationError('Value must be an integer')
+
+        if value_type in {SystemConfig.ConfigType.STRING, SystemConfig.ConfigType.SECRET}:
+            if isinstance(value, str):
+                return value
+            raise serializers.ValidationError('Value must be a string')
+
+        if value_type == SystemConfig.ConfigType.JSON:
+            if isinstance(value, (dict, list)):
+                return value
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    pass
+            raise serializers.ValidationError('Value must be valid JSON')
+
+        return value
 
 
 class NotificationSerializer(serializers.ModelSerializer):
