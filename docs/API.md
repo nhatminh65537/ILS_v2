@@ -140,12 +140,14 @@ Legend:
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/system-config/` | Admin | Stable | Admin-only list. |
-| GET | `/api/system-config/{id}/` | Admin | Stable | Admin-only detail. |
+| GET | `/api/admin/config/` | Admin | Stable | Admin-only list grouped by `category`; secret values are masked as `***`. |
+| GET | `/api/admin/config/{key}/` | Admin | Stable | Admin-only detail lookup by config key (supports dotted keys). |
+| PATCH | `/api/admin/config/{key}/` | Admin | Stable | Admin-only value update with type validation (`bool`, `int`, `string`, `json`, `secret`). |
 
 Notes:
-- Router currently exposes `ReadOnlyModelViewSet` actions for System Config.
-- `PATCH` update is planned by slice and not active yet in current route set.
+- `PATCH` returns `403` with `{"detail": "Config is not editable"}` when `is_editable=false`.
+- Invalid payload type for config `value_type` returns `400` with deterministic validation error.
+- Cache for non-runtime config reads is invalidated after successful updates.
 
 ---
 
@@ -192,7 +194,7 @@ Deferred by project decision. Do not treat as active API.
 ## 6. Error and Security Notes
 
 - Error payload shape is currently endpoint-dependent and will be normalized in later slices.
-- Do not expose secret config values in clear text when config update APIs become writable.
+- System Config secret values are masked in API responses and are never returned in clear text.
 - API documentation must be updated in the same session whenever endpoint routing or serializer contract changes.
 
 ---

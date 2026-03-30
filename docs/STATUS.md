@@ -70,6 +70,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 1 / Task 1.1 (2026-03-26) | New `auth_app` implemented and wired at `/api/auth/*` with native `register`, `login`, `logout`, `logout-all`; session hash storage in `user_session`; login rate-limit; endpoint tests added and passing (`6 passed`) |
 | Slice 1 / Task 1.2 (2026-03-27) | `POST /api/auth/token/refresh/` implemented with session-hash validation, token/session rotation, per-user refresh rate limit (`10/min`), updated JWT access lifetime (`15m`), CORS dev frontend port (`4000`), and expanded auth tests (`15 passed`) |
 | Slice 1 / Task 1.3 (2026-03-30) | SSO/AuthentiK backend endpoints implemented: `GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`; callback validates state/nonce with cache TTL, auto-links by `provider+external_id` and email fallback when linking is enabled, creates JWT session via existing TokenService flow, and adds auth test coverage (`22 passed`) |
+| Slice 3 / Task 3.1 (2026-03-30) | System Config admin API implemented at `/api/admin/config/*` with grouped list response, key-based detail/update (`lookup_field=key`), PATCH type validation by `value_type`, secret masking (`***`), `is_editable=false` guard (`403`), cache invalidation after update, and pytest coverage (`9 passed`) |
 
 ---
 
@@ -118,7 +119,6 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| System Config API (GET / PATCH) | High | Secrets masked in GET; `is_editable=false` → 403 |
 | Frontend: Admin Config UI | Low | |
 
 ### Slice 4 — Frontend Foundation
