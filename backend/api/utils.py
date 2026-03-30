@@ -28,3 +28,8 @@ def get_config(key, default=None):
         cache.set(cache_key, typed_value, timeout=300)
 
     return typed_value
+
+
+def invalidate_config_cache(key):
+    """Invalidate cached value for a config key after updates."""
+    cache.delete(f'system_config:{key}')

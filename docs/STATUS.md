@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-03-12
+> Last updated: 2026-03-30
 
 ---
 
@@ -43,6 +43,8 @@ Full details in **`docs/DECISIONS.md`**.
 | Code-doc consistency sync (2026-03-12) | Existing backend scaffold aligned with current docs for tree path (`path`), flat RBAC direction, deny-only user permission override, permission cache versioning, and system config schema; `manage.py check` passes |
 | Slice 0 / Task 0.2 (2026-03-17) | Q-AUTH-02 resolved (Option B seed_admin), User domain aligned for Task 0.2: `UserSession` model added, `UserProfile` fields renamed/expanded to DATA_MODEL naming, initial migrations generated/applied, `manage.py check` passes |
 | Slice 0 / Task 0.3 (2026-03-23) | `SystemConfig` aligned and indexed (`category`, `is_runtime`, `is_editable`), `seed_config` command implemented (42 canonical keys from `CONFIG.md`, excluding `ai.*` per current scope), `api.utils.get_config()` added, `InstanceService` switched to canonical `challenge.deploy.*` keys, migration + idempotent seed verified |
+| Slice 3 / Task 3.1 (2026-03-30) | System Config backend API completed: `GET /api/admin/config/` (grouped by category), `GET /api/admin/config/{key}/`, `PATCH /api/admin/config/{key}/`; secret masking (`***`), `is_editable=false` protection (403), cache invalidation after update, and automated tests passing |
+| Phase 1B support work (2026-03-30) | Auth API review completed for current scope: `POST /api/auth/login/` and `POST /api/auth/refresh/` verified via automated tests and runtime check; contract snapshot documented for frontend coordination |
 
 ---
 
@@ -85,7 +87,6 @@ Full details in **`docs/DECISIONS.md`**.
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| System Config API (GET / PATCH) | High | Secrets masked in GET; `is_editable=false` → 403 |
 | Frontend: Admin Config UI | Low | |
 
 ### Slice 4 — Frontend Foundation
