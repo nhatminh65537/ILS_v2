@@ -5,21 +5,45 @@
 
 ---
 
-## ⚠️ Pre-Implementation Gate
+## ✅ CRITICAL BLOCK — RESOLVED (2026-03-24)
 
-Before Slice 0 coding can begin, the following **open questions must be resolved by the team**.
-Full details in **`docs/DECISIONS.md`**.
+Four critical questions from Slice 1 planning were resolved and no longer block Tasks 1.1–1.5.
 
 | Question | Blocks | Status |
 |----------|--------|--------|
-| [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention | All API slices | **OPEN** |
-| [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for new users | Slice 1–2 | **OPEN** |
+| [Q-SLICE1-01](DECISIONS.md#q-slice1-01-member-role-seeding) — Member role seeding | Slice 0 (Task 0.3), Slice 1 (Task 1.1) | **RESOLVED** (Option A) |
+| [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — Frontend src/ layout | Slice 1 (Task 1.5), Slice 4–11 | **RESOLVED** (Option A) |
+| [Q-AUTH-04](DECISIONS.md#q-auth-04-jwt-token-expiry-and-refresh-strategy) — Token expiry + refresh window | Slice 1 (Tasks 1.2, 1.5) | **RESOLVED** (Option A) |
+| [Q-AUTH-05](DECISIONS.md#q-auth-05-first-login-admin-ceremony) — Admin first-login credentials | Slice 0 (new Task 0.4), Slice 1 | **RESOLVED** (Option C) |
+
+---
+
+## ⚠️ Pre-Implementation Gate (Resolved 2026-03-23)
+
+**Slice 0 and Slice 1 foundation questions — now RESOLVED.** Full details in **`docs/DECISIONS.md`**.
+
+| Question | Blocks | Status |
+|----------|--------|--------|
+| [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention | All API slices | **RESOLVED** |
+| [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for new users | Slice 1–2 | **RESOLVED** |
 | [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) — First admin creation | Slice 0 | **RESOLVED** |
-| [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend | Slice 1 | **OPEN** |
-| [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email for password reset | Slice 1 | **OPEN** |
-| [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — Frontend src/ layout | Slice 4 | **OPEN** |
-| [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Token storage | Slice 1, 4 | **OPEN** |
-| [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library | Slice 4 | **OPEN** |
+| [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend | Slice 1 | **RESOLVED** |
+| [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email for password reset | Slice 1 | **RESOLVED** |
+| [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Token storage | Slice 1, 4 | **RESOLVED** |
+| [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — SSO-only lockout fallback | Slice 1 | **RESOLVED** |
+
+---
+
+## 📋 Future Blockers (Resolve Before Task Implementation)
+
+| Question | Blocks | Status |
+|----------|--------|--------|
+| [Q-AUTH-06](DECISIONS.md#q-auth-06-sso-account-linking-strategy) — SSO account linking strategy | Slice 1 (Task 1.3) | **OPEN** |
+| [Q-AUTH-07](DECISIONS.md#q-auth-07-device-logout-granularity) — Device logout granularity | Slice 1 (Task 1.4 deferred) | **OPEN** |
+| [Q-INFRA-09](DECISIONS.md#q-infra-09-cors-and-domain-configuration) — CORS + domain configuration | Slice 1 (Task 1.5) | **OPEN** |
+| [Q-ARCH-01](DECISIONS.md#q-arch-01-max-permissions-bitmap-capacity) — Max permissions bitmap size | Slice 2+ | **OPEN** |
+| [Q-CONFIG-01](DECISIONS.md#q-config-01-default-systemconfig-auth-values) — Default system config seed values | Slice 0 (Task 0.3), Slice 1 | **OPEN** |
+| [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library | Slice 4+ | **OPEN** |
 | [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node atomicity | Slice 5 | **OPEN** |
 | [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source | Slice 5 | **OPEN** |
 | [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances in MVP | Slice 6 | **OPEN** |

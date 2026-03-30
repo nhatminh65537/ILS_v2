@@ -218,92 +218,92 @@ Timeline ước tính:  ~1 ngày    ~5 ngày     ~5 ngày         ~10 ngày     
 ### Sơ đồ Phase chi tiết
 
 ```
-╔══════════════════════════════════════════════════════════════════════════════╗
-║ PHASE 0: NỀN TẢNG                                                          ║
+╔═════════════════════════════════════════════════════════════════════════════╗
+║ PHASE 0: NỀN TẢNG                                                           ║
 ║ ┌─────────────────────────────────────────────┐                             ║
-║ │ Cả 2: Giải quyết câu hỏi S0, S1            │                             ║
+║ │ Cả 2: Giải quyết câu hỏi S0, S1             │                             ║
 ║ │ A: Slice 0 (User model + migrations + seed) │                             ║
 ║ │ B: Review + chuẩn bị env                    │                             ║
 ║ └──────────────────┬──────────────────────────┘                             ║
 ╚════════════════════╪════════════════════════════════════════════════════════╝
                      │
 ╔════════════════════╪════════════════════════════════════════════════════════╗
-║ PHASE 1: XÁC THỰC │                                                        ║
-║   ┌────────────────┴──────────────┐  ┌────────────────────────────┐        ║
-║   │ A: Slice 1 Backend            │  │ B: Slice 3 Backend         │        ║
-║   │   • auth_app setup            │  │   • System Config API      │        ║
-║   │   • login / register / logout │  │   • GET/PATCH endpoints    │        ║
-║   │   • JWT + token refresh       │  │   • Secrets masking        │        ║
-║   │   • SSO / Authentik OIDC      │  │   + Review S1 API design   │        ║
-║   │   • Password change           │  │                            │        ║
-║   │   • Session management        │  │                            │        ║
-║   └────────────────┬──────────────┘  └─────────────┬──────────────┘        ║
+║ PHASE 1: XÁC THỰC  │                                                        ║
+║   ┌────────────────┴──────────────┐  ┌────────────────────────────┐         ║
+║   │ A: Slice 1 Backend            │  │ B: Slice 3 Backend         │         ║
+║   │   • auth_app setup            │  │   • System Config API      │         ║
+║   │   • login / register / logout │  │   • GET/PATCH endpoints    │         ║
+║   │   • JWT + token refresh       │  │   • Secrets masking        │         ║
+║   │   • SSO / Authentik OIDC      │  │   + Review S1 API design   │         ║
+║   │   • Password change           │  │                            │         ║
+║   │   • Session management        │  │                            │         ║
+║   └────────────────┬──────────────┘  └─────────────┬──────────────┘         ║
 ╚════════════════════╪═══════════════════════════════╪════════════════════════╝
                      │                               │
 ╔════════════════════╪═══════════════════════════════╪════════════════════════╗
-║ PHASE 2: RBAC + FRONTEND FOUNDATION               │                        ║
-║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐        ║
-║   │ A: Slice 2 Backend (RBAC)     │  │ B: Slice 4 Frontend Found. │        ║
-║   │   • Permission auto-discovery │  │   • App directory structure│        ║
-║   │   • Role/Permission CRUD API  │  │   • Axios instance + auth  │        ║
-║   │   • Permission cache + JWT    │  │   • Zustand auth store     │        ║
-║   │   • HasJWTPermission class    │  │   • Shared Tree component  │        ║
-║   │                               │  │   • Slice 1 Frontend       │        ║
-║   │                               │  │     (Login/Register UI)    │        ║
-║   │                               │  │   • Slice 3 Frontend       │        ║
-║   │                               │  │     (Config admin UI)      │        ║
-║   └────────────────┬──────────────┘  └─────────────┬──────────────┘        ║
+║ PHASE 2: RBAC + FRONTEND FOUNDATION                │                        ║
+║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐         ║
+║   │ A: Slice 2 Backend (RBAC)     │  │ B: Slice 4 Frontend Found. │         ║
+║   │   • Permission auto-discovery │  │   • App directory structure│         ║
+║   │   • Role/Permission CRUD API  │  │   • Axios instance + auth  │         ║
+║   │   • Permission cache + JWT    │  │   • Zustand auth store     │         ║
+║   │   • HasJWTPermission class    │  │   • Shared Tree component  │         ║
+║   │                               │  │   • Slice 1 Frontend       │         ║
+║   │                               │  │     (Login/Register UI)    │         ║
+║   │                               │  │   • Slice 3 Frontend       │         ║
+║   │                               │  │     (Config admin UI)      │         ║
+║   └────────────────┬──────────────┘  └─────────────┬──────────────┘         ║
 ╚════════════════════╪═══════════════════════════════╪════════════════════════╝
                      │                               │
 ╔════════════════════╪═══════════════════════════════╪════════════════════════╗
 ║ PHASE 3: FEATURE — LEARN + CHALLENGE               │                        ║
-║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐        ║
-║   │ A: Slice 5 Backend (Learn)    │  │ B: Slice 5 Frontend (Learn)│        ║
-║   │   • Course + Category CRUD    │  │   • Course catalog + tree  │        ║
-║   │   • CourseNode tree API       │  │   • Lesson viewer          │        ║
-║   │   • Lesson CRUD + Outline     │  │   (bắt đầu khi A xong     │        ║
-║   │   • Progress tracking signals │  │    S5 backend API)         │        ║
-║   ├───────────────────────────────┤  ├────────────────────────────┤        ║
-║   │ A: Slice 6 Backend (Challenge)│  │ B: Slice 6 Frontend (Chall)│        ║
-║   │   • Challenge CRUD API        │  │   • Challenge browser      │        ║
-║   │   • ChallengeNode + Flag CRUD │  │   • Flag submit form       │        ║
-║   │   • Flag submission + progress│  │   (bắt đầu khi A xong     │        ║
-║   │   • GitLab sync               │  │    S6 backend API)         │        ║
-║   └────────────────┬──────────────┘  └─────────────┬──────────────┘        ║
+║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐         ║
+║   │ A: Slice 5 Backend (Learn)    │  │ B: Slice 5 Frontend (Learn)│         ║
+║   │   • Course + Category CRUD    │  │   • Course catalog + tree  │         ║
+║   │   • CourseNode tree API       │  │   • Lesson viewer          │         ║
+║   │   • Lesson CRUD + Outline     │  │   (bắt đầu khi A xong      │         ║
+║   │   • Progress tracking signals │  │    S5 backend API)         │         ║
+║   ├───────────────────────────────┤  ├────────────────────────────┤         ║
+║   │ A: Slice 6 Backend (Challenge)│  │ B: Slice 6 Frontend (Chall)│         ║
+║   │   • Challenge CRUD API        │  │   • Challenge browser      │         ║
+║   │   • ChallengeNode + Flag CRUD │  │   • Flag submit form       │         ║
+║   │   • Flag submission + progress│  │   (bắt đầu khi A xong      │         ║
+║   │   • GitLab sync               │  │    S6 backend API)         │         ║
+║   └────────────────┬──────────────┘  └─────────────┬──────────────┘         ║
 ╚════════════════════╪═══════════════════════════════╪════════════════════════╝
                      │                               │
 ╔════════════════════╪═══════════════════════════════╪════════════════════════╗
 ║ PHASE 4: FEATURE — QUIZ + USER PROFILE             │                        ║
-║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐        ║
-║   │ A: Slice 7 Backend (Quiz)     │  │ B: Slice 7 Frontend (Quiz) │        ║
-║   │   • Quiz + Question CRUD      │  │   • Quiz browser + tree    │        ║
-║   │   • QuizNode tree API         │  │   • WebSocket quiz session │        ║
-║   │   • WS consumer (Channels)    │  │   (bắt đầu khi A xong     │        ║
-║   │   • Progress signals          │  │    S7 backend + WS)        │        ║
-║   ├───────────────────────────────┤  ├────────────────────────────┤        ║
-║   │ A: Slice 8 Backend (Profile)  │  │ B: Slice 8 Frontend        │        ║
-║   │   • User profile API          │  │   • Profile page + settings│        ║
-║   │   • Admin user management     │  │   • Admin user management  │        ║
-║   └────────────────┬──────────────┘  └─────────────┬──────────────┘        ║
+║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐         ║
+║   │ A: Slice 7 Backend (Quiz)     │  │ B: Slice 7 Frontend (Quiz) │         ║
+║   │   • Quiz + Question CRUD      │  │   • Quiz browser + tree    │         ║
+║   │   • QuizNode tree API         │  │   • WebSocket quiz session │         ║
+║   │   • WS consumer (Channels)    │  │   (bắt đầu khi A xong      │         ║
+║   │   • Progress signals          │  │    S7 backend + WS)        │         ║
+║   ├───────────────────────────────┤  ├────────────────────────────┤         ║
+║   │ A: Slice 8 Backend (Profile)  │  │ B: Slice 8 Frontend        │         ║
+║   │   • User profile API          │  │   • Profile page + settings│         ║
+║   │   • Admin user management     │  │   • Admin user management  │         ║
+║   └────────────────┬──────────────┘  └─────────────┬──────────────┘         ║
 ╚════════════════════╪═══════════════════════════════╪════════════════════════╝
                      │                               │
 ╔════════════════════╪═══════════════════════════════╪════════════════════════╗
-║ PHASE 5: NOTIFICATIONS + STATISTICS + PRODUCTION    │                        ║
-║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐        ║
-║   │ A: Slice 9 Backend            │  │ B: Slice 9 Frontend        │        ║
-║   │   • Notification API          │  │   • Notification bell      │        ║
-║   │   • Auto-trigger signals      │  │   • WS notification sub    │        ║
-║   │   • WS notification delivery  │  │                            │        ║
-║   ├───────────────────────────────┤  ├────────────────────────────┤        ║
-║   │ A: Slice 11 Backend           │  │ B: Slice 11 Frontend       │        ║
-║   │   • Leaderboard API           │  │   • Leaderboard page       │        ║
-║   │   • Admin stats API           │  │   • Admin stats dashboard  │        ║
-║   ├───────────────────────────────┤  ├────────────────────────────┤        ║
-║   │ A: Bật RBAC (auth.authori-    │  │ B: RBAC Frontend           │        ║
-║   │    zation_enabled=true)       │  │   • Admin RBAC UI (S2 FE)  │        ║
-║   │   • Integration test          │  │   • Permission-aware render│        ║
-║   └───────────────────────────────┘  └────────────────────────────┘        ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+║ PHASE 5: NOTIFICATIONS + STATISTICS + PRODUCTION   │                        ║
+║   ┌────────────────┴──────────────┐  ┌─────────────┴──────────────┐         ║
+║   │ A: Slice 9 Backend            │  │ B: Slice 9 Frontend        │         ║
+║   │   • Notification API          │  │   • Notification bell      │         ║
+║   │   • Auto-trigger signals      │  │   • WS notification sub    │         ║
+║   │   • WS notification delivery  │  │                            │         ║
+║   ├───────────────────────────────┤  ├────────────────────────────┤         ║
+║   │ A: Slice 11 Backend           │  │ B: Slice 11 Frontend       │         ║
+║   │   • Leaderboard API           │  │   • Leaderboard page       │         ║
+║   │   • Admin stats API           │  │   • Admin stats dashboard  │         ║
+║   ├───────────────────────────────┤  ├────────────────────────────┤         ║
+║   │ A: Bật RBAC (auth.authori-    │  │ B: RBAC Frontend           │         ║
+║   │    zation_enabled=true)       │  │   • Admin RBAC UI (S2 FE)  │         ║
+║   │   • Integration test          │  │   • Permission-aware render│         ║
+║   └───────────────────────────────┘  └────────────────────────────┘         ║
+╚═════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
@@ -637,21 +637,21 @@ Khi B phải chờ A xong backend API, B có thể làm:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    NGUYÊN TẮC CHÍNH                          │
-│                                                              │
-│  1. Giải quyết câu hỏi mở TRƯỚC khi code                   │
-│  2. Backend đi trước, Frontend theo sau (pipeline)           │
+│                    NGUYÊN TẮC CHÍNH                         │
+│                                                             │
+│  1. Giải quyết câu hỏi mở TRƯỚC khi code                    │
+│  2. Backend đi trước, Frontend theo sau (pipeline)          │
 │  3. authZ bypass cho phép song song hóa                     │
-│  4. API contract là hợp đồng giữa 2 người                  │
-│  5. Mỗi người chuyên sâu 1 stack, review chéo              │
+│  4. API contract là hợp đồng giữa 2 người                   │
+│  5. Mỗi người chuyên sâu 1 stack, review chéo               │
 │  6. Không để AI (Slice 10) — đã DEFERRED                    │
 │  7. Functional first, non-functional chỉ khi cần            │
-│                                                              │
-│  Người A (Backend): S0 → S1-BE → S2 → S5-BE → S6-BE       │
-│                     → S7-BE → S8-BE → S9-BE → S11-BE       │
-│                                                              │
-│  Người B (Frontend): prep → S3-BE → S4 → S1-FE → S3-FE    │
-│                      → S5-FE → S6-FE → S7-FE → S8-FE      │
-│                      → S9-FE → S11-FE → S2-FE              │
+│                                                             │
+│  Người A (Backend): S0 → S1-BE → S2 → S5-BE → S6-BE         │
+│                     → S7-BE → S8-BE → S9-BE → S11-BE        │
+│                                                             │
+│  Người B (Frontend): prep → S3-BE → S4 → S1-FE → S3-FE      │
+│                      → S5-FE → S6-FE → S7-FE → S8-FE        │
+│                      → S9-FE → S11-FE → S2-FE               │
 └─────────────────────────────────────────────────────────────┘
 ```
