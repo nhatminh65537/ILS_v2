@@ -575,9 +575,9 @@ Khi B phải chờ A xong backend API, B có thể làm:
 - [ ] Admin CRUD custom roles hoạt động
 
 ### Slice 3 ✓
-- [ ] `GET /api/admin/config/` → danh sách config grouped by category
+- [ ] `GET /api/config/` → danh sách config grouped by category
 - [ ] Secret values hiển thị `"***"`
-- [ ] `PATCH /api/admin/config/{key}/` → cập nhật value (admin only)
+- [ ] `PUT /api/config/{key}/` → cập nhật value (admin only)
 - [ ] `is_editable=false` → 403
 
 ### Slice 4 ✓

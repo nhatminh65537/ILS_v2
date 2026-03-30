@@ -2,13 +2,10 @@
 API Views
 Handles HTTP requests and responses for all endpoints
 """
-from collections import defaultdict
-
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -40,7 +37,6 @@ from .serializers import (
 from .services.permission_service import PermissionService
 from .services.flag_validation_service import FlagValidationService
 from .services.leaderboard_service import LeaderboardService
-from .utils import invalidate_config_cache
 
 
 # ============================================================================
@@ -466,40 +462,11 @@ class LeaderboardViewSet(viewsets.ViewSet):
 # SYSTEM CONFIGURATION VIEWS
 # ============================================================================
 
-class SystemConfigViewSet(viewsets.GenericViewSet):
+class SystemConfigViewSet(viewsets.ReadOnlyModelViewSet):
     """System configuration viewset"""
     serializer_class = SystemConfigSerializer
     permission_classes = [permissions.IsAdminUser]
-    lookup_field = 'key'
-    lookup_value_regex = '[^/]+'
     
     def get_queryset(self):
-        return SystemConfig.objects.all().order_by('category', 'key')
-
-    def list(self, request):
-        """Return system configs grouped by category."""
-        serializer = self.get_serializer(self.get_queryset(), many=True)
-        grouped = defaultdict(list)
-
-        for item in serializer.data:
-            grouped[item['category']].append(item)
-
-        return Response(dict(grouped))
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if not instance.is_editable:
-            raise PermissionDenied('Config is not editable')
-
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        invalidate_config_cache(instance.key)
-
-        return Response(serializer.data)
+        return SystemConfig.objects.all()
 
