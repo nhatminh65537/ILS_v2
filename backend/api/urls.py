@@ -24,7 +24,7 @@ router.register(r'challenges', ChallengeViewSet, basename='challenge')
 router.register(r'quizzes', QuizViewSet, basename='quiz')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
-router.register(r'system-config', SystemConfigViewSet, basename='systemconfig')
+router.register(r'admin/config', SystemConfigViewSet, basename='admin-config')
 
 urlpatterns = [
     # API routes
