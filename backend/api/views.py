@@ -38,6 +38,7 @@ from .services.permission_service import PermissionService
 from .services.flag_validation_service import FlagValidationService
 from .services.leaderboard_service import LeaderboardService
 from .utils import invalidate_config_cache
+from auth_app.permissions import add_role_granted
 
 
 # ============================================================================
@@ -68,6 +69,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 # USER VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class UserViewSet(viewsets.ModelViewSet):
     """User management viewset"""
     queryset = User.objects.all()
@@ -110,6 +112,7 @@ class UserViewSet(viewsets.ModelViewSet):
 # COURSE VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class CourseViewSet(viewsets.ModelViewSet):
     """Course management viewset"""
     
@@ -179,6 +182,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Enrolled successfully'})
 
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class LessonViewSet(viewsets.ReadOnlyModelViewSet):
     """Lesson viewset (read-only for users)"""
     queryset = Lesson.objects.all()
@@ -205,6 +209,7 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
 # CHALLENGE VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class ChallengeViewSet(viewsets.ModelViewSet):
     """Challenge management viewset"""
     
@@ -360,6 +365,7 @@ class ChallengeViewSet(viewsets.ModelViewSet):
 # QUIZ VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class QuizViewSet(viewsets.ModelViewSet):
     """Quiz management viewset"""
     
@@ -424,6 +430,7 @@ class QuizViewSet(viewsets.ModelViewSet):
 # NOTIFICATION VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """Notification viewset"""
     serializer_class = NotificationSerializer
@@ -446,6 +453,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 # LEADERBOARD VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class LeaderboardViewSet(viewsets.ViewSet):
     """Leaderboard viewset"""
     permission_classes = [IsAuthenticated]
@@ -463,6 +471,7 @@ class LeaderboardViewSet(viewsets.ViewSet):
 # SYSTEM CONFIGURATION VIEWS
 # ============================================================================
 
+@add_role_granted('Admin')
 class SystemConfigViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,

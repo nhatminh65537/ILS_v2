@@ -176,7 +176,11 @@ Flat API-scoped permission. Auto-discovered at startup via endpoint scan. **No h
 - Permissions **cannot be deleted** (even by superuser). When an API endpoint is removed, its permission becomes inactive (`is_active=FALSE`) and stays in DB.
 - `is_active` is controlled **only by startup scan**: `TRUE` = endpoint exists in code, `FALSE` = endpoint removed. Admin **cannot** toggle `is_active` via API.
 - Permissions are **read-only via API** — only `GET` is allowed. No `PATCH`/`PUT`/`POST`/`DELETE`.
-- Permission `name` is **auto-generated** from view class and HTTP method: `{app_label}.{ViewClassName}.{http_method}` (e.g., `api.ChallengeSubmitView.post`). Optional override via `permission_code` attribute on view.
+- Permission `name` is **auto-generated** in lowercase: `{app_label}.{resource_name}.{handler_method_name}`.
+	- `resource_name`: class name bỏ hậu tố `ViewSet`/`View`/`APIView`/`GenericViewSet`, normalize snake_case
+	- `handler_method_name`: method Python xử lý endpoint (`list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`, custom action hoặc `get`/`post`...)
+	- Examples: `api.course.tree`, `api.challenge.submit_flag`, `auth_app.register.post`.
+	Optional override via `permission_code` attribute on view.
 - Permission `id` serves as the **bit index** for bitmap encoding (≤ 256 permissions). IDs are auto-increment, never reused.
 - Permissions are **created at startup** via endpoint scan (metaprogramming). All existing permissions set to `is_active=FALSE` first, then re-scan marks found ones active.
 - **No hierarchy:** `parent_id` and `pre_path` removed. Roles provide sufficient grouping.

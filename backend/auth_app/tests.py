@@ -9,7 +9,8 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken
 
-from api.models import Role, SystemConfig, UserAuthProvider, UserProfile, UserRole, UserSession
+from api.models import Permission, Role, RolePermission, SystemConfig, UserAuthProvider, UserProfile, UserRole, UserSession
+from auth_app.services.permission_discovery import discover_permissions
 
 
 User = get_user_model()
@@ -540,3 +541,49 @@ class TestAuthApp:
             format='json',
         )
         assert response.status_code == 409
+
+
+@pytest.mark.django_db
+class TestPermissionDiscovery:
+    def test_discovery_creates_lowercase_permission_names(self):
+        discover_permissions()
+
+        assert Permission.objects.filter(name='api.course.list', is_active=True).exists()
+        assert Permission.objects.filter(name='api.course.tree', is_active=True).exists()
+        assert Permission.objects.filter(name='api.challenge.submit_flag', is_active=True).exists()
+        assert Permission.objects.filter(name='api.system_config.update', is_active=True).exists()
+
+    def test_discovery_is_idempotent(self):
+        discover_permissions()
+        first_permission_count = Permission.objects.count()
+        first_link_count = RolePermission.objects.count()
+
+        discover_permissions()
+        second_permission_count = Permission.objects.count()
+        second_link_count = RolePermission.objects.count()
+
+        assert first_permission_count == second_permission_count
+        assert first_link_count == second_link_count
+
+    def test_discovery_marks_stale_permissions_inactive(self):
+        stale = Permission.objects.create(
+            name='api.legacy.old_handler',
+            description='Legacy endpoint',
+            is_active=True,
+        )
+
+        discover_permissions()
+        stale.refresh_from_db()
+
+        assert stale.is_active is False
+
+    def test_discovery_syncs_roles_and_mappings(self):
+        discover_permissions()
+
+        for role_name in ['Admin', 'Editor', 'Member']:
+            role = Role.objects.get(name=role_name)
+            assert role.is_system is True
+
+        member = Role.objects.get(name='Member')
+        permission = Permission.objects.get(name='api.course.tree')
+        assert RolePermission.objects.filter(role=member, permission=permission).exists()

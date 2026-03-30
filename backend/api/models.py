@@ -1671,7 +1671,7 @@ class UserSession(FullAudit):
 class Permission(FullAudit):
     """
     Flat permission model. Name is canonical permission key:
-    {app_label}.{ViewClassName}.{http_method}
+    {app_label}.{resource_name}.{handler_method_name}
     """
     name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)

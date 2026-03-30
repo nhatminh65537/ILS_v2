@@ -926,7 +926,10 @@ No DB storage for reset tokens. Uses `itsdangerous.TimestampSigner(settings.SECR
 **Current:**
 - Decorator `@add_role_granted('Admin', 'Editor', 'Member')` on view classes.
 - At startup (`AppConfig.ready()`): scan decorated views, auto-create permissions.
-- **Permission name format:** `{app_label}.{ViewClassName}.{http_method}` (e.g. `api.CourseDetailView.PUT`).
+- **Permission name format:** `{app_label}.{resource_name}.{handler_method_name}` (lowercase).
+  - `resource_name`: class name bỏ hậu tố `ViewSet`/`View`/`APIView`/`GenericViewSet`, normalize snake_case
+  - `handler_method_name`: method Python xử lý endpoint (e.g. `list`, `retrieve`, `tree`, `submit_flag`, `get`, `post`)
+  - Ví dụ: `api.course.tree`, `api.challenge.submit_flag`, `auth_app.register.post`
 - Built-in roles auto-created with `is_system=True` — cannot be deleted/renamed via API.
 - Permissions are assigned to roles based on decorator arguments.
 - Permissions no longer present in code are set to `is_active=False`.

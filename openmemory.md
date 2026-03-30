@@ -44,6 +44,7 @@ Target: one instance per organization, no horizontal scale needed.
 - Slice 1 Task 1.1 implemented on 2026-03-26: `auth_app` now serves `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, and `/api/auth/logout-all` with hashed refresh-token session tracking and endpoint tests.
 - Slice 1 Task 1.2 implemented on 2026-03-26: `/api/auth/token/refresh` now validates refresh hash against active `user_session`, rotates refresh token/session on success, enforces per-user refresh rate limit (10/min), and keeps JWT access TTL aligned to 15 minutes.
 - Slice 1 Task 1.3 implemented on 2026-03-30: SSO/AuthentiK backend endpoints are active (`GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`) with OIDC state/nonce validation (cache TTL 5 minutes), account-link conflict handling, and test coverage expanded to 22 passing auth tests.
+- Slice 2 Task 2.1 implemented on 2026-03-30: startup permission auto-discovery is active via `auth_app.services.permission_discovery`, syncing `Permission.is_active`, built-in role mappings from `@add_role_granted`, and lowercase naming format `{app_label}.{resource_name}.{handler_method_name}`.
 - Q-AUTH-02 resolved on 2026-03-17 (Option B: `seed_admin` command as first-admin bootstrap)
 - Slice 1 decision gate resolved on 2026-03-23 for implementation readiness: namespaced API routes (`/api/auth/*`, `/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`), password reset email flow deferred with Task 1.4, LocMem (dev) + Redis (prod) cache policy for rate limiting, memory-only token storage with refresh flow, auto-assign Member role on register, and superuser local-login emergency fallback for SSO-only outage.
 - Four CRITICAL Slice 1 blockers resolved on 2026-03-24: Q-SLICE1-01 Option A (bootstrap role seeding), Q-INFRA-01 Option A (keep `frontend/app/`), Q-AUTH-04 Option A (15m access + 7d refresh with silent refresh), and Q-AUTH-05 Option C (temporary default bootstrap password + forced reset).
@@ -79,6 +80,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **SSO callback anti-replay**: Cache key `sso:state:{state}` stores nonce for 5 minutes and is consumed once during callback validation.
 - **Account linking policy**: Resolve by `(provider, external_id)` first; fallback to email-based linking only when `auth.link_accounts_enabled=true`; return conflict when an external identity belongs to a different user.
 - **SSO tests**: OIDC discovery/code exchange/id_token decode are mock-driven in unit tests so CI does not require a live Authentik instance.
+- **Permission discovery naming**: normalize class name to `resource_name` by stripping `ViewSet`/`View`/`APIView`/`GenericViewSet` and snake_case lowercasing; use Python handler action name as `handler_method_name`.
 
 ## Key DB Decisions
 
@@ -98,7 +100,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **user_notification**: notification_id NOT NULL, user_id NOT NULL
 
 ### 2026-03-12 design review
-- **Permission**: flat (no parent_id, no pre_path); name format `{app_label}.{ViewClassName}.{http_method}`; read-only via API
+- **Permission**: flat (no parent_id, no pre_path); name format `{app_label}.{resource_name}.{handler_method_name}` (lowercase); read-only via API
 - **role.is_system**: TRUE for built-in roles (Admin/Editor/Member) — cannot delete/rename via API
 - **user_permission**: deny-only (no is_granted column); only valid if user has permission via role
 - **user_permission_cache.encoded_permissions**: TEXT (base64 bitmap), not JSONB

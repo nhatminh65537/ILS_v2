@@ -1,0 +1,197 @@
+import logging
+import re
+
+from django.db import connection, transaction
+from django.urls import URLPattern, URLResolver, get_resolver
+
+from api.models import Permission, Role, RolePermission
+from auth_app.permissions import ROLE_GRANTED_ATTR
+
+
+LOGGER = logging.getLogger(__name__)
+SKIP_PREFIXES = ('admin/', '__debug__/')
+REQUIRED_TABLES = {'permission', 'role', 'role_permission'}
+
+
+def discover_permissions() -> dict:
+    """
+    Discover permissions from decorated endpoints and sync RolePermission mappings.
+
+    Naming format is lowercase: {app_label}.{resource_name}.{handler_method_name}
+    """
+    if not _has_required_tables():
+        LOGGER.info('AUTHZ-DISCOVERY skip missing tables')
+        return {
+            'scanned_routes': 0,
+            'discovered_permissions': 0,
+            'created_permissions': 0,
+            'reactivated_permissions': 0,
+            'inactive_permissions': 0,
+            'created_roles': 0,
+            'linked_role_permissions': 0,
+        }
+
+    discovered, scanned_routes = _collect_discovered_permissions()
+
+    stats = {
+        'scanned_routes': scanned_routes,
+        'discovered_permissions': len(discovered),
+        'created_permissions': 0,
+        'reactivated_permissions': 0,
+        'inactive_permissions': 0,
+        'created_roles': 0,
+        'linked_role_permissions': 0,
+    }
+
+    with transaction.atomic():
+        Permission.objects.update(is_active=False)
+
+        role_cache = {}
+        for permission_name, meta in discovered.items():
+            permission, created = Permission.objects.get_or_create(
+                name=permission_name,
+                defaults={
+                    'description': f"Auto-discovered from {meta['source']}",
+                    'is_active': True,
+                },
+            )
+
+            if created:
+                stats['created_permissions'] += 1
+            elif not permission.is_active:
+                permission.is_active = True
+                permission.save(update_fields=['is_active', 'updated_at'])
+                stats['reactivated_permissions'] += 1
+
+            for role_name in sorted(meta['roles']):
+                role = role_cache.get(role_name)
+                if role is None:
+                    role, role_created = Role.objects.get_or_create(
+                        name=role_name,
+                        defaults={
+                            'description': f'Built-in role discovered from decorated endpoints: {role_name}',
+                            'is_system': True,
+                        },
+                    )
+                    role_cache[role_name] = role
+                    if role_created:
+                        stats['created_roles'] += 1
+                    elif not role.is_system:
+                        LOGGER.warning(
+                            'AUTHZ-DISCOVERY role_exists_not_system role=%s',
+                            role_name,
+                        )
+
+                _, linked = RolePermission.objects.get_or_create(role=role, permission=permission)
+                if linked:
+                    stats['linked_role_permissions'] += 1
+
+        stats['inactive_permissions'] = Permission.objects.filter(is_active=False).count()
+
+    LOGGER.info(
+        'AUTHZ-DISCOVERY done scanned_routes=%s discovered_permissions=%s created_permissions=%s '
+        'reactivated_permissions=%s inactive_permissions=%s created_roles=%s linked_role_permissions=%s',
+        stats['scanned_routes'],
+        stats['discovered_permissions'],
+        stats['created_permissions'],
+        stats['reactivated_permissions'],
+        stats['inactive_permissions'],
+        stats['created_roles'],
+        stats['linked_role_permissions'],
+    )
+    return stats
+
+
+def _collect_discovered_permissions() -> tuple[dict, int]:
+    discovered = {}
+    scanned_routes = 0
+
+    for pattern, route in _iter_urlpatterns(get_resolver().url_patterns):
+        if _should_skip_route(route):
+            continue
+
+        callback = getattr(pattern, 'callback', None)
+        if callback is None:
+            continue
+
+        view_class = getattr(callback, 'cls', None)
+        if view_class is None:
+            continue
+
+        roles = tuple(getattr(view_class, ROLE_GRANTED_ATTR, ()))
+        if not roles:
+            continue
+
+        handlers = _extract_handler_method_names(callback, view_class)
+        if not handlers:
+            continue
+
+        scanned_routes += 1
+        app_label = _extract_app_label(view_class)
+        resource_name = _normalize_resource_name(view_class.__name__)
+        source = f'{view_class.__module__}.{view_class.__name__}'
+
+        for handler_name in handlers:
+            permission_name = f'{app_label}.{resource_name}.{handler_name}'.lower()
+            if permission_name not in discovered:
+                discovered[permission_name] = {
+                    'roles': set(),
+                    'source': source,
+                }
+            discovered[permission_name]['roles'].update(roles)
+
+    return discovered, scanned_routes
+
+
+def _iter_urlpatterns(urlpatterns, prefix=''):
+    for pattern in urlpatterns:
+        route = f'{prefix}{pattern.pattern}'
+        if isinstance(pattern, URLResolver):
+            yield from _iter_urlpatterns(pattern.url_patterns, route)
+        elif isinstance(pattern, URLPattern):
+            yield pattern, route
+
+
+def _should_skip_route(route: str) -> bool:
+    return any(route.startswith(prefix) for prefix in SKIP_PREFIXES)
+
+
+def _extract_handler_method_names(callback, view_class) -> list[str]:
+    actions = getattr(callback, 'actions', None)
+    if isinstance(actions, dict) and actions:
+        return sorted({str(action).strip().lower() for action in actions.values() if action})
+
+    handlers = []
+    for method_name in getattr(view_class, 'http_method_names', []):
+        if not method_name:
+            continue
+        lowered = method_name.lower()
+        if lowered in {'options', 'head'}:
+            continue
+        if callable(getattr(view_class, lowered, None)):
+            handlers.append(lowered)
+    return sorted(set(handlers))
+
+
+def _extract_app_label(view_class) -> str:
+    module = getattr(view_class, '__module__', '')
+    return (module.split('.', 1)[0] or 'api').lower()
+
+
+def _normalize_resource_name(class_name: str) -> str:
+    base_name = class_name or 'endpoint'
+    for suffix in ('GenericViewSet', 'APIView', 'ViewSet', 'View'):
+        if base_name.endswith(suffix):
+            base_name = base_name[: -len(suffix)]
+            break
+
+    if not base_name:
+        base_name = class_name or 'endpoint'
+
+    snake = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', base_name)
+    snake = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', snake)
+    return snake.strip('_').lower() or 'endpoint'
+
+
+def _has_required_tables() -> bool:
+    return REQUIRED_TABLES.issubset(set(connection.introspection.table_names()))
