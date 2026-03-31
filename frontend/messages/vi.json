@@ -1,0 +1,102 @@
+{
+  "common": {
+    "appName": "ILS v2",
+    "loading": "Đang tải...",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "close": "Đóng",
+    "search": "Tìm kiếm",
+    "status": "Trạng thái"
+  },
+  "navigation": {
+    "home": "Trang chủ",
+    "dashboard": "Bảng điều khiển",
+    "courses": "Khoá học",
+    "challenges": "Thử thách",
+    "quizzes": "Bài quiz",
+    "notifications": "Thông báo",
+    "admin": "Quản trị",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "profile": "Hồ sơ"
+  },
+  "home": {
+    "headline": "Nền tảng học an toàn thông tin có cấu trúc cho đội nhóm nhỏ",
+    "description": "Khởi động nhanh với lộ trình Learn, Challenge và Quiz. Slice 4 đã sẵn sàng để phát triển tính năng song song với backend.",
+    "loginCta": "Vào trang đăng nhập",
+    "registerCta": "Tạo tài khoản mới"
+  },
+  "auth": {
+    "loginTitle": "Đăng nhập",
+    "loginSubtitle": "Sử dụng tài khoản nội bộ hoặc SSO đã liên kết.",
+    "registerTitle": "Đăng ký",
+    "registerSubtitle": "Tạo tài khoản Member để bắt đầu học.",
+    "username": "Tên đăng nhập",
+    "usernamePlaceholder": "nhập tên đăng nhập",
+    "email": "Email",
+    "emailPlaceholder": "ban@tochuc.vn",
+    "password": "Mật khẩu",
+    "passwordPlaceholder": "nhập mật khẩu",
+    "loginButton": "Đăng nhập ngay",
+    "registerButton": "Tạo tài khoản",
+    "noAccount": "Bạn chưa có tài khoản?",
+    "alreadyHaveAccount": "Bạn đã có tài khoản?",
+    "registerLink": "Đăng ký",
+    "loginLink": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "sessionExpired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
+  },
+  "courses": {
+    "title": "Khoá học",
+    "description": "Theo dõi tiến độ theo cây nội dung và hoàn thành lesson theo từng bước.",
+    "enroll": "Ghi danh",
+    "continue": "Tiếp tục học",
+    "completed": "Đã hoàn thành",
+    "draft": "Bản nháp",
+    "published": "Đã phát hành",
+    "archived": "Đã lưu trữ"
+  },
+  "challenges": {
+    "title": "Thử thách CTF",
+    "description": "Luyện tập theo độ khó, nộp flag và theo dõi điểm tích lũy.",
+    "submitFlag": "Nộp flag",
+    "createInstance": "Tạo instance",
+    "difficulty": "Độ khó",
+    "points": "Điểm thử thách"
+  },
+  "quizzes": {
+    "title": "Bài quiz",
+    "description": "Làm bài theo thời gian thực và nhận phản hồi ngay sau mỗi câu.",
+    "startAttempt": "Bắt đầu làm bài",
+    "submitAnswer": "Nộp đáp án",
+    "bestScore": "Điểm cao nhất",
+    "attemptCount": "Số lần làm"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "markRead": "Đánh dấu đã đọc",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "empty": "Chưa có thông báo mới",
+    "unread": "Chưa đọc"
+  },
+  "admin": {
+    "title": "Quản trị hệ thống",
+    "config": "Cấu hình hệ thống",
+    "users": "Người dùng",
+    "roles": "Vai trò",
+    "permissions": "Quyền",
+    "saveSuccess": "Lưu cấu hình thành công"
+  },
+  "dashboard": {
+    "title": "Bảng điều khiển",
+    "subtitle": "Theo dõi nhanh trạng thái học tập và hoạt động bảo mật của bạn.",
+    "cards": {
+      "learnTitle": "Learn",
+      "learnDescription": "Xem tiến độ khoá học và tiếp tục lesson đang học.",
+      "challengeTitle": "Challenge",
+      "challengeDescription": "Mở thử thách đang chạy và nộp flag mới.",
+      "quizTitle": "Quiz",
+      "quizDescription": "Bắt đầu phiên quiz mới hoặc xem điểm cao nhất."
+    }
+  }
+}

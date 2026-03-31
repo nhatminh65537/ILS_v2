@@ -35,6 +35,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **ai app**: ⚠️ DEFERRED — scaffold only (AIAskView, 3 modes, mock LLM); NOT in INSTALLED_APPS; do not activate until approved
 - **realtime app**: Django Channels scaffold (empty logic)
 - **auth_app**: Implemented for Slice 1 Task 1.1 + 1.2 auth endpoints (`/api/auth/register`, `/api/auth/login`, `/api/auth/token/refresh`, `/api/auth/logout`, `/api/auth/logout-all`) with session hash tracking, refresh-token rotation, and per-user refresh rate limiting.
+- **frontend foundation (Slice 4)**: Next.js locale-first app routes under `app/[locale]`, typed service layer in `src/services`, domain Zustand stores in `src/stores`, MSW mock stack in `src/mocks`, and shadcn primitives in `src/components/ui`.
 - **Abstract ORM**: CreateAudit, UpdateAudit, FullAudit, SoftDeleteAudit, BaseNode, BaseCategory, BaseTag
 - **UserSession model**: Added in `api` for refresh-token session tracking (`user_session` table)
 
@@ -44,6 +45,8 @@ Target: one instance per organization, no horizontal scale needed.
 - Slice 1 Task 1.1 implemented on 2026-03-26: `auth_app` now serves `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, and `/api/auth/logout-all` with hashed refresh-token session tracking and endpoint tests.
 - Slice 1 Task 1.2 implemented on 2026-03-26: `/api/auth/token/refresh` now validates refresh hash against active `user_session`, rotates refresh token/session on success, enforces per-user refresh rate limit (10/min), and keeps JWT access TTL aligned to 15 minutes.
 - Slice 1 Task 1.3 implemented on 2026-03-30: SSO/AuthentiK backend endpoints are active (`GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`) with OIDC state/nonce validation (cache TTL 5 minutes), account-link conflict handling, and test coverage expanded to 22 passing auth tests.
+- Slice 4 Frontend Foundation implemented on 2026-03-31: typed contracts + services, Zustand store scaffolding, MSW handlers/fixtures/provider, next-intl (`vi` default, `en` secondary) locale routing, and baseline UI primitives/documents (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`).
+- Slice 4 runtime stabilization applied on 2026-03-31: removed redundant shadcn Tailwind package import from `frontend/app/globals.css` to resolve intermittent `Can't resolve 'tailwindcss'` runtime failures.
 - Q-AUTH-02 resolved on 2026-03-17 (Option B: `seed_admin` command as first-admin bootstrap)
 - Slice 1 decision gate resolved on 2026-03-23 for implementation readiness: namespaced API routes (`/api/auth/*`, `/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`), password reset email flow deferred with Task 1.4, LocMem (dev) + Redis (prod) cache policy for rate limiting, memory-only token storage with refresh flow, auto-assign Member role on register, and superuser local-login emergency fallback for SSO-only outage.
 - Four CRITICAL Slice 1 blockers resolved on 2026-03-24: Q-SLICE1-01 Option A (bootstrap role seeding), Q-INFRA-01 Option A (keep `frontend/app/`), Q-AUTH-04 Option A (15m access + 7d refresh with silent refresh), and Q-AUTH-05 Option C (temporary default bootstrap password + forced reset).
@@ -79,6 +82,11 @@ Target: one instance per organization, no horizontal scale needed.
 - **SSO callback anti-replay**: Cache key `sso:state:{state}` stores nonce for 5 minutes and is consumed once during callback validation.
 - **Account linking policy**: Resolve by `(provider, external_id)` first; fallback to email-based linking only when `auth.link_accounts_enabled=true`; return conflict when an external identity belongs to a different user.
 - **SSO tests**: OIDC discovery/code exchange/id_token decode are mock-driven in unit tests so CI does not require a live Authentik instance.
+- **Frontend API usage**: Components/hooks must call `src/services/*` only; Axios client/interceptors stay centralized in `src/lib/axios.ts`.
+- **Frontend auth persistence**: Auth tokens persist via Zustand persist + localStorage (`auth.store.ts`) and sync with Axios interceptor refresh flow.
+- **Frontend i18n routing**: Locale-first URLs (`/vi/*`, `/en/*`) with `vi` as default and root redirect from `/` to `/vi`.
+- **Frontend mock runtime**: MSW worker starts in browser through `MswProvider` when `NEXT_PUBLIC_ENABLE_MSW=true`; production default is disabled.
+- **Frontend CSS baseline**: Keep global imports minimal (`tailwindcss`, `tw-animate-css`) and avoid extra framework package CSS imports unless explicitly required by the active toolchain.
 
 ## Key DB Decisions
 

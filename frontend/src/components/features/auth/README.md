@@ -1,0 +1,1 @@
+Auth feature components (login/register forms and account-linking UI). Uses useAuth hook and auth service layer.

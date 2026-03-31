@@ -1,0 +1,1 @@
+Course feature components (catalog, tree, lesson cards). Uses courses store and courses service layer.

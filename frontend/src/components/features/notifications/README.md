@@ -1,0 +1,1 @@
+Notification feature components (bell, panel, unread badge). Uses notifications store and notifications service.

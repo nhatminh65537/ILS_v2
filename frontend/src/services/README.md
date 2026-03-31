@@ -1,0 +1,14 @@
+## `src/services/`
+
+Strongly-typed API service layer. Each service file wraps domain endpoints via Axios instance with full type safety.
+
+Files:
+- `auth.service.ts` — Authentication (register, login, logout, SSO, token refresh)
+- `users.service.ts` — User CRUD and profile management
+- `courses.service.ts` — Course CRUD, tree navigation, progress, enrollment
+- `challenges.service.ts` — Challenge CRUD, flag submission, instances, progress
+- `quizzes.service.ts` — Quiz CRUD, attempts, Q&A submission, progress
+- `notifications.service.ts` — Notification listing, reading, marking
+- `leaderboard.service.ts` — Leaderboard queries
+
+**Rule**: Never call axios directly in components. Always use service functions. Errors handled via axios interceptor.

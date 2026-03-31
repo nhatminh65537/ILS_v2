@@ -4,7 +4,7 @@
 > **OPEN** = needs human decision before coding can begin.
 > **RESOLVED** = decision made; implementation must follow it.
 >
-> Last updated: 2026-03-24
+> Last updated: 2026-03-31
 
 ---
 
@@ -30,8 +30,8 @@
 | [Q-INFRA-04](#q-infra-04-cache-backend-for-rate-limiting) | Cache backend for rate limiting | Slice 1 | **RESOLVED** |
 | [Q-INFRA-05](#q-infra-05-websocket-jwt-auth-method) | WebSocket JWT auth method | Slice 7 | **OPEN** |
 | [Q-INFRA-06](#q-infra-06-client-side-token-storage) | Client-side token storage | Slice 1, 4 | **RESOLVED** |
-| [Q-INFRA-07](#q-infra-07-i18n-language-strategy) | i18n language and timing | Slice 4 | **OPEN** |
-| [Q-INFRA-08](#q-infra-08-frontend-ui-component-library) | Frontend UI component library | Slice 4 | **OPEN** |
+| [Q-INFRA-07](#q-infra-07-i18n-language-strategy) | i18n language and timing | Slice 4 | **RESOLVED** (Option C) |
+| [Q-INFRA-08](#q-infra-08-frontend-ui-component-library) | Frontend UI component library | Slice 4 | **RESOLVED** (Option A) |
 | [Q-AUTH-01](#q-auth-01-default-role-for-new-users) | Default role for newly registered users | Slice 1–2 | **RESOLVED** |
 | [Q-AUTH-02](#q-auth-02-first-admin-creation-mechanism) | First admin account creation | Slice 0–1 | **RESOLVED** → [R-AUTH-11](#r-auth-11-first-admin-bootstrap-via-seed_admin) |
 | [Q-AUTH-03](#q-auth-03-sso-only-lockout-fallback) | SSO-only lockout fallback | Slice 1 | **RESOLVED** |
@@ -402,13 +402,13 @@ JWT access and refresh tokens need to be stored somewhere on the client. Each st
 - Is XSS protection a priority given the platform is internal-only (~100 users)?
 - If cookies: does the Next.js frontend and Django backend share the same domain in production (affecting cookie setup)?
 
-**Decision:** Choose memory-only storage (Option D) with refresh flow. Keep tokens in runtime store (no local/session storage persistence), re-issue access token via refresh endpoint when needed.
+**Decision:** Choose `localStorage` persistence (Option A) via Zustand persist middleware. Keep access/refresh token synchronization in one auth store and retain refresh-on-401 flow through Axios interceptors.
 
 ---
 
 ### Q-INFRA-07: i18n Language Strategy
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 4 (Frontend Foundation — next-intl setup)
 
 **Problem:**
@@ -423,13 +423,13 @@ IMPL_PLAN mentions both `en.json` and `vi.json`. `next-intl` is already installe
 
 **Sub-question:** Should the language toggle be user-profile-persistent or browser-local?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option C with Option A execution style: Vietnamese-first (`defaultLocale='vi'`) and English secondary (`'en'`), with i18n integrated from Slice 4 day one. All UI text must come from locale dictionaries.
 
 ---
 
 ### Q-INFRA-08: Frontend UI Component Library
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 4 (shared UI components — Button, Input, Modal, Badge, etc.)
 
 **Problem:**
@@ -445,7 +445,17 @@ IMPL_PLAN mentions both `en.json` and `vi.json`. `next-intl` is already installe
 
 **Sub-question:** Are there specific design mockups in `design/ui/` that should drive the component choices?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option A (`shadcn/ui`) on top of Tailwind v4 and existing preset (`radix-lyra`, zinc). Use generated primitives under `frontend/src/components/ui/`.
+
+---
+
+## Slice 4 Implementation Decisions (2026-03-31)
+
+- **DEC-001**: MSW mock data stays in-memory only; no localStorage persistence for fixtures.
+- **DEC-002**: Auth tokens are persisted in localStorage via Zustand persist middleware.
+- **DEC-003**: Frontend API base URL is `http://localhost:8000` through `NEXT_PUBLIC_API_URL`.
+- **DEC-004**: MSW is enabled by default in development with `NEXT_PUBLIC_ENABLE_MSW=true`.
+- **DEC-005**: No standalone `translate()` helper; use `getTranslations` / `useTranslations` from next-intl.
 
 ---
 

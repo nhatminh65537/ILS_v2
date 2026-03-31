@@ -1,0 +1,102 @@
+{
+  "common": {
+    "appName": "ILS v2",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "search": "Search",
+    "status": "Status"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "courses": "Courses",
+    "challenges": "Challenges",
+    "quizzes": "Quizzes",
+    "notifications": "Notifications",
+    "admin": "Admin",
+    "login": "Login",
+    "register": "Register",
+    "profile": "Profile"
+  },
+  "home": {
+    "headline": "A structured cybersecurity learning platform for small teams",
+    "description": "Start quickly with Learn, Challenge, and Quiz tracks. Slice 4 is ready for parallel frontend/backend feature delivery.",
+    "loginCta": "Go to login",
+    "registerCta": "Create account"
+  },
+  "auth": {
+    "loginTitle": "Login",
+    "loginSubtitle": "Use your local account or a linked SSO identity.",
+    "registerTitle": "Register",
+    "registerSubtitle": "Create a Member account and begin learning.",
+    "username": "Username",
+    "usernamePlaceholder": "enter username",
+    "email": "Email",
+    "emailPlaceholder": "you@company.com",
+    "password": "Password",
+    "passwordPlaceholder": "enter password",
+    "loginButton": "Sign in",
+    "registerButton": "Create account",
+    "noAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "registerLink": "Register",
+    "loginLink": "Login",
+    "logout": "Logout",
+    "sessionExpired": "Your session expired. Please log in again."
+  },
+  "courses": {
+    "title": "Courses",
+    "description": "Track progress through the content tree and complete lessons step by step.",
+    "enroll": "Enroll",
+    "continue": "Continue learning",
+    "completed": "Completed",
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived"
+  },
+  "challenges": {
+    "title": "CTF Challenges",
+    "description": "Practice by difficulty, submit flags, and track earned points.",
+    "submitFlag": "Submit flag",
+    "createInstance": "Create instance",
+    "difficulty": "Difficulty",
+    "points": "Challenge points"
+  },
+  "quizzes": {
+    "title": "Quizzes",
+    "description": "Take real-time quiz sessions and receive immediate feedback.",
+    "startAttempt": "Start attempt",
+    "submitAnswer": "Submit answer",
+    "bestScore": "Best score",
+    "attemptCount": "Attempt count"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markRead": "Mark as read",
+    "markAllRead": "Mark all as read",
+    "empty": "No new notifications",
+    "unread": "Unread"
+  },
+  "admin": {
+    "title": "System Administration",
+    "config": "System configuration",
+    "users": "Users",
+    "roles": "Roles",
+    "permissions": "Permissions",
+    "saveSuccess": "Configuration saved successfully"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Quickly review your learning state and security activity.",
+    "cards": {
+      "learnTitle": "Learn",
+      "learnDescription": "Review course progress and continue your current lesson.",
+      "challengeTitle": "Challenge",
+      "challengeDescription": "Open active challenges and submit new flags.",
+      "quizTitle": "Quiz",
+      "quizDescription": "Start a new quiz session or review best scores."
+    }
+  }
+}
