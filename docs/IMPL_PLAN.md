@@ -389,6 +389,9 @@ def discover_permissions():
     # 3. For each URL pattern with a view class:
     #    - key = "{app_label}.{resource_name}.{handler_method_name}" (lowercase)
     #      e.g. "api.challenge.list", "api.challenge.submit_flag"
+    #    - resolve granted roles by precedence:
+    #      handler-level @add_role_granted > class-level @add_role_granted
+    #      (for mixin default handlers requiring specific roles, override method + call super)
     #    - Upsert Permission(name=key, is_active=True)
     # 4. Hook: AppConfig.ready() calls discover_permissions()
 ```
@@ -433,8 +436,9 @@ class HasJWTPermission(BasePermission):
         # Dev bypass: skip permission check if authZ disabled
         if not get_config('auth.authorization_enabled', True):
             return True
-        token_permissions = request.auth.get('permissions', [])
-        return self.permission_key in token_permissions
+        token_bitmap = (request.auth or {}).get('permissions', '')
+        permission = Permission.objects.get(name=self.permission_key)
+        return check_bit_in_bitmap(token_bitmap, permission.id)
 ```
 
 ### Task 2.3 — user_permission_cache + JWT encoding
@@ -443,23 +447,24 @@ class HasJWTPermission(BasePermission):
 
 ```python
 class PermissionService:
-    def compute_user_permissions(self, user) -> list[str]:
+    def compute_user_permissions(self, user) -> set[int]:
         # 1. Get all roles assigned to user (UserRole table)
-        # 2. For each role: get RolePermission records
-        # 3. For each permission: check is_active
-        # 4. Apply hierarchy: if parent is_active=False → child effectively disabled
-        #    (walk permission tree application-level, NOT DB cascade)
-        # 5. Return list of active permission keys
+        # 2. Collect granted permission IDs via RolePermission
+        # 3. Keep only Permission.is_active=True
+        # 4. Apply deny-only override from UserPermission (remove denied IDs)
+        # 5. Return granted permission IDs (flat model, no hierarchy)
 
-    def get_or_refresh_cache(self, user) -> list[str]:
+    def get_or_refresh_cache(self, user) -> str:
         # 1. Try UserPermissionCache where user=user
         # 2. If not found or permission_version != user.permission_version:
-        #    perms = compute_user_permissions(user)
-        #    update/create UserPermissionCache(...)
-        # 3. Return cached permissions
+        #    perm_ids = compute_user_permissions(user)
+        #    encoded = encode_bitmap_base64(perm_ids, max_bits=256)
+        #    update/create UserPermissionCache(encoded_permissions=encoded, ...)
+        # 3. Return cached encoded_permissions
 
     def invalidate_cache(self, user):
-        # Set user.permission_version += 1
+        # Increment user.permission_version by 1
+        # Delete stale UserPermissionCache row
         # Called when admin changes user's roles/permissions
 ```
 

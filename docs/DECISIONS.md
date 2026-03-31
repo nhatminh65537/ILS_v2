@@ -38,7 +38,7 @@
 | [Q-AUTH-06](#q-auth-06-sso-account-linking-strategy) | SSO account linking: merge or separate | Slice 1 (Task 1.3) | **OPEN** |
 | [Q-AUTH-07](#q-auth-07-device-logout-granularity) | Device logout: one session or all | Slice 1 (Task 1.4 deferred) | **OPEN** |
 | [Q-INFRA-09](#q-infra-09-cors-and-domain-configuration) | CORS policy + frontend/backend domain | Slice 1 (Task 1.5), Slice 4 | **OPEN** |
-| [Q-ARCH-01](#q-arch-01-max-permissions-bitmap-capacity) | Max permissions bitmap encode size | Slice 2 (permission design) | **OPEN** |
+| [Q-ARCH-01](#q-arch-01-max-permissions-bitmap-capacity) | Max permissions bitmap encode size | Slice 2 (permission design) | **RESOLVED** (Option B) |
 | [Q-CONFIG-01](#q-config-01-default-systemconfig-auth-values) | Default auth.* system_config values at seed | Slice 0, 1 | **OPEN** |
 | [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **OPEN** |
 | [Q-LEARN-02](#q-learn-02-mini-quiz-question-source) | Mini-quiz question source | Slice 5 | **OPEN** |
@@ -123,7 +123,7 @@ Memory-only token storage requires frontend to call `/api/auth/token/refresh/` e
 
 ### Q-ARCH-01: Max Permissions Bitmap Capacity
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 2 (authorization design, but informs Slice 1 JWT structure)
 
 **Problem:**
@@ -139,7 +139,7 @@ Permissions use base64-encoded bitmap in JWT token. Current decision: text-encod
 | C | 512 (2 byte bitmap) | Base64(byte[64]) | More room, still compact |
 | D | 1024 (4 byte bitmap) | Base64(byte[128]) | Very flexible, payload larger |
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option B. Set max permissions to 256 bits (32-byte bitmap, base64 encoded).
 
 ---
 
@@ -934,12 +934,14 @@ No DB storage for reset tokens. Uses `itsdangerous.TimestampSigner(settings.SECR
 **Previous:** Scan URL patterns at startup, format `"domain.action"`. **Updated.**
 
 **Current:**
-- Decorator `@add_role_granted('Admin', 'Editor', 'Member')` on view classes.
-- At startup (`AppConfig.ready()`): scan decorated views, auto-create permissions.
+- Decorator `@add_role_granted('Admin', 'Editor', 'Member')` can be used at class-level and handler-level.
+- At startup (`AppConfig.ready()`): scan decorated views and route action maps, auto-create permissions.
 - **Permission name format:** `{app_label}.{resource_name}.{handler_method_name}` (lowercase).
   - `resource_name`: class name bỏ hậu tố `ViewSet`/`View`/`APIView`/`GenericViewSet`, normalize snake_case
-  - `handler_method_name`: method Python xử lý endpoint (e.g. `list`, `retrieve`, `tree`, `submit_flag`, `get`, `post`)
+  - `handler_method_name`: method Python xử lý endpoint (e.g. `list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`, `tree`, `submit_flag`, `get`, `post`)
   - Ví dụ: `api.course.tree`, `api.challenge.submit_flag`, `auth_app.register.post`
+- Grant precedence per endpoint: handler-level decorator > class-level decorator.
+- For default mixin handlers that require specific roles, explicitly override method and call `super()` so behavior stays unchanged while grant is explicit in code.
 - Built-in roles auto-created with `is_system=True` — cannot be deleted/renamed via API.
 - Permissions are assigned to roles based on decorator arguments.
 - Permissions no longer present in code are set to `is_active=False`.
@@ -1077,6 +1079,20 @@ Permission records are **read-only** via API. Admin can only GET (list/retrieve)
 **Source:** `docs/ARCHITECTURE.md §4.4`, `docs/prd/02-authorization.md`
 
 Built-in roles (Admin, Editor, Member) are auto-created at startup via `@add_role_granted` decorator. Have `is_system=True` flag — cannot be deleted or renamed via API. Admin can still modify their permission assignments.
+
+---
+
+### R-AUTH-12: Hybrid Endpoint Role Grant Resolution
+
+**Decision date:** 2026-03-31
+**Source:** `docs/ARCHITECTURE.md §4.4`, `docs/IMPL_PLAN.md §Slice 2`
+
+Permission grant resolution for endpoint handlers uses a hybrid model:
+- Class-level `@add_role_granted(...)` defines default roles for all handlers in a view.
+- Handler-level `@add_role_granted(...)` overrides class defaults for selected handlers.
+- For default mixin handlers requiring specific roles, explicitly override method and call `super()` to keep implementation clear and deterministic.
+- DRF route action maps (`callback.actions`) remain the endpoint identity source for discovery.
+- Final precedence: handler-level decorator > class-level decorator.
 
 ---
 

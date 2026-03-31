@@ -291,6 +291,8 @@ class TestAuthApp:
         assert reused.status_code == 401
 
     def test_token_refresh_includes_permission_claims(self, api_client, member_user):
+        import base64
+
         login = api_client.post(
             '/api/auth/login/',
             {
@@ -309,8 +311,11 @@ class TestAuthApp:
 
         access = AccessToken(refreshed.data['access'])
         assert 'permissions' in access
-        assert 'permission_version' in access
-        assert access['permission_version'] == member_user.permission_version
+        decoded = base64.b64decode(access['permissions'])
+        assert len(decoded) == 32
+        assert 'pv' in access
+        assert access['pv'] == member_user.permission_version
+        assert 'permission_version' not in access
 
     def test_token_refresh_rate_limit_after_ten_requests_per_minute(self, api_client, member_user):
         login = api_client.post(
@@ -580,13 +585,28 @@ class TestPermissionDiscovery:
     def test_discovery_syncs_roles_and_mappings(self):
         discover_permissions()
 
-        for role_name in ['Admin', 'Editor', 'Member']:
-            role = Role.objects.get(name=role_name)
+        admin = Role.objects.get(name='Admin')
+        editor = Role.objects.get(name='Editor')
+        member = Role.objects.get(name='Member')
+
+        for role in [admin, editor, member]:
             assert role.is_system is True
 
-        member = Role.objects.get(name='Member')
-        permission = Permission.objects.get(name='api.course.tree')
-        assert RolePermission.objects.filter(role=member, permission=permission).exists()
+        # Class-level grant still applies to baseline handlers.
+        list_permission = Permission.objects.get(name='api.course.list')
+        assert RolePermission.objects.filter(role=member, permission=list_permission).exists()
+
+        # Handler-level grant overrides class-level grant for custom action.
+        tree_permission = Permission.objects.get(name='api.course.tree')
+        assert RolePermission.objects.filter(role=admin, permission=tree_permission).exists()
+        assert RolePermission.objects.filter(role=editor, permission=tree_permission).exists()
+        assert not RolePermission.objects.filter(role=member, permission=tree_permission).exists()
+
+        # Handler-level grant overrides class-level grant for default mixin action.
+        create_permission = Permission.objects.get(name='api.course.create')
+        assert RolePermission.objects.filter(role=admin, permission=create_permission).exists()
+        assert RolePermission.objects.filter(role=editor, permission=create_permission).exists()
+        assert not RolePermission.objects.filter(role=member, permission=create_permission).exists()
 
 
 @pytest.mark.django_db

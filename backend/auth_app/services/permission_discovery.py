@@ -5,7 +5,7 @@ from django.db import connection, transaction
 from django.urls import URLPattern, URLResolver, get_resolver
 
 from api.models import Permission, Role, RolePermission
-from auth_app.permissions import ROLE_GRANTED_ATTR
+from auth_app.permissions import get_role_granted
 
 
 LOGGER = logging.getLogger(__name__)
@@ -118,29 +118,52 @@ def _collect_discovered_permissions() -> tuple[dict, int]:
         if view_class is None:
             continue
 
-        roles = tuple(getattr(view_class, ROLE_GRANTED_ATTR, ()))
-        if not roles:
-            continue
+        class_roles = get_role_granted(view_class)
 
         handlers = _extract_handler_method_names(callback, view_class)
         if not handlers:
             continue
 
-        scanned_routes += 1
         app_label = _extract_app_label(view_class)
         resource_name = _normalize_resource_name(view_class.__name__)
         source = f'{view_class.__module__}.{view_class.__name__}'
+        route_has_permission = False
 
         for handler_name in handlers:
+            effective_roles = _resolve_roles_for_handler(view_class, handler_name, class_roles)
+            if not effective_roles:
+                continue
+
             permission_name = f'{app_label}.{resource_name}.{handler_name}'.lower()
             if permission_name not in discovered:
                 discovered[permission_name] = {
                     'roles': set(),
                     'source': source,
                 }
-            discovered[permission_name]['roles'].update(roles)
+
+            discovered[permission_name]['roles'].update(effective_roles)
+            route_has_permission = True
+
+        if route_has_permission:
+            scanned_routes += 1
 
     return discovered, scanned_routes
+
+
+def _resolve_roles_for_handler(
+    view_class,
+    handler_name: str,
+    class_roles: tuple[str, ...],
+) -> tuple[str, ...]:
+    handler = getattr(view_class, handler_name, None)
+    if handler is None:
+        return class_roles
+
+    handler_roles = get_role_granted(handler)
+    if handler_roles:
+        return handler_roles
+
+    return class_roles
 
 
 def _iter_urlpatterns(urlpatterns, prefix=''):

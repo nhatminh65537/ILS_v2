@@ -41,6 +41,7 @@ Primary references:
 - Current JWT access lifetime in code: `15 minutes`
 - Current JWT refresh lifetime in code: `7 days`
 - Token refresh endpoint for auth_app flow is active with session hash validation, token rotation, and per-user refresh rate limit (10 requests/minute).
+- Active access-token permission claims: `permissions` (base64 bitmap, 32 bytes decoded) and `pv` (per-user permission version).
 
 ### Authorization bootstrap behavior in current code
 
@@ -49,6 +50,8 @@ Primary references:
 - `resource_name` is derived from class name by removing `ViewSet`/`View`/`APIView`/`GenericViewSet` then normalizing to snake_case.
 - `handler_method_name` is the Python route handler name (`list`, `retrieve`, `tree`, `submit_flag`, `get`, `post`, ...).
 - Built-in role mappings are synchronized from `@add_role_granted(...)` metadata.
+- Slice 2 Phase 1 contract: role mapping uses explicit handler decorators, with precedence `handler-level` > `class-level`.
+- For default mixin handlers needing specific roles, use explicit method override + `super()` call and attach `@add_role_granted(...)` on that handler.
 
 ---
 
@@ -178,6 +181,8 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 - `POST /api/admin/roles/`
 - `GET /api/admin/roles/{id}/permissions/`
 - `POST /api/admin/roles/{id}/permissions/`
+- JWT claims contract for permission checks: `permissions` (base64 bitmap) + `pv` (permission version).
+- Endpoint role grant contract: class-level default grant with explicit handler-level decorator overrides.
 
 ### 4.3 Slice 3+ Domain APIs
 

@@ -9,14 +9,24 @@ ROLE_GRANTED_ATTR = '__role_granted__'
 
 
 def add_role_granted(*roles: str):
-    """Attach built-in role grants metadata to a class-based view."""
-    normalized_roles = tuple(role for role in roles if isinstance(role, str) and role.strip())
+    """Attach built-in role grants metadata to a class or handler method."""
+    normalized_roles = tuple(
+        role.strip() for role in roles if isinstance(role, str) and role.strip()
+    )
 
-    def decorator(view_class):
-        setattr(view_class, ROLE_GRANTED_ATTR, normalized_roles)
-        return view_class
+    def decorator(target):
+        setattr(target, ROLE_GRANTED_ATTR, normalized_roles)
+        return target
 
     return decorator
+
+
+def get_role_granted(target) -> tuple[str, ...]:
+    """Read role grants metadata from a class or handler method."""
+    grants = getattr(target, ROLE_GRANTED_ATTR, ())
+    if not grants:
+        return ()
+    return tuple(role for role in grants if isinstance(role, str) and role.strip())
 
 
 def check_bit_in_bitmap(bitmap_b64: str, bit_index: int) -> bool:
@@ -120,5 +130,4 @@ class HasJWTPermission(BasePermission):
             return False
         except Exception:
             # Bitmap decode error, deny
-            return False
             return False

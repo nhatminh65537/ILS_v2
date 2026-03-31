@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from api.services.permission_service import PermissionService
 from api.models import UserSession
 from api.utils import get_config
 
@@ -23,20 +24,19 @@ class TokenService:
         permissions = self.get_or_refresh_permission_cache(user)
         refresh = RefreshToken.for_user(user)
         refresh['permissions'] = permissions
-        refresh['permission_version'] = user.permission_version
+        refresh['pv'] = user.permission_version
 
         access = refresh.access_token
         access['permissions'] = permissions
-        access['permission_version'] = user.permission_version
+        access['pv'] = user.permission_version
 
         return {
             'access': str(access),
             'refresh': str(refresh),
         }
 
-    def get_or_refresh_permission_cache(self, user) -> list[str]:
-        # Slice 1 stub: full permission cache logic is implemented in Slice 2.
-        return []
+    def get_or_refresh_permission_cache(self, user) -> str:
+        return PermissionService.get_or_refresh_cache(user)
 
     def refresh_tokens(self, refresh_token: str, device_info: str = '') -> dict:
         refresh_hash = self._hash_token(refresh_token)

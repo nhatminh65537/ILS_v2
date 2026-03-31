@@ -146,7 +146,13 @@ class CourseViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return CourseDetailSerializer
         return CourseListSerializer
+
+    @add_role_granted('Admin', 'Editor')
+    def create(self, request, *args, **kwargs):
+        """Create course with explicit handler-level role grants."""
+        return super().create(request, *args, **kwargs)
     
+    @add_role_granted('Admin', 'Editor')
     @action(detail=True, methods=['get'])
     def tree(self, request, pk=None):
         """Get course tree structure"""
@@ -684,9 +690,7 @@ class UserRoleViewSet(viewsets.ViewSet):
             
             if created:
                 # Invalidate user permission cache and increment version
-                user.permission_version += 1
-                user.save()
-                UserPermissionCache.objects.filter(user=user).delete()
+                PermissionService.invalidate_cache(user)
                 
                 response_status = status.HTTP_201_CREATED
             else:
@@ -708,9 +712,7 @@ class UserRoleViewSet(viewsets.ViewSet):
             user_role.delete()
             
             # Invalidate user permission cache and increment version
-            user.permission_version += 1
-            user.save()
-            UserPermissionCache.objects.filter(user=user).delete()
+            PermissionService.invalidate_cache(user)
             
             return Response(status=status.HTTP_204_NO_CONTENT)
         except UserRole.DoesNotExist:

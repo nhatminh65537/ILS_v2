@@ -185,16 +185,19 @@ Permissions are created automatically by scanning all registered API endpoints a
   - `handler_method_name`: Python handler name bound to the route (`list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`, custom action, hoặc `get`/`post`...)
   - Optional override via `permission_code` attribute on view.
 
-**Built-in roles** via `@add_role_granted('Admin', 'Editor', 'Member')` decorator:
-- Decorator on each view/method declares which built-in roles should have this permission
-- Startup scan collects all decorators → auto-creates roles (with `is_system=TRUE`) if not exist
-- Built-in role → permission mappings are synced on every startup (idempotent)
-- Built-in roles cannot be deleted or have permissions modified via API
-- Custom roles (admin-created, `is_system=FALSE`) are fully manageable via API
+**Built-in roles** use explicit handler-level grants:
+- `@add_role_granted(...)` can be declared on a view class as a default baseline.
+- `@add_role_granted(...)` can also be declared directly on endpoint handlers to set specific roles per handler.
+- If both class-level and handler-level grants exist, handler-level grant takes precedence for that handler.
+- For DRF default mixin handlers (`list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`), when a specific role differs from class baseline, explicitly override the handler and call `super()` to keep behavior while attaching the decorator.
+- Startup scan auto-creates missing built-in roles (`is_system=TRUE`) and syncs role-permission links idempotently.
+- Built-in roles cannot be deleted or renamed via API.
+- Custom roles (admin-created, `is_system=FALSE`) are fully manageable via API.
 
 **Startup sequence:**
-1. Scan all endpoints → upsert permissions (set `is_active`)
-2. Scan `@add_role_granted` decorators → upsert built-in roles → sync `role_permission`
+1. Scan all endpoints and route action maps → upsert permissions (set `is_active`).
+2. Resolve grants per endpoint using explicit handler decorator when present; otherwise fallback to class-level decorator.
+3. Upsert built-in roles and sync `role_permission` mappings idempotently.
 
 ---
 
