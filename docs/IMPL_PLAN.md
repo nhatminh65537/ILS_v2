@@ -406,20 +406,20 @@ api.lesson.render                ← LessonViewSet.render
 auth_app.register.post           ← RegisterView.post
 ```
 
-### Task 2.2 — Role/Permission CRUD API
+### Task 2.2 — Role/Permission CRUD API ✅ COMPLETED (2026-03-31)
 
-**Files:** `backend/api/views/rbac.py`, `backend/api/serializers/rbac.py`, `backend/api/urls.py`
+**Files:** `backend/api/views.py`, `backend/api/serializers.py`, `backend/api/urls.py`
 
 **Endpoints:**
 ```
-GET  /api/roles/                             → list roles
-POST /api/roles/                             → create role (admin only)
-GET/PUT/DELETE /api/roles/{id}/              → role detail
-GET  /api/roles/{id}/permissions/            → permissions assigned to role (tree)
-POST /api/roles/{id}/permissions/            → assign permission {permission_id, is_active}
-DELETE /api/roles/{id}/permissions/{perm_id}/ → revoke permission from role
+GET  /api/admin/roles/                             → list roles
+POST /api/admin/roles/                             → create role (admin only)
+GET/PUT/DELETE /api/admin/roles/{id}/              → role detail
+GET  /api/admin/roles/{id}/permissions/            → permissions assigned to role (tree)
+POST /api/admin/roles/{id}/permissions/            → assign permission {permission_id}
+DELETE /api/admin/roles/{id}/permissions/{perm_id}/ → revoke permission from role
 
-GET  /api/permissions/                       → list all permissions (tree structure)
+GET  /api/admin/permissions/                       → list all permissions (flat list)
 
 GET  /api/users/{id}/roles/                  → user's current roles
 POST /api/users/{id}/roles/                  → assign role to user {role_id}

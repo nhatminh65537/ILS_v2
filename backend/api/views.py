@@ -41,7 +41,7 @@ from .services.permission_service import PermissionService
 from .services.flag_validation_service import FlagValidationService
 from .services.leaderboard_service import LeaderboardService
 from .utils import invalidate_config_cache
-from auth_app.permissions import add_role_granted
+from auth_app.permissions import add_role_granted, HasJWTPermission
 
 
 # ============================================================================
@@ -535,7 +535,19 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     """Permission viewset (read-only per R-AUTH-08)"""
     queryset = Permission.objects.all().order_by('id')
     serializer_class = PermissionTreeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
+
+    action_permission_map = {
+        'list': 'api.permission.list',
+        'retrieve': 'api.permission.retrieve',
+    }
+
+    def get_permissions(self):
+        base_permissions = [IsAuthenticated(), permissions.IsAdminUser()]
+        permission_key = self.action_permission_map.get(getattr(self, 'action', None))
+        if permission_key and getattr(self.request, 'auth', None) is not None:
+            base_permissions.append(HasJWTPermission(permission_key))
+        return base_permissions
     
     def get_queryset(self):
         """Get all active permissions (or all if admin viewing)"""
@@ -554,7 +566,25 @@ class RoleViewSet(viewsets.ModelViewSet):
     """Role CRUD viewset"""
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
+
+    action_permission_map = {
+        'list': 'api.role.list',
+        'retrieve': 'api.role.retrieve',
+        'create': 'api.role.create',
+        'update': 'api.role.update',
+        'partial_update': 'api.role.partial_update',
+        'destroy': 'api.role.destroy',
+        'permissions': 'api.role.permissions',
+        'revoke_permission': 'api.role.revoke_permission',
+    }
+
+    def get_permissions(self):
+        base_permissions = [IsAuthenticated(), permissions.IsAdminUser()]
+        permission_key = self.action_permission_map.get(getattr(self, 'action', None))
+        if permission_key and getattr(self.request, 'auth', None) is not None:
+            base_permissions.append(HasJWTPermission(permission_key))
+        return base_permissions
     
     def get_queryset(self):
         """Get all roles"""
@@ -603,18 +633,20 @@ class RoleViewSet(viewsets.ModelViewSet):
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get', 'post'])
     def permissions(self, request, pk=None):
-        """Get permissions assigned to this role"""
+        """Get or assign permissions for this role."""
         role = self.get_object()
+
+        if request.method.lower() == 'post':
+            return self._assign_permission(request, role)
+
         permissions = role.get_all_permissions()
         serializer = PermissionTreeSerializer(permissions, many=True)
         return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'])
-    def assign_permission(self, request, pk=None):
+
+    def _assign_permission(self, request, role):
         """Assign a permission to this role"""
-        role = self.get_object()
         serializer = RolePermissionSerializer(data=request.data)
         
         if not serializer.is_valid():
@@ -623,10 +655,10 @@ class RoleViewSet(viewsets.ModelViewSet):
         permission_id = serializer.validated_data['permission_id']
         try:
             permission = Permission.objects.get(id=permission_id)
-            RolePermission.objects.get_or_create(role=role, permission=permission)
-            
-            # Invalidate cache for users with this role
-            role.invalidate_users_cache()
+            _, created = RolePermission.objects.get_or_create(role=role, permission=permission)
+
+            if created:
+                self._invalidate_role_users_cache(role)
             
             return Response({'detail': 'Permission assigned'}, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -634,6 +666,11 @@ class RoleViewSet(viewsets.ModelViewSet):
                 {'detail': str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    def _invalidate_role_users_cache(self, role):
+        """Invalidate permission cache for all users currently assigned to a role."""
+        for user_role in role.users.select_related('user').all():
+            PermissionService.invalidate_cache(user_role.user)
     
     @action(detail=True, methods=['delete'], url_path=r'permissions/(?P<perm_id>\d+)')
     def revoke_permission(self, request, pk=None, perm_id=None):
@@ -642,9 +679,8 @@ class RoleViewSet(viewsets.ModelViewSet):
         try:
             role_perm = RolePermission.objects.get(role=role, permission_id=perm_id)
             role_perm.delete()
-            
-            # Invalidate cache for users with this role
-            role.invalidate_users_cache()
+
+            self._invalidate_role_users_cache(role)
             
             return Response(status=status.HTTP_204_NO_CONTENT)
         except RolePermission.DoesNotExist:
@@ -661,7 +697,20 @@ class RoleViewSet(viewsets.ModelViewSet):
 @add_role_granted('Admin')
 class UserRoleViewSet(viewsets.ViewSet):
     """User role assignment viewset"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
+
+    action_permission_map = {
+        'list': 'api.user_role.list',
+        'create': 'api.user_role.create',
+        'destroy': 'api.user_role.destroy',
+    }
+
+    def get_permissions(self):
+        base_permissions = [IsAuthenticated(), permissions.IsAdminUser()]
+        permission_key = self.action_permission_map.get(getattr(self, 'action', None))
+        if permission_key and getattr(self.request, 'auth', None) is not None:
+            base_permissions.append(HasJWTPermission(permission_key))
+        return base_permissions
     
     def get_user(self, user_id):
         """Get user by ID"""

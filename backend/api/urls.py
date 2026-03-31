@@ -41,25 +41,10 @@ user_role_detail_url = re_path(
     name='user-roles-detail'
 )
 
-# Custom role permissions routes
-role_permissions_url = re_path(
-    r'^admin/roles/(?P<pk>\d+)/permissions/$',
-    RoleViewSet.as_view({'get': 'permissions', 'post': 'assign_permission'}),
-    name='role-permissions'
-)
-role_permission_revoke_url = re_path(
-    r'^admin/roles/(?P<pk>\d+)/permissions/(?P<perm_id>\d+)/$',
-    RoleViewSet.as_view({'delete': 'revoke_permission'}),
-    name='role-permissions-revoke'
-)
-
 urlpatterns = [
     # API routes
     path('', include(router.urls)),
     # User roles custom routes
     user_roles_url,
     user_role_detail_url,
-    # Role permissions custom routes
-    role_permissions_url,
-    role_permission_revoke_url,
 ]

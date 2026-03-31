@@ -237,6 +237,14 @@ class TestRBACEndpoints:
 		response = api_client.get('/api/admin/roles/')
 		assert response.status_code == 401
 
+	def test_non_admin_forbidden(self, member_client, rbac_seed):
+		"""Test non-admin users cannot access RBAC admin endpoints"""
+		response = member_client.get('/api/admin/permissions/')
+		assert response.status_code == 403
+
+		response = member_client.get('/api/admin/roles/')
+		assert response.status_code == 403
+
 	def test_system_role_cannot_be_deleted(self, admin_client, rbac_seed):
 		"""Test system roles are protected from deletion"""
 		admin_role = rbac_seed['admin_role']
@@ -253,7 +261,7 @@ class TestRBACEndpoints:
 		perm = rbac_seed['permissions'][0]
 		
 		response = admin_client.post(
-			f'/api/admin/roles/{role.id}/assign_permission/',
+			f'/api/admin/roles/{role.id}/permissions/',
 			{'permission_id': perm.id},
 			format='json',
 		)
@@ -316,3 +324,31 @@ class TestRBACEndpoints:
 		
 		assert response.status_code == 204
 		assert not UserRole.objects.filter(user=member_user, role=role).exists()
+
+	def test_assign_permission_invalidates_assigned_users_cache(self, admin_client, member_user, rbac_seed):
+		"""Assigning permission to a role should invalidate cache/version for users with that role."""
+		from api.models import Role, Permission, UserRole, UserPermissionCache
+
+		role = Role.objects.create(name='RoleCacheInvalidation', is_system=False)
+		permission = Permission.objects.create(name='api.role_cache.test', is_active=True)
+		UserRole.objects.create(user=member_user, role=role)
+
+		# Seed stale cache row to verify delete-on-invalidate behavior.
+		UserPermissionCache.objects.create(
+			user=member_user,
+			encoded_permissions='AAAA',
+			permission_version=member_user.permission_version,
+		)
+
+		before_version = member_user.permission_version
+
+		response = admin_client.post(
+			f'/api/admin/roles/{role.id}/permissions/',
+			{'permission_id': permission.id},
+			format='json',
+		)
+
+		assert response.status_code == 201
+		member_user.refresh_from_db()
+		assert member_user.permission_version == before_version + 1
+		assert not UserPermissionCache.objects.filter(user=member_user).exists()

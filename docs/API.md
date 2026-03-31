@@ -160,6 +160,28 @@ Notes:
 - Invalid payload type for config `value_type` returns `400` with deterministic validation error.
 - Cache for non-runtime config reads is invalidated after successful updates.
 
+### 3.10 Authorization / RBAC
+
+| Method | Path | Auth | Status | Notes |
+|---|---|---|---|---|
+| GET | `/api/admin/permissions/` | Admin | Partial | Active read-only permission list endpoint; supports `include_inactive=true` query. |
+| GET | `/api/admin/roles/` | Admin | Partial | Active role list endpoint. |
+| POST | `/api/admin/roles/` | Admin | Partial | Active custom role creation endpoint. |
+| GET | `/api/admin/roles/{id}/` | Admin | Partial | Active role detail endpoint. |
+| PUT/PATCH | `/api/admin/roles/{id}/` | Admin | Partial | Active role update endpoint; system role rename blocked. |
+| DELETE | `/api/admin/roles/{id}/` | Admin | Partial | Active role delete endpoint; system role delete blocked. |
+| GET | `/api/admin/roles/{id}/permissions/` | Admin | Partial | Active assigned-permissions endpoint for role. |
+| POST | `/api/admin/roles/{id}/permissions/` | Admin | Partial | Active permission assignment endpoint using payload `{permission_id}`. |
+| DELETE | `/api/admin/roles/{id}/permissions/{perm_id}/` | Admin | Partial | Active permission revoke endpoint for role mapping. |
+| GET | `/api/users/{id}/roles/` | Admin | Partial | Active endpoint to list roles assigned to a user. |
+| POST | `/api/users/{id}/roles/` | Admin | Partial | Active endpoint to assign a role to a user using payload `{role_id}`. |
+| DELETE | `/api/users/{id}/roles/{role_id}/` | Admin | Partial | Active endpoint to remove a role from a user. |
+
+Notes:
+- Canonical role-permission assignment route is `/api/admin/roles/{id}/permissions/`.
+- RBAC endpoints are admin-only and include action-level `HasJWTPermission('<permission_key>')` checks when JWT auth context is present.
+- Role-permission and user-role mapping changes invalidate permission cache for affected users.
+
 ---
 
 ## 4. Planned APIs (Not Implemented Yet)
@@ -175,12 +197,6 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 - `POST /api/auth/sessions/{id}/revoke/`
 
 ### 4.2 Slice 2 — Authorization/RBAC
-
-- `GET /api/admin/permissions/`
-- `GET /api/admin/roles/`
-- `POST /api/admin/roles/`
-- `GET /api/admin/roles/{id}/permissions/`
-- `POST /api/admin/roles/{id}/permissions/`
 - JWT claims contract for permission checks: `permissions` (base64 bitmap) + `pv` (permission version).
 - Endpoint role grant contract: class-level default grant with explicit handler-level decorator overrides.
 
