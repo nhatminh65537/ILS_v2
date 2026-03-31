@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Q
 
@@ -18,7 +19,8 @@ from .models import (
     UserCourseProgress, UserLessonProgress,
     UserChallengeProgress, UserChallengeSubmit,
     UserQuizAttempt, UserQuizAnswer,
-    Notification, SystemConfig, Role, Permission
+    Notification, SystemConfig, Role, Permission,
+    RolePermission, UserRole, UserPermission, UserPermissionCache
 )
 
 from .serializers import (
@@ -30,7 +32,8 @@ from .serializers import (
     QuizListSerializer, QuizDetailSerializer, QuizQuestionSerializer,
     QuizAnswerSubmitSerializer, UserQuizAttemptSerializer,
     NotificationSerializer, SystemConfigSerializer,
-    RoleSerializer, PermissionSerializer,
+    RoleSerializer, PermissionSerializer, RolePermissionSerializer,
+    PermissionTreeSerializer, UserRoleSerializer, UserRoleAssignmentSerializer,
     UserCourseProgressSerializer, UserChallengeProgressSerializer
 )
 
@@ -38,6 +41,7 @@ from .services.permission_service import PermissionService
 from .services.flag_validation_service import FlagValidationService
 from .services.leaderboard_service import LeaderboardService
 from .utils import invalidate_config_cache
+from auth_app.permissions import add_role_granted
 
 
 # ============================================================================
@@ -68,6 +72,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 # USER VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class UserViewSet(viewsets.ModelViewSet):
     """User management viewset"""
     queryset = User.objects.all()
@@ -110,6 +115,7 @@ class UserViewSet(viewsets.ModelViewSet):
 # COURSE VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class CourseViewSet(viewsets.ModelViewSet):
     """Course management viewset"""
     
@@ -179,6 +185,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Enrolled successfully'})
 
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class LessonViewSet(viewsets.ReadOnlyModelViewSet):
     """Lesson viewset (read-only for users)"""
     queryset = Lesson.objects.all()
@@ -205,6 +212,7 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
 # CHALLENGE VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class ChallengeViewSet(viewsets.ModelViewSet):
     """Challenge management viewset"""
     
@@ -360,6 +368,7 @@ class ChallengeViewSet(viewsets.ModelViewSet):
 # QUIZ VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class QuizViewSet(viewsets.ModelViewSet):
     """Quiz management viewset"""
     
@@ -424,6 +433,7 @@ class QuizViewSet(viewsets.ModelViewSet):
 # NOTIFICATION VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """Notification viewset"""
     serializer_class = NotificationSerializer
@@ -446,6 +456,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 # LEADERBOARD VIEWS
 # ============================================================================
 
+@add_role_granted('Admin', 'Editor', 'Member')
 class LeaderboardViewSet(viewsets.ViewSet):
     """Leaderboard viewset"""
     permission_classes = [IsAuthenticated]
@@ -463,6 +474,7 @@ class LeaderboardViewSet(viewsets.ViewSet):
 # SYSTEM CONFIGURATION VIEWS
 # ============================================================================
 
+@add_role_granted('Admin')
 class SystemConfigViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -506,4 +518,204 @@ class SystemConfigViewSet(
         invalidate_config_cache(instance.key)
 
         return Response(serializer.data)
+
+
+# ============================================================================
+# RBAC VIEWS (Slice 2)
+# ============================================================================
+
+@add_role_granted('Admin')
+class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
+    """Permission viewset (read-only per R-AUTH-08)"""
+    queryset = Permission.objects.all().order_by('id')
+    serializer_class = PermissionTreeSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get all active permissions (or all if admin viewing)"""
+        queryset = Permission.objects.all().order_by('id')
+        
+        # Get active permissions only
+        show_inactive = self.request.query_params.get('include_inactive', 'false').lower() == 'true'
+        if not show_inactive:
+            queryset = queryset.filter(is_active=True)
+        
+        return queryset
+
+
+@add_role_granted('Admin')
+class RoleViewSet(viewsets.ModelViewSet):
+    """Role CRUD viewset"""
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get all roles"""
+        return Role.objects.all().order_by('name')
+    
+    def create(self, request, *args, **kwargs):
+        """Create a new role (admin only)"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        # Invalidate cache for all users (role permissions may be assigned later)
+        # This is optional - cache only invalidates on permission changes
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def update(self, request, *args, **kwargs):
+        """Update a role (admin only, not system roles)"""
+        instance = self.get_object()
+        
+        # Protect system roles from modification
+        if instance.is_system and 'name' in request.data and request.data['name'] != instance.name:
+            return Response(
+                {'detail': 'System roles cannot be renamed'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response(serializer.data)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete a role (admin only, not system roles)"""
+        instance = self.get_object()
+        
+        # Protect system roles from deletion
+        if instance.is_system:
+            return Response(
+                {'detail': 'System roles cannot be deleted'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=True, methods=['get'])
+    def permissions(self, request, pk=None):
+        """Get permissions assigned to this role"""
+        role = self.get_object()
+        permissions = role.get_all_permissions()
+        serializer = PermissionTreeSerializer(permissions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def assign_permission(self, request, pk=None):
+        """Assign a permission to this role"""
+        role = self.get_object()
+        serializer = RolePermissionSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        permission_id = serializer.validated_data['permission_id']
+        try:
+            permission = Permission.objects.get(id=permission_id)
+            RolePermission.objects.get_or_create(role=role, permission=permission)
+            
+            # Invalidate cache for users with this role
+            role.invalidate_users_cache()
+            
+            return Response({'detail': 'Permission assigned'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    @action(detail=True, methods=['delete'], url_path=r'permissions/(?P<perm_id>\d+)')
+    def revoke_permission(self, request, pk=None, perm_id=None):
+        """Revoke a permission from this role"""
+        role = self.get_object()
+        try:
+            role_perm = RolePermission.objects.get(role=role, permission_id=perm_id)
+            role_perm.delete()
+            
+            # Invalidate cache for users with this role
+            role.invalidate_users_cache()
+            
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except RolePermission.DoesNotExist:
+            return Response(
+                {'detail': 'Permission not assigned to this role'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+# ============================================================================
+# USER ROLE MANAGEMENT (Slice 2)
+# ============================================================================
+
+@add_role_granted('Admin')
+class UserRoleViewSet(viewsets.ViewSet):
+    """User role assignment viewset"""
+    permission_classes = [IsAuthenticated]
+    
+    def get_user(self, user_id):
+        """Get user by ID"""
+        User = get_user_model()
+        return get_object_or_404(User, id=user_id)
+    
+    def list(self, request, user_id):
+        """List roles assigned to a user"""
+        user = self.get_user(user_id)
+        user_roles = UserRole.objects.filter(user=user)
+        serializer = UserRoleSerializer(user_roles, many=True)
+        return Response(serializer.data)
+    
+    def create(self, request, user_id):
+        """Assign a role to a user"""
+        user = self.get_user(user_id)
+        serializer = UserRoleAssignmentSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        role_id = serializer.validated_data['role_id']
+        try:
+            role = Role.objects.get(id=role_id)
+            user_role, created = UserRole.objects.get_or_create(user=user, role=role)
+            
+            if created:
+                # Invalidate user permission cache and increment version
+                user.permission_version += 1
+                user.save()
+                UserPermissionCache.objects.filter(user=user).delete()
+                
+                response_status = status.HTTP_201_CREATED
+            else:
+                response_status = status.HTTP_200_OK
+            
+            result_serializer = UserRoleSerializer(user_role)
+            return Response(result_serializer.data, status=response_status)
+        except Exception as e:
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    def destroy(self, request, user_id, role_id):
+        """Remove a role from a user"""
+        user = self.get_user(user_id)
+        try:
+            user_role = UserRole.objects.get(user=user, role_id=role_id)
+            user_role.delete()
+            
+            # Invalidate user permission cache and increment version
+            user.permission_version += 1
+            user.save()
+            UserPermissionCache.objects.filter(user=user).delete()
+            
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except UserRole.DoesNotExist:
+            return Response(
+                {'detail': 'User does not have this role'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 

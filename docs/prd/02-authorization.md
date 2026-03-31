@@ -50,9 +50,12 @@ Chưa có cơ chế kiểm soát quyền truy cập. Mọi user đều có thể
 ### FR-AUTHZ-01: Permission Auto-Discovery & Auto-Naming
 - Khi Django khởi động (`AppConfig.ready()`), scan tất cả URL patterns.
 - Với mỗi view class có decorator `@add_role_granted(...)`: tạo permission record.
-- **Permission name tự động sinh**: `{app_label}.{ViewClassName}.{http_method}`.
-  - Ví dụ: view `ChallengeListView` trong app `api`, method `GET` → `api.ChallengeListView.GET`.
-  - Ví dụ: view `CourseDetailView` trong app `api`, method `PUT` → `api.CourseDetailView.PUT`.
+- **Permission name tự động sinh (lowercase)**: `{app_label}.{resource_name}.{handler_method_name}`.
+  - `resource_name`: class name sau khi bỏ hậu tố `ViewSet`/`View`/`APIView`/`GenericViewSet`, rồi normalize snake_case.
+  - `handler_method_name`: tên method Python xử lý endpoint.
+  - Ví dụ: `CourseViewSet.tree` trong app `api` → `api.course.tree`.
+  - Ví dụ: `ChallengeViewSet.submit_flag` trong app `api` → `api.challenge.submit_flag`.
+  - Ví dụ: `RegisterView.post` trong app `auth_app` → `auth_app.register.post`.
 - Nếu endpoint bị xóa mà permission vẫn trong DB: đánh dấu `is_active=False` (không xóa).
 - Permissions là **flat** — không có `parent_id`, không có hierarchy.
 - Permission records là **read-only** — admin không thể tạo/sửa/xóa permission qua API.
@@ -104,7 +107,7 @@ Chưa có cơ chế kiểm soát quyền truy cập. Mọi user đều có thể
 - Lưu vào `user_permission_cache` với version mới (`encoded_permissions` là TEXT base64).
 
 ### FR-AUTHZ-07: Permission Check (Middleware/Decorator)
-- Decorator `@require_permission("api.ChallengeSubmitView.POST")` trên view.
+- Decorator `@require_permission("api.challenge.submit_flag")` trên view.
 - Middleware extract JWT, decode base64 bitmap, kiểm tra bit tại `permission.id`.
 - Không cần DB query. Response 403 nếu bit = 0.
 - Lookup `permission.id` from permission name: cached in memory at startup.
@@ -184,7 +187,7 @@ GET    /api/authz/users/{user_id}/effective-permissions/ # Computed bitmap (deco
 ```sql
 -- permission: id (PK, auto-increment), name, description, is_active
 --   No parent_id, no pre_path (flat)
---   name format: "{app_label}.{ViewClassName}.{http_method}"
+--   name format: "{app_label}.{resource_name}.{handler_method_name}" (lowercase)
 --   Read-only via API
 
 -- role: id, name, description, is_system BOOLEAN DEFAULT FALSE
@@ -208,14 +211,14 @@ GET    /api/authz/users/{user_id}/effective-permissions/ # Computed bitmap (deco
 ### Permission Name Format
 
 ```
-{app_label}.{ViewClassName}.{http_method}
+{app_label}.{resource_name}.{handler_method_name}
 
 # Examples:
-"api.ChallengeListView.GET"
-"api.ChallengeListView.POST"
-"api.CourseDetailView.PUT"
-"api.CourseDetailView.DELETE"
-"api.LessonSyncOutlineView.POST"
+"api.challenge.list"
+"api.challenge.create"
+"api.course.update"
+"api.course.destroy"
+"api.lesson.render"
 ```
 
 ### Encoded Permissions in JWT
@@ -241,8 +244,8 @@ GET    /api/authz/users/{user_id}/effective-permissions/ # Computed bitmap (deco
   "description": "Full access",
   "is_system": true,
   "permissions": [
-    { "id": 5, "name": "api.ChallengeListView.GET", "is_active": true },
-    { "id": 12, "name": "api.CourseDetailView.PUT", "is_active": true }
+    { "id": 5, "name": "api.challenge.list", "is_active": true },
+    { "id": 12, "name": "api.course.update", "is_active": true }
   ]
 }
 ```
@@ -251,11 +254,12 @@ GET    /api/authz/users/{user_id}/effective-permissions/ # Computed bitmap (deco
 
 ```python
 @add_role_granted('Admin', 'Editor')
-class CourseDetailView(APIView):
-    # GET, PUT, DELETE → 3 permissions auto-created:
-    #   api.CourseDetailView.GET
-    #   api.CourseDetailView.PUT
-    #   api.CourseDetailView.DELETE
+class CourseViewSet(ModelViewSet):
+  # list, update, destroy, tree → permissions auto-created:
+  #   api.course.list
+  #   api.course.update
+  #   api.course.destroy
+  #   api.course.tree
     # Both Admin and Editor roles get all 3 permissions.
     ...
 ```
@@ -268,16 +272,16 @@ class CourseDetailView(APIView):
 ```
 Given: Server khởi động với 50 endpoints có @add_role_granted decorator
 When: AppConfig.ready() chạy
-Then: Permission records được upsert vào DB (1 per view+method)
+Then: Permission records được upsert vào DB (1 per route handler)
   And: Built-in roles (Admin, Editor, Member) được tạo với is_system=True
   And: Permissions được gán vào roles theo decorator arguments
   And: Permissions không còn trong code được đánh dấu is_active=False
-  And: Permission names follow format: {app_label}.{ViewClassName}.{http_method}
+  And: Permission names follow format: {app_label}.{resource_name}.{handler_method_name} (lowercase)
 ```
 
 ### AC-AUTHZ-02: Bitmap JWT Permission Check
 ```
-Given: User alice có permission "api.ChallengeSubmitView.POST" (bit 15) trong JWT bitmap
+Given: User alice có permission "api.challenge.submit_flag" (bit 15) trong JWT bitmap
 When: POST /api/challenge/{id}/submit/ với JWT của alice
 Then: Middleware decode base64 bitmap, check bit 15 = 1 → request allowed
 ```

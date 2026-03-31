@@ -42,6 +42,14 @@ Primary references:
 - Current JWT refresh lifetime in code: `7 days`
 - Token refresh endpoint for auth_app flow is active with session hash validation, token rotation, and per-user refresh rate limit (10 requests/minute).
 
+### Authorization bootstrap behavior in current code
+
+- Permission records are auto-discovered at startup from decorated class-based endpoints.
+- Permission name format is lowercase: `{app_label}.{resource_name}.{handler_method_name}`.
+- `resource_name` is derived from class name by removing `ViewSet`/`View`/`APIView`/`GenericViewSet` then normalizing to snake_case.
+- `handler_method_name` is the Python route handler name (`list`, `retrieve`, `tree`, `submit_flag`, `get`, `post`, ...).
+- Built-in role mappings are synchronized from `@add_role_granted(...)` metadata.
+
 ---
 
 ## 3. Active Endpoints

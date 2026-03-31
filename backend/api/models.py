@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import F
 import hashlib
@@ -1671,7 +1672,7 @@ class UserSession(FullAudit):
 class Permission(FullAudit):
     """
     Flat permission model. Name is canonical permission key:
-    {app_label}.{ViewClassName}.{http_method}
+    {app_label}.{resource_name}.{handler_method_name}
     """
     name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)
@@ -1740,7 +1741,14 @@ class Role(FullAudit):
     def invalidate_users_cache(self):
         """Invalidate permission cache for all users with this role"""
         user_ids = self.users.values_list('user_id', flat=True)
-        UserPermissionCache.objects.filter(user_id__in=user_ids).update(is_valid=False)
+        # Delete cache entries and increment permission_version for affected users
+        User = get_user_model()
+        users_to_update = User.objects.filter(id__in=user_ids)
+        for user in users_to_update:
+            user.permission_version += 1
+            user.save(update_fields=['permission_version'])
+        # Delete old cache entries
+        UserPermissionCache.objects.filter(user_id__in=user_ids).delete()
     
     def get_all_permissions(self):
         """Get all permissions for this role"""

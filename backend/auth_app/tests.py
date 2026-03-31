@@ -9,7 +9,8 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken
 
-from api.models import Role, SystemConfig, UserAuthProvider, UserProfile, UserRole, UserSession
+from api.models import Permission, Role, RolePermission, SystemConfig, UserAuthProvider, UserProfile, UserRole, UserSession
+from auth_app.services.permission_discovery import discover_permissions
 
 
 User = get_user_model()
@@ -540,3 +541,258 @@ class TestAuthApp:
             format='json',
         )
         assert response.status_code == 409
+
+
+@pytest.mark.django_db
+class TestPermissionDiscovery:
+    def test_discovery_creates_lowercase_permission_names(self):
+        discover_permissions()
+
+        assert Permission.objects.filter(name='api.course.list', is_active=True).exists()
+        assert Permission.objects.filter(name='api.course.tree', is_active=True).exists()
+        assert Permission.objects.filter(name='api.challenge.submit_flag', is_active=True).exists()
+        assert Permission.objects.filter(name='api.system_config.update', is_active=True).exists()
+
+    def test_discovery_is_idempotent(self):
+        discover_permissions()
+        first_permission_count = Permission.objects.count()
+        first_link_count = RolePermission.objects.count()
+
+        discover_permissions()
+        second_permission_count = Permission.objects.count()
+        second_link_count = RolePermission.objects.count()
+
+        assert first_permission_count == second_permission_count
+        assert first_link_count == second_link_count
+
+    def test_discovery_marks_stale_permissions_inactive(self):
+        stale = Permission.objects.create(
+            name='api.legacy.old_handler',
+            description='Legacy endpoint',
+            is_active=True,
+        )
+
+        discover_permissions()
+        stale.refresh_from_db()
+
+        assert stale.is_active is False
+
+    def test_discovery_syncs_roles_and_mappings(self):
+        discover_permissions()
+
+        for role_name in ['Admin', 'Editor', 'Member']:
+            role = Role.objects.get(name=role_name)
+            assert role.is_system is True
+
+        member = Role.objects.get(name='Member')
+        permission = Permission.objects.get(name='api.course.tree')
+        assert RolePermission.objects.filter(role=member, permission=permission).exists()
+
+
+@pytest.mark.django_db
+class TestJWTPermission:
+    """Tests for HasJWTPermission class and bitmap checking"""
+
+    def test_check_bit_in_bitmap_set_bit(self):
+        """Test checking a set bit in bitmap"""
+        from auth_app.permissions import check_bit_in_bitmap
+        import base64
+        
+        # Create bitmap: bit 0 and bit 3 set
+        bitmap = bytearray(32)
+        bitmap[0] = 0b00001001  # bits 0 and 3 set (LSB first)
+        bitmap_b64 = base64.b64encode(bytes(bitmap)).decode('utf-8')
+        
+        assert check_bit_in_bitmap(bitmap_b64, 0) is True
+        assert check_bit_in_bitmap(bitmap_b64, 3) is True
+        assert check_bit_in_bitmap(bitmap_b64, 1) is False
+        assert check_bit_in_bitmap(bitmap_b64, 2) is False
+
+    def test_check_bit_in_bitmap_empty(self):
+        """Test checking bits in empty bitmap"""
+        from auth_app.permissions import check_bit_in_bitmap
+        import base64
+        
+        bitmap = bytearray(32)
+        bitmap_b64 = base64.b64encode(bytes(bitmap)).decode('utf-8')
+        
+        assert check_bit_in_bitmap(bitmap_b64, 0) is False
+        assert check_bit_in_bitmap(bitmap_b64, 255) is False
+
+    def test_check_bit_in_bitmap_out_of_range(self):
+        """Test checking bits outside valid range"""
+        from auth_app.permissions import check_bit_in_bitmap
+        import base64
+        
+        bitmap = bytearray(32)
+        bitmap_b64 = base64.b64encode(bytes(bitmap)).decode('utf-8')
+        
+        with pytest.raises(ValueError):
+            check_bit_in_bitmap(bitmap_b64, 256)
+        
+        with pytest.raises(ValueError):
+            check_bit_in_bitmap(bitmap_b64, -1)
+
+    def test_check_bit_in_bitmap_invalid_b64(self):
+        """Test with invalid base64 input"""
+        from auth_app.permissions import check_bit_in_bitmap
+        
+        assert check_bit_in_bitmap('invalid!!!', 0) is False
+        assert check_bit_in_bitmap('', 0) is False
+
+    def test_check_bit_in_bitmap_byte_boundary(self):
+        """Test checking bits across byte boundaries"""
+        from auth_app.permissions import check_bit_in_bitmap
+        import base64
+        
+        bitmap = bytearray(32)
+        bitmap[0] = 0xFF  # First byte: all bits set
+        bitmap[1] = 0x00  # Second byte: no bits set
+        bitmap_b64 = base64.b64encode(bytes(bitmap)).decode('utf-8')
+        
+        # Bits in first byte
+        for i in range(8):
+            assert check_bit_in_bitmap(bitmap_b64, i) is True
+        
+        # Bits in second byte
+        for i in range(8, 16):
+            assert check_bit_in_bitmap(bitmap_b64, i) is False
+
+    def test_has_jwt_permission_allows_authenticated_with_bypass_disabled(self, api_client, member_user):
+        """Test permission check bypassed when auth.authorization_enabled=false"""
+        from auth_app.permissions import HasJWTPermission
+        from unittest.mock import Mock
+        
+        # Set bypass enabled (disabled authZ)
+        SystemConfig.objects.create(
+            key='auth.authorization_enabled',
+            value=False,
+            value_type=SystemConfig.ConfigType.BOOL,
+            category='auth',
+            is_runtime=True,
+            is_editable=True,
+        )
+        
+        permission = HasJWTPermission('api.nonexistent.perm')
+        request = Mock()
+        request.user = member_user  # Real user object already has is_authenticated
+        request.auth = None  # No JWT data, but should pass due to bypass
+        
+        assert permission.has_permission(request, Mock()) is True
+
+    def test_has_jwt_permission_checks_bitmap_when_authz_enabled(self, api_client, member_user):
+        """Test permission bitmap is checked when auth.authorization_enabled=true"""
+        from auth_app.permissions import HasJWTPermission
+        from unittest.mock import Mock
+        import base64
+        
+        # Create a test permission
+        test_perm = Permission.objects.create(
+            name='api.test.check',
+            description='Test permission',
+            is_active=True,
+        )
+        
+        # Set authZ enabled
+        SystemConfig.objects.create(
+            key='auth.authorization_enabled',
+            value=True,
+            value_type=SystemConfig.ConfigType.BOOL,
+            category='auth',
+            is_runtime=True,
+            is_editable=True,
+        )
+        
+        # Create bitmap with test permission bit set
+        bitmap = bytearray(32)
+        bitmap[test_perm.id // 8] |= (1 << (test_perm.id % 8))
+        bitmap_b64 = base64.b64encode(bytes(bitmap)).decode('utf-8')
+        
+        permission = HasJWTPermission('api.test.check')
+        request = Mock()
+        request.user = member_user  # Real user object
+        request.auth = {'permissions': bitmap_b64}
+        
+        assert permission.has_permission(request, Mock()) is True
+
+    def test_has_jwt_permission_denies_missing_permission(self, api_client, member_user):
+        """Test permission denied when bitmap doesn't have required bit"""
+        from auth_app.permissions import HasJWTPermission
+        from unittest.mock import Mock
+        import base64
+        
+        # Create a test permission
+        test_perm = Permission.objects.create(
+            name='api.test.denied',
+            description='Test permission',
+            is_active=True,
+        )
+        
+        # Set authZ enabled
+        SystemConfig.objects.create(
+            key='auth.authorization_enabled',
+            value=True,
+            value_type=SystemConfig.ConfigType.BOOL,
+            category='auth',
+            is_runtime=True,
+            is_editable=True,
+        )
+        
+        # Create empty bitmap (no permissions)
+        bitmap = bytearray(32)
+        bitmap_b64 = base64.b64encode(bytes(bitmap)).decode('utf-8')
+        
+        permission = HasJWTPermission('api.test.denied')
+        request = Mock()
+        request.user = member_user  # Real user object
+        request.auth = {'permissions': bitmap_b64}
+        
+        assert permission.has_permission(request, Mock()) is False
+
+    def test_has_jwt_permission_denies_unauthenticated(self, api_client):
+        """Test permission denied for unauthenticated users"""
+        from auth_app.permissions import HasJWTPermission
+        from unittest.mock import Mock
+        
+        permission = HasJWTPermission('api.test.perm')
+        request = Mock()
+        request.user = None
+        
+        assert permission.has_permission(request, Mock()) is False
+
+    def test_has_jwt_permission_allows_no_specific_permission(self, api_client, member_user):
+        """Test authenticated users allowed if no specific permission required"""
+        from auth_app.permissions import HasJWTPermission
+        from unittest.mock import Mock
+        
+        permission = HasJWTPermission(None)  # No specific permission
+        request = Mock()
+        request.user = member_user  # Real user object
+        
+        assert permission.has_permission(request, Mock()) is True
+
+    def test_has_jwt_permission_handles_nonexistent_permission(self, api_client, member_user):
+        """Test permission denied when permission doesn't exist"""
+        from auth_app.permissions import HasJWTPermission
+        from unittest.mock import Mock
+        import base64
+        
+        # Set authZ enabled
+        SystemConfig.objects.create(
+            key='auth.authorization_enabled',
+            value=True,
+            value_type=SystemConfig.ConfigType.BOOL,
+            category='auth',
+            is_runtime=True,
+            is_editable=True,
+        )
+        
+        bitmap = bytearray(32)
+        bitmap_b64 = base64.b64encode(bytes(bitmap)).decode('utf-8')
+        
+        permission = HasJWTPermission('api.nonexistent.perm')
+        request = Mock()
+        request.user = member_user  # Real user object
+        request.auth = {'permissions': bitmap_b64}
+        
+        assert permission.has_permission(request, Mock()) is False

@@ -50,7 +50,9 @@
 
 **Cơ chế vận hành:**
 - Permission được tạo tự động khi khởi động — scan toàn bộ endpoint bằng metaprogramming
-- Permission name tự động sinh từ tên class và method: `{app_label}.{ViewClassName}.{http_method}`
+- Permission name tự động sinh theo format lowercase: `{app_label}.{resource_name}.{handler_method_name}`
+  - `resource_name`: lấy từ class name sau khi bỏ hậu tố `ViewSet`/`View`/`APIView`/`GenericViewSet`, rồi normalize snake_case
+  - `handler_method_name`: tên method Python xử lý endpoint (`list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`, custom action hoặc `get`/`post`...)
 - Permission không thể xóa dù là admin; khi xóa API và restart, permission đó bị đánh dấu `is_active=FALSE`
 - Permission là **read-only** qua API — admin không thể tạo/sửa/xóa permission
 - Encode permission dưới dạng **bitmap nhị phân** (≤256 permissions = 32 bytes → base64 ≈ 44 ký tự)
@@ -84,7 +86,7 @@
 | Q8 | Tăng tốc revoke token? | Cache bitmap trong DB, version per-user, rebuild khi mismatch |
 | Q9 | Thứ tự ưu tiên quyền? | Direct deny > role grant |
 | Q10 | Permission hierarchy? | Không — flat permissions, roles nhóm quyền |
-| Q11 | Permission naming? | Auto-generated: `{app_label}.{ViewClassName}.{http_method}` |
+| Q11 | Permission naming? | Auto-generated: `{app_label}.{resource_name}.{handler_method_name}` (lowercase) |
 
 ---
 

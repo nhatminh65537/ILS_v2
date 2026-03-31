@@ -387,21 +387,20 @@ def discover_permissions():
     # 1. Set all Permission.is_active = False
     # 2. Walk urlpatterns recursively
     # 3. For each URL pattern with a view class:
-    #    - key = "app.method.resource" e.g. "challenge.list", "challenge.submit"
-    #    - parent_key = "challenge" (group)
-    #    - Upsert Permission(key=key, parent=parent_perm, is_active=True)
+    #    - key = "{app_label}.{resource_name}.{handler_method_name}" (lowercase)
+    #      e.g. "api.challenge.list", "api.challenge.submit_flag"
+    #    - Upsert Permission(name=key, is_active=True)
     # 4. Hook: AppConfig.ready() calls discover_permissions()
 ```
 
 **Permission key convention:**
 ```
-challenge              ← group (parent)
-challenge.view         ← GET /api/challenges/
-challenge.create       ← POST /api/challenges/
-challenge.submit       ← POST /api/challenges/{slug}/submit/
-learn.view             ← GET /api/courses/
-learn.lesson.view      ← GET /api/lessons/{id}/
-admin.users.manage     ← admin-level
+api.challenge.list               ← ChallengeViewSet.list
+api.challenge.create             ← ChallengeViewSet.create
+api.challenge.submit_flag        ← ChallengeViewSet.submit_flag
+api.course.tree                  ← CourseViewSet.tree
+api.lesson.render                ← LessonViewSet.render
+auth_app.register.post           ← RegisterView.post
 ```
 
 ### Task 2.2 — Role/Permission CRUD API

@@ -138,6 +138,50 @@ class UserRoleSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
+class RolePermissionSerializer(serializers.Serializer):
+    """
+    Serializer for assigning/revoking permissions to/from roles.
+    Used in POST /api/admin/roles/{id}/permissions/
+    """
+    permission_id = serializers.IntegerField(required=True)
+    
+    def validate_permission_id(self, value):
+        """Validate permission exists and is active"""
+        try:
+            permission = Permission.objects.get(id=value, is_active=True)
+        except Permission.DoesNotExist:
+            raise serializers.ValidationError("Permission not found or inactive")
+        return value
+
+
+class PermissionTreeSerializer(serializers.ModelSerializer):
+    """
+    Serializer for displaying all permissions in a flat list.
+    (Permissions are flat per R-AUTH-04; no hierarchy)
+    """
+    
+    class Meta:
+        model = Permission
+        fields = ['id', 'name', 'description', 'is_active']
+        read_only_fields = ['id', 'name', 'description', 'is_active']
+
+
+class UserRoleAssignmentSerializer(serializers.Serializer):
+    """
+    Serializer for assigning roles to users.
+    Used in POST /api/users/{id}/roles/
+    """
+    role_id = serializers.IntegerField(required=True)
+    
+    def validate_role_id(self, value):
+        """Validate role exists"""
+        try:
+            Role.objects.get(id=value)
+        except Role.DoesNotExist:
+            raise serializers.ValidationError("Role not found")
+        return value
+
+
 # ============================================================================
 # COURSE SERIALIZERS
 # ============================================================================

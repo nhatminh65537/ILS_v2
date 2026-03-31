@@ -180,7 +180,10 @@ Permissions are created automatically by scanning all registered API endpoints a
 - Permissions cannot be deleted (they become inactive if endpoint is removed)
 - Permissions are **read-only via API** — only `GET` is allowed (no `PATCH`/`PUT`/`POST`/`DELETE`)
 - On startup: all existing permissions set to `is_active=FALSE`, then re-scan marks found ones active again
-- Permission `name` is auto-generated from view class and HTTP method: `{app_label}.{ViewClassName}.{http_method}`. Optional override via `permission_code` attribute on view.
+- Permission `name` is auto-generated in lowercase: `{app_label}.{resource_name}.{handler_method_name}`.
+  - `resource_name`: class name after removing suffix `ViewSet`/`View`/`APIView`/`GenericViewSet`, then normalize snake_case
+  - `handler_method_name`: Python handler name bound to the route (`list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`, custom action, hoặc `get`/`post`...)
+  - Optional override via `permission_code` attribute on view.
 
 **Built-in roles** via `@add_role_granted('Admin', 'Editor', 'Member')` decorator:
 - Decorator on each view/method declares which built-in roles should have this permission
@@ -506,7 +509,7 @@ Client → POST /challenges/{slug}/submit { flag }
 
 **Permission System:**
 - Auto-discover on startup (scan registered endpoints)
-- Permission names auto-generated from `{app_label}.{ViewClassName}.{http_method}`
+- Permission names auto-generated from `{app_label}.{resource_name}.{handler_method_name}` (lowercase)
 - Built-in roles auto-created via `@add_role_granted('Admin', 'Editor', 'Member')` decorator
 - Encode as binary bitmap (base64) in JWT access token
 - Check bitmap bit in DRF permission class (no DB hit)
