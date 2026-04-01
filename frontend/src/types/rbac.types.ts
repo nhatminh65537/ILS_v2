@@ -59,3 +59,10 @@ export interface RbacUserRoleCapabilities {
   canAssignUserRole: boolean
   canRevokeUserRole: boolean
 }
+
+export interface SystemConfigCapabilities {
+  canList: boolean
+  canRetrieve: boolean
+  canUpdate: boolean
+  canViewSecret: boolean
+}

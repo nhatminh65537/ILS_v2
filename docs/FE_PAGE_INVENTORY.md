@@ -32,7 +32,7 @@ Route-level inventory for frontend pages across Slices 4–11.
 | `/vi/admin/rbac/users/[id]/roles` `/en/admin/rbac/users/[id]/roles` | Admin user role assignment | Yes (Admin) | `[locale]/(app)` | `auth.store` | `rbac.getUserRoles`, `rbac.assignRoleToUser`, `rbac.revokeRoleFromUser` | 2 | implemented |
 | `/vi/admin/users` `/en/admin/users` | Admin users | Yes (Admin/Editor) | `[locale]/(app)` | `ui.store` | `users.listUsers`, `users.updateUser` | 8 | planned |
 | `/vi/notifications` `/en/notifications` | Notification inbox | Yes | `[locale]/(app)` | `notifications.store` | `notifications.listNotifications`, `notifications.markRead`, `notifications.markAllRead` | 9 | planned |
-| `/vi/admin/config` `/en/admin/config` | System config admin | Yes (Admin) | `[locale]/(app)` | `ui.store` | `/api/admin/config/`, `/api/admin/config/{key}/` | 3/9 | planned |
+| `/vi/admin/config` `/en/admin/config` | System config admin | Yes (Admin) | `[locale]/(app)` | `auth.store` + local feature hook | `systemConfig.listSystemConfigs`, `systemConfig.getSystemConfigByKey`, `systemConfig.updateSystemConfigValue` | 3 | implemented |
 | `/vi/leaderboard` `/en/leaderboard` | Leaderboard | Yes | `[locale]/(app)` | `ui.store` | `leaderboard.getLeaderboard` | 11 | planned |
 | `/vi/admin/statistics` `/en/admin/statistics` | Admin statistics | Yes (Admin) | `[locale]/(app)` | `ui.store` | statistics APIs (planned) | 11 | planned |
 
@@ -41,4 +41,4 @@ Route-level inventory for frontend pages across Slices 4–11.
 - Locale-first routing is mandatory for all user-facing pages.
 - Service calls listed here must go through `src/services/*` only.
 - Planned routes align with `docs/IMPL_PLAN.md` slices and API inventory in `docs/API.md`.
-- Backend RBAC APIs and core admin RBAC frontend pages are implemented; remaining admin pages (config/users/statistics) follow their slice delivery status.
+- Backend RBAC APIs, admin RBAC frontend pages, and system config frontend page are implemented; remaining admin pages (users/statistics) follow their slice delivery status.

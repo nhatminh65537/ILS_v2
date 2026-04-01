@@ -187,6 +187,7 @@ Notes:
 - Cache for non-runtime config reads is invalidated after successful updates.
 - List response is grouped object by `category`: `{[category]: SystemConfig[]}`.
 - Secret clear-text read is restricted to principals with manual permission `system.config.view_secret`.
+- Frontend admin config page is implemented at locale routes `/vi/admin/config` and `/en/admin/config` using typed service/hook integration.
 
 ### 3.10 Authorization / RBAC
 

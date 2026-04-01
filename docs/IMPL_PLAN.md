@@ -528,13 +528,16 @@ PATCH /api/admin/config/{key}/   → update value (admin only)
 Secret values: `is_secret=True` → return `"***"` by default; clear read requires manual permission `system.config.view_secret`.
 `is_editable=false` returns `403` on update attempts.
 
-### Task 3.2 — Frontend: System Config Admin UI
+### Task 3.2 — Frontend: System Config Admin UI ✅ COMPLETED (2026-04-01)
 
-**Files:** `frontend/src/app/admin/config/page.tsx`
+Report: `docs/reports/2026-04-01_slice3-task3-2-system-config-ui.md`
 
-- Group configs by `category` (accordion per group)
-- Field type per `value_type`: toggle (boolean), number (int), text (string)
-- Secret fields: masked display by default, clear reveal only when caller has `system.config.view_secret`, edit requires confirmation
+**Files:** `frontend/app/[locale]/(app)/admin/config/page.tsx`, `frontend/src/components/features/admin-config/*`, `frontend/src/hooks/useSystemConfig.ts`, `frontend/src/services/system-config.service.ts`, `frontend/src/lib/system-config-value.ts`, `frontend/src/lib/system-config-error-map.ts`
+
+- Grouped config rendering by `category` with accordion sections
+- Field type editor by `value_type`: toggle (boolean), numeric input (int), text input (string/secret), JSON textarea (json)
+- Secret values remain masked by default; clear reveal action gated by `system.config.view_secret`; secret updates require explicit confirmation
+- Locale-aware route delivery: `/vi/admin/config` and `/en/admin/config`
 
 ---
 

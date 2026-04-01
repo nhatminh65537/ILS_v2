@@ -209,6 +209,66 @@
       "revokeUserRoleFailed": "Gỡ vai trò khỏi người dùng thất bại."
     }
   },
+  "adminConfig": {
+    "title": "Quản trị cấu hình hệ thống",
+    "subtitle": "Xem và cập nhật các khóa cấu hình runtime theo từng nhóm chức năng.",
+    "navigationHint": "Cần quay lại trang tổng quan? Mở",
+    "navigationBackToDashboard": "Bảng điều khiển",
+    "toolbar": {
+      "searchLabel": "Tìm kiếm cấu hình",
+      "searchPlaceholder": "Tìm theo key hoặc mô tả",
+      "categoryLabel": "Nhóm cấu hình",
+      "categoryAll": "Tất cả nhóm",
+      "refresh": "Tải lại",
+      "refreshing": "Đang tải..."
+    },
+    "status": {
+      "loading": "Đang tải danh sách cấu hình...",
+      "readOnlyHint": "Bạn không có quyền cập nhật cấu hình. Trang hiện ở chế độ chỉ xem.",
+      "secretViewRestricted": "Bạn không có quyền xem giá trị bí mật dạng clear text.",
+      "saveSuccess": "Lưu cấu hình thành công.",
+      "secretRevealed": "Hiển thị giá trị bí mật thành công."
+    },
+    "labels": {
+      "runtime": "Runtime",
+      "readOnly": "Không cho sửa",
+      "value": "Giá trị",
+      "booleanToggle": "Bật/Tắt"
+    },
+    "actions": {
+      "edit": "Sửa",
+      "save": "Lưu",
+      "saving": "Đang lưu...",
+      "cancel": "Hủy",
+      "revealSecret": "Hiện giá trị",
+      "confirm": "Xác nhận"
+    },
+    "confirmations": {
+      "secretUpdateTitle": "Xác nhận cập nhật giá trị bí mật",
+      "secretUpdateDescription": "Bạn sắp cập nhật khóa {key}. Hãy xác nhận để gửi thay đổi."
+    },
+    "values": {
+      "booleanTrue": "Bật",
+      "booleanFalse": "Tắt"
+    },
+    "empty": {
+      "noResults": "Không có cấu hình phù hợp với bộ lọc hiện tại."
+    },
+    "errors": {
+      "unauthenticated": "Bạn cần đăng nhập để tiếp tục.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "notEditable": "Khóa cấu hình này không cho phép chỉnh sửa.",
+      "notFound": "Không tìm thấy khóa cấu hình yêu cầu.",
+      "invalidBoolean": "Giá trị phải là kiểu boolean (true/false).",
+      "invalidInteger": "Giá trị phải là số nguyên.",
+      "invalidString": "Giá trị phải là chuỗi.",
+      "invalidJson": "Giá trị phải là JSON object hoặc array hợp lệ.",
+      "invalidType": "Kiểu dữ liệu cấu hình không được hỗ trợ.",
+      "secretRevealForbidden": "Bạn không có quyền xem giá trị bí mật.",
+      "secretRevealUnavailable": "Không thể hiển thị clear text cho khóa bí mật này.",
+      "unknown": "Có lỗi xảy ra khi xử lý cấu hình hệ thống."
+    }
+  },
   "dashboard": {
     "title": "Bảng điều khiển",
     "subtitle": "Theo dõi nhanh trạng thái học tập và hoạt động bảo mật của bạn.",

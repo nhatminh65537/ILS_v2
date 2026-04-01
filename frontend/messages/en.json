@@ -209,6 +209,66 @@
       "revokeUserRoleFailed": "Failed to revoke role from user."
     }
   },
+  "adminConfig": {
+    "title": "System Configuration Admin",
+    "subtitle": "Review and update runtime configuration keys by category.",
+    "navigationHint": "Need to go back to overview? Open",
+    "navigationBackToDashboard": "Dashboard",
+    "toolbar": {
+      "searchLabel": "Search configs",
+      "searchPlaceholder": "Search by key or description",
+      "categoryLabel": "Category",
+      "categoryAll": "All categories",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing..."
+    },
+    "status": {
+      "loading": "Loading configuration list...",
+      "readOnlyHint": "You do not have permission to update configs. This page is currently read-only.",
+      "secretViewRestricted": "You do not have permission to view clear secret values.",
+      "saveSuccess": "Configuration saved successfully.",
+      "secretRevealed": "Secret value revealed successfully."
+    },
+    "labels": {
+      "runtime": "Runtime",
+      "readOnly": "Read-only",
+      "value": "Value",
+      "booleanToggle": "Enable/Disable"
+    },
+    "actions": {
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "revealSecret": "Reveal",
+      "confirm": "Confirm"
+    },
+    "confirmations": {
+      "secretUpdateTitle": "Confirm secret update",
+      "secretUpdateDescription": "You are about to update key {key}. Confirm to submit this change."
+    },
+    "values": {
+      "booleanTrue": "Enabled",
+      "booleanFalse": "Disabled"
+    },
+    "empty": {
+      "noResults": "No configuration items match the current filters."
+    },
+    "errors": {
+      "unauthenticated": "Authentication is required.",
+      "forbidden": "You do not have permission for this action.",
+      "notEditable": "This configuration key is not editable.",
+      "notFound": "Requested configuration key was not found.",
+      "invalidBoolean": "Value must be a boolean (true/false).",
+      "invalidInteger": "Value must be an integer.",
+      "invalidString": "Value must be a string.",
+      "invalidJson": "Value must be a valid JSON object or array.",
+      "invalidType": "Unsupported configuration value type.",
+      "secretRevealForbidden": "You do not have permission to reveal secret values.",
+      "secretRevealUnavailable": "Clear secret value is not available for this key.",
+      "unknown": "An unexpected system configuration error occurred."
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Quickly review your learning state and security activity.",

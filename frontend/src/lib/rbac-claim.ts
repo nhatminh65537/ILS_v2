@@ -1,6 +1,7 @@
 import type {
   PermissionDto,
   RbacRoleCapabilities,
+  SystemConfigCapabilities,
   RbacUserRoleCapabilities,
 } from '@/types/rbac.types'
 
@@ -108,5 +109,21 @@ export const canManageUserRoles = (
     canListUserRoles: hasPermissionKey(accessToken, permissionsCatalog, 'api.user_role.list'),
     canAssignUserRole: hasPermissionKey(accessToken, permissionsCatalog, 'api.user_role.create'),
     canRevokeUserRole: hasPermissionKey(accessToken, permissionsCatalog, 'api.user_role.destroy'),
+  }
+}
+
+export const canManageSystemConfig = (
+  accessToken: string | null | undefined,
+  permissionsCatalog: readonly PermissionDto[]
+): SystemConfigCapabilities => {
+  const canUpdate =
+    hasPermissionKey(accessToken, permissionsCatalog, 'api.system_config.partial_update') ||
+    hasPermissionKey(accessToken, permissionsCatalog, 'api.system_config.update')
+
+  return {
+    canList: hasPermissionKey(accessToken, permissionsCatalog, 'api.system_config.list'),
+    canRetrieve: hasPermissionKey(accessToken, permissionsCatalog, 'api.system_config.retrieve'),
+    canUpdate,
+    canViewSecret: hasPermissionKey(accessToken, permissionsCatalog, 'system.config.view_secret'),
   }
 }

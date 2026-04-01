@@ -48,8 +48,11 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="text-muted-foreground">{tAdmin('roles')}</p>
-            <Link className="text-xs underline" href={`/${locale}/admin/rbac`}>
+            <Link className="block text-xs underline" href={`/${locale}/admin/rbac`}>
               {tAdmin('permissions')}
+            </Link>
+            <Link className="block text-xs underline" href={`/${locale}/admin/config`}>
+              {tAdmin('config')}
             </Link>
           </CardContent>
         </Card>
