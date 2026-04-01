@@ -92,7 +92,25 @@ ILS_v2/
 │   │   ├── urls.py         # Root URLconf (`/admin/`, `/api/`; AI route deferred)
 │   │   └── asgi.py         # ASGI entry for Daphne/Channels
 │   ├── api/                # Main app — all domain models
-│   │   └── models.py       # ~1195 lines — complete ORM for all domains
+│   │   ├── models.py       # Complete ORM for all domains
+│   │   ├── urls.py         # API router registration
+│   │   ├── admin_views.py  # Admin config + RBAC viewsets
+│   │   ├── views/          # Domain view modules (split from monolith)
+│   │   │   ├── auth.py
+│   │   │   ├── users.py
+│   │   │   ├── courses.py
+│   │   │   ├── challenges.py
+│   │   │   ├── quizzes.py
+│   │   │   ├── notifications.py
+│   │   │   ├── leaderboard.py
+│   │   │   └── __init__.py
+│   │   └── mixins/         # Reusable API mixins (RBAC action permission)
+│   ├── auth_app/           # JWT auth, SSO, session management
+│   │   ├── constants.py    # Shared auth/rbac constants
+│   │   └── services/
+│   │       ├── token_service.py
+│   │       ├── sso_service.py
+│   │       └── session_service.py
 │   ├── ai/                 # ⚠️  DEFERRED — AI Assistant (do NOT activate until approved)
 │   │   ├── models.py       # AIRequest model (scaffold only)
 │   │   ├── views.py        # AIAskView (scaffold only)
@@ -115,21 +133,17 @@ ILS_v2/
     └── public/             # Default Next.js assets
 ```
 
-**Future backend structure (as features are added):**
+**Current backend structure highlights:**
 ```
 backend/
 ├── api/
-│   ├── models.py           # Existing — all domain models
-│   ├── views/              # Split by domain when views are added
-│   │   ├── challenge.py
-│   │   ├── course.py
-│   │   ├── quiz.py
-│   │   └── ...
-│   ├── serializers/        # Split by domain
-│   ├── permissions.py      # Custom DRF permission classes
+│   ├── admin_views.py      # System config + RBAC API
+│   ├── views/              # Domain APIs split by module
+│   ├── mixins/             # RBAC action permission mixin
 │   └── urls.py             # App-level URL routing
 ├── auth_app/               # JWT auth, SSO, session management
-│   └── services/
+│   ├── constants.py
+│   └── services/           # token/sso/session services
 ├── realtime/               # Quiz WebSocket consumers
 └── ...
 ```

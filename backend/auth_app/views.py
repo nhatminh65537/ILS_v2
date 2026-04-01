@@ -1,19 +1,21 @@
-import hashlib
-from datetime import timedelta
-
 from django.contrib.auth import authenticate, get_user_model
 from django.core.cache import cache
 from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.models import Role, UserProfile, UserRole, UserSession
+from api.models import Role, UserProfile, UserRole
 from api.utils import get_config
+from auth_app.constants import (
+    BUILTIN_ROLE_MEMBER,
+    DEFAULT_LOGIN_FAILURE_TTL_SECONDS,
+    DEFAULT_LOGIN_MAX_FAILURES,
+    LOGIN_FAIL_CACHE_KEY_TEMPLATE,
+)
 from auth_app.serializers import (
     AuthTokenResponseSerializer,
     AuthUserSerializer,
@@ -25,6 +27,7 @@ from auth_app.serializers import (
     TokenRefreshRequestSerializer,
     TokenRefreshResponseSerializer,
 )
+from auth_app.services.session_service import SessionService
 from auth_app.services.sso_service import AuthentikSSOService, SSOAuthError, SSOConfigError, SSOLinkError
 from auth_app.services.token_service import RefreshRateLimitError, RefreshTokenError, TokenService
 
@@ -54,13 +57,13 @@ class RegisterView(APIView):
             UserProfile.objects.create(user=user)
 
             member_role, _ = Role.objects.get_or_create(
-                name='Member',
+                name=BUILTIN_ROLE_MEMBER,
                 defaults={'description': 'Default role for registered users', 'is_system': True},
             )
             UserRole.objects.get_or_create(user=user, role=member_role)
 
             tokens = TokenService().issue_tokens(user)
-            _create_session(
+            SessionService().create_session(
                 user=user,
                 refresh_token=tokens['refresh'],
                 device_info=request.META.get('HTTP_USER_AGENT', ''),
@@ -85,9 +88,9 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
 
         username = serializer.validated_data['username']
-        cache_key = f'login_fail:{username}'
+        cache_key = LOGIN_FAIL_CACHE_KEY_TEMPLATE.format(username=username)
         fail_count = int(cache.get(cache_key, 0))
-        if fail_count >= 5:
+        if fail_count >= DEFAULT_LOGIN_MAX_FAILURES:
             return Response({'detail': 'Too many failed attempts.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
         user = authenticate(
@@ -95,14 +98,14 @@ class LoginView(APIView):
             password=serializer.validated_data['password'],
         )
         if user is None or not user.is_active:
-            cache.set(cache_key, fail_count + 1, timeout=300)
+            cache.set(cache_key, fail_count + 1, timeout=DEFAULT_LOGIN_FAILURE_TTL_SECONDS)
             return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         cache.delete(cache_key)
 
         tokens = TokenService().issue_tokens(user)
         device_info = serializer.validated_data.get('device_info') or request.META.get('HTTP_USER_AGENT', '')
-        _create_session(user=user, refresh_token=tokens['refresh'], device_info=device_info)
+        SessionService().create_session(user=user, refresh_token=tokens['refresh'], device_info=device_info)
 
         payload = {
             'access': tokens['access'],
@@ -144,21 +147,13 @@ class LogoutView(APIView):
         serializer = LogoutRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        refresh_hash = _hash_token(serializer.validated_data['refresh'])
-        session = UserSession.objects.filter(
+        session = SessionService().revoke_session_by_refresh(
             user=request.user,
-            refresh_token_hash=refresh_hash,
-            revoked_at__isnull=True,
-        ).first()
+            refresh_token=serializer.validated_data['refresh'],
+        )
 
         if session is None:
             return Response({'detail': 'Session not found.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        now = timezone.now()
-        session.revoked_at = now
-        session.revoked_by = request.user
-        session.last_used_at = now
-        session.save(update_fields=['revoked_at', 'revoked_by', 'last_used_at', 'updated_at'])
 
         return Response({'detail': 'Logged out successfully.'}, status=status.HTTP_200_OK)
 
@@ -167,11 +162,7 @@ class LogoutAllView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        now = timezone.now()
-        updated = UserSession.objects.filter(
-            user=request.user,
-            revoked_at__isnull=True,
-        ).update(revoked_at=now, revoked_by=request.user, updated_at=now)
+        updated = SessionService().revoke_all_user_sessions(request.user)
 
         return Response({'detail': 'Logged out all sessions.', 'revoked_count': updated}, status=status.HTTP_200_OK)
 
@@ -261,19 +252,3 @@ class IdentityLinkView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
-
-def _hash_token(raw_token: str) -> str:
-    return hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
-
-
-def _create_session(user, refresh_token: str, device_info: str = '') -> UserSession:
-    ttl_minutes = int(get_config('auth.token.refresh_ttl', 60 * 24 * 7) or (60 * 24 * 7))
-    expires_at = timezone.now() + timedelta(minutes=ttl_minutes)
-    return UserSession.objects.create(
-        user=user,
-        device_info=device_info,
-        refresh_token_hash=_hash_token(refresh_token),
-        expires_at=expires_at,
-        last_used_at=timezone.now(),
-    )

@@ -12,6 +12,8 @@ from django.db import transaction
 
 from api.models import Role, UserAuthProvider, UserProfile, UserRole
 from api.utils import get_config
+from auth_app.constants import BUILTIN_ROLE_MEMBER
+from auth_app.services.session_service import SessionService
 from auth_app.services.token_service import TokenService
 
 
@@ -89,7 +91,7 @@ class AuthentikSSOService:
 
         user = self._resolve_user_from_claims(claims)
         issued_tokens = TokenService().issue_tokens(user)
-        TokenService()._create_session(user=user, refresh_token=issued_tokens['refresh'], device_info=device_info)
+        SessionService().create_session(user=user, refresh_token=issued_tokens['refresh'], device_info=device_info)
 
         return {
             'access': issued_tokens['access'],
@@ -186,7 +188,7 @@ class AuthentikSSOService:
             UserProfile.objects.create(user=user)
 
             member_role, _ = Role.objects.get_or_create(
-                name='Member',
+                name=BUILTIN_ROLE_MEMBER,
                 defaults={'description': 'Default role for registered users', 'is_system': True},
             )
             UserRole.objects.get_or_create(user=user, role=member_role)

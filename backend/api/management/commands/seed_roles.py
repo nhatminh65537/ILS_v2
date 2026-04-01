@@ -2,21 +2,22 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from api.models import Role
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 
 
 DEFAULT_ROLES = [
     {
-        'name': 'Admin',
+        'name': BUILTIN_ROLE_ADMIN,
         'description': 'System administrator role with full management scope.',
         'is_system': True,
     },
     {
-        'name': 'Editor',
+        'name': BUILTIN_ROLE_EDITOR,
         'description': 'Content manager role for authoring and maintaining learning materials.',
         'is_system': True,
     },
     {
-        'name': 'Member',
+        'name': BUILTIN_ROLE_MEMBER,
         'description': 'Default role for authenticated platform members.',
         'is_system': True,
     },

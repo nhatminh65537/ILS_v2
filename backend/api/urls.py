@@ -12,9 +12,8 @@ from .views import (
     QuizViewSet,
     NotificationViewSet,
     LeaderboardViewSet,
-    SystemConfigViewSet,
-    PermissionViewSet, RoleViewSet, UserRoleViewSet
 )
+from .admin_views import SystemConfigViewSet, PermissionViewSet, RoleViewSet, UserRoleViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()
