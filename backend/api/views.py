@@ -629,6 +629,10 @@ class RoleViewSet(viewsets.ModelViewSet):
                 {'detail': 'System roles cannot be deleted'},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+        # Invalidate permission cache for users assigned to this role before delete.
+        # This keeps JWT claim refresh deterministic after role removal.
+        self._invalidate_role_users_cache(instance)
         
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)

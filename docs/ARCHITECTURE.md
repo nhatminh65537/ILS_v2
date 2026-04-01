@@ -125,7 +125,7 @@ backend/
 │   ├── serializers/        # Split by domain
 │   ├── permissions.py      # Custom DRF permission classes
 │   └── urls.py             # App-level URL routing
-├── auth/                   # JWT auth, SSO, session management
+├── auth_app/               # JWT auth, SSO, session management
 │   └── services/
 ├── realtime/               # Quiz WebSocket consumers
 └── ...

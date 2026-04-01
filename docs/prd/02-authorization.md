@@ -155,31 +155,33 @@ Chưa có cơ chế kiểm soát quyền truy cập. Mọi user đều có thể
 
 ```
 # Permissions (READ-ONLY)
-GET    /api/authz/permissions/              # List all permissions (filterable)
-GET    /api/authz/permissions/{id}/         # Get permission detail
+GET    /api/admin/permissions/              # List all permissions (filterable)
+GET    /api/admin/permissions/{id}/         # Get permission detail
 
 # Roles
-GET    /api/authz/roles/                    # List roles
-POST   /api/authz/roles/                    # Create custom role
-GET    /api/authz/roles/{id}/               # Role detail
-PUT    /api/authz/roles/{id}/               # Update custom role (400 if is_system)
-DELETE /api/authz/roles/{id}/               # Delete custom role (400 if is_system)
-GET    /api/authz/roles/{id}/permissions/   # List role's permissions
-POST   /api/authz/roles/{id}/permissions/   # Add permission to role
-DELETE /api/authz/roles/{id}/permissions/{perm_id}/ # Remove permission
+GET    /api/admin/roles/                    # List roles
+POST   /api/admin/roles/                    # Create custom role
+GET    /api/admin/roles/{id}/               # Role detail
+PUT    /api/admin/roles/{id}/               # Update custom role (400 if is_system)
+DELETE /api/admin/roles/{id}/               # Delete custom role (400 if is_system)
+GET    /api/admin/roles/{id}/permissions/   # List role's permissions
+POST   /api/admin/roles/{id}/permissions/   # Add permission to role
+DELETE /api/admin/roles/{id}/permissions/{perm_id}/ # Remove permission
 
 # User-Role Assignment
-GET    /api/authz/users/{user_id}/roles/    # List user's roles
-POST   /api/authz/users/{user_id}/roles/    # Assign role to user
-DELETE /api/authz/users/{user_id}/roles/{role_id}/ # Remove role
+GET    /api/users/{user_id}/roles/          # List user's roles
+POST   /api/users/{user_id}/roles/          # Assign role to user
+DELETE /api/users/{user_id}/roles/{role_id}/ # Remove role
 
 # Direct User Permission Deny
-GET    /api/authz/users/{user_id}/permissions/       # List deny entries
-POST   /api/authz/users/{user_id}/permissions/       # Add deny entry
-DELETE /api/authz/users/{user_id}/permissions/{perm_id}/ # Remove deny entry
+# Planned (not active in current runtime routing)
+GET    /api/users/{user_id}/permissions/             # List deny entries
+POST   /api/users/{user_id}/permissions/             # Add deny entry
+DELETE /api/users/{user_id}/permissions/{perm_id}/   # Remove deny entry
 
 # Effective permissions
-GET    /api/authz/users/{user_id}/effective-permissions/ # Computed bitmap (decoded)
+# Planned (not active in current runtime routing)
+GET    /api/users/{user_id}/effective-permissions/   # Computed bitmap (decoded)
 ```
 
 ### Key DB Tables

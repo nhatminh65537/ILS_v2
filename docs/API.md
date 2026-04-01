@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-03-30
+> Last updated: 2026-04-01
 
 ---
 
@@ -91,14 +91,14 @@ Legend:
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/courses/` | Yes | Stable | Supports `status`, `category`, `search`. |
-| POST | `/api/courses/` | Yes | Stable | Create course. |
-| GET | `/api/courses/{id}/` | Yes | Stable | Course detail view. |
-| PUT/PATCH | `/api/courses/{id}/` | Yes | Stable | Update course. |
-| DELETE | `/api/courses/{id}/` | Yes | Stable | Delete course. |
-| GET | `/api/courses/{id}/tree/` | Yes | Stable | Returns top-level tree nodes with prefetched children. |
-| GET | `/api/courses/{id}/progress/` | Yes | Stable | Returns or creates user course progress. |
-| POST | `/api/courses/{id}/enroll/` | Yes | Stable | Creates enrollment progress if missing. |
+| GET | `/api/courses/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
+| POST | `/api/courses/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
+| GET | `/api/courses/{id}/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
+| PUT/PATCH | `/api/courses/{id}/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
+| DELETE | `/api/courses/{id}/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
+| GET | `/api/courses/{id}/tree/` | Yes | Partial | Runtime route exists; tree integrity rules for full Slice 5 scope are pending. |
+| GET | `/api/courses/{id}/progress/` | Yes | Partial | Runtime route exists; full progress-signal contract is pending. |
+| POST | `/api/courses/{id}/enroll/` | Yes | Partial | Runtime route exists; full Slice 5 enrollment/progress contract is pending. |
 
 ### 3.4 Lessons
 
@@ -113,33 +113,33 @@ Legend:
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/challenges/` | Yes | Stable | Supports `status`, `difficulty`, `category`, `search`. |
-| POST | `/api/challenges/` | Yes | Stable | Create challenge. |
-| GET | `/api/challenges/{id}/` | Yes | Stable | Challenge detail. |
-| PUT/PATCH | `/api/challenges/{id}/` | Yes | Stable | Update challenge. |
-| DELETE | `/api/challenges/{id}/` | Yes | Stable | Delete challenge. |
-| POST | `/api/challenges/{id}/submit_flag/` | Yes | Stable | Validates flag server-side and records submission. |
+| GET | `/api/challenges/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
+| POST | `/api/challenges/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
+| GET | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
+| PUT/PATCH | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
+| DELETE | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
+| POST | `/api/challenges/{id}/submit_flag/` | Yes | Partial | Runtime route exists; full Slice 6 verification/workflow contract is pending. |
 | POST | `/api/challenges/{id}/create_instance/` | Yes | Partial | Depends on instance deployment backend/runtime readiness. |
 
 ### 3.6 Quizzes
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/quizzes/` | Yes | Stable | List quizzes. |
-| POST | `/api/quizzes/` | Yes | Stable | Create quiz. |
-| GET | `/api/quizzes/{id}/` | Yes | Stable | Quiz detail with nested data serializer. |
-| PUT/PATCH | `/api/quizzes/{id}/` | Yes | Stable | Update quiz. |
-| DELETE | `/api/quizzes/{id}/` | Yes | Stable | Delete quiz. |
-| POST | `/api/quizzes/{id}/start_attempt/` | Yes | Stable | Creates quiz attempt. |
+| GET | `/api/quizzes/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
+| POST | `/api/quizzes/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
+| GET | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
+| PUT/PATCH | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
+| DELETE | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
+| POST | `/api/quizzes/{id}/start_attempt/` | Yes | Partial | Runtime route exists; full scoring/session lifecycle is pending. |
 | POST | `/api/quizzes/{id}/submit_answer/` | Yes | Partial | Depends on complete scoring/session persistence flow. |
 
 ### 3.7 Notifications
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/notifications/` | Yes | Stable | Current user + broadcast notifications. |
-| GET | `/api/notifications/{id}/` | Yes | Stable | Notification detail. |
-| POST | `/api/notifications/{id}/mark_read/` | Yes | Stable | Marks notification as read. |
+| GET | `/api/notifications/` | Yes | Partial | Runtime route exists; Slice 9 signal pipeline + frontend inbox are pending. |
+| GET | `/api/notifications/{id}/` | Yes | Partial | Runtime route exists; Slice 9 signal pipeline + frontend inbox are pending. |
+| POST | `/api/notifications/{id}/mark_read/` | Yes | Partial | Runtime route exists; Slice 9 signal pipeline + frontend inbox are pending. |
 
 ### 3.8 Leaderboard
 

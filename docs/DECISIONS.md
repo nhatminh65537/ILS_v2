@@ -35,9 +35,9 @@
 | [Q-AUTH-01](#q-auth-01-default-role-for-new-users) | Default role for newly registered users | Slice 1–2 | **RESOLVED** |
 | [Q-AUTH-02](#q-auth-02-first-admin-creation-mechanism) | First admin account creation | Slice 0–1 | **RESOLVED** → [R-AUTH-11](#r-auth-11-first-admin-bootstrap-via-seed_admin) |
 | [Q-AUTH-03](#q-auth-03-sso-only-lockout-fallback) | SSO-only lockout fallback | Slice 1 | **RESOLVED** |
-| [Q-AUTH-06](#q-auth-06-sso-account-linking-strategy) | SSO account linking: merge or separate | Slice 1 (Task 1.3) | **OPEN** |
-| [Q-AUTH-07](#q-auth-07-device-logout-granularity) | Device logout: one session or all | Slice 1 (Task 1.4 deferred) | **OPEN** |
-| [Q-INFRA-09](#q-infra-09-cors-and-domain-configuration) | CORS policy + frontend/backend domain | Slice 1 (Task 1.5), Slice 4 | **OPEN** |
+| [Q-AUTH-06](#q-auth-06-sso-account-linking-strategy) | SSO account linking: merge or separate | Slice 1 (Task 1.3) | **RESOLVED** (Option A) |
+| [Q-AUTH-07](#q-auth-07-device-logout-granularity) | Device logout: one session or all | Slice 1 (Task 1.4 deferred) | **RESOLVED** (Option A) |
+| [Q-INFRA-09](#q-infra-09-cors-and-domain-configuration) | CORS policy + frontend/backend domain | Slice 1 (Task 1.5), Slice 4 | **RESOLVED** (Option A) |
 | [Q-ARCH-01](#q-arch-01-max-permissions-bitmap-capacity) | Max permissions bitmap encode size | Slice 2 (permission design) | **RESOLVED** (Option B) |
 | [Q-CONFIG-01](#q-config-01-default-systemconfig-auth-values) | Default auth.* system_config values at seed | Slice 0, 1 | **OPEN** |
 | [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **OPEN** |

@@ -177,6 +177,7 @@ source .venv/bin/activate       # Unix
 cd backend
 python manage.py migrate
 python manage.py seed_config     # populate system_config defaults
+python manage.py seed_roles      # bootstrap built-in roles (Admin/Editor/Member)
 python manage.py runserver       # HTTP at http://localhost:8000
 # OR for WebSocket:
 daphne -p 8000 backend.asgi:application

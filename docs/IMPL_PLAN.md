@@ -154,6 +154,19 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
   ]
   ```
 - Helper `get_config(key, default=None)` in `api/utils.py` for fast system_config reads
+- Management command `seed_roles` (idempotent bootstrap for Slice 1 dependencies):
+    ```bash
+    python manage.py seed_roles
+    # optional preview without write:
+    python manage.py seed_roles --dry-run
+    ```
+
+### Task 0.3.5 — Built-in roles bootstrap ✅ COMPLETED (2026-04-01)
+**Files:** `backend/api/management/commands/seed_roles.py`
+
+- Idempotently ensures built-in roles exist: `Admin`, `Editor`, `Member`
+- Supports operational preview mode: `python manage.py seed_roles --dry-run`
+- Runtime auth flows still keep `get_or_create` fallback for resilience if bootstrap was skipped
 
 ---
 
@@ -166,7 +179,7 @@ All bugs fixed. See `docs/BUGS.md` for full history (F1–F7).
 > - [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — RESOLVED: memory-only token storage + refresh flow
 > - [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — RESOLVED: auto-assign Member role on registration
 > - [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — RESOLVED: always allow local login for `is_superuser=True` as emergency fallback
-> - [Q-SLICE1-01](DECISIONS.md#q-slice1-01-member-role-seeding) — RESOLVED (Option A): add idempotent `seed_roles` bootstrap step before registration flow
+> - [Q-SLICE1-01](DECISIONS.md#q-slice1-01-member-role-seeding) — RESOLVED (Option A): use idempotent bootstrap `seed_roles` before auth flows; runtime `get_or_create` fallback remains enabled as safety net
 > - [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — RESOLVED (Option A): keep `frontend/app/` layout and align plan paths accordingly
 > - [Q-AUTH-04](DECISIONS.md#q-auth-04-jwt-token-expiry-and-refresh-strategy) — RESOLVED (Option A): 15m access / 7d refresh with silent refresh on 401
 > - [Q-AUTH-05](DECISIONS.md#q-auth-05-first-login-admin-ceremony) — RESOLVED (Option C): temporary default bootstrap password + forced reset on first login
@@ -232,16 +245,17 @@ urlpatterns = [
 ```python
 class TokenService:
     def issue_tokens(self, user) -> dict:
-        # 1. get_or_refresh_permission_cache(user) → list[str]
+        # 1. get_or_refresh_permission_cache(user) → base64 bitmap string
         # 2. access_token = RefreshToken for user
-        # 3. access_token['permissions'] = permission_list
-        # 4. access_token['permission_version'] = user.permission_version
+        # 3. access_token['permissions'] = encoded bitmap
+        # 4. access_token['pv'] = user.permission_version
         # 5. raw_refresh = str(refresh)
         # Return {'access': str(access), 'refresh': raw_refresh}
 
-    def get_or_refresh_permission_cache(self, user) -> list[str]:
-        # Stub: return [] in Slice 1; full logic in Slice 2
-        return []
+    def get_or_refresh_permission_cache(self, user) -> str:
+        # Slice 1 stub replaced by Slice 2 implementation
+        # Return base64 bitmap from user_permission_cache (32-byte decoded)
+        ...
 ```
 
 **Token refresh** (`POST /api/auth/token/refresh/`):
@@ -266,8 +280,8 @@ Input: {refresh: "<raw_token>"}
 {
   "user_id": 42,
   "username": "alice",
-  "permissions": ["learn.view", "challenge.submit"],
-  "permission_version": 7,
+    "permissions": "<base64-encoded-32-byte-bitmap>",
+    "pv": 7,
   "exp": 1234567890,
   "iat": 1234567890
 }
@@ -443,7 +457,7 @@ class HasJWTPermission(BasePermission):
 
 ### Task 2.3 — user_permission_cache + JWT encoding
 
-**File:** `backend/auth_app/services/permission_service.py`
+**File:** `backend/api/services/permission_service.py`
 
 ```python
 class PermissionService:
