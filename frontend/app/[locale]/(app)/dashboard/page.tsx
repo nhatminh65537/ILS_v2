@@ -1,8 +1,15 @@
+import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function DashboardPage({ params }: DashboardPageProps) {
+  const { locale } = await params
   const t = await getTranslations('dashboard')
+  const tAdmin = await getTranslations('admin')
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10 md:px-10">
@@ -33,6 +40,17 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">{t('cards.quizDescription')}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{tAdmin('title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-muted-foreground">{tAdmin('roles')}</p>
+            <Link className="text-xs underline" href={`/${locale}/admin/rbac`}>
+              {tAdmin('permissions')}
+            </Link>
           </CardContent>
         </Card>
       </section>

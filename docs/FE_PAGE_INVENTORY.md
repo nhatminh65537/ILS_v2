@@ -27,6 +27,9 @@ Route-level inventory for frontend pages across Slices 4–11.
 | `/vi/quizzes/[id]` `/en/quizzes/[id]` | Quiz detail/start | Yes | `[locale]/(app)` | `quizzes.store` | `quizzes.getQuizById`, `quizzes.startQuizAttempt` | 7 | planned |
 | `/vi/quizzes/attempt/[attemptId]` `/en/quizzes/attempt/[attemptId]` | Quiz session | Yes | `[locale]/(app)` | `quizzes.store` | `quizzes.submitQuizAnswer` or WS endpoint | 7 | planned |
 | `/vi/profile` `/en/profile` | User profile | Yes | `[locale]/(app)` | `auth.store` | `users.getMyProfile`, `users.updateMyProfile` | 8 | planned |
+| `/vi/admin/rbac` `/en/admin/rbac` | Admin RBAC overview | Yes (Admin) | `[locale]/(app)` | `auth.store` | `rbac.listRoles`, `rbac.listPermissions`, `rbac.createRole`, `rbac.updateRole`, `rbac.deleteRole` | 2 | implemented |
+| `/vi/admin/rbac/roles/[id]` `/en/admin/rbac/roles/[id]` | Admin role permission assignment | Yes (Admin) | `[locale]/(app)` | `auth.store` | `rbac.getRolePermissions`, `rbac.assignPermissionToRole`, `rbac.revokePermissionFromRole` | 2 | implemented |
+| `/vi/admin/rbac/users/[id]/roles` `/en/admin/rbac/users/[id]/roles` | Admin user role assignment | Yes (Admin) | `[locale]/(app)` | `auth.store` | `rbac.getUserRoles`, `rbac.assignRoleToUser`, `rbac.revokeRoleFromUser` | 2 | implemented |
 | `/vi/admin/users` `/en/admin/users` | Admin users | Yes (Admin/Editor) | `[locale]/(app)` | `ui.store` | `users.listUsers`, `users.updateUser` | 8 | planned |
 | `/vi/notifications` `/en/notifications` | Notification inbox | Yes | `[locale]/(app)` | `notifications.store` | `notifications.listNotifications`, `notifications.markRead`, `notifications.markAllRead` | 9 | planned |
 | `/vi/admin/config` `/en/admin/config` | System config admin | Yes (Admin) | `[locale]/(app)` | `ui.store` | `/api/admin/config/`, `/api/admin/config/{key}/` | 3/9 | planned |
@@ -38,4 +41,4 @@ Route-level inventory for frontend pages across Slices 4–11.
 - Locale-first routing is mandatory for all user-facing pages.
 - Service calls listed here must go through `src/services/*` only.
 - Planned routes align with `docs/IMPL_PLAN.md` slices and API inventory in `docs/API.md`.
-- Backend RBAC/config APIs are completed, but corresponding frontend admin pages remain planned.
+- Backend RBAC APIs and core admin RBAC frontend pages are implemented; remaining admin pages (config/users/statistics) follow their slice delivery status.

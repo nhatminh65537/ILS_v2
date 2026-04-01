@@ -107,6 +107,108 @@
     "permissions": "Quyền",
     "saveSuccess": "Lưu cấu hình thành công"
   },
+  "adminRbac": {
+    "title": "Quản trị RBAC",
+    "subtitle": "Quản lý vai trò, gán quyền và phân vai trò cho người dùng.",
+    "navigationHint": "Cần phân vai trò cho người dùng? Mở",
+    "navigationBackToDashboard": "Bảng điều khiển",
+    "navigationBackToRbac": "Quay về tổng quan RBAC",
+    "navigationBackToUsers": "Quay về danh sách người dùng",
+    "rolePermissionsTitle": "Gán quyền cho vai trò",
+    "rolePermissionsSubtitle": "Cấu hình quyền cho vai trò: {role}",
+    "userRolesTitle": "Phân vai trò cho người dùng",
+    "userRolesSubtitle": "Quản lý vai trò cho người dùng ID: {userId}",
+    "toolbar": {
+      "searchLabel": "Tìm kiếm",
+      "searchPlaceholder": "Tìm vai trò hoặc quyền",
+      "includeInactive": "Hiển thị quyền không hoạt động",
+      "refresh": "Tải lại"
+    },
+    "sections": {
+      "roles": "Vai trò",
+      "permissions": "Quyền",
+      "assignedPermissions": "Quyền đã gán",
+      "availablePermissions": "Quyền có thể gán",
+      "assignedRoles": "Vai trò đã gán",
+      "availableRoles": "Vai trò có thể gán"
+    },
+    "labels": {
+      "name": "Tên",
+      "description": "Mô tả",
+      "type": "Loại",
+      "actions": "Thao tác",
+      "permission": "Quyền",
+      "role": "Vai trò",
+      "roleId": "ID vai trò",
+      "permissionCount": "Số lượng quyền",
+      "active": "Kích hoạt",
+      "activeYes": "Có",
+      "activeNo": "Không",
+      "systemRole": "Hệ thống",
+      "customRole": "Tùy chỉnh",
+      "selectPermission": "Chọn quyền",
+      "selectRole": "Chọn vai trò"
+    },
+    "actions": {
+      "createRole": "Tạo vai trò",
+      "editRole": "Sửa",
+      "deleteRole": "Xóa",
+      "managePermissions": "Quyền",
+      "assign": "Gán",
+      "revoke": "Gỡ",
+      "save": "Lưu",
+      "cancel": "Hủy"
+    },
+    "status": {
+      "loadingRoles": "Đang tải danh sách vai trò...",
+      "loadingPermissions": "Đang tải danh sách quyền...",
+      "loadingUserRoles": "Đang tải ánh xạ vai trò người dùng...",
+      "submitting": "Đang lưu...",
+      "readOnly": "Chỉ xem",
+      "readOnlyHint": "Một số thao tác đang bị ẩn vì JWT claims không có permission key cần thiết."
+    },
+    "form": {
+      "createRoleTitle": "Tạo vai trò",
+      "editRoleTitle": "Sửa vai trò",
+      "description": "Tạo mới hoặc cập nhật metadata cho vai trò.",
+      "namePlaceholder": "tên vai trò",
+      "descriptionPlaceholder": "mô tả vai trò"
+    },
+    "validation": {
+      "nameRequired": "Tên vai trò là bắt buộc."
+    },
+    "confirmation": {
+      "deleteRole": "Bạn có chắc muốn xóa vai trò '{role}'?"
+    },
+    "empty": {
+      "roles": "Không tìm thấy vai trò.",
+      "permissions": "Không tìm thấy quyền.",
+      "assignedPermissions": "Vai trò này hiện chưa có quyền nào.",
+      "availablePermissions": "Không còn quyền phù hợp để gán.",
+      "assignedRoles": "Người dùng này hiện chưa có vai trò.",
+      "availableRoles": "Không còn vai trò phù hợp để gán."
+    },
+    "errors": {
+      "unauthenticated": "Bạn cần đăng nhập để tiếp tục.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "notFound": "Không tìm thấy dữ liệu yêu cầu.",
+      "duplicate": "Giá trị bị trùng, không thể lưu.",
+      "systemRoleProtected": "Không thể thao tác này với vai trò hệ thống.",
+      "permissionNotAssigned": "Quyền này chưa được gán cho vai trò.",
+      "userRoleMissing": "Người dùng chưa có vai trò này.",
+      "loadRolesFailed": "Tải danh sách vai trò thất bại.",
+      "loadPermissionsFailed": "Tải danh sách quyền thất bại.",
+      "loadRolePermissionsFailed": "Tải quyền của vai trò thất bại.",
+      "loadUserRolesFailed": "Tải vai trò của người dùng thất bại.",
+      "createRoleFailed": "Tạo vai trò thất bại.",
+      "updateRoleFailed": "Cập nhật vai trò thất bại.",
+      "deleteRoleFailed": "Xóa vai trò thất bại.",
+      "assignPermissionFailed": "Gán quyền thất bại.",
+      "revokePermissionFailed": "Gỡ quyền thất bại.",
+      "assignUserRoleFailed": "Gán vai trò cho người dùng thất bại.",
+      "revokeUserRoleFailed": "Gỡ vai trò khỏi người dùng thất bại."
+    }
+  },
   "dashboard": {
     "title": "Bảng điều khiển",
     "subtitle": "Theo dõi nhanh trạng thái học tập và hoạt động bảo mật của bạn.",

@@ -107,6 +107,108 @@
     "permissions": "Permissions",
     "saveSuccess": "Configuration saved successfully"
   },
+  "adminRbac": {
+    "title": "Admin RBAC",
+    "subtitle": "Manage roles, permission grants, and user role assignments.",
+    "navigationHint": "Need user role assignment? Open",
+    "navigationBackToDashboard": "Dashboard",
+    "navigationBackToRbac": "Back to RBAC overview",
+    "navigationBackToUsers": "Back to users",
+    "rolePermissionsTitle": "Role permission assignment",
+    "rolePermissionsSubtitle": "Configure permissions for role: {role}",
+    "userRolesTitle": "User role assignment",
+    "userRolesSubtitle": "Manage roles for user ID: {userId}",
+    "toolbar": {
+      "searchLabel": "Search",
+      "searchPlaceholder": "Search role or permission",
+      "includeInactive": "Include inactive permissions",
+      "refresh": "Refresh"
+    },
+    "sections": {
+      "roles": "Roles",
+      "permissions": "Permissions",
+      "assignedPermissions": "Assigned permissions",
+      "availablePermissions": "Available permissions",
+      "assignedRoles": "Assigned roles",
+      "availableRoles": "Available roles"
+    },
+    "labels": {
+      "name": "Name",
+      "description": "Description",
+      "type": "Type",
+      "actions": "Actions",
+      "permission": "Permission",
+      "role": "Role",
+      "roleId": "Role ID",
+      "permissionCount": "Permission count",
+      "active": "Active",
+      "activeYes": "Yes",
+      "activeNo": "No",
+      "systemRole": "System",
+      "customRole": "Custom",
+      "selectPermission": "Select permission",
+      "selectRole": "Select role"
+    },
+    "actions": {
+      "createRole": "Create role",
+      "editRole": "Edit",
+      "deleteRole": "Delete",
+      "managePermissions": "Permissions",
+      "assign": "Assign",
+      "revoke": "Revoke",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "status": {
+      "loadingRoles": "Loading roles...",
+      "loadingPermissions": "Loading permissions...",
+      "loadingUserRoles": "Loading user-role mappings...",
+      "submitting": "Saving...",
+      "readOnly": "Read only",
+      "readOnlyHint": "Some actions are hidden because required permission keys are not present in JWT claims."
+    },
+    "form": {
+      "createRoleTitle": "Create role",
+      "editRoleTitle": "Edit role",
+      "description": "Create or update role metadata.",
+      "namePlaceholder": "role name",
+      "descriptionPlaceholder": "role description"
+    },
+    "validation": {
+      "nameRequired": "Role name is required."
+    },
+    "confirmation": {
+      "deleteRole": "Delete role '{role}'?"
+    },
+    "empty": {
+      "roles": "No roles found.",
+      "permissions": "No permissions found.",
+      "assignedPermissions": "This role currently has no permissions.",
+      "availablePermissions": "No remaining permissions available for assignment.",
+      "assignedRoles": "This user currently has no role assignments.",
+      "availableRoles": "No remaining roles available for assignment."
+    },
+    "errors": {
+      "unauthenticated": "Authentication is required.",
+      "forbidden": "You do not have permission for this action.",
+      "notFound": "Requested resource was not found.",
+      "duplicate": "Duplicate value is not allowed.",
+      "systemRoleProtected": "System roles cannot be modified with this action.",
+      "permissionNotAssigned": "Permission is not assigned to the role.",
+      "userRoleMissing": "User does not have this role.",
+      "loadRolesFailed": "Failed to load roles.",
+      "loadPermissionsFailed": "Failed to load permissions.",
+      "loadRolePermissionsFailed": "Failed to load role permissions.",
+      "loadUserRolesFailed": "Failed to load user role mappings.",
+      "createRoleFailed": "Failed to create role.",
+      "updateRoleFailed": "Failed to update role.",
+      "deleteRoleFailed": "Failed to delete role.",
+      "assignPermissionFailed": "Failed to assign permission.",
+      "revokePermissionFailed": "Failed to revoke permission.",
+      "assignUserRoleFailed": "Failed to assign role to user.",
+      "revokeUserRoleFailed": "Failed to revoke role from user."
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Quickly review your learning state and security activity.",

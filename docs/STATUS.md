@@ -87,6 +87,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 2 / Task 2.1 (2026-03-30) | Permission auto-discovery implemented at startup via `auth_app.services.permission_discovery.discover_permissions()` with idempotent sync (`is_active` reset/reactivate), built-in role mapping from `@add_role_granted`, and normalized permission naming (`{app_label}.{resource_name}.{handler_method_name}` lowercase); tests added and passing in `auth_app/tests.py` |
 | Slice 2 / Task 2.2 (2026-03-31) | Role/Permission CRUD API completed with canonical admin RBAC routes (`/api/admin/permissions/`, `/api/admin/roles/*`, `/api/users/{id}/roles/*`), admin-only access guards, action-level JWT permission-key checks when JWT auth context is present, and deterministic permission-cache invalidation for affected users on role-permission/user-role mutations; RBAC endpoint tests passing (`16 passed`). |
 | Slice 2 / Task 2.3 + Handler Grants (2026-03-31) | Implemented permission bitmap cache + JWT claims (`permissions` base64 bitmap, `pv`), refactored `PermissionService` to flat ID-based compute and cache lifecycle, wired `TokenService` stub to live cache, added explicit handler-level role grants with precedence over class-level grants in discovery, and verified with `backend/auth_app/tests.py` passing. |
+| Slice 2 / Task 2.4 (2026-04-01) | Frontend admin RBAC UI implemented for locale routes (`/vi/admin/rbac`, `/en/admin/rbac`, `/vi/admin/rbac/roles/{id}`, `/vi/admin/rbac/users/{id}/roles`) with typed RBAC service/hook layer, role CRUD/assignment flows, user-role assignment page, i18n coverage, and permission-aware rendering gates from JWT claims. |
 | Slice 3 / Task 3.1 (2026-03-30) | System Config admin API implemented at `/api/admin/config/*` with grouped list response, key-based detail/update (`lookup_field=key`), PATCH type validation by `value_type`, secret masking (`***`), `is_editable=false` guard (`403`), cache invalidation after update, and pytest coverage (`9 passed`) |
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
 | Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
@@ -109,6 +110,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 3 / Task 3.1 (2026-03-30) | `docs/reports/2026-03-30_slice3-task3-1-system-config-api.md` |
 | Slice 2 / Task 2.2 (2026-03-31) | `docs/reports/2026-03-31_slice2-task2-2-rbac-api.md` |
 | Slice 2 / Task 2.3 (2026-03-31) | `docs/reports/2026-03-31_slice2-task2-3-handler-grants-bitmap.md` |
+| Slice 2 / Task 2.4 (2026-04-01) | `docs/reports/2026-04-01_slice2-task2-4-admin-rbac-ui.md` |
 | Slice 4 / Frontend Foundation (2026-03-31) | `docs/reports/2026-03-31_slice4-full-task-report.md` |
 | Slice 0 / Task 0.3.5 (2026-04-01) | `docs/reports/2026-04-01_slice0-task0-3-5-seed-roles.md` |
 | Backend Refactor Phase 1-4 (2026-04-01) | `docs/reports/2026-04-01_backend-refactor-phase1-4.md` |
@@ -152,7 +154,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Frontend: Admin RBAC UI | Low | |
+| *(No pending task)* | — | Slice 2 tasks currently complete |
 
 ### Slice 3 — System Config
 

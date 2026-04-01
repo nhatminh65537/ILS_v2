@@ -209,7 +209,7 @@ Notes:
 - Canonical role-permission assignment route is `/api/admin/roles/{id}/permissions/`.
 - RBAC endpoints are admin-only and include action-level `HasJWTPermission('<permission_key>')` checks when JWT auth context is present.
 - Role-permission and user-role mapping changes invalidate permission cache for affected users.
-- Frontend RBAC admin pages are still planned; current stable contract ownership is backend-only.
+- Frontend RBAC admin pages are implemented at locale routes `/vi/admin/rbac`, `/en/admin/rbac`, `/vi/admin/rbac/roles/{id}`, and `/vi/admin/rbac/users/{id}/roles` using the same backend contracts.
 
 ---
 

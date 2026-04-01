@@ -493,13 +493,15 @@ class PermissionService:
         # Called when admin changes user's roles/permissions
 ```
 
-### Task 2.4 — Frontend: Admin RBAC UI
+### Task 2.4 — Frontend: Admin RBAC UI ✅ COMPLETED (2026-04-01)
+
+Report: `docs/reports/2026-04-01_slice2-task2-4-admin-rbac-ui.md`
 
 **Files:**
 ```
-frontend/src/app/admin/rbac/
-├── page.tsx                  # Role list + permission tree
-├── roles/[id]/page.tsx       # Role detail: assign permissions
+frontend/app/[locale]/(app)/admin/rbac/
+├── page.tsx                  # Role list + permission overview
+├── roles/[id]/page.tsx       # Role detail: assign/revoke permissions
 └── users/[id]/roles/page.tsx # User → role assignment
 ```
 
