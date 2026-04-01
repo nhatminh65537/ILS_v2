@@ -186,7 +186,60 @@ Task 7.2 update (2026-04-01):
 | GET | `/api/quiz/nodes/{id}/children/` | Yes | Partial | QuizNode lazy children list endpoint. |
 | POST | `/api/quiz/nodes/{id}/move/` | Yes | Partial | Explicit move endpoint (`parent_id`), cycle-safe validation. |
 
+### 3.6.1 Quiz WebSocket (Real-time Practice Sessions)
+
+Task 7.3 update (2026-04-01):
+- WebSocket consumer for real-time quiz practice sessions fully implemented.
+- Protocol: First-message JWT authentication (Q-INFRA-05 Option B); no JWT in URL query string.
+- Endpoint: `ws://host/ws/quiz/{quiz_id}/`
+- Auth flow: Connect without token → send `{type: "auth", token: "<access_jwt>"}` within 5-second timeout.
+- Action protocol: `{"action": "start"|"answer"|"next"}` after authentication.
+
+| Endpoint | Protocol | Auth | Status | Notes |
+|---|---|---|---|---|
+| `GET ws://host/ws/quiz/{quiz_id}/` | WebSocket | JWT first-message | Stable | Real-time quiz session; first-message auth pattern. |
+
+**First-message auth flow:**
+```json
+CLIENT → {"type": "auth", "token": "eyJ..."}
+SERVER ← {"type": "auth_ok", "user_id": 123, "username": "alice"}
+```
+
+**Start attempt:**
+```json
+CLIENT → {"action": "start"}
+SERVER ← {"type": "question", "attempt_id": 789, "question": {...}, "progress": {"current": 1, "total": 10}}
+```
+
+**Submit answer (polymorphic by question type):**
+```json
+// Single-choice
+CLIENT → {"action": "answer", "question_id": 5, "answer_data": {"option_id": 42}}
+SERVER ← {"type": "answer_result", "is_correct": true, "score_obtained": 10, "explanation": "...", "correct_answer": {"option_id": 42}}
+
+// Multi-choice
+CLIENT → {"action": "answer", "question_id": 5, "answer_data": {"option_ids": [42, 43]}}
+SERVER ← {"type": "answer_result", "is_correct": true, "score_obtained": 10, ...}
+
+// Fill-blank
+CLIENT → {"action": "answer", "question_id": 5, "answer_data": {"text": "answer text"}}
+SERVER ← {"type": "answer_result", "is_correct": true, ...}
+```
+
+**Get next question or finish:**
+```json
+CLIENT → {"action": "next"}
+SERVER ← {"type": "question", ...} // if more questions remain
+SERVER ← {"type": "finish", "attempt_id": 789, "total_score": 100, "max_score": 100, "duration_sec": 245}
+```
+
+**Error event:**
+```json
+SERVER → {"type": "error", "code": "already_answered", "message": "Question already answered"}
+```
+
 ### 3.7 Notifications
+
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|

@@ -93,6 +93,8 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
 | Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
 | Slice 7 / Task 7.1 (2026-04-01) | Quiz backend API completed: canonical namespaced routes `/api/quiz/quizzes/*`, nested question CRUD, per-user quiz config endpoint, deterministic serializer validation for `single_choice`/`multi_choice`/`fill_blank`, and focused pytest suite (`backend/api/test_quiz_task7_1.py`) passing (`6 passed`). |
+| Slice 7 / Task 7.2 (2026-04-01) | QuizNode tree API completed: `/api/quiz/nodes/*` CRUD with folder-only MVP, one-way quiz FK, cycle-safe move, lazy children, and integration tests passing. |
+| Slice 7 / Task 7.3 (2026-04-01) | Django Channels WebSocket consumer implemented: `/ws/quiz/{quiz_id}/` + first-message JWT auth (Q-INFRA-05 Option B) + auth/start/answer/next/finish actions; attempt lifecycle with config snapshot, question sequencing, polymorphic validation/scoring reusing domain logic; async integration tests for auth/flow/edge-cases in `backend/realtime/tests/test_quiz_consumer.py`. |
 
 ---
 
@@ -197,10 +199,10 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| QuizNode tree API | Medium | Completed 2026-04-01: `/api/quiz/nodes/*` + folder-only MVP + cycle-safe move |
-| Django Channels WebSocket consumer | Medium | First-message JWT auth (no query token) |
-| Quiz progress signals | Medium | `best_score`, `attempt_count` |
-| Frontend: Quiz browser + WS session | Low | |
+| QuizNode tree API | Medium | ✅ Completed 2026-04-01: `/api/quiz/nodes/*` + folder-only MVP + cycle-safe move |
+| Django Channels WebSocket consumer | Medium | ✅ Completed 2026-04-01: `/ws/quiz/{id}/` + first-message JWT auth + auth/start/answer/next/finish protocol with polymorphic scoring |
+| Quiz progress signals | Medium | Not yet started (Task 7.4) |
+| Frontend: Quiz browser + WS session | Low | Not yet started (Tasks 7.5-7.6) |
 
 ### Slice 8 — User Profile
 
