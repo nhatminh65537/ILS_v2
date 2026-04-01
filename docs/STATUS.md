@@ -197,7 +197,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| QuizNode tree API | Medium | No circular FK |
+| QuizNode tree API | Medium | Completed 2026-04-01: `/api/quiz/nodes/*` + folder-only MVP + cycle-safe move |
 | Django Channels WebSocket consumer | Medium | First-message JWT auth (no query token) |
 | Quiz progress signals | Medium | `best_score`, `attempt_count` |
 | Frontend: Quiz browser + WS session | Low | |

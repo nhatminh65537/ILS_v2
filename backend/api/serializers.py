@@ -409,6 +409,71 @@ class QuizTagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description']
 
 
+class QuizNodeSerializer(serializers.ModelSerializer):
+    """Quiz node serializer for tree CRUD endpoints (folder-only in MVP)."""
+
+    has_children = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = QuizNode
+        fields = [
+            'id',
+            'parent',
+            'is_item',
+            'title',
+            'position',
+            'path',
+            'quiz',
+            'has_children',
+        ]
+        read_only_fields = ['id', 'path', 'has_children']
+
+    def validate_is_item(self, value):
+        if value:
+            raise serializers.ValidationError('QuizNode item mode is not supported in MVP. Use folder nodes only.')
+        return value
+
+    def validate_quiz(self, value):
+        if value is not None:
+            raise serializers.ValidationError('Quiz linkage is not supported in Task 7.2. Use folder nodes only.')
+        return value
+
+    def validate(self, attrs):
+        parent = attrs.get('parent')
+        instance = getattr(self, 'instance', None)
+
+        if parent and instance and parent.id == instance.id:
+            raise serializers.ValidationError({'parent': 'Node cannot be parent of itself.'})
+
+        return attrs
+
+    def create(self, validated_data):
+        validated_data['is_item'] = False
+        validated_data['quiz'] = None
+        node = super().create(validated_data)
+        node.rebuild_path()
+        return node
+
+    def update(self, instance, validated_data):
+        new_parent = validated_data.pop('parent', instance.parent)
+        validated_data['is_item'] = False
+        validated_data['quiz'] = None
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+
+        if new_parent != instance.parent:
+            instance.move_to(new_parent)
+        else:
+            instance.rebuild_path()
+
+        return instance
+
+    def get_has_children(self, obj):
+        return obj.children.exists()
+
+
 class QuizQuestionOptionSerializer(serializers.ModelSerializer):
     """Quiz question option serializer"""
     

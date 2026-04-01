@@ -9,6 +9,7 @@ from .views import (
     UserViewSet,
     CourseViewSet, LessonViewSet,
     ChallengeViewSet,
+    QuizNodeViewSet,
     QuizViewSet,
     NotificationViewSet,
     LeaderboardViewSet,
@@ -68,6 +69,26 @@ urlpatterns = [
         r'^quiz/quizzes/(?P<pk>\d+)/config/$',
         QuizViewSet.as_view({'get': 'config', 'put': 'config'}),
         name='quiz-config',
+    ),
+    re_path(
+        r'^quiz/nodes/$',
+        QuizNodeViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='quiz-node-list',
+    ),
+    re_path(
+        r'^quiz/nodes/(?P<pk>\d+)/$',
+        QuizNodeViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='quiz-node-detail',
+    ),
+    re_path(
+        r'^quiz/nodes/(?P<pk>\d+)/children/$',
+        QuizNodeViewSet.as_view({'get': 'children'}),
+        name='quiz-node-children',
+    ),
+    re_path(
+        r'^quiz/nodes/(?P<pk>\d+)/move/$',
+        QuizNodeViewSet.as_view({'post': 'move'}),
+        name='quiz-node-move',
     ),
     # User roles custom routes
     user_roles_url,

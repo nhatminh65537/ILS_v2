@@ -5,7 +5,7 @@ from .challenges import ChallengeViewSet
 from .courses import CourseViewSet, LessonViewSet
 from .leaderboard import LeaderboardViewSet
 from .notifications import NotificationViewSet
-from .quizzes import QuizViewSet
+from .quizzes import QuizNodeViewSet, QuizViewSet
 from .users import UserViewSet
 
 __all__ = [
@@ -15,6 +15,7 @@ __all__ = [
     'LeaderboardViewSet',
     'LessonViewSet',
     'NotificationViewSet',
+    'QuizNodeViewSet',
     'QuizViewSet',
     'UserViewSet',
 ]

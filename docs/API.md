@@ -153,6 +153,10 @@ Task 7.1 update (2026-04-01):
 - Canonical namespaced routes for quiz CRUD/question/config are now active under `/api/quiz/quizzes/*`.
 - Legacy routes (`/api/quizzes/*`) remain active for compatibility during migration.
 
+Task 7.2 update (2026-04-01):
+- QuizNode tree CRUD endpoints are active under `/api/quiz/nodes/*`.
+- MVP behavior is folder-only (`is_item=false` enforced); tree operations use dot-separated `path` invariants from `BaseNode`.
+
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/quizzes/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
@@ -174,6 +178,13 @@ Task 7.1 update (2026-04-01):
 | DELETE | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question delete endpoint; syncs `quiz.total_questions`. |
 | GET | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config retrieval endpoint. |
 | PUT | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config upsert endpoint. |
+| GET | `/api/quiz/nodes/` | Yes | Partial | QuizNode root list (`parent IS NULL`) for quiz tree browsing. |
+| POST | `/api/quiz/nodes/` | Yes | Partial | QuizNode create endpoint; editor/admin only; MVP folder-only validation. |
+| GET | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode detail endpoint. |
+| PUT/PATCH | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode update endpoint; supports rename/reorder/move via `parent`; editor/admin only. |
+| DELETE | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode delete endpoint; subtree deletion via cascade. |
+| GET | `/api/quiz/nodes/{id}/children/` | Yes | Partial | QuizNode lazy children list endpoint. |
+| POST | `/api/quiz/nodes/{id}/move/` | Yes | Partial | Explicit move endpoint (`parent_id`), cycle-safe validation. |
 
 ### 3.7 Notifications
 

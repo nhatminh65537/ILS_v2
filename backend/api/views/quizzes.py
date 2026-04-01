@@ -7,12 +7,13 @@ from rest_framework.response import Response
 from auth_app.permissions import add_role_granted
 
 from api.mixins.rbac_action_permission import RBACActionPermissionMixin
-from api.models import Quiz, QuizConfig, QuizQuestion, UserQuizAttempt
+from api.models import Quiz, QuizConfig, QuizNode, QuizQuestion, UserQuizAttempt
 from api.serializers import (
     QuizAnswerSubmitSerializer,
     QuizConfigSerializer,
     QuizDetailSerializer,
     QuizListSerializer,
+    QuizNodeSerializer,
     QuizQuestionManageSerializer,
     UserQuizAttemptSerializer,
 )
@@ -198,3 +199,71 @@ class QuizViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
                 'explanation': question.explanation if is_correct else None,
             }
         )
+
+
+@add_role_granted('Admin', 'Editor', 'Member')
+class QuizNodeViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
+    """QuizNode tree CRUD API."""
+
+    queryset = QuizNode.objects.all().select_related('parent', 'quiz').order_by('position', 'id')
+    serializer_class = QuizNodeSerializer
+    base_permission_classes = (IsAuthenticated, QuizActionPermission)
+    permission_classes = [IsAuthenticated, QuizActionPermission]
+
+    action_permission_map = {
+        'list': 'api.quiznode.list',
+        'retrieve': 'api.quiznode.retrieve',
+        'create': 'api.quiznode.create',
+        'update': 'api.quiznode.update',
+        'partial_update': 'api.quiznode.partial_update',
+        'destroy': 'api.quiznode.destroy',
+        'children': 'api.quiznode.children',
+        'move': 'api.quiznode.move',
+    }
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action == 'list':
+            return queryset.filter(parent__isnull=True)
+        return queryset
+
+    @add_role_granted('Admin', 'Editor')
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=True, methods=['get'])
+    def children(self, request, pk=None):
+        node = self.get_object()
+        serializer = self.get_serializer(node.children.order_by('position', 'id'), many=True)
+        return Response(serializer.data)
+
+    @add_role_granted('Admin', 'Editor')
+    @action(detail=True, methods=['post'])
+    def move(self, request, pk=None):
+        node = self.get_object()
+        parent_id = request.data.get('parent_id')
+
+        if parent_id in (None, ''):
+            new_parent = None
+        else:
+            new_parent = get_object_or_404(QuizNode, id=parent_id)
+
+        try:
+            node.move_to(new_parent)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(node)
+        return Response(serializer.data, status=status.HTTP_200_OK)
