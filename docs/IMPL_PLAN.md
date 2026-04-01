@@ -739,8 +739,8 @@ challenge/[slug]/page.tsx     → detail + flag submit form
 
 > **Decision prerequisites:** namespaced URLs and WebSocket first-message auth are resolved.
 
-### Task 7.1 — Quiz + Question CRUD API
-**Files:** `backend/api/views/quiz.py`, `backend/api/serializers/quiz.py`
+### Task 7.1 — Quiz + Question CRUD API ✅ COMPLETED (2026-04-01)
+**Files:** `backend/api/views/quizzes.py`, `backend/api/serializers.py`, `backend/api/urls.py`, `backend/api/test_quiz_task7_1.py`
 
 **Endpoints:**
 ```
@@ -750,6 +750,12 @@ GET/POST /api/quiz/quizzes/{id}/questions/
 GET/PUT/DELETE /api/quiz/quizzes/{id}/questions/{qid}/
 GET/PUT /api/quiz/quizzes/{id}/config/
 ```
+
+**Implementation notes (2026-04-01):**
+- Added canonical namespaced routes under `/api/quiz/quizzes/*` while preserving legacy `/api/quizzes/*` compatibility routes.
+- Added role-aware action guard in quiz viewset: member read + own config; editor/admin for quiz/question write actions.
+- Added deterministic question validation for `single_choice` / `multi_choice` / `fill_blank` in serializer layer.
+- Added focused backend tests in `backend/api/test_quiz_task7_1.py` (6 passing).
 
 ### Task 7.2 — QuizNode tree API
 Same pattern as Course/Challenge nodes. **No circular FK** — `quiz_node.quiz_id → quiz` only (one-way).

@@ -1223,11 +1223,11 @@ class QuizQuestion(FullAudit):
     def _validate_fill_blank(self, answer_payload):
         """Validate fill in the blank answer"""
         try:
-            submitted_answer = answer_payload.get('answer', '').strip()
+            submitted_answer = answer_payload.get('text', answer_payload.get('answer', '')).strip()
             
             # Check against all possible answers
             for ans in self.answers.all():
-                if ans.is_case_sensitive:
+                if self.case_sensitive:
                     if submitted_answer == ans.answer:
                         return True
                 else:

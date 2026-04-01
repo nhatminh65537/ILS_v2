@@ -92,6 +92,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 3 / Task 3.2 (2026-04-01) | Frontend System Config admin UI implemented for locale routes (`/vi/admin/config`, `/en/admin/config`) with typed service/hook architecture, category-grouped accordion rendering, value-type aware editors (`bool`, `int`, `string`, `json`, `secret`), secret update confirmation flow, i18n support, and dashboard navigation entry. |
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
 | Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
+| Slice 7 / Task 7.1 (2026-04-01) | Quiz backend API completed: canonical namespaced routes `/api/quiz/quizzes/*`, nested question CRUD, per-user quiz config endpoint, deterministic serializer validation for `single_choice`/`multi_choice`/`fill_blank`, and focused pytest suite (`backend/api/test_quiz_task7_1.py`) passing (`6 passed`). |
 
 ---
 
@@ -116,6 +117,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 4 / Frontend Foundation (2026-03-31) | `docs/reports/2026-03-31_slice4-full-task-report.md` |
 | Slice 0 / Task 0.3.5 (2026-04-01) | `docs/reports/2026-04-01_slice0-task0-3-5-seed-roles.md` |
 | Backend Refactor Phase 1-4 (2026-04-01) | `docs/reports/2026-04-01_backend-refactor-phase1-4.md` |
+| Slice 7 / Task 7.1 (2026-04-01) | `docs/reports/2026-04-01_slice7-task7-1-quiz-crud-api.md` |
 
 ---
 
@@ -195,7 +197,6 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Quiz + Question CRUD API | Medium | |
 | QuizNode tree API | Medium | No circular FK |
 | Django Channels WebSocket consumer | Medium | First-message JWT auth (no query token) |
 | Quiz progress signals | Medium | `best_score`, `attempt_count` |

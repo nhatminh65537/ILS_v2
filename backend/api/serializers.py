@@ -418,6 +418,24 @@ class QuizQuestionOptionSerializer(serializers.ModelSerializer):
         # Don't expose is_correct to users
 
 
+class QuizQuestionOptionManageSerializer(serializers.ModelSerializer):
+    """Quiz question option serializer for authoring endpoints."""
+
+    class Meta:
+        model = QuizQuestionOption
+        fields = ['id', 'content', 'position', 'is_correct']
+        read_only_fields = ['id']
+
+
+class QuizQuestionAnswerManageSerializer(serializers.ModelSerializer):
+    """Accepted answer serializer for fill_blank questions."""
+
+    class Meta:
+        model = QuizQuestionAnswer
+        fields = ['id', 'answer']
+        read_only_fields = ['id']
+
+
 class QuizQuestionSerializer(serializers.ModelSerializer):
     """Quiz question serializer"""
     options = QuizQuestionOptionSerializer(many=True, read_only=True)
@@ -427,6 +445,119 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
         fields = ['id', 'question_type', 'content', 'explanation',
                   'score', 'position', 'options']
         read_only_fields = ['id']
+
+
+class QuizQuestionManageSerializer(serializers.ModelSerializer):
+    """Quiz question serializer with nested option/answer writes for editor/admin."""
+
+    options = QuizQuestionOptionManageSerializer(many=True, required=False)
+    answers = QuizQuestionAnswerManageSerializer(many=True, required=False)
+
+    class Meta:
+        model = QuizQuestion
+        fields = [
+            'id',
+            'question_type',
+            'content',
+            'explanation',
+            'case_sensitive',
+            'score',
+            'position',
+            'options',
+            'answers',
+        ]
+        read_only_fields = ['id']
+
+    def validate_content(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError('content must be a JSON object.')
+        if not value.get('text'):
+            raise serializers.ValidationError('content.text is required.')
+        return value
+
+    def validate(self, attrs):
+        question_type = attrs.get('question_type', getattr(self.instance, 'question_type', None))
+        options = attrs.get('options', None)
+        answers = attrs.get('answers', None)
+
+        if question_type in {QuizQuestion.QuestionType.SINGLE_CHOICE, QuizQuestion.QuestionType.MULTI_CHOICE}:
+            if options is None and self.instance is None:
+                raise serializers.ValidationError({'options': 'options are required for choice questions.'})
+
+            if options is not None:
+                if len(options) < 2:
+                    raise serializers.ValidationError({'options': 'At least 2 options are required.'})
+                correct_count = sum(1 for option in options if option.get('is_correct'))
+                if question_type == QuizQuestion.QuestionType.SINGLE_CHOICE and correct_count != 1:
+                    raise serializers.ValidationError({'options': 'single_choice requires exactly 1 correct option.'})
+                if question_type == QuizQuestion.QuestionType.MULTI_CHOICE and correct_count < 1:
+                    raise serializers.ValidationError({'options': 'multi_choice requires at least 1 correct option.'})
+
+        if question_type == QuizQuestion.QuestionType.FILL_BLANK:
+            if answers is None and self.instance is None:
+                raise serializers.ValidationError({'answers': 'answers are required for fill_blank questions.'})
+            if answers is not None and len([item for item in answers if item.get('answer')]) == 0:
+                raise serializers.ValidationError({'answers': 'Provide at least 1 accepted answer.'})
+
+        return attrs
+
+    def create(self, validated_data):
+        options = validated_data.pop('options', [])
+        answers = validated_data.pop('answers', [])
+        question = QuizQuestion.objects.create(**validated_data)
+        self._replace_options(question, options)
+        self._replace_answers(question, answers)
+        return question
+
+    def update(self, instance, validated_data):
+        options = validated_data.pop('options', None)
+        answers = validated_data.pop('answers', None)
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+
+        if options is not None:
+            self._replace_options(instance, options)
+        if answers is not None:
+            self._replace_answers(instance, answers)
+
+        return instance
+
+    def _replace_options(self, question, options):
+        if question.question_type not in {
+            QuizQuestion.QuestionType.SINGLE_CHOICE,
+            QuizQuestion.QuestionType.MULTI_CHOICE,
+        }:
+            question.options.all().delete()
+            return
+
+        question.options.all().delete()
+        QuizQuestionOption.objects.bulk_create(
+            [
+                QuizQuestionOption(
+                    question=question,
+                    content=option['content'],
+                    position=option.get('position', index),
+                    is_correct=bool(option.get('is_correct', False)),
+                )
+                for index, option in enumerate(options)
+            ]
+        )
+
+    def _replace_answers(self, question, answers):
+        if question.question_type != QuizQuestion.QuestionType.FILL_BLANK:
+            question.answers.all().delete()
+            return
+
+        question.answers.all().delete()
+        QuizQuestionAnswer.objects.bulk_create(
+            [
+                QuizQuestionAnswer(question=question, answer=item['answer'])
+                for item in answers
+                if item.get('answer')
+            ]
+        )
 
 
 class QuizListSerializer(serializers.ModelSerializer):
@@ -480,6 +611,43 @@ class UserQuizAttemptSerializer(serializers.ModelSerializer):
         fields = ['id', 'quiz', 'quiz_title', 'user', 'config',
                   'started_at', 'finished_at', 'total_score', 'is_finished']
         read_only_fields = ['id', 'total_score', 'is_finished']
+
+
+class QuizConfigSerializer(serializers.ModelSerializer):
+    """Per-user quiz config serializer for Task 7.1 endpoint contract."""
+
+    class Meta:
+        model = QuizConfig
+        fields = [
+            'id',
+            'quiz',
+            'user',
+            'total_questions',
+            'time_limit_sec',
+            'random_question',
+            'random_option',
+            'allow_review',
+            'allow_retry',
+            'max_attempt',
+            'is_default',
+            'is_active',
+        ]
+        read_only_fields = ['id', 'quiz', 'user', 'is_default']
+
+    def validate_total_questions(self, value):
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('total_questions must be > 0 when provided.')
+        return value
+
+    def validate_time_limit_sec(self, value):
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('time_limit_sec must be > 0 when provided.')
+        return value
+
+    def validate_max_attempt(self, value):
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('max_attempt must be > 0 when provided.')
+        return value
 
 
 # ============================================================================

@@ -43,6 +43,32 @@ user_role_detail_url = re_path(
 urlpatterns = [
     # API routes
     path('', include(router.urls)),
+    # Canonical namespaced quiz routes (Slice 7)
+    re_path(
+        r'^quiz/quizzes/$',
+        QuizViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='quiz-list',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/$',
+        QuizViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='quiz-detail',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/questions/$',
+        QuizViewSet.as_view({'get': 'questions', 'post': 'questions'}),
+        name='quiz-questions',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/questions/(?P<qid>\d+)/$',
+        QuizViewSet.as_view({'get': 'question_detail', 'put': 'question_detail', 'delete': 'question_detail'}),
+        name='quiz-question-detail',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/config/$',
+        QuizViewSet.as_view({'get': 'config', 'put': 'config'}),
+        name='quiz-config',
+    ),
     # User roles custom routes
     user_roles_url,
     user_role_detail_url,

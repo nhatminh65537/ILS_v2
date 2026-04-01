@@ -149,6 +149,10 @@ Historical/runtime note:
 - Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
 - For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
 
+Task 7.1 update (2026-04-01):
+- Canonical namespaced routes for quiz CRUD/question/config are now active under `/api/quiz/quizzes/*`.
+- Legacy routes (`/api/quizzes/*`) remain active for compatibility during migration.
+
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/quizzes/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
@@ -158,6 +162,18 @@ Historical/runtime note:
 | DELETE | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
 | POST | `/api/quizzes/{id}/start_attempt/` | Yes | Partial | Runtime route exists; full scoring/session lifecycle is pending. |
 | POST | `/api/quizzes/{id}/submit_answer/` | Yes | Partial | Depends on complete scoring/session persistence flow. |
+| GET | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced list endpoint for Slice 7 Task 7.1; members see published quizzes only. |
+| POST | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced create endpoint; editor/admin role required. |
+| GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced detail endpoint. |
+| PUT/PATCH | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin role required. |
+| DELETE | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced delete endpoint; editor/admin role required. |
+| GET | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question management list endpoint; editor/admin only. |
+| POST | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question create endpoint; supports single/multi/fill_blank validation. |
+| GET | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question detail endpoint; editor/admin only. |
+| PUT | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question update endpoint; editor/admin only. |
+| DELETE | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question delete endpoint; syncs `quiz.total_questions`. |
+| GET | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config retrieval endpoint. |
+| PUT | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config upsert endpoint. |
 
 ### 3.7 Notifications
 
