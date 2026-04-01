@@ -23,6 +23,7 @@ export const usersFixture: User[] = Array.from({ length: 10 }, (_, index) => ({
 export const profileFixture: UserProfile = {
   id: 1,
   user_id: 1,
+  username: 'member1',
   entry_year: 2024,
   display_name: 'Core Admin',
   avatar_url: 'https://images.example.com/avatar-admin.png',

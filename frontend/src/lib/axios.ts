@@ -34,6 +34,28 @@ interface RetryableAxiosConfig extends AxiosRequestConfig {
   _retry?: boolean
 }
 
+const AUTH_ENDPOINTS = [
+  '/api/auth/login/',
+  '/api/auth/register/',
+  '/api/auth/token/refresh/',
+]
+
+const shouldSkipRefresh = (url?: string): boolean => {
+  if (!url) {
+    return false
+  }
+
+  return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint))
+}
+
+const getLocaleAwareLoginPath = (): string => {
+  const currentPath = window.location.pathname
+  if (currentPath.startsWith('/en/')) {
+    return '/en/login'
+  }
+  return '/vi/login'
+}
+
 /**
  * Response interceptor:
  * - 401 → attempt refresh token flow → retry original request
@@ -45,7 +67,12 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as RetryableAxiosConfig
 
     // 401 Unauthorized — attempt refresh
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !shouldSkipRefresh(originalRequest.url)
+    ) {
       originalRequest._retry = true
 
       try {
@@ -54,7 +81,7 @@ apiClient.interceptors.response.use(
           // No refresh token — redirect to login
           const event = new CustomEvent('auth:logout', { detail: 'No refresh token' })
           window.dispatchEvent(event)
-          window.location.href = '/vi/login'
+          window.location.href = getLocaleAwareLoginPath()
           return Promise.reject(error)
         }
 
@@ -84,7 +111,7 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('refresh_token')
         const event = new CustomEvent('auth:logout', { detail: 'Token refresh failed' })
         window.dispatchEvent(event)
-        window.location.href = '/vi/login'
+        window.location.href = getLocaleAwareLoginPath()
         return Promise.reject(refreshError)
       }
     }

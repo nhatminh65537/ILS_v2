@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function DashboardPage() {
   const t = await getTranslations('dashboard')
@@ -10,18 +11,30 @@ export default async function DashboardPage() {
         <p className="text-muted-foreground">{t('subtitle')}</p>
       </header>
       <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-xl border border-border bg-card p-5">
-          <h2 className="text-lg font-medium">{t('cards.learnTitle')}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{t('cards.learnDescription')}</p>
-        </article>
-        <article className="rounded-xl border border-border bg-card p-5">
-          <h2 className="text-lg font-medium">{t('cards.challengeTitle')}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{t('cards.challengeDescription')}</p>
-        </article>
-        <article className="rounded-xl border border-border bg-card p-5">
-          <h2 className="text-lg font-medium">{t('cards.quizTitle')}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{t('cards.quizDescription')}</p>
-        </article>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('cards.learnTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{t('cards.learnDescription')}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('cards.challengeTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{t('cards.challengeDescription')}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('cards.quizTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{t('cards.quizDescription')}</p>
+          </CardContent>
+        </Card>
       </section>
     </main>
   )

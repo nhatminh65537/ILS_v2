@@ -29,6 +29,7 @@
   "auth": {
     "loginTitle": "Login",
     "loginSubtitle": "Use your local account or a linked SSO identity.",
+    "loading": "Processing...",
     "registerTitle": "Register",
     "registerSubtitle": "Create a Member account and begin learning.",
     "username": "Username",
@@ -37,14 +38,33 @@
     "emailPlaceholder": "you@company.com",
     "password": "Password",
     "passwordPlaceholder": "enter password",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "re-enter password",
     "loginButton": "Sign in",
+    "ssoButton": "Sign in with SSO",
     "registerButton": "Create account",
     "noAccount": "Don't have an account?",
     "alreadyHaveAccount": "Already have an account?",
     "registerLink": "Register",
     "loginLink": "Login",
     "logout": "Logout",
-    "sessionExpired": "Your session expired. Please log in again."
+    "sessionExpired": "Your session expired. Please log in again.",
+    "validation": {
+      "usernameRequired": "Username is required.",
+      "passwordRequired": "Password is required.",
+      "passwordMinLength": "Password must be at least 8 characters.",
+      "confirmPasswordRequired": "Please confirm your password.",
+      "passwordMismatch": "Password confirmation does not match.",
+      "emailInvalid": "Email format is invalid."
+    },
+    "errors": {
+      "invalidCredentials": "Invalid login credentials.",
+      "rateLimited": "Too many requests. Please try again later.",
+      "registrationDisabled": "Registration is currently disabled.",
+      "localLoginDisabled": "Local login is currently disabled.",
+      "loginFailed": "Login failed.",
+      "registerFailed": "Registration failed."
+    }
   },
   "courses": {
     "title": "Courses",

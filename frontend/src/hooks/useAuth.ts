@@ -1,13 +1,14 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
+import { mapAuthErrorToMessageKey } from '@/lib/auth-error-map'
 import { login as loginService, logout as logoutService, register as registerService } from '@/services/auth.service'
 import { useAuthStore } from '@/stores/auth.store'
 import type { LoginPayload, RegisterPayload } from '@/types/user.types'
 
 interface AuthActionResult {
   success: boolean
-  message?: string
+  messageKey?: string
 }
 
 export const useAuth = () => {
@@ -43,8 +44,11 @@ export const useAuth = () => {
         setUser(response.user)
         setTokens({ accessToken: response.access, refreshToken: response.refresh })
         return { success: true }
-      } catch {
-        return { success: false, message: 'Login failed' }
+      } catch (error) {
+        return {
+          success: false,
+          messageKey: mapAuthErrorToMessageKey(error, 'auth.errors.loginFailed'),
+        }
       } finally {
         setLoading(false)
       }
@@ -60,8 +64,11 @@ export const useAuth = () => {
         setUser(response.user)
         setTokens({ accessToken: response.access, refreshToken: response.refresh })
         return { success: true }
-      } catch {
-        return { success: false, message: 'Register failed' }
+      } catch (error) {
+        return {
+          success: false,
+          messageKey: mapAuthErrorToMessageKey(error, 'auth.errors.registerFailed'),
+        }
       } finally {
         setLoading(false)
       }

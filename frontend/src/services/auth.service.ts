@@ -11,7 +11,6 @@ import type {
   RefreshTokenPayload,
   TokenResponse,
   LogoutPayload,
-  SsoRedirectResponse,
   SsoCallbackPayload,
   LinkIdentityPayload,
   LinkIdentityResponse,
@@ -61,15 +60,10 @@ export const logoutAll = async (): Promise<void> => {
   await apiClient.post('/api/auth/logout-all/')
 }
 
-/**
- * GET /api/auth/sso/redirect/
- * Builds OIDC authorization URL
- */
-export const getSsoRedirectUrl = async (): Promise<SsoRedirectResponse> => {
+export const startSsoRedirect = (): void => {
   const baseURL = process.env.NEXT_PUBLIC_API_URL ?? ''
-  return {
-    redirect_url: `${baseURL}/api/auth/sso/redirect/`,
-  }
+  const target = `${baseURL}/api/auth/sso/redirect/`
+  window.location.assign(target)
 }
 
 /**

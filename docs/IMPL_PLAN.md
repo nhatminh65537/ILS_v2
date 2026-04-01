@@ -341,7 +341,7 @@ token = signer.sign(str(user.id))
 # Verify: signer.unsign(token, max_age=3600)
 ```
 
-### Task 1.5 — Frontend: Login/Register UI
+### Task 1.5 — Frontend: Login/Register UI ✅ COMPLETED (2026-04-01)
 
 **Files to create:**
 ```
@@ -375,6 +375,13 @@ interface AuthState {
   refreshToken: () => Promise<boolean>
 }
 ```
+
+**Implemented details (2026-04-01):**
+- Replaced static auth forms with interactive locale-aware login/register flows at `frontend/app/[locale]/(auth)/login/page.tsx` and `frontend/app/[locale]/(auth)/register/page.tsx` via feature components.
+- Added client form components `frontend/src/components/features/auth/LoginForm.tsx` and `frontend/src/components/features/auth/RegisterForm.tsx` with controlled fields, validation, loading guards, and redirect-on-success to `/{locale}/dashboard`.
+- Added localized validation and API error message keys in `frontend/messages/vi.json` and `frontend/messages/en.json`.
+- Updated auth service to direct browser SSO redirect flow (`startSsoRedirect`) and aligned with `GET /api/auth/sso/redirect/` 302 behavior.
+- Hardened axios refresh interceptor to skip refresh retry loop on auth endpoints and redirect to locale-aware login on refresh failure.
 
 ---
 

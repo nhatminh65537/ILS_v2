@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { LoginForm } from '@/components/features/auth/LoginForm'
 
 type LoginPageProps = {
   params: Promise<{ locale: string }>
@@ -16,33 +17,7 @@ export default async function LoginPage({ params }: LoginPageProps) {
         <p className="text-sm text-muted-foreground">{t('loginSubtitle')}</p>
       </div>
 
-      <form className="space-y-4 rounded-xl border border-border bg-card p-5">
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="username">
-            {t('username')}
-          </label>
-          <input
-            id="username"
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            placeholder={t('usernamePlaceholder')}
-            type="text"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="password">
-            {t('password')}
-          </label>
-          <input
-            id="password"
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            placeholder={t('passwordPlaceholder')}
-            type="password"
-          />
-        </div>
-        <button className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground" type="button">
-          {t('loginButton')}
-        </button>
-      </form>
+      <LoginForm locale={locale} />
 
       <p className="text-sm text-muted-foreground">
         {t('noAccount')}{' '}

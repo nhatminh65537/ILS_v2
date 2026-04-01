@@ -29,6 +29,7 @@
   "auth": {
     "loginTitle": "Đăng nhập",
     "loginSubtitle": "Sử dụng tài khoản nội bộ hoặc SSO đã liên kết.",
+    "loading": "Đang xử lý...",
     "registerTitle": "Đăng ký",
     "registerSubtitle": "Tạo tài khoản Member để bắt đầu học.",
     "username": "Tên đăng nhập",
@@ -37,14 +38,33 @@
     "emailPlaceholder": "ban@tochuc.vn",
     "password": "Mật khẩu",
     "passwordPlaceholder": "nhập mật khẩu",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "confirmPasswordPlaceholder": "nhập lại mật khẩu",
     "loginButton": "Đăng nhập ngay",
+    "ssoButton": "Đăng nhập bằng SSO",
     "registerButton": "Tạo tài khoản",
     "noAccount": "Bạn chưa có tài khoản?",
     "alreadyHaveAccount": "Bạn đã có tài khoản?",
     "registerLink": "Đăng ký",
     "loginLink": "Đăng nhập",
     "logout": "Đăng xuất",
-    "sessionExpired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
+    "sessionExpired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.",
+    "validation": {
+      "usernameRequired": "Vui lòng nhập tên đăng nhập.",
+      "passwordRequired": "Vui lòng nhập mật khẩu.",
+      "passwordMinLength": "Mật khẩu phải có ít nhất 8 ký tự.",
+      "confirmPasswordRequired": "Vui lòng xác nhận mật khẩu.",
+      "passwordMismatch": "Mật khẩu xác nhận không khớp.",
+      "emailInvalid": "Email không đúng định dạng."
+    },
+    "errors": {
+      "invalidCredentials": "Thông tin đăng nhập không hợp lệ.",
+      "rateLimited": "Bạn thao tác quá nhanh. Vui lòng thử lại sau.",
+      "registrationDisabled": "Đăng ký hiện đang bị tắt.",
+      "localLoginDisabled": "Đăng nhập nội bộ hiện đang bị tắt.",
+      "loginFailed": "Đăng nhập thất bại.",
+      "registerFailed": "Đăng ký thất bại."
+    }
   },
   "courses": {
     "title": "Khoá học",
