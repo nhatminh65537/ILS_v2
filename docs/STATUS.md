@@ -95,6 +95,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 / Task 7.1 (2026-04-01) | Quiz backend API completed: canonical namespaced routes `/api/quiz/quizzes/*`, nested question CRUD, per-user quiz config endpoint, deterministic serializer validation for `single_choice`/`multi_choice`/`fill_blank`, and focused pytest suite (`backend/api/test_quiz_task7_1.py`) passing (`6 passed`). |
 | Slice 7 / Task 7.2 (2026-04-01) | QuizNode tree API completed: `/api/quiz/nodes/*` CRUD with folder-only MVP, one-way quiz FK, cycle-safe move, lazy children, and integration tests passing. |
 | Slice 7 / Task 7.3 (2026-04-01) | Django Channels WebSocket consumer implemented: `/ws/quiz/{quiz_id}/` + first-message JWT auth (Q-INFRA-05 Option B) + auth/start/answer/next/finish actions; attempt lifecycle with config snapshot, question sequencing, polymorphic validation/scoring reusing domain logic; async integration tests for auth/flow/edge-cases in `backend/realtime/tests/test_quiz_consumer.py`. |
+| Slice 7 / Task 7.4 (2026-04-01) | Quiz progress tracking signal handler implemented: Django `post_save` signal on `UserQuizAttempt` automatically updates `UserQuizProgress` with aggregated `best_score`, `attempt_count`, `first_attempted_at`, `last_attempted_at`, and `completed_at` fields; signal handler idempotent and tested with 13 comprehensive pytest tests covering edge cases (perfect score detection, timestamp tracking, multi-user/multi-quiz separation). |
 
 ---
 
@@ -201,7 +202,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 |------|----------|-------|
 | QuizNode tree API | Medium | ✅ Completed 2026-04-01: `/api/quiz/nodes/*` + folder-only MVP + cycle-safe move |
 | Django Channels WebSocket consumer | Medium | ✅ Completed 2026-04-01: `/ws/quiz/{id}/` + first-message JWT auth + auth/start/answer/next/finish protocol with polymorphic scoring |
-| Quiz progress signals | Medium | Not yet started (Task 7.4) |
+| Quiz progress signals | Medium | ✅ Completed 2026-04-01: Signal handler + 13 pytest tests, UserQuizProgress auto-updates on attempt finish |
 | Frontend: Quiz browser + WS session | Low | Not yet started (Tasks 7.5-7.6) |
 
 ### Slice 8 — User Profile
