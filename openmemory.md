@@ -45,6 +45,7 @@ Target: one instance per organization, no horizontal scale needed.
 - Slice 1 Task 1.1 implemented on 2026-03-26: `auth_app` now serves `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, and `/api/auth/logout-all` with hashed refresh-token session tracking and endpoint tests.
 - Slice 1 Task 1.2 implemented on 2026-03-26: `/api/auth/token/refresh` now validates refresh hash against active `user_session`, rotates refresh token/session on success, enforces per-user refresh rate limit (10/min), and keeps JWT access TTL aligned to 15 minutes.
 - Slice 1 Task 1.3 implemented on 2026-03-30: SSO/AuthentiK backend endpoints are active (`GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`) with OIDC state/nonce validation (cache TTL 5 minutes), account-link conflict handling, and test coverage expanded to 22 passing auth tests.
+- Slice 1 Task 1.5 implemented on 2026-04-01: frontend auth pages (`/vi|en/login`, `/vi|en/register`) now use interactive feature components, localized validation/error mapping, direct SSO redirect (`/api/auth/sso/redirect/`), and guarded token refresh flow that skips auth endpoints to avoid retry loops.
 - Slice 4 Frontend Foundation implemented on 2026-03-31: typed contracts + services, Zustand store scaffolding, MSW handlers/fixtures/provider, next-intl (`vi` default, `en` secondary) locale routing, and baseline UI primitives/documents (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`).
 - Slice 4 runtime stabilization applied on 2026-03-31: removed redundant shadcn Tailwind package import from `frontend/app/globals.css` to resolve intermittent `Can't resolve 'tailwindcss'` runtime failures.
 - Slice 2 Task 2.1 implemented on 2026-03-30: startup permission auto-discovery is active via `auth_app.services.permission_discovery`, syncing `Permission.is_active`, built-in role mappings from `@add_role_granted`, and lowercase naming format `{app_label}.{resource_name}.{handler_method_name}`.
@@ -88,6 +89,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **Frontend i18n routing**: Locale-first URLs (`/vi/*`, `/en/*`) with `vi` as default and root redirect from `/` to `/vi`.
 - **Frontend mock runtime**: MSW worker starts in browser through `MswProvider` when `NEXT_PUBLIC_ENABLE_MSW=true`; production default is disabled.
 - **Frontend CSS baseline**: Keep global imports minimal (`tailwindcss`, `tw-animate-css`) and avoid extra framework package CSS imports unless explicitly required by the active toolchain.
+- **Frontend style consistency**: Prefer shared primitives (`Button`, `Card`, `Input`, `Label`) over ad-hoc utility compositions; keep auth/dashboard/home surfaces aligned to the project square style language (`rounded-none` + tokenized ring/border usage).
 - **Permission discovery naming**: normalize class name to `resource_name` by stripping `ViewSet`/`View`/`APIView`/`GenericViewSet` and snake_case lowercasing; use Python handler action name as `handler_method_name`.
 
 ## Key DB Decisions
