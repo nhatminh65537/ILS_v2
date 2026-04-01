@@ -14,6 +14,7 @@ import type {
   SsoRedirectResponse,
   SsoCallbackPayload,
   LinkIdentityPayload,
+  LinkIdentityResponse,
 } from '@/types/user.types'
 
 /**
@@ -65,8 +66,10 @@ export const logoutAll = async (): Promise<void> => {
  * Builds OIDC authorization URL
  */
 export const getSsoRedirectUrl = async (): Promise<SsoRedirectResponse> => {
-  const response = await apiClient.get('/api/auth/sso/redirect/')
-  return response.data
+  const baseURL = process.env.NEXT_PUBLIC_API_URL ?? ''
+  return {
+    redirect_url: `${baseURL}/api/auth/sso/redirect/`,
+  }
 }
 
 /**
@@ -82,7 +85,7 @@ export const ssoCallback = async (payload: SsoCallbackPayload): Promise<AuthResp
  * POST /api/auth/identity/link/
  * Links authenticated user to external identity
  */
-export const linkIdentity = async (payload: LinkIdentityPayload): Promise<{ readonly success: boolean }> => {
+export const linkIdentity = async (payload: LinkIdentityPayload): Promise<LinkIdentityResponse> => {
   const response = await apiClient.post('/api/auth/identity/link/', payload)
   return response.data
 }

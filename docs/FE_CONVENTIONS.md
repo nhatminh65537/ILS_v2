@@ -72,3 +72,12 @@ Coding and architecture conventions for frontend development in ILS v2.
   - `npx tsc --noEmit`
   - `npm run build`
 - For frontend behavior checks with MSW enabled, validate key screens in browser (`/vi`, `/vi/login`, `/vi/register`).
+
+## FE-BE Contract Baseline (Completed Slices)
+
+- Scope applies to completed slices: Slice 1 (auth backend), Slice 2 (RBAC backend), Slice 3 (system config backend), Slice 4 (frontend foundation).
+- `GET /api/auth/sso/redirect/` is an HTTP redirect endpoint (302), not a JSON payload endpoint; frontend should navigate browser to this URL instead of expecting response body.
+- Auth token payload user shape is minimal (`id`, `username`, `email`) for `register/login/sso-callback`.
+- `POST /api/auth/identity/link/` returns `{detail, provider, external_id, created}`.
+- `GET /api/admin/config/` returns an object grouped by category (`{[category]: SystemConfig[]}`), not a `{groups: [...]}` wrapper.
+- Frontend pages for RBAC and admin config are still planned; no production frontend service contract is considered stable yet for `/api/admin/roles/*`, `/api/admin/permissions/*`, `/api/users/{id}/roles/*`, `/api/admin/config/*`.

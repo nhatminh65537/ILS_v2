@@ -10,24 +10,34 @@ export enum UserRole {
   Member = 'member',
 }
 
+/** Minimal auth user payload returned by auth endpoints */
+export interface AuthUser {
+  readonly id: number
+  readonly username: string
+  readonly email: string
+}
+
 /** User authentication status */
 export interface User {
   readonly id: number
   readonly username: string
   readonly email: string
-  readonly first_name: string
-  readonly last_name: string
-  readonly is_active: boolean
-  readonly is_staff: boolean
-  readonly is_superuser: boolean
-  readonly created_at: string // ISO datetime
-  readonly updated_at: string
+  readonly first_name?: string
+  readonly last_name?: string
+  readonly is_active?: boolean
+  readonly is_staff?: boolean
+  readonly is_superuser?: boolean
+  readonly date_joined?: string // ISO datetime
+  readonly last_login?: string | null
+  readonly created_at?: string
+  readonly updated_at?: string
 }
 
 /** User extended profile (one-to-one with User) */
 export interface UserProfile {
-  readonly id: number
+  readonly id?: number
   readonly user_id: number
+  readonly username: string
   readonly entry_year?: number
   readonly display_name?: string
   readonly avatar_url?: string
@@ -44,12 +54,12 @@ export interface UserProfile {
   readonly challenge_completed: number
   readonly quiz_completed: number
   readonly last_active_at?: string
-  readonly created_at: string
-  readonly updated_at: string
+  readonly created_at?: string
+  readonly updated_at?: string
 }
 
 /** SSO provider link */
-export type IdentityProvider = 'authentik' | 'gitlab' | 'github'
+export type IdentityProvider = 'authentik' | 'google' | 'github'
 
 export interface UserIdentity {
   readonly id: number
@@ -66,13 +76,14 @@ export interface UserIdentity {
 /** Refresh token session (multi-device tracking) */
 export interface UserSession {
   readonly id: number
-  readonly user_id: number
+  readonly user: number
   readonly device_info?: string
   readonly refresh_token_hash: string // Never exposed to frontend
   readonly last_used_at?: string
   readonly expires_at?: string
   readonly revoked_at?: string
   readonly created_at: string
+  readonly updated_at: string
 }
 
 /** Auth request/response payloads */
@@ -90,7 +101,7 @@ export interface LoginPayload {
 export interface AuthResponse {
   readonly access: string // JWT access token
   readonly refresh: string // Refresh token (plaintext, store in memory/localStorage)
-  readonly user: User
+  readonly user: AuthUser
 }
 
 export interface RefreshTokenPayload {
@@ -118,6 +129,13 @@ export interface SsoCallbackPayload {
 export interface LinkIdentityPayload {
   provider: IdentityProvider
   external_id: string
+}
+
+export interface LinkIdentityResponse {
+  readonly detail: string
+  readonly provider: IdentityProvider
+  readonly external_id: string
+  readonly created: boolean
 }
 
 export interface UpdateProfilePayload {

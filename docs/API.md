@@ -74,6 +74,11 @@ Legend:
 | GET | `/api/auth/sso/callback/` | No | Stable | Validates OIDC state/nonce, exchanges auth code, links/creates user, and returns access/refresh tokens. |
 | POST | `/api/auth/identity/link/` | Yes | Stable | Links authenticated user to an external identity (`provider`, `external_id`) with conflict protection and idempotent retry behavior. |
 
+Contract notes for frontend integration (completed slices):
+- `GET /api/auth/sso/redirect/` should be used as browser navigation target (redirect response), not as JSON API read.
+- Auth success payload user object for register/login/sso-callback is minimal: `{id, username, email}`.
+- `POST /api/auth/identity/link/` response shape is `{detail, provider, external_id, created}`.
+
 ### 3.2 Users
 
 | Method | Path | Auth | Status | Notes |
@@ -159,6 +164,7 @@ Notes:
 - `PATCH` returns `403` with `{"detail": "Config is not editable"}` when `is_editable=false`.
 - Invalid payload type for config `value_type` returns `400` with deterministic validation error.
 - Cache for non-runtime config reads is invalidated after successful updates.
+- List response is grouped object by `category`: `{[category]: SystemConfig[]}`.
 
 ### 3.10 Authorization / RBAC
 
@@ -181,6 +187,7 @@ Notes:
 - Canonical role-permission assignment route is `/api/admin/roles/{id}/permissions/`.
 - RBAC endpoints are admin-only and include action-level `HasJWTPermission('<permission_key>')` checks when JWT auth context is present.
 - Role-permission and user-role mapping changes invalidate permission cache for affected users.
+- Frontend RBAC admin pages are still planned; current stable contract ownership is backend-only.
 
 ---
 

@@ -43,7 +43,7 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 
 ```
 ILS_v2/
-├── CLAUDE.md               # AI agent rules (OpenMemory integration) — DO NOT MODIFY
+├── .claude/                # Local Claude tooling metadata (environment-specific)
 ├── AGENT.md                # AI agent quick-reference guide
 ├── README.md               # Project overview + quick start
 ├── Makefile                # Common dev commands
@@ -59,6 +59,9 @@ ILS_v2/
 │   ├── BUGS.md             # Known bugs and fix history
 │   ├── IMPL_PLAN.md        # Vertical slice implementation plan (Slices 0–11)
 │   ├── API.md              # Canonical API reference by implementation progress
+│   ├── FE_SETUP.md         # Frontend setup + env + MSW/i18n bootstrap
+│   ├── FE_CONVENTIONS.md   # Frontend coding + service/store/type conventions
+│   ├── FE_PAGE_INVENTORY.md # Frontend routes inventory by slice
 │   ├── REQUIREMENTS.md     # Full project requirements
 │   └── prd/                # Product Requirements Documents
 │       ├── README.md       # PRD index
@@ -107,8 +110,8 @@ ILS_v2/
     ├── package.json
     ├── next.config.ts
     ├── app/
-    │   ├── layout.tsx      # Default Next.js layout (not customized yet)
-    │   └── page.tsx        # Default Next.js home page (not customized yet)
+    │   ├── layout.tsx      # Root app layout (locale-aware routing baseline)
+    │   └── page.tsx        # Root redirect/page entry for locale-first flow
     └── public/             # Default Next.js assets
 ```
 
@@ -531,8 +534,8 @@ Client → POST /challenges/{slug}/submit { flag }
 | Error handling | Catch at each layer; re-raise typed exceptions; return meaningful error messages |
 | Logging | FE + BE + DB logging (planned) |
 | Flexible external services | Base URLs in `system_config`, not per-record |
-| i18n | `next-intl` (installed, not configured yet) |
-| Theming | Tailwind CSS (not configured yet) |
+| i18n | `next-intl` configured (`vi` default, `en` secondary, locale-first routing) |
+| Theming | Tailwind CSS v4 + shadcn baseline configured; advanced theme customization deferred |
 
 ---
 

@@ -385,7 +385,9 @@ interface AuthState {
 >
 > **PRD:** `docs/prd/02-authorization.md`
 
-### Task 2.1 — Permission auto-discovery at startup
+### Task 2.1 — Permission auto-discovery at startup ✅ COMPLETED (2026-03-30)
+
+Report: `docs/reports/2026-03-30_slice2-task2-1-permission-discovery.md`
 
 **Files:**
 ```
@@ -455,7 +457,9 @@ class HasJWTPermission(BasePermission):
         return check_bit_in_bitmap(token_bitmap, permission.id)
 ```
 
-### Task 2.3 — user_permission_cache + JWT encoding
+### Task 2.3 — user_permission_cache + JWT encoding ✅ COMPLETED (2026-03-31)
+
+Report: `docs/reports/2026-03-31_slice2-task2-3-handler-grants-bitmap.md`
 
 **File:** `backend/api/services/permission_service.py`
 
@@ -498,19 +502,22 @@ frontend/src/app/admin/rbac/
 
 > **PRD:** `docs/prd/10-system-config.md`
 
-### Task 3.1 — System Config API
+### Task 3.1 — System Config API ✅ COMPLETED (2026-03-30)
 
-**Files:** `backend/api/views/system_config.py`, `backend/api/serializers/system_config.py`
+Report: `docs/reports/2026-03-30_slice3-task3-1-system-config-api.md`
+
+**Files:** `backend/api/views.py`, `backend/api/serializers.py`, `backend/api/urls.py`, `backend/api/utils.py`
 
 **Endpoints:**
 ```
-GET  /api/config/           → list all (grouped by category; secrets → "***")
-GET  /api/config/{key}/     → single config value (secrets masked)
-PUT  /api/config/{key}/     → update value (admin only)
+GET   /api/admin/config/         → list all (grouped by category; secrets → "***")
+GET   /api/admin/config/{key}/   → single config value (secrets masked)
+PATCH /api/admin/config/{key}/   → update value (admin only)
 ```
 
 **Value coercion by `value_type`:** `boolean` → bool, `int` → int, `json` → dict/list, `string` → str.
 Secret values: `is_secret=True` → return `"***"` in GET.
+`is_editable=false` returns `403` on update attempts.
 
 ### Task 3.2 — Frontend: System Config Admin UI
 
@@ -530,7 +537,11 @@ Secret values: `is_secret=True` → return `"***"` in GET.
 > - [Q-INFRA-07](DECISIONS.md#q-infra-07-i18n-language-strategy) — i18n languages and timing
 > - [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library choice
 
-### Task 4.1 — App structure + shared infrastructure
+### Task 4.1 — App structure + shared infrastructure ✅ COMPLETED (2026-03-31)
+
+Report: `docs/reports/2026-03-31_slice4-full-task-report.md`
+
+Status note: Slice 4 foundation tasks were delivered in one batch session chain (Task 1–Task 10). Remaining backlog item is the shared Tree component for Learn/Challenge/Quiz reuse.
 
 **Directory structure:**
 ```
@@ -931,7 +942,7 @@ admin/stats/page.tsx → summary cards + user detail lookup
 | 0 | `migrate` runs clean; `seed_config` creates default rows |
 | 1 | `POST /api/auth/login/` → JWT with `permissions: []`; `POST /api/auth/token/refresh/` works |
 | 2 | Role → permission → user → login → JWT contains permission key |
-| 3 | `GET /api/config/` returns grouped configs; secrets show `***` |
+| 3 | `GET /api/admin/config/` returns grouped configs; secrets show `***` |
 | 4 | Next.js builds; `/login` renders; auth store hydrates from localStorage |
 | 5 | Create course → nodes → lesson → `GET /api/courses/{slug}/progress/` returns data |
 | 6 | Submit correct flag → `{correct: true}` + progress updated |

@@ -92,6 +92,9 @@ ILS_v2/
 | `docs/DATA_MODEL.md` | Before touching DB models or serializers |
 | `docs/CONFIG.md` | Before using `system_config` keys |
 | `docs/IMPL_PLAN.md` | Before starting a new slice — dependency order and task breakdown |
+| `docs/FE_SETUP.md` | Frontend environment/setup commands and MSW/i18n behavior |
+| `docs/FE_CONVENTIONS.md` | Frontend service/store/type conventions and API contract rules |
+| `docs/FE_PAGE_INVENTORY.md` | Route inventory, implemented vs planned pages by slice |
 | `design/database/vx/dbv3.sql` | ⚠️ **Legacy schema** — historical reference; `docs/DATA_MODEL.md` is authoritative |
 
 ---
@@ -147,6 +150,6 @@ Copy `.env.example` to `.env` in the repo root and fill in the required values.
 
 See `AGENT.md` → Implementation Status section for a full list of done/not-done features.
 
-**Current state:** Database models complete. API views not yet implemented.
+**Current state:** Slice 0 foundations, Slice 1 auth core (register/login/logout/refresh/SSO), Slice 2 backend RBAC core, Slice 3 backend system-config API, and Slice 4 frontend foundation are completed. Remaining work is mainly feature slices (5+), pending frontend admin pages, and deferred auth/session extras.
 
-**Next:** Slice 0 (foundation) → Slice 1 (auth) → Slice 2 (RBAC) — see `docs/IMPL_PLAN.md`.
+**Next:** Continue with Slice 5+ feature delivery and remaining frontend/admin tasks tracked in `docs/STATUS.md` and `docs/IMPL_PLAN.md`.

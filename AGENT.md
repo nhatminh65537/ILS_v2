@@ -18,6 +18,9 @@
 | `docs/BUGS.md` | Known bugs and fix history |
 | `docs/IMPL_PLAN.md` | Vertical slice implementation plan (Slices 0–11) |
 | `docs/DECISIONS.md` | **Open questions + resolved decisions** — must read before starting any slice |
+| `docs/FE_SETUP.md` | Frontend setup, env flags, MSW/i18n bootstrap |
+| `docs/FE_CONVENTIONS.md` | Frontend architecture and API contract conventions |
+| `docs/FE_PAGE_INVENTORY.md` | Route inventory and slice-to-page mapping |
 | `docs/prd/` | Product Requirements Documents (10 features) |
 | `design/database/vx/dbv3.sql` | ⚠️ **Legacy artifact** — pre-normalization schema, kept for reference only; no longer authoritative |
 | `backend/api/models.py` | All domain ORM models (~1195 lines); must stay in sync with `docs/DATA_MODEL.md` |
@@ -144,7 +147,7 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 5. **Read `docs/DATA_MODEL.md`** — authoritative entity types, schema, business rules; ORM must match this
 6. **Check `backend/api/models.py`** — all domain models exist; work ahead is API layer
 7. *(Optional)* `design/database/vx/dbv3.sql` — legacy reference only; do NOT treat as authority
-8. **Check `CLAUDE.md`** — OpenMemory integration rules; search memory before implementing
+8. **Check `openmemory.md`** — OpenMemory integration/project index; search memory before implementing
 
 ---
 

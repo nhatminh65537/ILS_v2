@@ -17,7 +17,7 @@ Route-level inventory for frontend pages across Slices 4–11.
 | `/vi` `/en` | Locale home | No | `[locale]` | none | none | 4 | implemented |
 | `/vi/login` `/en/login` | Login | No | `[locale]/(auth)` | `auth.store` | `auth.login`, `auth.ssoRedirect` | 4 | implemented |
 | `/vi/register` `/en/register` | Register | No | `[locale]/(auth)` | `auth.store` | `auth.register` | 4 | implemented |
-| `/vi/dashboard` `/en/dashboard` | Dashboard | Yes | `[locale]/(app)` | `auth.store`, `ui.store` | `users.getMe`, aggregated widgets | 4 | implemented |
+| `/vi/dashboard` `/en/dashboard` | Dashboard | Yes | `[locale]/(app)` | `auth.store`, `ui.store` | none (static foundation UI) | 4 | implemented |
 | `/vi/courses` `/en/courses` | Course catalog | Yes | `[locale]/(app)` | `courses.store` | `courses.listCourses` | 5 | planned |
 | `/vi/courses/[id]` `/en/courses/[id]` | Course detail | Yes | `[locale]/(app)` | `courses.store` | `courses.getCourseById`, `courses.getCourseTree`, `courses.getCourseProgress` | 5 | planned |
 | `/vi/lessons/[id]` `/en/lessons/[id]` | Lesson viewer | Yes | `[locale]/(app)` | `courses.store` | `lessons.getLessonById` (planned) | 5 | planned |
@@ -29,7 +29,7 @@ Route-level inventory for frontend pages across Slices 4–11.
 | `/vi/profile` `/en/profile` | User profile | Yes | `[locale]/(app)` | `auth.store` | `users.getMyProfile`, `users.updateMyProfile` | 8 | planned |
 | `/vi/admin/users` `/en/admin/users` | Admin users | Yes (Admin/Editor) | `[locale]/(app)` | `ui.store` | `users.listUsers`, `users.updateUser` | 8 | planned |
 | `/vi/notifications` `/en/notifications` | Notification inbox | Yes | `[locale]/(app)` | `notifications.store` | `notifications.listNotifications`, `notifications.markRead`, `notifications.markAllRead` | 9 | planned |
-| `/vi/admin/config` `/en/admin/config` | System config admin | Yes (Admin) | `[locale]/(app)` | `ui.store` | `admin config APIs` | 3/9 | planned |
+| `/vi/admin/config` `/en/admin/config` | System config admin | Yes (Admin) | `[locale]/(app)` | `ui.store` | `/api/admin/config/`, `/api/admin/config/{key}/` | 3/9 | planned |
 | `/vi/leaderboard` `/en/leaderboard` | Leaderboard | Yes | `[locale]/(app)` | `ui.store` | `leaderboard.getLeaderboard` | 11 | planned |
 | `/vi/admin/statistics` `/en/admin/statistics` | Admin statistics | Yes (Admin) | `[locale]/(app)` | `ui.store` | statistics APIs (planned) | 11 | planned |
 
@@ -38,3 +38,4 @@ Route-level inventory for frontend pages across Slices 4–11.
 - Locale-first routing is mandatory for all user-facing pages.
 - Service calls listed here must go through `src/services/*` only.
 - Planned routes align with `docs/IMPL_PLAN.md` slices and API inventory in `docs/API.md`.
+- Backend RBAC/config APIs are completed, but corresponding frontend admin pages remain planned.
