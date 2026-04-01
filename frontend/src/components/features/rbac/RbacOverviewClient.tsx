@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -32,9 +33,12 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
   const {
     rolesState,
     permissionsState,
+    permissionsPageState,
+    permissionsPagination,
     isMutating,
     loadRoles,
     loadPermissions,
+    loadPermissionsPage,
     submitCreateRole,
     submitDeleteRole,
     submitUpdateRole,
@@ -52,7 +56,8 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
 
   useEffect(() => {
     void loadPermissions(includeInactive)
-  }, [includeInactive, loadPermissions])
+    void loadPermissionsPage(includeInactive, 1)
+  }, [includeInactive, loadPermissions, loadPermissionsPage])
 
   const capability = useMemo(
     () => canManageRoles(accessToken, permissionsState.data),
@@ -77,15 +82,15 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
     const query = search.trim().toLowerCase()
 
     if (!query) {
-      return permissionsState.data
+      return permissionsPageState.data
     }
 
-    return permissionsState.data.filter((permission) => {
+    return permissionsPageState.data.filter((permission) => {
       const name = permission.name.toLowerCase()
       const description = permission.description.toLowerCase()
       return name.includes(query) || description.includes(query)
     })
-  }, [permissionsState.data, search])
+  }, [permissionsPageState.data, search])
 
   const handleCreateRole = async (payload: { name: string; description?: string }) => {
     const result = await submitCreateRole(payload)
@@ -143,10 +148,11 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
 
       <RbacActionToolbar
         includeInactive={includeInactive}
-        isRefreshing={rolesState.isLoading || permissionsState.isLoading}
+        isRefreshing={rolesState.isLoading || permissionsPageState.isLoading}
         onRefresh={() => {
           void loadRoles()
           void loadPermissions(includeInactive)
+          void loadPermissionsPage(includeInactive, permissionsPagination.page)
         }}
         onSearchChange={setSearch}
         onToggleIncludeInactive={setIncludeInactive}
@@ -158,6 +164,9 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
       ) : null}
       {permissionsState.errorMessageKey ? (
         <p className="text-xs text-destructive">{tRoot(permissionsState.errorMessageKey)}</p>
+      ) : null}
+      {permissionsPageState.errorMessageKey ? (
+        <p className="text-xs text-destructive">{tRoot(permissionsPageState.errorMessageKey)}</p>
       ) : null}
       {submitErrorKey ? <p className="text-xs text-destructive">{tRoot(submitErrorKey)}</p> : null}
 
@@ -199,7 +208,7 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {permissionsState.isLoading ? (
+              {permissionsPageState.isLoading ? (
                 <TableRow>
                   <TableCell className="text-muted-foreground" colSpan={3}>
                     {t('status.loadingPermissions')}
@@ -207,7 +216,7 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
                 </TableRow>
               ) : null}
 
-              {!permissionsState.isLoading && filteredPermissions.length === 0 ? (
+              {!permissionsPageState.isLoading && filteredPermissions.length === 0 ? (
                 <TableRow>
                   <TableCell className="text-muted-foreground" colSpan={3}>
                     {t('empty.permissions')}
@@ -215,17 +224,50 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
                 </TableRow>
               ) : null}
 
-              {!permissionsState.isLoading
+              {!permissionsPageState.isLoading
                 ? filteredPermissions.map((permission) => (
                     <TableRow key={permission.id}>
                       <TableCell>{permission.name}</TableCell>
-                      <TableCell className="max-w-[420px] truncate">{permission.description}</TableCell>
+                      <TableCell className="max-w-105 truncate">{permission.description}</TableCell>
                       <TableCell>{permission.is_active ? t('labels.activeYes') : t('labels.activeNo')}</TableCell>
                     </TableRow>
                   ))
                 : null}
             </TableBody>
           </Table>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+            <p className="text-xs text-muted-foreground">
+              {t('pagination.pageInfo', { page: permissionsPagination.page })}
+              {' · '}
+              {t('pagination.totalInfo', { total: permissionsPagination.count })}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <Button
+                disabled={!permissionsPagination.hasPrevious || permissionsPageState.isLoading}
+                onClick={() => {
+                  void loadPermissionsPage(includeInactive, Math.max(1, permissionsPagination.page - 1))
+                }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {t('pagination.previous')}
+              </Button>
+              <Button
+                disabled={!permissionsPagination.hasNext || permissionsPageState.isLoading}
+                onClick={() => {
+                  void loadPermissionsPage(includeInactive, permissionsPagination.page + 1)
+                }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {t('pagination.next')}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

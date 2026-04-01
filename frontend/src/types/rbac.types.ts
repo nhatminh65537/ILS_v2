@@ -45,6 +45,13 @@ export interface RbacListState<T> {
   errorMessageKey: string | null
 }
 
+export interface RbacPaginationState {
+  page: number
+  count: number
+  hasPrevious: boolean
+  hasNext: boolean
+}
+
 export interface RbacRoleCapabilities {
   canListRoles: boolean
   canCreateRole: boolean

@@ -184,6 +184,12 @@
       "readOnly": "Read only",
       "readOnlyHint": "Some actions are hidden because required permission keys are not present in JWT claims."
     },
+    "pagination": {
+      "pageInfo": "Page {page}",
+      "totalInfo": "Total {total} permissions",
+      "previous": "Previous page",
+      "next": "Next page"
+    },
     "form": {
       "createRoleTitle": "Create role",
       "editRoleTitle": "Edit role",

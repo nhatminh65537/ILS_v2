@@ -135,6 +135,32 @@ const serializeUserRole = (record: UserRoleRecord): UserRoleMappingDto => {
 
 const ensureUserExists = (userId: number): boolean => usersFixture.some((item) => item.id === userId)
 
+const DEFAULT_PAGE_SIZE = 20
+
+const toPageNumberResponse = <T>(request: Request, items: readonly T[]) => {
+  const url = new URL(request.url)
+  const pageParam = Number(url.searchParams.get('page') ?? '1')
+  const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1
+  const start = (page - 1) * DEFAULT_PAGE_SIZE
+  const end = start + DEFAULT_PAGE_SIZE
+  const total = items.length
+  const results = items.slice(start, end)
+
+  const basePath = `${url.origin}${url.pathname}`
+  const buildUrl = (nextPage: number): string => {
+    const params = new URLSearchParams(url.searchParams)
+    params.set('page', String(nextPage))
+    return `${basePath}?${params.toString()}`
+  }
+
+  return {
+    count: total,
+    next: end < total ? buildUrl(page + 1) : null,
+    previous: page > 1 ? buildUrl(page - 1) : null,
+    results,
+  }
+}
+
 export const rbacHandlers = [
   http.get('*/api/admin/permissions/', ({ request }) => {
     const auth = requirePermission(request, 'api.permission.list')
@@ -144,7 +170,7 @@ export const rbacHandlers = [
 
     const includeInactive = new URL(request.url).searchParams.get('include_inactive') === 'true'
     const payload = includeInactive ? permissionFixtures : permissionFixtures.filter((item) => item.is_active)
-    return HttpResponse.json(payload)
+    return HttpResponse.json(toPageNumberResponse(request, payload))
   }),
 
   http.get('*/api/admin/roles/', ({ request }) => {
@@ -153,7 +179,7 @@ export const rbacHandlers = [
       return auth.response
     }
 
-    return HttpResponse.json(roles.map(serializeRole))
+    return HttpResponse.json(toPageNumberResponse(request, roles.map(serializeRole)))
   }),
 
   http.post('*/api/admin/roles/', async ({ request }) => {

@@ -184,6 +184,12 @@
       "readOnly": "Chỉ xem",
       "readOnlyHint": "Một số thao tác đang bị ẩn vì JWT claims không có permission key cần thiết."
     },
+    "pagination": {
+      "pageInfo": "Trang {page}",
+      "totalInfo": "Tổng {total} quyền",
+      "previous": "Trang trước",
+      "next": "Trang sau"
+    },
     "form": {
       "createRoleTitle": "Tạo vai trò",
       "editRoleTitle": "Sửa vai trò",

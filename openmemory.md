@@ -49,6 +49,7 @@ Target: one instance per organization, no horizontal scale needed.
 - Slice 4 Frontend Foundation implemented on 2026-03-31: typed contracts + services, Zustand store scaffolding, MSW handlers/fixtures/provider, next-intl (`vi` default, `en` secondary) locale routing, and baseline UI primitives/documents (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`).
 - Slice 4 runtime stabilization applied on 2026-03-31: removed redundant shadcn Tailwind package import from `frontend/app/globals.css` to resolve intermittent `Can't resolve 'tailwindcss'` runtime failures.
 - Slice 2 Task 2.1 implemented on 2026-03-30: startup permission auto-discovery is active via `auth_app.services.permission_discovery`, syncing `Permission.is_active`, built-in role mappings from `@add_role_granted`, and lowercase naming format `{app_label}.{resource_name}.{handler_method_name}`.
+- 2026-04-01 RBAC frontend list normalization: `frontend/src/services/rbac.service.ts` now flattens DRF paginated list payloads before `useRbac` or RBAC views consume them, preventing `filter is not a function` crashes when `/api/admin/permissions/` is paginated.
 - Q-AUTH-02 resolved on 2026-03-17 (Option B: `seed_admin` command as first-admin bootstrap)
 - Slice 1 decision gate resolved on 2026-03-23 for implementation readiness: namespaced API routes (`/api/auth/*`, `/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`), password reset email flow deferred with Task 1.4, LocMem (dev) + Redis (prod) cache policy for rate limiting, memory-only token storage with refresh flow, auto-assign Member role on register, and superuser local-login emergency fallback for SSO-only outage.
 - Four CRITICAL Slice 1 blockers resolved on 2026-03-24: Q-SLICE1-01 Option A (bootstrap role seeding), Q-INFRA-01 Option A (keep `frontend/app/`), Q-AUTH-04 Option A (15m access + 7d refresh with silent refresh), and Q-AUTH-05 Option C (temporary default bootstrap password + forced reset).
@@ -85,6 +86,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **Account linking policy**: Resolve by `(provider, external_id)` first; fallback to email-based linking only when `auth.link_accounts_enabled=true`; return conflict when an external identity belongs to a different user.
 - **SSO tests**: OIDC discovery/code exchange/id_token decode are mock-driven in unit tests so CI does not require a live Authentik instance.
 - **Frontend API usage**: Components/hooks must call `src/services/*` only; Axios client/interceptors stay centralized in `src/lib/axios.ts`.
+- **Frontend RBAC list normalization**: RBAC list services should accept either bare arrays or DRF paginated `{ count, next, previous, results }` payloads and normalize to arrays before state updates.
 - **Frontend auth persistence**: Auth tokens persist via Zustand persist + localStorage (`auth.store.ts`) and sync with Axios interceptor refresh flow.
 - **Frontend i18n routing**: Locale-first URLs (`/vi/*`, `/en/*`) with `vi` as default and root redirect from `/` to `/vi`.
 - **Frontend mock runtime**: MSW worker starts in browser through `MswProvider` when `NEXT_PUBLIC_ENABLE_MSW=true`; production default is disabled.

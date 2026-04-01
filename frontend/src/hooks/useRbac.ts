@@ -10,6 +10,7 @@ import {
   getRolePermissions,
   getUserRoles,
   listPermissions,
+  listPermissionsPage,
   listRoles,
   revokePermissionFromRole,
   revokeRoleFromUser,
@@ -19,6 +20,7 @@ import type {
   ActionResult,
   PermissionDto,
   RbacListState,
+  RbacPaginationState,
   RoleDto,
   RoleUpsertPayload,
   UserRoleMappingDto,
@@ -36,6 +38,13 @@ const EMPTY_PERMISSION_STATE: RbacListState<PermissionDto> = {
   errorMessageKey: null,
 }
 
+const EMPTY_PERMISSION_PAGINATION: RbacPaginationState = {
+  page: 1,
+  count: 0,
+  hasPrevious: false,
+  hasNext: false,
+}
+
 const EMPTY_USER_ROLE_STATE: RbacListState<UserRoleMappingDto> = {
   data: [],
   isLoading: false,
@@ -46,6 +55,12 @@ export const useRbac = () => {
   const [rolesState, setRolesState] = useState<RbacListState<RoleDto>>(EMPTY_ROLE_STATE)
   const [permissionsState, setPermissionsState] = useState<RbacListState<PermissionDto>>(
     EMPTY_PERMISSION_STATE
+  )
+  const [permissionsPageState, setPermissionsPageState] = useState<RbacListState<PermissionDto>>(
+    EMPTY_PERMISSION_STATE
+  )
+  const [permissionsPagination, setPermissionsPagination] = useState<RbacPaginationState>(
+    EMPTY_PERMISSION_PAGINATION
   )
   const [userRolesState, setUserRolesState] = useState<RbacListState<UserRoleMappingDto>>(
     EMPTY_USER_ROLE_STATE
@@ -78,6 +93,28 @@ export const useRbac = () => {
         isLoading: false,
         errorMessageKey: mapRbacErrorToMessageKey(error, 'adminRbac.errors.loadPermissionsFailed'),
       }))
+    }
+  }, [])
+
+  const loadPermissionsPage = useCallback(async (includeInactive = false, page = 1) => {
+    setPermissionsPageState((state) => ({ ...state, isLoading: true, errorMessageKey: null }))
+
+    try {
+      const result = await listPermissionsPage({ includeInactive, page })
+      setPermissionsPageState({ data: result.data, isLoading: false, errorMessageKey: null })
+      setPermissionsPagination({
+        page: result.page,
+        count: result.count,
+        hasPrevious: Boolean(result.previous),
+        hasNext: Boolean(result.next),
+      })
+    } catch (error) {
+      setPermissionsPageState((state) => ({
+        ...state,
+        isLoading: false,
+        errorMessageKey: mapRbacErrorToMessageKey(error, 'adminRbac.errors.loadPermissionsFailed'),
+      }))
+      setPermissionsPagination((state) => ({ ...state, page }))
     }
   }, [])
 
@@ -241,19 +278,25 @@ export const useRbac = () => {
   )
 
   const activePermissions = useMemo(
-    () => permissionsState.data.filter((permission) => permission.is_active),
+    () =>
+      (Array.isArray(permissionsState.data) ? permissionsState.data : []).filter(
+        (permission) => permission.is_active
+      ),
     [permissionsState.data]
   )
 
   return {
     rolesState,
     permissionsState,
+    permissionsPageState,
+    permissionsPagination,
     userRolesState,
     rolePermissions,
     isMutating,
     activePermissions,
     loadRoles,
     loadPermissions,
+    loadPermissionsPage,
     loadRolePermissions,
     loadUserRoles,
     submitCreateRole,

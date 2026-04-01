@@ -50,6 +50,17 @@ const toAuthUser = (user: { id: number; username: string; email: string }) => ({
   email: user.email,
 })
 
+const resolveAccessToken = (request: Request): string | null => {
+  const raw = request.headers.get('Authorization')
+  if (!raw || !raw.startsWith('Bearer ')) {
+    return null
+  }
+  return raw.slice('Bearer '.length)
+}
+
+const unauthorized = () =>
+  HttpResponse.json({ detail: 'Authentication credentials were not provided.' }, { status: 401 })
+
 export const authHandlers = [
   http.post('*/api/auth/register/', async ({ request }) => {
     const payload = (await request.json()) as { username?: string; email?: string; password?: string }
@@ -60,6 +71,13 @@ export const authHandlers = [
 
     if (!payload.password || payload.password.length < 8) {
       return badRequest('password must be at least 8 characters')
+    }
+
+    const duplicate = usersFixture.some(
+      (item) => item.username.toLowerCase() === payload.username?.toLowerCase()
+    )
+    if (duplicate) {
+      return HttpResponse.json({ username: ['Username already exists.'] }, { status: 400 })
     }
 
     const nextId = usersFixture.length + 1
@@ -96,14 +114,14 @@ export const authHandlers = [
     const payload = (await request.json()) as { username?: string; password?: string }
 
     if (!payload.username || !payload.password) {
-      return HttpResponse.json({ detail: 'Invalid credentials' }, { status: 400 })
+      return HttpResponse.json({ detail: 'Invalid credentials.' }, { status: 401 })
     }
 
-    if (payload.password === 'wrong') {
-      return HttpResponse.json({ detail: 'Invalid credentials' }, { status: 401 })
+    const user = usersFixture.find((item) => item.username === payload.username)
+    if (!user || payload.password === 'wrong' || !user.is_active) {
+      return HttpResponse.json({ detail: 'Invalid credentials.' }, { status: 401 })
     }
 
-    const user = usersFixture.find((item) => item.username === payload.username) ?? usersFixture[0]
     const tokens = issueAuthTokens({
       id: user.id,
       is_staff: user.is_staff,
@@ -139,6 +157,11 @@ export const authHandlers = [
   }),
 
   http.post('*/api/auth/logout/', async ({ request }) => {
+    const accessToken = resolveAccessToken(request)
+    if (!accessToken) {
+      return unauthorized()
+    }
+
     const payload = (await request.json()) as { refresh?: string }
 
     if (!payload.refresh) {
@@ -148,20 +171,31 @@ export const authHandlers = [
     return HttpResponse.json({ detail: 'Logged out successfully.' }, { status: 200 })
   }),
 
-  http.post('*/api/auth/logout-all/', () =>
-    HttpResponse.json(
+  http.post('*/api/auth/logout-all/', ({ request }) => {
+    const accessToken = resolveAccessToken(request)
+    if (!accessToken) {
+      return unauthorized()
+    }
+
+    return HttpResponse.json(
       {
         detail: 'Logged out all sessions.',
         revoked_count: 1,
       },
       { status: 200 }
     )
-  ),
+  }),
 
   http.get('*/api/auth/sso/redirect/', () => new HttpResponse(null, { status: 302, headers: { Location: ssoRedirectUrl } })),
 
-  http.get('*/api/auth/sso/callback/', () =>
-    {
+  http.get('*/api/auth/sso/callback/', ({ request }) => {
+      const url = new URL(request.url)
+      const code = url.searchParams.get('code')
+      const state = url.searchParams.get('state')
+      if (!code || !state) {
+        return HttpResponse.json({ code: ['This field is required.'] }, { status: 400 })
+      }
+
       const user = usersFixture[0]
       const tokens = issueAuthTokens({
         id: user.id,
@@ -174,10 +208,14 @@ export const authHandlers = [
         refresh: tokens.refresh,
         user: toAuthUser(user),
       })
-    }
-  ),
+    }),
 
   http.post('*/api/auth/identity/link/', async ({ request }) => {
+    const accessToken = resolveAccessToken(request)
+    if (!accessToken) {
+      return unauthorized()
+    }
+
     const payload = (await request.json()) as {
       provider?: 'authentik' | 'google' | 'github'
       external_id?: string
