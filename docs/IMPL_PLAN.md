@@ -511,12 +511,12 @@ Report: `docs/reports/2026-03-30_slice3-task3-1-system-config-api.md`
 **Endpoints:**
 ```
 GET   /api/admin/config/         → list all (grouped by category; secrets → "***")
-GET   /api/admin/config/{key}/   → single config value (secrets masked)
+GET   /api/admin/config/{key}/   → single config value (secrets masked by default)
 PATCH /api/admin/config/{key}/   → update value (admin only)
 ```
 
 **Value coercion by `value_type`:** `boolean` → bool, `int` → int, `json` → dict/list, `string` → str.
-Secret values: `is_secret=True` → return `"***"` in GET.
+Secret values: `is_secret=True` → return `"***"` by default; clear read requires manual permission `system.config.view_secret`.
 `is_editable=false` returns `403` on update attempts.
 
 ### Task 3.2 — Frontend: System Config Admin UI
@@ -525,7 +525,7 @@ Secret values: `is_secret=True` → return `"***"` in GET.
 
 - Group configs by `category` (accordion per group)
 - Field type per `value_type`: toggle (boolean), number (int), text (string)
-- Secret fields: masked display, show/hide button, edit requires confirmation
+- Secret fields: masked display by default, clear reveal only when caller has `system.config.view_secret`, edit requires confirmation
 
 ---
 
@@ -596,31 +596,20 @@ interface TreeProps {
 
 ## Slice 5 — Learn (Courses)
 
-> **Decision prerequisites (must resolve before coding):**
-> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix (`/api/courses/` vs `/api/learn/courses/`)
-> - [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node creation: 1-step or 2-step
-> - [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source (shared Quiz or separate)
-> - [Q-LEARN-03](DECISIONS.md#q-learn-03-course-progress-on-structure-change) — Progress when course structure changes
-> - [Q-LEARN-04](DECISIONS.md#q-learn-04-course-delete-strategy) — Course delete: soft-delete or archive
-> - [Q-LEARN-05](DECISIONS.md#q-learn-05-slug-conflict-resolution) — Slug conflict resolution strategy
-> - [Q-LEARN-06](DECISIONS.md#q-learn-06-outline-url-frontend-exposure) — Outline URL config exposure
-> - [Q-LEARN-07](DECISIONS.md#q-learn-07-tag-creation-permissions) — Who can create/delete tags
-> - [Q-LEARN-08](DECISIONS.md#q-learn-08-lesson-completion-trigger) — Lesson completion trigger (scroll enforcement)
-> - [Q-LEARN-09](DECISIONS.md#q-learn-09-lesson-start-trigger) — Lesson start: implicit or explicit
-> - [Q-LEARN-10](DECISIONS.md#q-learn-10-outline-sync-failure-handling) — Outline sync failure and timeout
+> **Decision prerequisites:** all Slice 5 decisions are resolved in `docs/DECISIONS.md` (2026-04-01).
 
 ### Task 5.1 — Course + Category CRUD API
 **Files:** `backend/api/views/course.py`, `backend/api/serializers/course.py`, `backend/api/urls.py`
 
 **Endpoints:**
 ```
-GET  /api/courses/                    → list (filter: category, status, search)
-POST /api/courses/                    → create (Editor+)
-GET/PUT/DELETE /api/courses/{slug}/
-GET  /api/course-categories/          → list
-POST /api/course-categories/          → create (Admin)
-GET/PUT/DELETE /api/course-categories/{id}/
-GET  /api/course-tags/
+GET  /api/learn/courses/                    → list (filter: category, status, search)
+POST /api/learn/courses/                    → create (Editor+)
+GET/PUT/DELETE /api/learn/courses/{slug}/
+GET  /api/learn/categories/                 → list
+POST /api/learn/categories/                 → create (Admin)
+GET/PUT/DELETE /api/learn/categories/{id}/
+GET  /api/learn/tags/
 ```
 
 **Course list response includes:** `user_progress: {completed, total}` if authenticated.
@@ -630,34 +619,36 @@ GET  /api/course-tags/
 
 **Endpoints:**
 ```
-GET  /api/courses/{slug}/tree/              → root nodes (parent=null)
-GET  /api/courses/{slug}/tree/?parent={id}  → children of node (lazy load)
-POST /api/courses/{slug}/tree/              → create node
-PUT  /api/courses/{slug}/tree/{node_id}/    → rename, reorder, move
-DELETE /api/courses/{slug}/tree/{node_id}/  → delete node + subtree
+GET  /api/learn/courses/{slug}/nodes/                → root nodes (parent=null)
+GET  /api/learn/courses/{slug}/nodes/{id}/children/  → children of node (lazy load)
+POST /api/learn/courses/{slug}/nodes/                → create folder/item node
+PUT  /api/learn/courses/{slug}/nodes/{node_id}/      → rename, reorder, move
+DELETE /api/learn/courses/{slug}/nodes/{node_id}/    → delete node + subtree
 ```
 
 **Move node:** update `path` for self + all descendants using `bulk_update`.
+**Atomicity:** lesson item node creation is one-step atomic (create lesson + node in one transaction).
 
 ### Task 5.3 — Lesson CRUD + Outline sync
 **Endpoints:**
 ```
-GET/PUT  /api/lessons/{id}/
-POST     /api/lessons/{id}/sync/            → pull content from Outline API
-GET/POST /api/lessons/{id}/questions/       → LessonQuestion CRUD
-GET/PUT/DELETE /api/lesson-questions/{id}/
+GET/PUT  /api/learn/lessons/{id}/
+POST     /api/learn/lessons/{id}/sync-outline/      → enqueue async sync from Outline API
+GET/POST /api/learn/lessons/{id}/questions/         → LessonQuestion CRUD (shared `quiz_question`)
+GET/PUT/DELETE /api/learn/lesson-questions/{id}/
 ```
 
-**Outline sync** reads `outline.url` from system_config.
+**Outline integration** is backend-mediated: FE never calls Outline directly; backend reads `outline.url` and `outline.api_token` from system_config.
 
 ### Task 5.4 — User progress tracking
 **Endpoints:**
 ```
-POST /api/lessons/{id}/start/        → mark started_at (idempotent)
-POST /api/lessons/{id}/complete/     → mark completed_at (idempotent)
-GET  /api/courses/{slug}/progress/   → {lesson_count, completed, percent}
+POST /api/learn/lessons/{id}/progress/start/     → explicit start (idempotent)
+POST /api/learn/lessons/{id}/progress/complete/  → hybrid completion path (idempotent)
+GET  /api/learn/courses/{slug}/progress/         → {lesson_count, completed, percent}
 ```
 **Signal chain:** `UserLessonProgress.completed_at` set → update `UserCourseProgress` → update `UserProfile`.
+**Recompute strategy:** versioned lazy recompute per (user, course) when `course.structure_version` changes.
 
 ### Task 5.5 — Frontend: Course catalog + tree
 ```
@@ -676,30 +667,30 @@ learn/[slug]/page.tsx      → course detail with Tree component (lazy expand)
 
 ## Slice 6 — Challenge (CTF)
 
-> **Decision prerequisites (must resolve before coding):**
-> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention
-> - [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances: MVP or deferred
-> - [Q-CHALL-02](DECISIONS.md#q-chall-02-instance-deployment-protocol) — Instance deployment external system spec (if instances in MVP)
+> **Decision prerequisites:**
+> - Namespaced URLs are used (`/api/challenge/*`).
+> - [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) remains OPEN.
+> - [Q-CHALL-02](DECISIONS.md#q-chall-02-instance-deployment-protocol) is RESOLVED.
 
 ### Task 6.1 — Challenge CRUD API
 **Files:** `backend/api/views/challenge.py`, `backend/api/serializers/challenge.py`
 
 **Endpoints:** (same pattern as courses)
 ```
-GET/POST /api/challenges/
-GET/PUT/DELETE /api/challenges/{slug}/
-GET/POST /api/challenge-categories/
-GET/POST /api/challenge-tags/
+GET/POST /api/challenge/challenges/
+GET/PUT/DELETE /api/challenge/challenges/{slug}/
+GET/POST /api/challenge/categories/
+GET/POST /api/challenge/tags/
 ```
 
 ### Task 6.2 — ChallengeNode tree + ChallengeFlag CRUD
 **Endpoints:**
 ```
-GET/POST /api/challenges/{slug}/tree/
-PUT/DELETE /api/challenges/{slug}/tree/{id}/
+GET/POST /api/challenge/nodes/
+PUT/DELETE /api/challenge/nodes/{id}/
 
-GET/POST /api/challenges/{slug}/flags/         → editor/admin only; never returns values to Members
-PUT/DELETE /api/challenges/{slug}/flags/{id}/
+GET/POST /api/challenge/challenges/{slug}/flags/         → editor/admin only; never returns values to Members
+PUT/DELETE /api/challenge/challenges/{slug}/flags/{id}/
 ```
 
 ### Task 6.3 — Flag submission + progress
@@ -708,15 +699,15 @@ PUT/DELETE /api/challenges/{slug}/flags/{id}/
 Server-side only flag checking: STATIC (string match), REGEX (re.match), INSTANCE (compare against running instance flag).
 
 ```
-POST /api/challenges/{slug}/submit/   → {flag: "..."} → {correct: bool}
-GET  /api/challenges/{slug}/progress/ → {solved: bool, attempt_count: int}
+POST /api/challenge/challenges/{slug}/submit/   → {flag: "..."} → {correct: bool}
+GET  /api/challenge/progress/                   → {solved_count, total_attempts}
 ```
 
 On correct: update `UserChallengeProgress` → signal → `UserProfile` counters.
 
 ### Task 6.4 — GitLab sync
 ```
-POST /api/challenges/{slug}/gitlab-sync/   → admin/editor only
+POST /api/challenge/challenges/{slug}/sync-gitlab/   → admin/editor only
 ```
 Reads `challenge.git.url` from system_config.
 
@@ -734,22 +725,18 @@ challenge/[slug]/page.tsx     → detail + flag submit form
 
 ## Slice 7 — Quiz
 
-> **Decision prerequisites (must resolve before coding):**
-> - [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention
-> - [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth method
+> **Decision prerequisites:** namespaced URLs and WebSocket first-message auth are resolved.
 
 ### Task 7.1 — Quiz + Question CRUD API
 **Files:** `backend/api/views/quiz.py`, `backend/api/serializers/quiz.py`
 
 **Endpoints:**
 ```
-GET/POST /api/quizzes/
-GET/PUT/DELETE /api/quizzes/{id}/
-GET/POST /api/quizzes/{id}/questions/
-GET/PUT/DELETE /api/quiz-questions/{id}/
-GET/POST /api/quiz-questions/{id}/options/
-GET/PUT/DELETE /api/quiz-question-options/{id}/
-GET/PUT /api/quizzes/{id}/config/
+GET/POST /api/quiz/quizzes/
+GET/PUT/DELETE /api/quiz/quizzes/{id}/
+GET/POST /api/quiz/quizzes/{id}/questions/
+GET/PUT/DELETE /api/quiz/quizzes/{id}/questions/{qid}/
+GET/PUT /api/quiz/quizzes/{id}/config/
 ```
 
 ### Task 7.2 — QuizNode tree API
@@ -759,14 +746,14 @@ Same pattern as Course/Challenge nodes. **No circular FK** — `quiz_node.quiz_i
 
 **Files:** `backend/realtime/consumers/quiz_consumer.py`, `backend/realtime/routing.py`
 
-**Protocol:** `ws://host/ws/quiz/{quiz_id}/?token={jwt}`
+**Protocol:** `ws://host/ws/quiz/{quiz_id}/` then first auth message `{type: "auth", token: "<access_jwt>"}`.
 ```python
 class QuizConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Verify JWT, create UserQuizAttempt, send first question
+        # Accept socket, require first auth message within timeout
 
     async def receive(self, text_data):
-        # Validate answer → store UserQuizAnswer → send result + next question
+        # Handle auth message first; then validate answer → store UserQuizAnswer → send result + next question
 
     async def disconnect(self, code):
         # Mark attempt.finished_at
@@ -785,7 +772,7 @@ quiz/[id]/session/page.tsx   → active WebSocket quiz session
 ```
 
 ### Task 7.6 — Frontend: WebSocket quiz session
-- WS connect on mount with JWT token
+- WS connect on mount, then send first auth message with JWT token
 - Display question + options; submit answer; show result + explanation
 - Finish screen: score, correct%, time elapsed
 
@@ -795,9 +782,12 @@ quiz/[id]/session/page.tsx   → active WebSocket quiz session
 
 ### Task 8.1 — User profile API
 ```
-GET/PUT /api/users/me/         → own profile + stats
-GET     /api/users/{id}/       → public profile
-GET     /api/users/me/activity/ → last 30 events
+GET/PATCH /api/users/me/profile/       → own profile + stats
+PATCH     /api/users/me/settings/      → language/theme/timezone
+PATCH     /api/users/me/account/       → username/email change
+GET       /api/users/me/activity/      → own last 30 events
+GET       /api/users/{username}/profile/   → public profile
+GET       /api/users/{username}/activity/  → public last 30 events
 ```
 
 ### Task 8.2 — Admin user management API
@@ -942,12 +932,12 @@ admin/stats/page.tsx → summary cards + user detail lookup
 | 0 | `migrate` runs clean; `seed_config` creates default rows |
 | 1 | `POST /api/auth/login/` → JWT with `permissions: []`; `POST /api/auth/token/refresh/` works |
 | 2 | Role → permission → user → login → JWT contains permission key |
-| 3 | `GET /api/admin/config/` returns grouped configs; secrets show `***` |
+| 3 | `GET /api/admin/config/` returns grouped configs; secrets masked by default, clear value requires `system.config.view_secret` |
 | 4 | Next.js builds; `/login` renders; auth store hydrates from localStorage |
-| 5 | Create course → nodes → lesson → `GET /api/courses/{slug}/progress/` returns data |
+| 5 | Create course → nodes → lesson → `GET /api/learn/courses/{slug}/progress/` returns data |
 | 6 | Submit correct flag → `{correct: true}` + progress updated |
 | 7 | WS connect → answer all questions → `UserQuizProgress` updated |
-| 8 | `GET /api/users/me/` returns stats; `PUT` updates display_name |
+| 8 | `GET /api/users/me/profile/` returns stats; `PATCH /api/users/me/profile/` updates display_name |
 | 9 | Complete challenge → notification in bell within 2s (WS delivery) |
 | 10 | ⚠️ DEFERRED — `POST /api/ai/ask/` → real LLM response |
 | 11 | `GET /api/leaderboard/` → sorted list with correct scores |

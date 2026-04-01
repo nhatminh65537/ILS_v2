@@ -164,7 +164,7 @@ Dựa trên kiến trúc **Backend (Django) + Frontend (Next.js)**, phân công 
 
 | ID | Vấn đề | Gợi ý lựa chọn |
 |----|--------|-----------------|
-| Q-INFRA-02 | Quy tắc URL prefix (`/api/courses/` hay `/api/learn/courses/`) | **Gợi ý Option A:** URL ngắn `/api/courses/` — REST chuẩn, đơn giản |
+| Q-INFRA-02 | Quy tắc URL prefix (`/api/courses/` hay `/api/learn/courses/`) | **ĐÃ CHỐT:** Namespaced URLs (`/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`) |
 | Q-INFRA-03 | Email backend cho reset password | **Gợi ý Option C:** Hoãn password reset — tập trung login/register trước |
 | Q-INFRA-04 | Cache backend cho rate limiting | **Gợi ý Option A:** LocMemCache cho dev — chuyển Redis khi cần production |
 | Q-INFRA-06 | Lưu token ở client | **Gợi ý Option A:** `localStorage` — đơn giản, phù hợp internal platform ~100 người |
@@ -175,25 +175,25 @@ Dựa trên kiến trúc **Backend (Django) + Frontend (Next.js)**, phân công 
 
 | ID | Vấn đề | Gợi ý lựa chọn |
 |----|--------|-----------------|
-| Q-INFRA-01 | Thư mục frontend `src/` | **Gợi ý Option B:** Dùng `frontend/src/` — tách biệt rõ, phù hợp project lớn |
-| Q-INFRA-07 | Chiến lược i18n | **Gợi ý Option B:** Hardcode English trước, thêm i18n sau khi xong feature |
+| Q-INFRA-01 | Thư mục frontend `src/` | **ĐÃ CHỐT:** Giữ `frontend/app/` (không dùng `src/`) |
+| Q-INFRA-07 | Chiến lược i18n | **ĐÃ CHỐT:** Vietnamese-first, i18n từ Slice 4 |
 | Q-INFRA-08 | UI component library | **Gợi ý Option A:** `shadcn/ui` — tương thích Tailwind v4, có sẵn components |
-| Q-INFRA-05 | JWT auth cho WebSocket | **Gợi ý Option A:** Query string — đơn giản, token ngắn hạn, internal platform |
+| Q-INFRA-05 | JWT auth cho WebSocket | **ĐÃ CHỐT:** Option B — first auth message, không truyền JWT qua query string |
 
 ### Nhóm chặn Slice 5 (giải quyết khi bắt đầu Phase 3)
 
 | ID | Vấn đề | Gợi ý lựa chọn |
 |----|--------|-----------------|
-| Q-LEARN-01 | Tạo lesson node: 1 bước hay 2 bước | **Gợi ý Option A:** Atomic 1 bước — tránh orphan |
-| Q-LEARN-02 | Nguồn câu hỏi mini-quiz | **Gợi ý Option A:** Dùng chung `quiz_question` — tái sử dụng ngân hàng câu hỏi |
-| Q-LEARN-03 | Progress khi thay đổi cấu trúc course | **Gợi ý Option A:** Tính động tại query time — luôn chính xác |
-| Q-LEARN-04 | Xóa course: soft-delete hay archive | **Gợi ý Option A:** Archive (`status=archived`) — đơn giản, đã có sẵn |
-| Q-LEARN-05 | Xung đột slug | **Gợi ý Option D:** Cho phép editor tự đặt slug, auto-generate mặc định |
-| Q-LEARN-06 | Outline URL cho frontend | **Gợi ý Option A:** `outline.url` là public config |
-| Q-LEARN-07 | Ai được tạo tag | **Gợi ý Option B:** Editor và Admin |
-| Q-LEARN-08 | Trigger hoàn thành bài học | **Gợi ý Option B:** Nút "Mark complete" luôn hiển thị — đơn giản, tin tưởng user |
-| Q-LEARN-09 | Trigger bắt đầu bài học | Implicit (tự động khi mở trang) |
-| Q-LEARN-10 | Outline sync thất bại | Trả lỗi 502, frontend hiện thông báo retry |
+| Q-LEARN-01 | Tạo lesson node: 1 bước hay 2 bước | **ĐÃ CHỐT:** Atomic 1 bước |
+| Q-LEARN-02 | Nguồn câu hỏi mini-quiz | **ĐÃ CHỐT:** Dùng chung `quiz_question` |
+| Q-LEARN-03 | Progress khi thay đổi cấu trúc course | **ĐÃ CHỐT:** Versioned lazy recompute theo từng user-course |
+| Q-LEARN-04 | Xóa course: soft-delete hay archive | **ĐÃ CHỐT:** Hybrid archive + soft-delete/purge |
+| Q-LEARN-05 | Xung đột slug | **ĐÃ CHỐT:** Manual slug + server suggestions khi conflict |
+| Q-LEARN-06 | Outline URL cho frontend | **ĐÃ CHỐT:** Backend-mediated Outline; FE không gọi Outline trực tiếp |
+| Q-LEARN-07 | Ai được tạo tag | **ĐÃ CHỐT:** Permission-based (không hardcode theo role) |
+| Q-LEARN-08 | Trigger hoàn thành bài học | **ĐÃ CHỐT:** Hybrid |
+| Q-LEARN-09 | Trigger bắt đầu bài học | **ĐÃ CHỐT:** Explicit |
+| Q-LEARN-10 | Outline sync thất bại | **ĐÃ CHỐT:** Async queue |
 | Q-CHALL-01 | Instance scope trong MVP | **Gợi ý:** Triển khai cơ bản, interface sẵn sàng cho mở rộng |
 
 ---
@@ -380,7 +380,7 @@ Timeline ước tính:  ~1 ngày    ~5 ngày     ~5 ngày         ~10 ngày     
 
 **Mục tiêu:** 2 feature chính (Learn + Challenge) hoạt động end-to-end.
 
-**Trước Phase này:** Thống nhất tất cả Q-LEARN-* và Q-CHALL-*.
+**Trước Phase này:** Q-LEARN-* đã chốt; chỉ còn Q-CHALL-01 cần xác nhận phạm vi MVP cuối cùng.
 
 **Cách phối hợp trong Phase này:**
 - A làm backend trước → B làm frontend sau
@@ -575,9 +575,9 @@ Khi B phải chờ A xong backend API, B có thể làm:
 - [ ] Admin CRUD custom roles hoạt động
 
 ### Slice 3 ✓
-- [ ] `GET /api/config/` → danh sách config grouped by category
+- [ ] `GET /api/admin/config/` → danh sách config grouped by category
 - [ ] Secret values hiển thị `"***"`
-- [ ] `PUT /api/config/{key}/` → cập nhật value (admin only)
+- [ ] `PATCH /api/admin/config/{key}/` → cập nhật value (admin only)
 - [ ] `is_editable=false` → 403
 
 ### Slice 4 ✓
@@ -608,8 +608,8 @@ Khi B phải chờ A xong backend API, B có thể làm:
 - [ ] Frontend: quiz session WS hoạt động mượt mà
 
 ### Slice 8 ✓
-- [ ] `GET /api/users/me/` → profile + stats
-- [ ] `PUT /api/users/me/` → cập nhật display_name, bio
+- [ ] `GET /api/users/me/profile/` → profile + stats
+- [ ] `PATCH /api/users/me/profile/` → cập nhật display_name, bio
 - [ ] Admin: list/create/update users
 - [ ] Frontend: profile page + settings hoạt động
 

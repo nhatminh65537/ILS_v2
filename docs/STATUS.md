@@ -3,6 +3,9 @@
 > Living document. Update after each completed slice or major task.
 > Last updated: 2026-04-01
 
+Release docs gate for upcoming slices:
+- `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
+
 ---
 
 ## ✅ CRITICAL BLOCK — RESOLVED (2026-03-24)
@@ -45,10 +48,18 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | [Q-CONFIG-01](DECISIONS.md#q-config-01-default-systemconfig-auth-values) — Default system config seed values | Slice 0 (Task 0.3), Slice 1 | **OPEN** |
 | [Q-INFRA-07](DECISIONS.md#q-infra-07-i18n-language-strategy) — i18n strategy | Slice 4 | **RESOLVED** (Option C) |
 | [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library | Slice 4+ | **RESOLVED** (Option A) |
-| [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node atomicity | Slice 5 | **OPEN** |
-| [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source | Slice 5 | **OPEN** |
+| [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node atomicity | Slice 5 | **RESOLVED** |
+| [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source | Slice 5 | **RESOLVED** |
+| [Q-LEARN-03](DECISIONS.md#q-learn-03-course-progress-on-structure-change) — Course progress on structure change | Slice 5 | **RESOLVED** |
+| [Q-LEARN-04](DECISIONS.md#q-learn-04-course-delete-strategy) — Course delete strategy | Slice 5 | **RESOLVED** |
+| [Q-LEARN-05](DECISIONS.md#q-learn-05-slug-conflict-resolution) — Slug conflict resolution | Slice 5 | **RESOLVED** |
+| [Q-LEARN-06](DECISIONS.md#q-learn-06-outline-url-frontend-exposure) — Outline exposure and backend mediation | Slice 5 | **RESOLVED** |
+| [Q-LEARN-07](DECISIONS.md#q-learn-07-tag-creation-permissions) — Tag creation permissions | Slice 5 | **RESOLVED** |
+| [Q-LEARN-08](DECISIONS.md#q-learn-08-lesson-completion-trigger) — Lesson completion trigger | Slice 5 | **RESOLVED** |
+| [Q-LEARN-09](DECISIONS.md#q-learn-09-lesson-start-trigger) — Lesson start trigger | Slice 5 | **RESOLVED** |
+| [Q-LEARN-10](DECISIONS.md#q-learn-10-outline-sync-failure-handling) — Outline sync failure handling | Slice 5 | **RESOLVED** |
 | [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances in MVP | Slice 6 | **OPEN** |
-| [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth | Slice 7 | **OPEN** |
+| [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth | Slice 7 | **RESOLVED** |
 
 ---
 
@@ -111,6 +122,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 ## API Documentation Baseline
 
 - Canonical API reference is now `docs/API.md`.
+- Legacy-to-target endpoint migration source is `docs/API_ROUTE_MAPPING.md`.
 - Active endpoint inventory in `docs/API.md` only includes APIs aligned with current implementation progress.
 - Planned and deferred APIs are tracked in separate sections in `docs/API.md` and are not considered active.
 - AI endpoints remain deferred and are excluded from active API scope while `api/ai` routing stays disabled in root URL config.
@@ -180,7 +192,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 |------|----------|-------|
 | Quiz + Question CRUD API | Medium | |
 | QuizNode tree API | Medium | No circular FK |
-| Django Channels WebSocket consumer | Medium | JWT in query string |
+| Django Channels WebSocket consumer | Medium | First-message JWT auth (no query token) |
 | Quiz progress signals | Medium | `best_score`, `attempt_count` |
 | Frontend: Quiz browser + WS session | Low | |
 

@@ -438,6 +438,7 @@ Standard category pattern. See `challenge_category`.
 | `category_id` | BIGINT | nullable, FK → course_category(id) SET NULL |
 | `estimated_time` | INTEGER | nullable — minutes |
 | `learning_point` | INTEGER | DEFAULT 0 |
+| `structure_version` | INTEGER | NOT NULL, DEFAULT 1 — increments when published tree/lesson structure changes |
 | *(audit fields)* | | |
 
 **Indexes:** `category_id`, `status`
@@ -451,7 +452,7 @@ Standard tag pattern.
 ---
 
 #### `lesson`
-A single learning unit. Can be shared across courses (referenced via `course_node`).
+A single learning unit. Created atomically with `course_node` item creation in Slice 5 flow.
 
 | Field | Type | Constraints |
 |-------|------|-------------|
@@ -497,7 +498,7 @@ Outline document integration metadata. One-to-one with lesson.
 | `revision` | INTEGER | nullable |
 | *(audit fields)* | | |
 
-**Business rule:** Outline base URL is stored in `system_config` (key: `outline_base_url`), not in individual records. Changing the base URL in config is sufficient — no per-lesson URL updates needed.
+**Business rule:** Outline base URL is stored in `system_config` (key: `outline.url`), not hardcoded in service code. Frontend does not call Outline directly; backend fetches and normalizes content for clients.
 
 ---
 
@@ -530,7 +531,13 @@ Tree node for course folder/lesson hierarchy. Extends `BaseNode`.
 | `course_id` | BIGINT | PK part, FK → course(id) CASCADE |
 | `started_at` | TIMESTAMPTZ | nullable |
 | `completed_at` | TIMESTAMPTZ | nullable |
+| `completed_lessons_cache` | INTEGER | NOT NULL, DEFAULT 0 — denormalized for read efficiency |
+| `total_lessons_cache` | INTEGER | NOT NULL, DEFAULT 0 — denominator snapshot at last compute |
+| `progress_percent_cache` | NUMERIC(5,2) | NOT NULL, DEFAULT 0 |
+| `last_computed_version` | INTEGER | NOT NULL, DEFAULT 0 — matches `course.structure_version` when cache is fresh |
 | *(audit fields)* | | |
+
+**Business rule:** progress uses versioned lazy recompute per (user, course). If `last_computed_version != course.structure_version`, recompute on read and refresh cached fields.
 
 ---
 
@@ -544,7 +551,7 @@ Tree node for course folder/lesson hierarchy. Extends `BaseNode`.
 | `completed_at` | TIMESTAMPTZ | nullable |
 | *(audit fields)* | | |
 
-**Business rule:** Progress is marked complete when user clicks "Complete" (typically after scrolling to bottom of page). `started_at` set on first view.
+**Business rule:** Progress completion is hybrid (guided completion + explicit complete action). Lesson start is explicit via `POST /progress/start` (not implicit on first view).
 
 ---
 
@@ -763,17 +770,20 @@ Runtime key-value configuration store. Primary key is the config key string.
 
 **Indexes:** `category`, `is_runtime`, `is_editable`
 
-**Known system_config keys:**
+**Known system_config keys (summary):**
 
 | Key | Type | Purpose |
 |-----|------|---------|
 
-| `outline_base_url` | string | Outline instance base URL |
-| `gitlab_base_url` | string | GitLab instance base URL |
-| `instance_ttl_seconds` | int | Default TTL for challenge instances |
-| `auth_allow_native` | bool | Enable native login/register |
-| `auth_allow_sso` | bool | Enable SSO via Authentik |
-| `auth_allow_link` | bool | Allow linking multiple auth methods |
+| `auth.local_login_enabled` | bool | Enable native login/register |
+| `auth.sso_enabled` | bool | Enable SSO via Authentik |
+| `auth.authorization_enabled` | bool | Enable RBAC permission checks |
+| `outline.enabled` | bool | Enable Outline integration |
+| `outline.url` | string | Outline instance base URL |
+| `outline.api_token` | secret | Outline API token |
+| `challenge.git.url` | string | GitLab instance base URL |
+| `challenge.deploy.api_url` | string | Challenge deploy backend base URL |
+| `challenge.instance_ttl_minutes` | int | Default TTL for challenge instances |
 
 ---
 
@@ -873,6 +883,7 @@ When computing effective permissions for JWT encoding (flat, no hierarchy):
 - **Never** expose flag values to client — all flag checking is server-side
 - **Never** return flag solutions from AI assistant (`learn_assistant` mode enforces this)
 - External service base URLs (Outline, GitLab) live in `system_config` — never hardcoded in per-record fields
+- Secret config values are masked by default and only returned in clear text to users with explicit manual permission (seeded RBAC key `system.config.view_secret`)
 
 ---
 

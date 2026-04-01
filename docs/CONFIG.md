@@ -26,7 +26,14 @@
 | `bool` | `true`/`false` JSON boolean | value | `true` or `false` only | |
 | `int` | JSON number | value | numeric string or integer | |
 | `string` | JSON string | value | any string | |
-| `secret` | encrypted JSON string | `"***"` | any string | Encrypted at rest; never returned in GET |
+| `secret` | encrypted JSON string | masked by default | any string | Encrypted at rest; clear value requires explicit permission |
+
+### Secret Visibility Policy
+
+- Default behavior: `secret` values are masked (`"***"`) in list/detail responses.
+- Clear secret value is returned only to users with manually seeded permission `system.config.view_secret`.
+- This permission is intentionally manual (not endpoint-scan generated) and is granted only to trusted operators.
+- Secret update does not require secret readback: callers can write a new value without seeing the old one.
 | `json` | JSONB object | value | valid JSON object | Only for complex multi-field configs |
 
 ---
@@ -119,6 +126,8 @@ Changes apply to **newly issued tokens only**. Existing tokens retain their orig
 | `outline.api_token` | secret | `""` | ✅ | ❌ | `"<outline-api-token>"` | Outline API token. Generate in Outline → Settings → API. Stored encrypted. |
 
 > **Why no `outline.username`/`outline.password`?** Outline's REST API authenticates exclusively via Bearer token. Username/password is not supported by the Outline API.
+>
+> **Integration rule:** Frontend does not call Outline directly. Backend calls Outline and returns normalized lesson content to frontend.
 
 ---
 
@@ -236,6 +245,6 @@ On Django startup (`AppConfig.ready()`), all keys in this document are seeded wi
 ## Security Notes
 
 - **`secret` values** are encrypted using AES with a key derived from Django's `SECRET_KEY`. Changing `SECRET_KEY` in production will make all stored secrets unreadable — rotate secrets explicitly before changing `SECRET_KEY`.
-- **GET responses** for `secret` keys return `"***"`. Internal service code uses `ConfigService.get(key)` which decrypts on access.
+- **GET responses** for `secret` keys are masked by default. Users with `system.config.view_secret` may request/read clear values for operational setup.
 
 - Rate-limit configs (`system.rate_limit.*`) are `is_runtime=true` — changes take effect immediately without restart.

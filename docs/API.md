@@ -25,6 +25,11 @@ Primary references:
 - Endpoint behavior: `backend/api/views.py`, `backend/auth_app/views.py`
 - Project progress gate: `docs/STATUS.md`, `docs/IMPL_PLAN.md`
 
+Compatibility note:
+- Section 3 lists currently active runtime routes (including legacy non-namespaced endpoints still present in code).
+- Target feature contracts for upcoming slices follow namespaced routes (`/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`) and are tracked in Section 4 + `docs/IMPL_PLAN.md`.
+- Legacy-to-target endpoint mapping is maintained in `docs/API_ROUTE_MAPPING.md`.
+
 ---
 
 ## 2. Global Conventions
@@ -94,6 +99,10 @@ Contract notes for frontend integration (completed slices):
 
 ### 3.3 Courses
 
+Historical/runtime note:
+- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
+- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
+
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/courses/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
@@ -107,6 +116,10 @@ Contract notes for frontend integration (completed slices):
 
 ### 3.4 Lessons
 
+Historical/runtime note:
+- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
+- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
+
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/lessons/` | Yes | Stable | Read-only list endpoint. |
@@ -115,6 +128,10 @@ Contract notes for frontend integration (completed slices):
 | GET | `/api/lessons/{id}/render/` | Yes | Partial | Depends on lesson rendering implementation details. |
 
 ### 3.5 Challenges
+
+Historical/runtime note:
+- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
+- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
@@ -127,6 +144,10 @@ Contract notes for frontend integration (completed slices):
 | POST | `/api/challenges/{id}/create_instance/` | Yes | Partial | Depends on instance deployment backend/runtime readiness. |
 
 ### 3.6 Quizzes
+
+Historical/runtime note:
+- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
+- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
@@ -156,8 +177,8 @@ Contract notes for frontend integration (completed slices):
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/admin/config/` | Admin | Stable | Admin-only list grouped by `category`; secret values are masked as `***`. |
-| GET | `/api/admin/config/{key}/` | Admin | Stable | Admin-only detail lookup by config key (supports dotted keys). |
+| GET | `/api/admin/config/` | Admin | Stable | Admin-only list grouped by `category`; secret values are masked by default. |
+| GET | `/api/admin/config/{key}/` | Admin | Stable | Admin-only detail lookup by config key (supports dotted keys); clear secret value requires manual permission. |
 | PATCH | `/api/admin/config/{key}/` | Admin | Stable | Admin-only value update with type validation (`bool`, `int`, `string`, `json`, `secret`). |
 
 Notes:
@@ -165,6 +186,7 @@ Notes:
 - Invalid payload type for config `value_type` returns `400` with deterministic validation error.
 - Cache for non-runtime config reads is invalidated after successful updates.
 - List response is grouped object by `category`: `{[category]: SystemConfig[]}`.
+- Secret clear-text read is restricted to principals with manual permission `system.config.view_secret`.
 
 ### 3.10 Authorization / RBAC
 
@@ -214,6 +236,11 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 - Quiz WebSocket/attempt lifecycle endpoints
 - Admin statistics endpoints
 
+Planned WS auth contract for Slice 7:
+- Client connects to `/ws/quiz/{quiz_id}/` without token in URL.
+- Client must send first message `{type: "auth", token: "<access_jwt>"}` within timeout.
+- Server closes socket if auth fails or times out.
+
 ---
 
 ## 5. Deferred APIs
@@ -230,7 +257,7 @@ Deferred by project decision. Do not treat as active API.
 ## 6. Error and Security Notes
 
 - Error payload shape is currently endpoint-dependent and will be normalized in later slices.
-- System Config secret values are masked in API responses and are never returned in clear text.
+- System Config secret values are masked by default; clear-text access is limited to principals with manual permission `system.config.view_secret`.
 - API documentation must be updated in the same session whenever endpoint routing or serializer contract changes.
 
 ---

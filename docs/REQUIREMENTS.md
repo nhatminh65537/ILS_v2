@@ -35,6 +35,7 @@
 - Enable/disable từng phương thức xác thực (ví dụ: chỉ cho phép SSO)
 - Cấu hình cho phép liên kết tài khoản hay chỉ cho phép một phương thức duy nhất
 - Cấu hình email hệ thống (dùng để gửi reset password)
+- Secret config mặc định bị che; chỉ người có quyền thủ công `system.config.view_secret` mới xem được clear value
 
 ---
 
@@ -106,10 +107,13 @@
 **Tạo nội dung:**
 - Tạo thủ công qua editor
 - Hoặc chọn từ [Outline](https://github.com/outline/outline) — dùng làm nơi edit và lưu trữ tài nguyên
+- Frontend không gọi Outline trực tiếp; backend gọi Outline rồi chuẩn hóa dữ liệu trả về frontend
 
 **Progress:**
-- Đánh dấu hoàn thành khi người dùng nhấn "complete" (trigger sau khi scroll đến cuối trang)
+- Bắt đầu bài học bằng hành động explicit (nút Start)
+- Đánh dấu hoàn thành theo cơ chế hybrid: có trigger hướng dẫn (ví dụ scroll/video) và vẫn có hành động complete tường minh
 - Lưu trạng thái user + course và danh sách lesson hoàn thành (user + lesson): trạng thái, thời gian bắt đầu, thời gian kết thúc
+- Khi cấu trúc course thay đổi, progress được tính theo cơ chế versioned lazy recompute theo từng user-course (không quét lại toàn bộ user)
 
 **Admin có thể:**
 - Cấu hình độ sâu tối đa của cây bài học
@@ -184,6 +188,7 @@
 
 **Trải nghiệm làm bài:**
 - Thực hành theo kiểu: answer → check → next (sử dụng **WebSocket**)
+- WebSocket xác thực bằng first-message auth (không truyền JWT trong query string)
 - Người dùng cấu hình bài thực hành (lưu lại): số câu hỏi, danh sách quiz, thời gian mỗi câu, thời gian tổng
 - Lưu lịch sử trả lời: số đúng, số sai, ...
 

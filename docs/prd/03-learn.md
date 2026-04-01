@@ -42,7 +42,7 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 | US-LEARN-08 | Member | Tôi muốn xem danh sách khóa học đã published, filter theo category/tag. | High |
 | US-LEARN-09 | Member | Tôi muốn mở khóa học và duyệt cây nội dung (folder + lesson). | High |
 | US-LEARN-10 | Member | Tôi muốn đọc lesson markdown hoặc xem video. | High |
-| US-LEARN-11 | Member | Tôi muốn đánh dấu lesson hoàn thành sau khi scroll đến cuối. | High |
+| US-LEARN-11 | Member | Tôi muốn hoàn thành lesson theo cơ chế hybrid (hướng dẫn theo tiến trình đọc/xem và vẫn có nút complete). | High |
 | US-LEARN-12 | Member | Tôi muốn xem tiến độ hoàn thành của từng khóa học. | Medium |
 | US-LEARN-13 | Admin | Tôi muốn cấu hình tài khoản Outline và độ sâu tối đa của cây. | Low |
 
@@ -51,9 +51,9 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 ## Functional Requirements
 
 ### FR-LEARN-01: Course CRUD
-- Tạo course: `slug` (auto-generate từ title), `title`, `description`, `category_id`, `status=draft`, `learning_point`, `estimated_time`.
+- Tạo course: `slug` do editor nhập (auto-generate từ title chỉ là gợi ý), `title`, `description`, `category_id`, `status=draft`, `learning_point`, `estimated_time`.
 - Update: sửa mọi trường ngoài `slug`.
-- Soft-delete hoặc archive.
+- Xử lý xóa theo hybrid: archive cho luồng vận hành thường ngày; soft-delete/purge chỉ cho luồng admin đặc biệt.
 - List với pagination, filter theo `status`, `category_id`, tag.
 - Search theo `title`.
 
@@ -65,7 +65,7 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 ### FR-LEARN-03: Course Node Tree (Folder + Lesson)
 - Mỗi course có root node ẩn (tự tạo khi tạo course).
 - Tạo folder: tạo `course_node` với `is_item=False`.
-- Tạo lesson node: tạo `lesson` + `course_node` với `is_item=True`.
+- Tạo lesson node theo one-step atomic API: tạo `lesson` + `course_node` với `is_item=True` trong cùng transaction.
 - `path` được tính và cập nhật tự động khi tạo/di chuyển node (dot-separated, e.g., `"1.3"`).
 - Lazy loading: load children của một node theo yêu cầu bằng `filter(parent_id=X)`.
 - Sắp xếp: `position` field; reorder trả về danh sách positions mới.
@@ -77,17 +77,19 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 
 ### FR-LEARN-05: Outline Integration
 - Admin cấu hình `system_config[outline.url]` và `system_config[outline.api_token]`.
-- API call đến Outline để list documents.
+- Backend call đến Outline để list documents và đồng bộ nội dung.
 - Khi chọn document: tạo lesson với `source=outline`, `content_md` lấy từ Outline.
 - Tạo `lesson_outline` record với `outline_doc_id`, `outline_url`, `last_synced_at`.
 - Sync thủ công: gọi lại Outline API, cập nhật `content_md` và `last_synced_at`.
 - URL học liệu trong content dùng Outline base URL từ `system_config` (không hardcode).
+- Frontend không gọi Outline trực tiếp; chỉ gọi API của ILS backend.
 
 ### FR-LEARN-06: Progress Tracking
-- Khi member bắt đầu đọc lesson: upsert `user_lesson_progress` với `started_at`.
-- Khi member nhấn "Complete" (sau scroll): set `completed_at`.
+- Khi member bấm Start lesson: upsert `user_lesson_progress` với `started_at`.
+- Khi member hoàn thành lesson theo cơ chế hybrid: set `completed_at`.
 - Khi tất cả lesson trong course được complete: set `user_course_progress.completed_at`.
-- `user_course_progress` được tạo khi member truy cập lesson đầu tiên của course.
+- `user_course_progress` được tạo khi member bắt đầu lesson đầu tiên của course.
+- Khi cấu trúc course thay đổi, dùng `course.structure_version` + lazy recompute theo từng user để tính lại progress tại thời điểm đọc.
 - Tự động cộng `learning_point` vào `user_profile.total_learning_point` khi complete course.
 
 ### FR-LEARN-07: Published Content Access
@@ -111,9 +113,10 @@ Hệ thống chưa có giao diện hoặc API nào cho nội dung học tập. E
 | Outline document bị xóa trên Outline | Sync trả lỗi, hiển thị warning; content cũ vẫn còn |
 | Lesson mini-quiz: question bị xóa | Lesson vẫn hiển thị, question bị ẩn khỏi mini-quiz |
 | Tạo folder vượt quá max_depth | Trả lỗi 400 "Maximum folder depth exceeded" |
-| Member chưa có `user_course_progress` | Tạo khi truy cập lesson đầu tiên |
+| Member chưa có `user_course_progress` | Tạo khi bấm Start lesson đầu tiên |
 | Lesson đã complete, member đọc lại | Không reset `completed_at`; vẫn hiển thị completed |
 | Node reorder với position conflict | Normalize positions (0, 1, 2, ...) sau mỗi reorder |
+| Slug bị trùng | Trả 409 + danh sách slug gợi ý, editor chọn thủ công |
 
 ---
 
@@ -147,7 +150,7 @@ POST   /api/learn/courses/{slug}/nodes/reorder/ # Reorder siblings
 
 # Lessons
 GET    /api/learn/lessons/{id}/                 # Lesson content
-POST   /api/learn/lessons/                      # Create lesson
+# Create lesson: use POST /api/learn/courses/{slug}/nodes/ with is_item=true (atomic lesson+node)
 PUT    /api/learn/lessons/{id}/                 # Update lesson content
 POST   /api/learn/lessons/{id}/sync-outline/    # Sync from Outline
 
@@ -155,6 +158,7 @@ POST   /api/learn/lessons/{id}/sync-outline/    # Sync from Outline
 GET    /api/learn/courses/{slug}/progress/      # Course progress for current user
 POST   /api/learn/lessons/{id}/progress/start/  # Mark lesson started
 POST   /api/learn/lessons/{id}/progress/complete/ # Mark lesson complete
+GET    /api/learn/courses/slug-suggestions/?q=... # Suggest available slug options
 ```
 
 ### Key DB Tables

@@ -75,15 +75,16 @@ Chưa có hệ thống quiz. Không có WebSocket logic. Member không có cách
 ### FR-QUIZ-05: WebSocket Practice Session
 - Kết nối: `ws://{host}/ws/quiz/{quiz_id}/`
 - Flow:
-  1. Client connect + gửi `{"action": "start"}`.
-  2. Server tạo `user_quiz_attempt`, áp dụng config (lấy câu ngẫu nhiên nếu random).
-  3. Server gửi câu hỏi đầu tiên (ẩn đáp án).
-  4. Client gửi `{"action": "answer", "question_id": X, "answer_data": {...}}`.
-  5. Server check đúng/sai, lưu `user_quiz_answer`, gửi kết quả + explanation.
-  6. Client gửi `{"action": "next"}` để nhận câu tiếp theo.
-  7. Khi hết câu: server gửi `{"action": "finish", "score": N, "total": M}`.
-  8. Server update `user_quiz_attempt.finished_at`, `total_score`.
-  9. Server upsert `user_quiz_progress` (best_score, attempt_count).
+  1. Client connect, gửi auth message đầu tiên `{"type": "auth", "token": "<access_jwt>"}` trong cửa sổ timeout.
+  2. Sau `auth_ok`, client gửi `{"action": "start"}`.
+  3. Server tạo `user_quiz_attempt`, áp dụng config (lấy câu ngẫu nhiên nếu random).
+  4. Server gửi câu hỏi đầu tiên (ẩn đáp án).
+  5. Client gửi `{"action": "answer", "question_id": X, "answer_data": {...}}`.
+  6. Server check đúng/sai, lưu `user_quiz_answer`, gửi kết quả + explanation.
+  7. Client gửi `{"action": "next"}` để nhận câu tiếp theo.
+  8. Khi hết câu: server gửi `{"action": "finish", "score": N, "total": M}`.
+  9. Server update `user_quiz_attempt.finished_at`, `total_score`.
+  10. Server upsert `user_quiz_progress` (best_score, attempt_count).
 - Timeout: nếu user không trả lời trong `time_limit_sec` (per question hoặc tổng): auto skip/finish.
 
 ### FR-QUIZ-06: Answer Check Logic
@@ -108,6 +109,7 @@ Chưa có hệ thống quiz. Không có WebSocket logic. Member không có cách
 | Case | Handling |
 |------|----------|
 | WebSocket ngắt giữa chừng | Attempt được lưu với finished_at=null; có thể resume |
+| Auth message thiếu/sai token | Server đóng kết nối ngay với close code auth failed |
 | Multi-choice: chọn đúng hết nhưng thêm 1 option sai | Sai → 0 điểm |
 | Fill blank: nhiều đáp án chấp nhận được | Đúng nếu match bất kỳ answer nào |
 | total_questions trong config > số câu thực tế | Lấy tất cả câu hiện có |
@@ -168,6 +170,7 @@ ws://{host}/ws/quiz/{quiz_id}/
 
 **Client → Server:**
 ```json
+{ "type": "auth", "token": "<access_jwt>" }
 { "action": "start" }
 { "action": "answer", "question_id": 5, "answer_data": { "option_ids": [2, 4] } }
 { "action": "answer", "question_id": 6, "answer_data": { "text": "XSS" } }
@@ -178,6 +181,10 @@ ws://{host}/ws/quiz/{quiz_id}/
 **Server → Client:**
 ```json
 // Question
+{
+  "type": "auth_ok"
+}
+
 {
   "type": "question",
   "attempt_id": 123,
@@ -233,6 +240,8 @@ ws://{host}/ws/quiz/{quiz_id}/
 ### AC-QUIZ-01: WebSocket Practice Flow
 ```
 Given: Quiz ID=5 published với 3 câu hỏi, member alice kết nối WS
+When: alice gửi {"type": "auth", "token": "<access_jwt>"}
+Then: Server trả auth_ok
 When: alice gửi {"action": "start"}
 Then: Server tạo user_quiz_attempt
   And: Server gửi câu hỏi đầu tiên với type="question"

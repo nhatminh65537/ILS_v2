@@ -251,7 +251,9 @@ Every domain (course, challenge, quiz) uses a unified Node model for its tree:
 
 ### 4.7 External Integrations via system_config
 
-External service hostnames (Outline URL, GitLab URL, instance deploy server) are stored in `system_config`, not hardcoded. Per-record URLs use relative paths or IDs, not absolute URLs.
+External service hostnames (Outline URL, GitLab URL, instance deploy server) are stored in `system_config`, not hardcoded.
+
+Outline integration is server-mediated: frontend does not call Outline directly; backend fetches and normalizes content before returning to clients.
 
 **Why:** Allows admins to change external service URLs without updating every content record. Migration-proof.
 
@@ -386,24 +388,31 @@ Next token refresh by user
 ### 5.5 Course Tree Load Flow
 
 ```
-Client → GET /courses/{slug}/tree
+Client → GET /api/learn/courses/{slug}/nodes
   → Load course root nodes (parent_id IS NULL, course_id=X, ORDER BY position)
   → Return folder/lesson node list (lazy: don't load subtrees)
 Client clicks folder to expand
-  → GET /courses/{slug}/tree?parent={node_id}
+  → GET /api/learn/courses/{slug}/nodes/{node_id}/children
   → Load direct children: filter(parent_id=node_id, course_id=X)
   → No recursive DB query needed (only direct children)
 Client opens a lesson
-  → GET /lessons/{lesson_id}
+  → GET /api/learn/lessons/{lesson_id}
   → Load lesson content (content_md or video_url)
   → If lesson_type='miniquiz': load lesson_question data
-  → Mark user_lesson_progress.started_at if first visit
+Client explicitly starts lesson
+  → POST /api/learn/lessons/{lesson_id}/progress/start
+  → Upsert user_lesson_progress.started_at
+Completion
+  → Hybrid UX: guided completion signal + explicit complete action
+  → POST /api/learn/lessons/{lesson_id}/progress/complete
 ```
 
 ### 5.6 Quiz WebSocket Flow (answer → check → next)
 
 ```
 Client → WS connect: /ws/quiz/{quiz_id}/
+  → Client sends first auth message {type:"auth", token:"<access_jwt>"}
+  → Server verifies token (close if failed/timeout)
   → Create user_quiz_attempt record (session start)
   → Server sends first question (from user_quiz_answer tracking which answered)
 Client → send { question_id, answer_data }
@@ -500,6 +509,7 @@ Client → POST /challenges/{slug}/submit { flag }
 - ❌ **Never use Django's `ManyToManyField`** for M2M relationships — use explicit join tables
 - ❌ **Never hardcode external service URLs** (Outline, GitLab) in model fields — use `system_config` keys
 - ❌ **Never add a circular FK** between quiz and quiz_node — `quiz_node.quiz_id → quiz` only (one-way)
+- ❌ **Never expose secret config clear text** unless caller has explicit manual permission (`system.config.view_secret`)
 
 ### Auth
 - ❌ **Never create the custom User model after the first migration** — `AUTH_USER_MODEL` must be set before `manage.py migrate`

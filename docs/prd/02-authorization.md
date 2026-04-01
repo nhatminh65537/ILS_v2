@@ -314,21 +314,21 @@ Then: alice.permission_version tăng lên 6
 ### AC-AUTHZ-06: Built-in Role Protection
 ```
 Given: Role "Admin" có is_system=True
-When: Admin gửi DELETE /api/authz/roles/{admin_role_id}/
+When: Admin gửi DELETE /api/admin/roles/{admin_role_id}/
 Then: Response 400 Bad Request "Cannot delete built-in role"
 ```
 
 ### AC-AUTHZ-07: Permission Read-Only
 ```
 Given: Permission record id=5 tồn tại
-When: Admin gửi PATCH /api/authz/permissions/5/ hoặc DELETE
+When: Admin gửi PATCH /api/admin/permissions/5/ hoặc DELETE
 Then: Response 405 Method Not Allowed
 ```
 
 ### AC-AUTHZ-08: Custom Role Delete Cascades
 ```
 Given: Custom role "reviewer" (is_system=False) được gán cho 10 users
-When: Admin DELETE /api/authz/roles/{reviewer_id}/
+When: Admin DELETE /api/admin/roles/{reviewer_id}/
 Then: 10 user_role records bị xóa
   And: role_permission records bị xóa
   And: permission_version của 10 user đó được tăng
@@ -338,7 +338,7 @@ Then: 10 user_role records bị xóa
 ### AC-AUTHZ-09: Deny Entry Constraint
 ```
 Given: User alice có role "Editor" (không có permission Y)
-When: Admin POST /api/authz/users/{alice_id}/permissions/ với permission_id = Y
+When: Admin POST /api/users/{alice_id}/permissions/ với permission_id = Y
 Then: Response 400 Bad Request "User does not have this permission via any role"
 ```
 
@@ -346,13 +346,13 @@ Then: Response 400 Bad Request "User does not have this permission via any role"
 ```
 Given: system_config['auth.authorization_enabled'] = false
   And: User bob đã đăng nhập (có JWT hợp lệ) nhưng không có role nào
-When: Bob gửi GET /api/courses/
+When: Bob gửi GET /api/learn/courses/
 Then: Response 200 OK — permission check bị bypass
 ```
 
 ### AC-AUTHZ-11: Authorization Bypass Does Not Bypass Authentication
 ```
 Given: system_config['auth.authorization_enabled'] = false
-When: Request gửi đến GET /api/courses/ KHÔNG có JWT
+When: Request gửi đến GET /api/learn/courses/ KHÔNG có JWT
 Then: Response 401 Unauthorized — authentication vẫn bắt buộc
 ```

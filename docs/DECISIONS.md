@@ -4,7 +4,7 @@
 > **OPEN** = needs human decision before coding can begin.
 > **RESOLVED** = decision made; implementation must follow it.
 >
-> Last updated: 2026-03-31
+> Last updated: 2026-04-01
 
 ---
 
@@ -28,7 +28,7 @@
 | [Q-INFRA-02](#q-infra-02-api-url-prefix-convention) | API URL prefix convention | Slice 1–11 | **RESOLVED** |
 | [Q-INFRA-03](#q-infra-03-email-backend-for-password-reset) | Email backend for password reset | Slice 1 | **RESOLVED** |
 | [Q-INFRA-04](#q-infra-04-cache-backend-for-rate-limiting) | Cache backend for rate limiting | Slice 1 | **RESOLVED** |
-| [Q-INFRA-05](#q-infra-05-websocket-jwt-auth-method) | WebSocket JWT auth method | Slice 7 | **OPEN** |
+| [Q-INFRA-05](#q-infra-05-websocket-jwt-auth-method) | WebSocket JWT auth method | Slice 7 | **RESOLVED** (Option B) |
 | [Q-INFRA-06](#q-infra-06-client-side-token-storage) | Client-side token storage | Slice 1, 4 | **RESOLVED** |
 | [Q-INFRA-07](#q-infra-07-i18n-language-strategy) | i18n language and timing | Slice 4 | **RESOLVED** (Option C) |
 | [Q-INFRA-08](#q-infra-08-frontend-ui-component-library) | Frontend UI component library | Slice 4 | **RESOLVED** (Option A) |
@@ -40,16 +40,16 @@
 | [Q-INFRA-09](#q-infra-09-cors-and-domain-configuration) | CORS policy + frontend/backend domain | Slice 1 (Task 1.5), Slice 4 | **RESOLVED** (Option A) |
 | [Q-ARCH-01](#q-arch-01-max-permissions-bitmap-capacity) | Max permissions bitmap encode size | Slice 2 (permission design) | **RESOLVED** (Option B) |
 | [Q-CONFIG-01](#q-config-01-default-systemconfig-auth-values) | Default auth.* system_config values at seed | Slice 0, 1 | **OPEN** |
-| [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **OPEN** |
-| [Q-LEARN-02](#q-learn-02-mini-quiz-question-source) | Mini-quiz question source | Slice 5 | **OPEN** |
-| [Q-LEARN-03](#q-learn-03-course-progress-on-structure-change) | Course progress when structure changes | Slice 5 | **OPEN** |
-| [Q-LEARN-04](#q-learn-04-course-delete-strategy) | Course delete: soft-delete or archive | Slice 5 | **OPEN** |
-| [Q-LEARN-05](#q-learn-05-slug-conflict-resolution) | Slug conflict resolution | Slice 5 | **OPEN** |
-| [Q-LEARN-06](#q-learn-06-outline-url-frontend-exposure) | Outline URL config: backend-only or public | Slice 5 | **OPEN** |
-| [Q-LEARN-07](#q-learn-07-tag-creation-permissions) | Who can create course tags | Slice 5 | **OPEN** |
-| [Q-LEARN-08](#q-learn-08-lesson-completion-trigger) | Lesson completion trigger (scroll enforcement) | Slice 5 | **OPEN** |
-| [Q-LEARN-09](#q-learn-09-lesson-start-trigger) | Lesson start: implicit or explicit | Slice 5 | **OPEN** |
-| [Q-LEARN-10](#q-learn-10-outline-sync-failure-handling) | Outline sync failure / timeout behavior | Slice 5 | **OPEN** |
+| [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **RESOLVED** (Option A) |
+| [Q-LEARN-02](#q-learn-02-mini-quiz-question-source) | Mini-quiz question source | Slice 5 | **RESOLVED** (Option A) |
+| [Q-LEARN-03](#q-learn-03-course-progress-on-structure-change) | Course progress when structure changes | Slice 5 | **RESOLVED** (Option D) |
+| [Q-LEARN-04](#q-learn-04-course-delete-strategy) | Course delete: soft-delete or archive | Slice 5 | **RESOLVED** (Option E) |
+| [Q-LEARN-05](#q-learn-05-slug-conflict-resolution) | Slug conflict resolution | Slice 5 | **RESOLVED** (Option D) |
+| [Q-LEARN-06](#q-learn-06-outline-url-frontend-exposure) | Outline URL config: backend-only or public | Slice 5 | **RESOLVED** (Option D) |
+| [Q-LEARN-07](#q-learn-07-tag-creation-permissions) | Who can create course tags | Slice 5 | **RESOLVED** (Option D) |
+| [Q-LEARN-08](#q-learn-08-lesson-completion-trigger) | Lesson completion trigger (scroll enforcement) | Slice 5 | **RESOLVED** (Option D) |
+| [Q-LEARN-09](#q-learn-09-lesson-start-trigger) | Lesson start: implicit or explicit | Slice 5 | **RESOLVED** (Option B) |
+| [Q-LEARN-10](#q-learn-10-outline-sync-failure-handling) | Outline sync failure / timeout behavior | Slice 5 | **RESOLVED** (Option B) |
 | [Q-CHALL-01](#q-chall-01-challenge-instance-scope) | Challenge instances in MVP or deferred | Slice 6 | **OPEN** |
 | [Q-CHALL-02](#q-chall-02-instance-deployment-protocol) | Instance deployment external system spec | Slice 6 | **RESOLVED** → [R-ARCH-12](#r-arch-12-instance-deployment--strategy-pattern) |
 
@@ -294,9 +294,9 @@ The current Next.js scaffold has code at `frontend/app/` (Next.js default flat l
 **Blocks:** All API slices (Slice 1–11)
 
 **Problem:**
-There is a conflict between the PRD endpoints and the IMPL_PLAN endpoints:
-- `docs/prd/03-learn.md` uses `/api/learn/courses/`, `/api/learn/lessons/`, `/api/learn/categories/`
-- `docs/IMPL_PLAN.md` (Task 5.1) uses `/api/courses/`, `/api/lessons/`, `/api/course-categories/`
+Historical conflict (now resolved and already synchronized in docs):
+- PRD endpoints used namespaced routes (`/api/learn/*`)
+- Older implementation-plan drafts used flat routes (`/api/courses/*`, `/api/lessons/*`)
 
 The same conflict may exist for challenges and quiz PRDs. A consistent scheme must be chosen before any URL routing is implemented.
 
@@ -363,7 +363,7 @@ Login rate limiting uses `cache.get/set`. Django's default `LocMemCache` is per-
 
 ### Q-INFRA-05: WebSocket JWT Auth Method
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 7 (Task 7.3 — Quiz WebSocket consumer)
 
 **Problem:**
@@ -378,7 +378,7 @@ IMPL_PLAN says: `ws://host/ws/quiz/{quiz_id}/?token={jwt}` — JWT in query stri
 | B | First WebSocket message `{type: "auth", token: "..."}` | Token not in URL | Slightly more complex consumer `connect()` logic |
 | C | Cookie (httpOnly, short-lived) | Most secure | Complex CORS/same-origin setup for WS |
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option B. WebSocket auth uses the first message pattern: client connects without JWT in URL, then must send `{type: "auth", token: "<access_jwt>"}` within an auth timeout window. If auth fails or times out, server closes the socket.
 
 ---
 
@@ -536,18 +536,18 @@ If an admin sets `auth.local_login_enabled=false` and `auth.sso_enabled=true`, b
 
 ### Q-LEARN-01: Lesson Node Creation Atomicity
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.2 — CourseNode tree API, Task 5.3 — Lesson CRUD)
 
 **Problem:**
 The PRD says: _"Create a lesson node: create `lesson` + `course_node` with `is_item=True`"_ — implied to be one atomic operation.  
-IMPL_PLAN has **separate endpoints**: `POST /api/courses/{slug}/tree/` (create node) and `POST /api/lessons/` (create lesson).
+Older drafts used separate operations: create node and create lesson in different calls.
 
 Two possible flows:
 
 **Option A — One-step (atomic):**
 ```
-POST /api/courses/{slug}/nodes/
+POST /api/learn/courses/{slug}/nodes/
 Body: { is_item: true, lesson_type: "markdown", title: "...", parent_id: 5, position: 2 }
 → Server creates lesson + course_node in one DB transaction
 → Returns: { node: {...}, lesson: {...} }
@@ -555,8 +555,8 @@ Body: { is_item: true, lesson_type: "markdown", title: "...", parent_id: 5, posi
 
 **Option B — Two-step:**
 ```
-1. POST /api/lessons/    → creates lesson; returns lesson.id
-2. POST /api/courses/{slug}/nodes/
+1. POST /api/learn/lessons/    → creates lesson; returns lesson.id
+2. POST /api/learn/courses/{slug}/nodes/
    Body: { is_item: true, lesson_id: 42, parent_id: 5, position: 2 }
 → Node references existing lesson
 ```
@@ -572,13 +572,15 @@ Body: { is_item: true, lesson_type: "markdown", title: "...", parent_id: 5, posi
 **Sub-question:** Can the same `lesson` record appear in multiple `course_node` records, or is it always 1:1?  
 (Current DB schema has `course_node.lesson_id` as a FK — no UNIQUE constraint mentioned. Clarification needed.)
 
-**Decision:** _(not yet made — choose A or B)_
+**Decision:** Choose Option A (atomic one-step creation). Backend creates lesson + course_node in one transaction to eliminate orphan lessons and simplify frontend flow.
+
+**Contract note (MVP):** `POST /api/learn/lessons/` is not a primary creation path in the target Slice 5 contract. Lesson creation for course tree items must go through `POST /api/learn/courses/{slug}/nodes/` with `is_item=true`.
 
 ---
 
 ### Q-LEARN-02: Mini-Quiz Question Source
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.3 — Lesson CRUD) and Slice 7 (Quiz)
 
 **Problem:**
@@ -593,13 +595,13 @@ The `lesson_question` table links lessons to questions via `question_id`. This a
 
 **Sub-question:** Can an Editor add any `quiz_question` to a lesson, or only questions they created? Is there an ownership/permission model for quiz questions used in lessons?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option A. Mini-quiz questions reuse `quiz_question` through `lesson_question` mapping.
 
 ---
 
 ### Q-LEARN-03: Course Progress on Structure Change
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.4 — progress tracking)
 
 **Problem:**
@@ -611,16 +613,17 @@ When new lessons are added to a published course, or existing lessons are delete
 | A | Total calculated dynamically at query time | Always accurate | Extra JOIN on every progress query |
 | B | Snapshot total at start of course (creation of user_course_progress) | Fast reads | Stale on structure change |
 | C | Signal on structure change → bulk update all affected user_course_progress totals | Accurate + fast reads | Complex signal logic |
+| D | Versioned lazy recompute per user | Avoids global bulk recalculation; accurate when read | Requires version fields + cache invalidation per user-course |
 
 **Sub-question:** Should modifying a published course's structure be restricted (prompt to un-publish first)?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option D. Use `course.structure_version` with per-user lazy recompute (`last_computed_version`) to avoid heavy global recalculation while keeping progress accurate.
 
 ---
 
 ### Q-LEARN-04: Course Delete Strategy
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.1 — Course CRUD)
 
 **Problem:**
@@ -633,16 +636,17 @@ PRD says: _"Soft-delete or archive"_ without choosing. The codebase has `SoftDel
 | B | Soft delete (`SoftDeleteAudit.deleted_at`) | Course hidden from all queries by default; recoverable |
 | C | Hard delete | Course + nodes + lessons permanently removed; no recovery |
 | D | Archive first, then hard delete (two-step) | Safe but complex |
+| E | Hybrid archive + soft-delete path | Archive for normal ops; soft-delete/purge for irreversible admin cleanup |
 
 **Sub-question:** Should deleting a course cascade delete all nodes, lessons, and user progress records? Or should progress be preserved for historical data?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option E. Use hybrid behavior: archive for normal product flow, and restricted soft-delete/purge path for irreversible cleanup operations.
 
 ---
 
 ### Q-LEARN-05: Slug Conflict Resolution
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.1 — Course CRUD)
 
 **Problem:**
@@ -658,13 +662,13 @@ Slugs are auto-generated from `title`. If two courses have the same or similar t
 
 **Sub-question:** Is the slug immutable after creation? (Changing it breaks any external URLs pointing to the course.)
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option D with server-assisted validation: editor controls slug, API enforces uniqueness and returns suggestions on conflict (409).
 
 ---
 
 ### Q-LEARN-06: Outline URL Frontend Exposure
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.3 — Lesson CRUD, Outline integration)
 
 **Problem:**
@@ -679,14 +683,15 @@ Frontend needs the Outline base URL to render links inside lesson content. But `
 | A | `outline.url` is public (non-secret config); frontend fetches it via `/api/config/outline.url/` | Simple; URL exposed to all authenticated users |
 | B | Backend rewrites Outline URLs in content before serving to frontend | Zero exposure; but complex content transformation |
 | C | Add a dedicated `/api/config/public/` endpoint that returns only non-secret config values | Clean separation; reusable for other public configs |
+| D | Backend-only integration (server-mediated content fetch) + manual secret visibility permission for admin tooling | Keeps member clients simple and avoids direct Outline dependency in FE |
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option D. Frontend does not call Outline directly; backend fetches and normalizes lesson content. Secret config visibility is controlled by a manual seeded permission (`system.config.view_secret`) for privileged users.
 
 ---
 
 ### Q-LEARN-07: Tag Creation Permissions
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (FR-LEARN-02 — Category & Tag Management)
 
 **Problem:**
@@ -698,16 +703,17 @@ PRD specifies CRUD for `course_tag` but does not define which role can create/de
 | A | Admin only | Controlled vocabulary; editors can only use existing tags |
 | B | Editor and Admin | Flexible; editors can create tags for their content |
 | C | Any authenticated user | Most flexible; risks tag sprawl |
+| D | Permission-based (explicit RBAC keys) | Flexible and auditable; no hardcoded role coupling |
 
 **Sub-question:** Are `course_tag` records shared globally across all courses, or scoped per course? (Current schema: global tags, assigned via `course_tag_map`.)
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option D. Tag operations are governed by explicit permissions (for example create/update/delete/use-tag) instead of hardcoded roles.
 
 ---
 
 ### Q-LEARN-08: Lesson Completion Trigger
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.4 — progress tracking), Slice 5 (frontend lesson viewer)
 
 **Problem:**
@@ -719,18 +725,19 @@ PRD says: _"When a member clicks 'Complete' (after scrolling)"_ — implying the
 | A | Frontend enforces scroll: "Complete" button disabled/hidden until scroll to bottom detected | Best UX enforcement; but users can trick it (e.g., resize window) |
 | B | "Mark complete" button always visible; no scroll enforcement | Simple; trusts the user |
 | C | Backend enforces a minimum time: `completed_at` can only be set N seconds after `started_at` | Time-based enforcement; configurable via system_config |
+| D | Hybrid UX: auto-enable/auto-mark when completion signal is met plus manual complete action | Balances guidance and flexibility |
 
 **Sub-question for video lessons:** Does scroll-to-bottom detection make sense for video lessons? Should the trigger be video playback completion (>80% watched)?
 
 **Sub-question for mini-quiz lessons:** Should completing a mini-quiz automatically mark the lesson complete?
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option D (hybrid). Frontend supports guided completion (for example scroll/video threshold) while still allowing an explicit complete action.
 
 ---
 
 ### Q-LEARN-09: Lesson Start Trigger
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.4 — progress tracking)
 
 **Problem:**
@@ -747,13 +754,13 @@ The API has `POST /api/learn/lessons/{id}/progress/start/` but it's unclear if t
 
 **Sub-question:** Can an unauthenticated user view lesson content? (PRD says only published content, but does viewing require login?)
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option B. Lesson start is explicit via `POST /progress/start` from a user action.
 
 ---
 
 ### Q-LEARN-10: Outline Sync Failure Handling
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Blocks:** Slice 5 (Task 5.3 — Outline sync)
 
 **Problem:**
@@ -774,7 +781,7 @@ When `POST /api/learn/lessons/{id}/sync-outline/` is called but Outline is unrea
 | B | Async via Celery/background task | Non-blocking; better UX | Requires Celery setup (new dependency) |
 | C | Async via Django Channels (existing dep) | Non-blocking; reuses existing infra | More complex implementation |
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option B. Outline sync runs async through background jobs. API returns accepted job state; previous lesson content remains active until sync success.
 
 ---
 
@@ -1060,7 +1067,7 @@ Permissions encoded as binary bitmap (≤256 permissions = 256 bits = 32 bytes).
 **Decision date:** 2026-03-12
 **Source:** `docs/ARCHITECTURE.md §4.1`, `docs/prd/02-authorization.md`
 
-Permission records are **read-only** via API. Admin can only GET (list/retrieve). No PATCH, POST, DELETE on `/api/authz/permissions/`. Permissions are managed solely by code (auto-discovery at startup).
+Permission records are **read-only** via API. Admin can only GET (list/retrieve). No PATCH, POST, DELETE on `/api/admin/permissions/` (legacy `/api/authz/permissions/` is historical only). Permissions are managed solely by code (auto-discovery at startup).
 
 ---
 

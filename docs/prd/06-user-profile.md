@@ -108,11 +108,11 @@ GET    /api/users/{username}/profile/         # Public profile view
 GET    /api/users/{username}/activity/        # Recent activity
 
 # Own Profile
-GET    /api/me/profile/                       # My profile
-PATCH  /api/me/profile/                       # Edit profile
-PATCH  /api/me/settings/                      # Language, theme, timezone
-PATCH  /api/me/account/                       # Username, email change
-GET    /api/me/sessions/                      # Active sessions (from auth feature)
+GET    /api/users/me/profile/                 # My profile
+PATCH  /api/users/me/profile/                 # Edit profile
+PATCH  /api/users/me/settings/                # Language, theme, timezone
+PATCH  /api/users/me/account/                 # Username, email change
+GET    /api/users/me/sessions/                # Active sessions (from auth feature)
 
 # Admin
 GET    /api/admin/users/                      # List all users
@@ -172,14 +172,14 @@ PATCH  /api/admin/users/{id}/                 # Update user (is_active, etc.)
 ### AC-PROF-01: View Own Profile
 ```
 Given: alice đã đăng nhập
-When: GET /api/me/profile/
+When: GET /api/users/me/profile/
 Then: Response 200 với đầy đủ thông tin profile và stats
 ```
 
 ### AC-PROF-02: Edit Profile
 ```
 Given: alice đã đăng nhập
-When: PATCH /api/me/profile/ với {"display_name": "Alice N.", "bio": "..."}
+When: PATCH /api/users/me/profile/ với {"display_name": "Alice N.", "bio": "..."}
 Then: Response 200 với dữ liệu đã cập nhật
   And: user_profile được cập nhật trong DB
 ```
@@ -202,7 +202,7 @@ Then: Điểm KHÔNG bị cộng thêm lần nữa
 ### AC-PROF-05: Language Setting
 ```
 Given: alice muốn đổi ngôn ngữ sang tiếng Anh
-When: PATCH /api/me/settings/ với {"language": "en"}
+When: PATCH /api/users/me/settings/ với {"language": "en"}
 Then: user_profile.language = "en"
   And: Frontend nhận được ngôn ngữ mới trong API response
 ```

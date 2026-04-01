@@ -22,7 +22,7 @@ Toàn bộ cấu hình tích hợp (Outline URL, GitLab URL, AI API key, v.v.) b
 
 1. Admin xem và chỉnh sửa cấu hình runtime qua API.
 2. Cấu hình nhóm theo category (auth, learn, challenge, ai, v.v.).
-3. `secret` type được mã hóa khi lưu, không trả về giá trị trong GET.
+3. `secret` type được mã hóa khi lưu, mặc định không trả về giá trị trong GET.
 4. Validation type-safe khi update value.
 5. Một số config có `is_editable=False` (readonly, chỉ system set).
 
@@ -54,11 +54,12 @@ Toàn bộ cấu hình tích hợp (Outline URL, GitLab URL, AI API key, v.v.) b
   - `int`: numeric only.
   - `string`: any string.
   - `json`: valid JSON.
-  - `secret`: any string, stored encrypted, never returned in GET.
+  - `secret`: any string, stored encrypted, masked by default in GET.
 
 ### FR-CFG-02: Secret Handling
 - `value_type=secret`: encrypt before storing (AES or Django's built-in `SECRET_KEY`-based encryption).
-- GET response: return `"***"` instead of actual value.
+- GET response: return `"***"` by default.
+- Clear value chỉ trả cho user có quyền thủ công `system.config.view_secret` (seeded manual permission).
 - Internal read (services): decrypt on access.
 
 ### FR-CFG-03: Startup Seed
@@ -200,6 +201,13 @@ Then: Response 400 "Value must be an integer"
 Given: auth.sso_client_secret có giá trị thực
 When: GET /api/admin/config/auth.sso_client_secret/
 Then: Response {"value": "***"} (không trả giá trị thực)
+```
+
+### AC-CFG-04b: Secret Visible for Privileged Operator
+```
+Given: user có permission thủ công "system.config.view_secret"
+When: GET /api/admin/config/auth.sso_client_secret/
+Then: Response có clear value phục vụ cấu hình vận hành
 ```
 
 ### AC-CFG-05: Non-Editable Config
