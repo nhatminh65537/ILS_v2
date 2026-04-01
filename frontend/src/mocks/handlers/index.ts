@@ -5,6 +5,8 @@ import { challengesHandlers } from '@/mocks/handlers/challenges.handlers'
 import { quizzesHandlers } from '@/mocks/handlers/quizzes.handlers'
 import { notificationsHandlers } from '@/mocks/handlers/notifications.handlers'
 import { leaderboardHandlers } from '@/mocks/handlers/leaderboard.handlers'
+import { rbacHandlers } from '@/mocks/handlers/rbac.handlers'
+import { systemConfigHandlers } from '@/mocks/handlers/system-config.handlers'
 
 export const handlers = [
   ...authHandlers,
@@ -14,4 +16,6 @@ export const handlers = [
   ...quizzesHandlers,
   ...notificationsHandlers,
   ...leaderboardHandlers,
+  ...rbacHandlers,
+  ...systemConfigHandlers,
 ]

@@ -7,6 +7,8 @@ Coding and architecture conventions for frontend development in ILS v2.
 ## Folder Structure
 
 - `frontend/app`: App Router pages/layouts
+- `frontend/app/[locale]/(app)`: User surface (authenticated member/editor/admin app area)
+- `frontend/app/[locale]/(admin)/admin`: Admin surface (dedicated admin auth entry + protected admin modules)
 - `frontend/src/types`: Domain type contracts
 - `frontend/src/services`: Typed API service layer
 - `frontend/src/stores`: Zustand stores by domain
@@ -18,6 +20,14 @@ Coding and architecture conventions for frontend development in ILS v2.
 - `frontend/src/mocks`: MSW fixtures and handlers
 - `frontend/src/i18n`: Locale routing/request configuration
 - `frontend/messages`: Translation dictionaries (`vi.json`, `en.json`)
+
+## Surface Architecture Rules
+
+- User and admin must be treated as distinct frontend surfaces even when sharing one Next.js app.
+- User surface routes and admin surface routes must not share the same layout wrapper.
+- Admin entry route is `/{locale}/admin/login`; admin registration route is intentionally absent.
+- Admin protected routes remain under `/{locale}/admin/*` for development compatibility.
+- Vhost/domain-level split is deferred to deployment; code must keep route-level separation ready for future host split.
 
 ## Naming Conventions
 
@@ -71,7 +81,7 @@ Coding and architecture conventions for frontend development in ILS v2.
   - `npm run lint`
   - `npx tsc --noEmit`
   - `npm run build`
-- For frontend behavior checks with MSW enabled, validate key screens in browser (`/vi`, `/vi/login`, `/vi/register`).
+- For frontend behavior checks with MSW enabled, validate key screens in browser (`/vi`, `/vi/login`, `/vi/register`, `/vi/admin/login`, `/vi/admin/rbac`, `/vi/admin/config`).
 
 ## FE-BE Contract Baseline (Completed Slices)
 
@@ -80,4 +90,5 @@ Coding and architecture conventions for frontend development in ILS v2.
 - Auth token payload user shape is minimal (`id`, `username`, `email`) for `register/login/sso-callback`.
 - `POST /api/auth/identity/link/` returns `{detail, provider, external_id, created}`.
 - `GET /api/admin/config/` returns an object grouped by category (`{[category]: SystemConfig[]}`), not a `{groups: [...]}` wrapper.
-- Frontend pages for RBAC and admin config are still planned; no production frontend service contract is considered stable yet for `/api/admin/roles/*`, `/api/admin/permissions/*`, `/api/users/{id}/roles/*`, `/api/admin/config/*`.
+- Admin RBAC and system config frontend pages are implemented and served from dedicated admin surface routes (`/{locale}/admin/*`).
+- MSW contract now includes admin handlers for `/api/admin/permissions/*`, `/api/admin/roles/*`, `/api/users/{id}/roles/*`, and `/api/admin/config/*` to support frontend-only validation.

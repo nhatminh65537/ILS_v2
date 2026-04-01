@@ -12,7 +12,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   const tAdmin = await getTranslations('admin')
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10 md:px-10">
+    <section className="space-y-8">
       <header className="space-y-3">
         <h1 className="text-3xl font-semibold md:text-4xl">{t('title')}</h1>
         <p className="text-muted-foreground">{t('subtitle')}</p>
@@ -47,16 +47,13 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
             <CardTitle>{tAdmin('title')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <p className="text-muted-foreground">{tAdmin('roles')}</p>
-            <Link className="block text-xs underline" href={`/${locale}/admin/rbac`}>
-              {tAdmin('permissions')}
-            </Link>
-            <Link className="block text-xs underline" href={`/${locale}/admin/config`}>
-              {tAdmin('config')}
+            <p className="text-muted-foreground">{tAdmin('portalDescription')}</p>
+            <Link className="block text-xs underline" href={`/${locale}/admin/login`}>
+              {tAdmin('portalEntry')}
             </Link>
           </CardContent>
         </Card>
       </section>
-    </main>
+    </section>
   )
 }

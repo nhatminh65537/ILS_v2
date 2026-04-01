@@ -38,6 +38,7 @@
 | [Q-AUTH-06](#q-auth-06-sso-account-linking-strategy) | SSO account linking: merge or separate | Slice 1 (Task 1.3) | **RESOLVED** (Option A) |
 | [Q-AUTH-07](#q-auth-07-device-logout-granularity) | Device logout: one session or all | Slice 1 (Task 1.4 deferred) | **RESOLVED** (Option A) |
 | [Q-INFRA-09](#q-infra-09-cors-and-domain-configuration) | CORS policy + frontend/backend domain | Slice 1 (Task 1.5), Slice 4 | **RESOLVED** (Option A) |
+| [Q-INFRA-10](#q-infra-10-frontend-useradmin-surface-separation) | Frontend user/admin surface separation | Slice 4+, Slice 8 admin FE | **RESOLVED** (Option A) |
 | [Q-ARCH-01](#q-arch-01-max-permissions-bitmap-capacity) | Max permissions bitmap encode size | Slice 2 (permission design) | **RESOLVED** (Option B) |
 | [Q-CONFIG-01](#q-config-01-default-systemconfig-auth-values) | Default auth.* system_config values at seed | Slice 0, 1 | **OPEN** |
 | [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **RESOLVED** (Option A) |
@@ -118,6 +119,36 @@ Memory-only token storage requires frontend to call `/api/auth/token/refresh/` e
 | B | Different domains (e.g., app.example.com vs api.example.com) | Yes | `credentials: 'include'` on fetch | More flexible, requires CORS setup |
 
 **Decision:** Choose Option A. Assume same-domain deployment by default, so CORS is not required for Slice 1.
+
+---
+
+### Q-INFRA-10: Frontend User/Admin Surface Separation
+
+**Status:** RESOLVED
+**Blocks:** Slice 4+ frontend architecture consistency and admin UI evolution
+
+**Problem:**
+Frontend admin pages were previously delivered under the same surface as user pages, without a dedicated entrypoint and without an independent layout shell. The team requires:
+- Dedicated admin login flow
+- No admin registration flow
+- Route-level split now, while keeping development access under `/{locale}/admin/*`
+- Vhost/domain split deferred to deployment phase
+
+**Options:**
+| Option | Approach | Pros | Cons |
+|--------|----------|------|------|
+| A | Route-group split in one Next.js app: user surface + admin surface, admin login at `/{locale}/admin/login`, no admin register | Low migration risk now, preserves dev URL contract, ready for later vhost split | Requires additional shell/layout refactor work |
+| B | Immediate split into two independent frontend projects | Strong isolation from day one | Higher migration cost and duplicated runtime setup |
+| C | Keep a single surface and only style pages | Minimal short-term work | Keeps coupling and blocks clean future admin vhost rollout |
+
+**Decision:** Choose Option A.
+
+**Implementation constraints from decision:**
+- Keep development/admin access paths under `/{locale}/admin/*`.
+- Admin authentication entry is `/{locale}/admin/login`.
+- Admin registration page is intentionally absent.
+- User and admin surfaces must use independent layout wrappers (navbar/sidebar/content/footer).
+- Vhost mapping is deferred to deployment (Phase C), not implemented in current coding phase.
 
 ---
 

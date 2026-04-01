@@ -128,8 +128,17 @@ ILS_v2/
     ├── package.json
     ├── next.config.ts
     ├── app/
-    │   ├── layout.tsx      # Root app layout (locale-aware routing baseline)
-    │   └── page.tsx        # Root redirect/page entry for locale-first flow
+  │   ├── layout.tsx      # Root app layout (providers + global css)
+  │   ├── page.tsx        # Root redirect entry
+  │   └── [locale]/
+  │       ├── layout.tsx  # Locale provider wrapper
+  │       ├── (auth)/      # User auth pages
+  │       ├── (app)/       # User surface pages (dashboard and feature routes)
+  │       └── (admin)/admin/
+  │           ├── (auth)/login       # Admin login entry
+  │           └── (protected)/        # Admin protected routes (rbac/config/...)
+  ├── src/components/layouts/         # Navbar, Sidebar, Footer, AppShell, UserLayout, AdminLayout, guards
+  ├── src/mocks/handlers/             # Domain handlers, including RBAC/system-config handlers
     └── public/             # Default Next.js assets
 ```
 
@@ -319,6 +328,32 @@ class HasJWTPermission(BasePermission):
 ```
 
 **⚠️ Production rule:** `auth.authorization_enabled` MUST be `true` in production. The `seed_config` command sets it to `true` by default. Setting it to `false` in production is a critical security misconfiguration.
+
+---
+
+### 4.12 Frontend User/Admin Surface Separation
+
+Frontend is split into two route-level surfaces while still running in one Next.js application:
+
+- **User surface:** `/{locale}/*` user routes (current authenticated entry: `/{locale}/dashboard`)
+- **Admin surface:** `/{locale}/admin/*` admin routes with dedicated auth entry `/{locale}/admin/login`
+
+The split is implemented with App Router route groups:
+
+- `app/[locale]/(app)` for user surface shell
+- `app/[locale]/(admin)/admin/(auth)` for admin login
+- `app/[locale]/(admin)/admin/(protected)` for admin protected modules
+
+Both user and admin protected surfaces must provide full app shell structure:
+
+- Navbar
+- Sidebar
+- Main content region
+- Footer
+
+Admin registration flow is intentionally absent. Admin authentication uses a dedicated login page and then enters admin modules.
+
+**Deployment note:** vhost/domain mapping for admin is deferred to deployment phase (Nginx/gateway). Current code keeps development path compatibility under `/{locale}/admin/*` while preserving architecture boundaries for future host split.
 
 ---
 

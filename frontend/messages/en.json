@@ -16,6 +16,7 @@
     "quizzes": "Quizzes",
     "notifications": "Notifications",
     "admin": "Admin",
+    "adminLogin": "Admin login",
     "login": "Login",
     "register": "Register",
     "profile": "Profile"
@@ -66,6 +67,18 @@
       "registerFailed": "Registration failed."
     }
   },
+  "adminAuth": {
+    "title": "Admin login",
+    "subtitle": "Sign in with an administrator account to access admin modules.",
+    "usernameLabel": "Admin username",
+    "usernamePlaceholder": "enter admin username",
+    "passwordLabel": "Admin password",
+    "passwordPlaceholder": "enter admin password",
+    "loginButton": "Enter admin portal",
+    "loading": "Signing in...",
+    "userLoginHint": "Need member features instead?",
+    "userLoginLink": "Go to user login"
+  },
   "courses": {
     "title": "Courses",
     "description": "Track progress through the content tree and complete lessons step by step.",
@@ -101,16 +114,20 @@
   },
   "admin": {
     "title": "System Administration",
+    "rbac": "RBAC",
     "config": "System configuration",
     "users": "Users",
     "roles": "Roles",
     "permissions": "Permissions",
+    "portalDescription": "Use dedicated admin surface entry to manage RBAC and runtime configuration.",
+    "portalEntry": "Open admin login",
     "saveSuccess": "Configuration saved successfully"
   },
   "adminRbac": {
     "title": "Admin RBAC",
     "subtitle": "Manage roles, permission grants, and user role assignments.",
-    "navigationHint": "Need user role assignment? Open",
+    "navigationHint": "Need to return to admin home? Open",
+    "navigationBackToAdmin": "Admin home",
     "navigationBackToDashboard": "Dashboard",
     "navigationBackToRbac": "Back to RBAC overview",
     "navigationBackToUsers": "Back to users",
@@ -212,7 +229,8 @@
   "adminConfig": {
     "title": "System Configuration Admin",
     "subtitle": "Review and update runtime configuration keys by category.",
-    "navigationHint": "Need to go back to overview? Open",
+    "navigationHint": "Need to return to admin home? Open",
+    "navigationBackToAdmin": "Admin home",
     "navigationBackToDashboard": "Dashboard",
     "toolbar": {
       "searchLabel": "Search configs",
@@ -267,6 +285,24 @@
       "secretRevealForbidden": "You do not have permission to reveal secret values.",
       "secretRevealUnavailable": "Clear secret value is not available for this key.",
       "unknown": "An unexpected system configuration error occurred."
+    }
+  },
+  "surface": {
+    "footerText": "ILS v2 internal learning platform",
+    "user": {
+      "title": "User surface",
+      "authTitle": "User authentication",
+      "sidebarTitle": "User navigation",
+      "adminPortal": "Admin login",
+      "loadingAccess": "Checking login session..."
+    },
+    "admin": {
+      "title": "Admin surface",
+      "authTitle": "Admin authentication",
+      "sidebarTitle": "Admin navigation",
+      "homeLabel": "Admin home",
+      "userPortalLabel": "User dashboard",
+      "loadingAccess": "Checking admin access..."
     }
   },
   "dashboard": {

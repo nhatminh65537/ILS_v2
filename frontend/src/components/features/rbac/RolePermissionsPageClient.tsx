@@ -74,7 +74,7 @@ export function RolePermissionsPageClient({ locale, roleId }: RolePermissionsPag
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-6 py-10 md:px-10">
+    <section className="space-y-6">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold md:text-3xl">{t('rolePermissionsTitle')}</h1>
         <p className="text-sm text-muted-foreground">
@@ -104,6 +104,6 @@ export function RolePermissionsPageClient({ locale, roleId }: RolePermissionsPag
         onRevoke={handleRevoke}
         roleId={roleId}
       />
-    </main>
+    </section>
   )
 }

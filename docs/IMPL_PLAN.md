@@ -555,43 +555,38 @@ Report: `docs/reports/2026-03-31_slice4-full-task-report.md`
 
 Status note: Slice 4 foundation tasks were delivered in one batch session chain (Task 1–Task 10). Remaining backlog item is the shared Tree component for Learn/Challenge/Quiz reuse.
 
+Surface split update (2026-04-01): frontend now uses route-level user/admin separation with dedicated admin auth entry while preserving `/{locale}/admin/*` dev URLs.
+
 **Directory structure:**
 ```
-frontend/src/
+frontend/
 ├── app/
-│   ├── layout.tsx                 # root: font, theme provider
-│   ├── (auth)/                    # unauthenticated routes
-│   │   ├── layout.tsx             # centered card
-│   │   ├── login/page.tsx
-│   │   └── register/page.tsx
-│   ├── (app)/                     # authenticated routes
-│   │   ├── layout.tsx             # sidebar + header
-│   │   ├── page.tsx               # dashboard/home
-│   │   ├── learn/                 # Slice 5
-│   │   ├── challenge/             # Slice 6
-│   │   ├── quiz/                  # Slice 7
-│   │   ├── profile/               # Slice 8
-│   │   ├── notifications/         # Slice 9
-│   │   └── leaderboard/           # Slice 11
-│   └── admin/                     # admin-only routes
-│       ├── layout.tsx             # admin sidebar
-│       ├── rbac/                  # Slice 2
-│       ├── config/                # Slice 3
-│       ├── users/                 # Slice 8
-│       └── stats/                 # Slice 11
-├── components/
-│   ├── ui/                        # Button, Input, Modal, Badge, etc.
-│   ├── Tree/                      # Reusable lazy-load tree component
-│   └── AIChatPanel/               # Slice 10
-├── store/
-│   ├── authStore.ts
-│   └── notificationStore.ts
-├── lib/
-│   ├── api.ts                     # Axios instance + interceptors
-│   └── ws.ts                      # WebSocket helper
-└── i18n/
-    ├── en.json
-    └── vi.json
+│   ├── layout.tsx                          # root providers + global css
+│   ├── page.tsx                            # root locale redirect
+│   └── [locale]/
+│       ├── layout.tsx                      # locale provider wrapper
+│       ├── (auth)/
+│       │   ├── layout.tsx                  # user auth wrapper
+│       │   ├── login/page.tsx
+│       │   └── register/page.tsx
+│       ├── (app)/
+│       │   ├── layout.tsx                  # user shell (navbar/sidebar/footer)
+│       │   └── dashboard/page.tsx
+│       └── (admin)/admin/
+│           ├── page.tsx                    # admin entry redirect
+│           ├── (auth)/
+│           │   ├── layout.tsx              # admin auth wrapper
+│           │   └── login/page.tsx
+│           └── (protected)/
+│               ├── layout.tsx              # admin shell + access gate
+│               ├── rbac/page.tsx
+│               ├── rbac/roles/[id]/page.tsx
+│               ├── rbac/users/[id]/roles/page.tsx
+│               └── config/page.tsx
+├── src/components/layouts/                 # Navbar/Sidebar/Footer/AppShell/UserLayout/AdminLayout
+├── src/services/                           # typed service layer (auth/rbac/system-config/...)
+├── src/mocks/handlers/                     # includes admin RBAC + system-config handlers
+└── messages/                               # vi.json / en.json
 ```
 
 **Shared Tree component** (reused in Learn/Challenge/Quiz):

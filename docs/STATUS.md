@@ -92,6 +92,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 3 / Task 3.2 (2026-04-01) | Frontend System Config admin UI implemented for locale routes (`/vi/admin/config`, `/en/admin/config`) with typed service/hook architecture, category-grouped accordion rendering, value-type aware editors (`bool`, `int`, `string`, `json`, `secret`), secret update confirmation flow, i18n support, and dashboard navigation entry. |
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
 | Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
+| Frontend Surface Split + Admin Auth Entry (2026-04-01) | Implemented route-level user/admin surface separation with dedicated admin login (`/{locale}/admin/login`), removed admin-register flow, added full shell layouts (navbar/sidebar/content/footer) for user/admin protected surfaces, moved admin routes out of user route group, and aligned MSW handlers with backend RBAC/system-config contracts including JWT permission bitmap claims for frontend capability checks. |
 
 ---
 
@@ -116,6 +117,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 4 / Frontend Foundation (2026-03-31) | `docs/reports/2026-03-31_slice4-full-task-report.md` |
 | Slice 0 / Task 0.3.5 (2026-04-01) | `docs/reports/2026-04-01_slice0-task0-3-5-seed-roles.md` |
 | Backend Refactor Phase 1-4 (2026-04-01) | `docs/reports/2026-04-01_backend-refactor-phase1-4.md` |
+| Frontend Surface Split + Admin Auth Entry (2026-04-01) | `docs/reports/2026-04-01_frontend-surface-split-admin-shell.md` |
 
 ---
 

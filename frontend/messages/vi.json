@@ -16,6 +16,7 @@
     "quizzes": "Bài quiz",
     "notifications": "Thông báo",
     "admin": "Quản trị",
+    "adminLogin": "Đăng nhập quản trị",
     "login": "Đăng nhập",
     "register": "Đăng ký",
     "profile": "Hồ sơ"
@@ -66,6 +67,18 @@
       "registerFailed": "Đăng ký thất bại."
     }
   },
+  "adminAuth": {
+    "title": "Đăng nhập quản trị",
+    "subtitle": "Đăng nhập bằng tài khoản quản trị để truy cập các module admin.",
+    "usernameLabel": "Tên đăng nhập quản trị",
+    "usernamePlaceholder": "nhập tên đăng nhập quản trị",
+    "passwordLabel": "Mật khẩu quản trị",
+    "passwordPlaceholder": "nhập mật khẩu quản trị",
+    "loginButton": "Vào cổng quản trị",
+    "loading": "Đang đăng nhập...",
+    "userLoginHint": "Cần chức năng người dùng thông thường?",
+    "userLoginLink": "Đi tới đăng nhập người dùng"
+  },
   "courses": {
     "title": "Khoá học",
     "description": "Theo dõi tiến độ theo cây nội dung và hoàn thành lesson theo từng bước.",
@@ -101,16 +114,20 @@
   },
   "admin": {
     "title": "Quản trị hệ thống",
+    "rbac": "RBAC",
     "config": "Cấu hình hệ thống",
     "users": "Người dùng",
     "roles": "Vai trò",
     "permissions": "Quyền",
+    "portalDescription": "Sử dụng cổng admin riêng để quản lý RBAC và cấu hình runtime.",
+    "portalEntry": "Mở đăng nhập quản trị",
     "saveSuccess": "Lưu cấu hình thành công"
   },
   "adminRbac": {
     "title": "Quản trị RBAC",
     "subtitle": "Quản lý vai trò, gán quyền và phân vai trò cho người dùng.",
-    "navigationHint": "Cần phân vai trò cho người dùng? Mở",
+    "navigationHint": "Cần quay lại trang chính admin? Mở",
+    "navigationBackToAdmin": "Trang chính admin",
     "navigationBackToDashboard": "Bảng điều khiển",
     "navigationBackToRbac": "Quay về tổng quan RBAC",
     "navigationBackToUsers": "Quay về danh sách người dùng",
@@ -212,7 +229,8 @@
   "adminConfig": {
     "title": "Quản trị cấu hình hệ thống",
     "subtitle": "Xem và cập nhật các khóa cấu hình runtime theo từng nhóm chức năng.",
-    "navigationHint": "Cần quay lại trang tổng quan? Mở",
+    "navigationHint": "Cần quay lại trang chính admin? Mở",
+    "navigationBackToAdmin": "Trang chính admin",
     "navigationBackToDashboard": "Bảng điều khiển",
     "toolbar": {
       "searchLabel": "Tìm kiếm cấu hình",
@@ -267,6 +285,24 @@
       "secretRevealForbidden": "Bạn không có quyền xem giá trị bí mật.",
       "secretRevealUnavailable": "Không thể hiển thị clear text cho khóa bí mật này.",
       "unknown": "Có lỗi xảy ra khi xử lý cấu hình hệ thống."
+    }
+  },
+  "surface": {
+    "footerText": "Nền tảng học tập nội bộ ILS v2",
+    "user": {
+      "title": "Bề mặt người dùng",
+      "authTitle": "Xác thực người dùng",
+      "sidebarTitle": "Điều hướng người dùng",
+      "adminPortal": "Đăng nhập quản trị",
+      "loadingAccess": "Đang kiểm tra phiên đăng nhập..."
+    },
+    "admin": {
+      "title": "Bề mặt quản trị",
+      "authTitle": "Xác thực quản trị",
+      "sidebarTitle": "Điều hướng quản trị",
+      "homeLabel": "Trang chính admin",
+      "userPortalLabel": "Bảng điều khiển người dùng",
+      "loadingAccess": "Đang kiểm tra quyền truy cập admin..."
     }
   },
   "dashboard": {

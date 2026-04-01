@@ -50,14 +50,14 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       setUser: (user) => {
-        set({ user, isAuthenticated: Boolean(user && get().accessToken) })
+        set({ user, isAuthenticated: Boolean(get().accessToken) })
       },
       setTokens: ({ accessToken, refreshToken }) => {
         syncTokenStorage(accessToken, refreshToken)
         set({
           accessToken,
           refreshToken,
-          isAuthenticated: Boolean(accessToken && get().user),
+          isAuthenticated: Boolean(accessToken),
         })
       },
       setLoading: (isLoading) => {
@@ -76,9 +76,16 @@ export const useAuthStore = create<AuthState>()(
           set({
             accessToken,
             refreshToken,
-            isAuthenticated: Boolean(accessToken && get().user),
+            isAuthenticated: Boolean(accessToken),
           })
+          return
         }
+
+        set({
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        })
       },
       clearAuth: () => {
         syncTokenStorage(null, null)
@@ -108,7 +115,7 @@ export const useAuthStore = create<AuthState>()(
         }
 
         syncTokenStorage(state.accessToken, state.refreshToken)
-        state.isAuthenticated = Boolean(state.user && state.accessToken)
+        state.isAuthenticated = Boolean(state.accessToken)
       },
     }
   )

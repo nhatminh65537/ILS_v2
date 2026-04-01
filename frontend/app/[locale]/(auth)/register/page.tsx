@@ -11,7 +11,7 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
   const t = await getTranslations('auth')
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-10">
+    <section className="w-full space-y-6">
       <div className="space-y-2">
         <h1 className="text-3xl font-semibold">{t('registerTitle')}</h1>
         <p className="text-sm text-muted-foreground">{t('registerSubtitle')}</p>
@@ -25,6 +25,6 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
           {t('loginLink')}
         </Link>
       </p>
-    </main>
+    </section>
   )
 }

@@ -136,6 +136,11 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 | Database | PostgreSQL (dev: SQLite) |
 | Auth | JWT with encoded permission claims; SSO via Authentik |
 
+**Frontend topology note (current):**
+- User surface routes use locale-first paths and user shell under `app/[locale]/(app)`.
+- Admin surface routes are isolated under `app/[locale]/(admin)/admin/*` with dedicated login at `/{locale}/admin/login`.
+- Development keeps admin access paths as `/{locale}/admin/*`; deploy-time vhost mapping is handled separately.
+
 ---
 
 ## Before Coding — Checklist

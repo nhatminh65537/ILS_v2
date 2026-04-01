@@ -37,6 +37,7 @@ NEXT_PUBLIC_ENABLE_MSW=false
 Notes:
 - `NEXT_PUBLIC_API_URL` points to backend origin, service paths already include `/api/*`.
 - MSW is enabled by default in development and disabled in production.
+- For frontend-only verification, keep `NEXT_PUBLIC_ENABLE_MSW=true`.
 
 ## Development Commands
 
@@ -65,12 +66,32 @@ npm run build
 
 When `NEXT_PUBLIC_ENABLE_MSW=true`, mock handlers intercept API requests in browser.
 
+Admin-specific handler coverage includes:
+- `/api/admin/permissions/*`
+- `/api/admin/roles/*`
+- `/api/users/{id}/roles/*`
+- `/api/admin/config/*`
+
 ## i18n Behavior
 
 - Locales: `vi`, `en`
 - Default locale: `vi`
 - Root `/` redirects to `/vi`
 - Locale routes: `app/[locale]/*`
+
+## Surface Routing (Current)
+
+- User surface routes remain under `/{locale}/*` with authenticated user shell at `/{locale}/dashboard`.
+- Admin surface routes remain under `/{locale}/admin/*` for development.
+- Dedicated admin auth entry: `/{locale}/admin/login`.
+- Admin registration route is intentionally absent.
+
+## Manual Smoke Checklist (Frontend-Only)
+
+- User surface shell: `/{locale}/dashboard` has navbar + sidebar + content + footer.
+- Admin login: `/{locale}/admin/login` renders dedicated admin auth form without register action.
+- Admin protected shell: `/{locale}/admin/rbac` and `/{locale}/admin/config` render admin navbar/sidebar/content/footer after login.
+- Admin data flow in MSW mode: RBAC and system config pages load with mock contracts (no backend dependency).
 
 ## Add More shadcn Components
 

@@ -4,7 +4,10 @@ MSW request handlers per domain. Each handler matches endpoint pattern and retur
 
 Files:
 - `index.ts` — Export all handlers for browser/server setup
-- `auth.handlers.ts` — POST /api/auth/* handlers
+- `auth.handlers.ts` — Auth handlers (`/api/auth/*`) with JWT-like claims in mock access tokens
+- `admin-permissions.ts` — Shared admin permission catalog + bitmap token helpers
+- `rbac.handlers.ts` — RBAC handlers (`/api/admin/permissions/*`, `/api/admin/roles/*`, `/api/users/{id}/roles/*`)
+- `system-config.handlers.ts` — System config handlers (`/api/admin/config/*`)
 - `users.handlers.ts` — GET/POST /api/users/* handlers
 - `courses.handlers.ts` — All /api/courses/* handlers
 - `challenges.handlers.ts` — All /api/challenges/* handlers

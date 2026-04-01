@@ -3,10 +3,14 @@
 Layout wrapper components for page structure.
 
 Files:
-- `Sidebar.tsx` — Left sidebar navigation
-- `Navbar.tsx` — Top navigation bar
-- `AppShell.tsx` — Main app layout (Sidebar + Navbar + main content)
-- `AuthLayout.tsx` — Centered card layout for login/register pages
-- `AdminLayout.tsx` — Admin-only layout with admin sidebar
+- `types.ts` — Shared layout nav item type contracts
+- `Navbar.tsx` — Surface top navigation bar
+- `Sidebar.tsx` — Surface sidebar navigation container
+- `Footer.tsx` — Surface footer block
+- `AppShell.tsx` — Shared shell composition (Navbar + Sidebar + content + Footer)
+- `UserLayout.tsx` — User surface shell wrapper
+- `AdminLayout.tsx` — Admin surface shell wrapper
+- `AuthLayout.tsx` — Shared auth wrapper for user/admin login surfaces
+- `AdminAccessGate.tsx` — Client-side admin access gate for protected admin surface routes
 
-**Rule**: Layouts are UI-only containers. All state passed via props or context.
+**Rule**: Shell layout wrappers are primarily UI containers; guard components may use minimal auth state for access control.
