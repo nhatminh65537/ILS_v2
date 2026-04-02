@@ -14,7 +14,7 @@ from .views import (
     NotificationViewSet,
     LeaderboardViewSet,
 )
-from .admin_views import SystemConfigViewSet, PermissionViewSet, RoleViewSet, UserRoleViewSet
+from .admin_views import AdminUserViewSet, SystemConfigViewSet, PermissionViewSet, RoleViewSet, UserRoleViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()
@@ -25,6 +25,7 @@ router.register(r'challenges', ChallengeViewSet, basename='challenge')
 router.register(r'quizzes', QuizViewSet, basename='quiz')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
+router.register(r'admin/users', AdminUserViewSet, basename='admin-user')
 router.register(r'admin/config', SystemConfigViewSet, basename='admin-config')
 router.register(r'admin/permissions', PermissionViewSet, basename='permission')
 router.register(r'admin/roles', RoleViewSet, basename='role')

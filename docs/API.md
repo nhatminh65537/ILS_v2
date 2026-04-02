@@ -101,6 +101,15 @@ Contract notes for frontend integration (completed slices):
 | GET | `/api/users/me/activity/` | Yes | Stable | Current user activity feed (latest 30 events). |
 | GET | `/api/users/{username}/profile/` | No | Stable | Public profile for a user by username. |
 | GET | `/api/users/{username}/activity/` | No | Stable | Public activity feed for a user by username. |
+| GET | `/api/admin/users/` | Yes (Admin) | Stable | Admin list users with filters: `is_active`, `date_joined_from`, `date_joined_to`. |
+| POST | `/api/admin/users/` | Yes (Admin) | Stable | Admin create user; password is optional; `UserProfile` is auto-created; defaults to `Member` role if `role_ids` is omitted. |
+| GET | `/api/admin/users/{id}/` | Yes (Admin) | Stable | Admin user detail with profile and assigned roles. |
+| PUT/PATCH | `/api/admin/users/{id}/` | Yes (Admin) | Stable | Admin update user account fields and role assignments; disabling user revokes all active sessions immediately. |
+
+Task 8.2 update (2026-04-02):
+- Admin user management API is active under `/api/admin/users/*` via dedicated admin viewset.
+- Update responses include user, profile, and role context for direct frontend state refresh.
+- Date filters accept `YYYY-MM-DD` or ISO datetime values.
 
 ### 3.3 Courses
 

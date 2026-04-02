@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-01
+> Last updated: 2026-04-02
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -96,6 +96,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 / Task 7.2 (2026-04-01) | QuizNode tree API completed: `/api/quiz/nodes/*` CRUD with folder-only MVP, one-way quiz FK, cycle-safe move, lazy children, and integration tests passing. |
 | Slice 7 / Task 7.3 (2026-04-01) | Django Channels WebSocket consumer implemented: `/ws/quiz/{quiz_id}/` + first-message JWT auth (Q-INFRA-05 Option B) + auth/start/answer/next/finish actions; attempt lifecycle with config snapshot, question sequencing, polymorphic validation/scoring reusing domain logic; async integration tests for auth/flow/edge-cases in `backend/realtime/tests/test_quiz_consumer.py`. |
 | Slice 7 / Task 7.4 (2026-04-01) | Quiz progress tracking signal handler implemented: Django `post_save` signal on `UserQuizAttempt` automatically updates `UserQuizProgress` with aggregated `best_score`, `attempt_count`, `first_attempted_at`, `last_attempted_at`, and `completed_at` fields; signal handler idempotent and tested with 13 comprehensive pytest tests covering edge cases (perfect score detection, timestamp tracking, multi-user/multi-quiz separation). |
+| Slice 8 / Task 8.2 (2026-04-02) | Admin user management API completed at `/api/admin/users/*` with list filters (`is_active`, `date_joined_from`, `date_joined_to`), optional-password admin create with default Member role assignment, detailed update responses (`user + profile + roles`), and immediate session revocation on disable; focused pytest suite `backend/api/test_admin_users_task8_2.py` passing (`5 passed`). |
 
 ---
 
@@ -121,6 +122,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 0 / Task 0.3.5 (2026-04-01) | `docs/reports/2026-04-01_slice0-task0-3-5-seed-roles.md` |
 | Backend Refactor Phase 1-4 (2026-04-01) | `docs/reports/2026-04-01_backend-refactor-phase1-4.md` |
 | Slice 7 / Task 7.1 (2026-04-01) | `docs/reports/2026-04-01_slice7-task7-1-quiz-crud-api.md` |
+| Slice 8 / Task 8.2 (2026-04-02) | `docs/reports/2026-04-02_slice8-task8-2-admin-user-management-api.md` |
 
 ---
 
@@ -210,7 +212,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Task | Priority | Notes |
 |------|----------|-------|
 | User profile API (me + public) | Low | ✅ Completed 2026-04-02: `/api/users/me/profile/`, `/api/users/me/settings/`, `/api/users/me/account/`, `/api/users/me/activity/`, `/api/users/{username}/profile/`, `/api/users/{username}/activity/` |
-| Admin user management API | Low | |
+| Admin user management API | Low | ✅ Completed 2026-04-02: `/api/admin/users/`, `/api/admin/users/{id}/` with filters + role update + disable-session revoke behavior |
 | Frontend: Profile + settings pages | Low | |
 | Frontend: Admin user management | Low | |
 

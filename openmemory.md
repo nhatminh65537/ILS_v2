@@ -42,6 +42,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Status
 
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
+- Slice 8 Task 8.2 implemented on 2026-04-02: admin user management API is active at `/api/admin/users/*` with `is_active` + `date_joined_from/date_joined_to` filters, optional-password admin create (default Member role when `role_ids` omitted), and immediate session revocation when disabling users.
 - Slice 1 Task 1.1 implemented on 2026-03-26: `auth_app` now serves `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, and `/api/auth/logout-all` with hashed refresh-token session tracking and endpoint tests.
 - Slice 1 Task 1.2 implemented on 2026-03-26: `/api/auth/token/refresh` now validates refresh hash against active `user_session`, rotates refresh token/session on success, enforces per-user refresh rate limit (10/min), and keeps JWT access TTL aligned to 15 minutes.
 - Slice 1 Task 1.3 implemented on 2026-03-30: SSO/AuthentiK backend endpoints are active (`GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`) with OIDC state/nonce validation (cache TTL 5 minutes), account-link conflict handling, and test coverage expanded to 22 passing auth tests.
@@ -64,6 +65,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Patterns
 
 - **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only
+- **Admin user management contract**: use dedicated `/api/admin/users/*` viewset + serializer (do not overload public `UserViewSet`), return `user + profile + roles` after mutations, and revoke all active sessions when `is_active` becomes false.
 - Explicit join tables for M2M (not Django ManyToManyField)
 - All models inherit FullAudit; explicit `db_table` and `db_column` on every model
 - **Join tables** (tag maps, role_permission): use **CreateAudit only** — no updated_at/updated_by
