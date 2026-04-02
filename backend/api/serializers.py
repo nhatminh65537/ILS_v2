@@ -84,6 +84,74 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
 
 
+class MeProfileUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for PATCH /api/users/me/profile/."""
+
+    class Meta:
+        model = UserProfile
+        fields = ['entry_year', 'display_name', 'avatar_url', 'bio', 'location', 'website']
+
+
+class MeSettingsUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for PATCH /api/users/me/settings/."""
+
+    class Meta:
+        model = UserProfile
+        fields = ['language', 'theme', 'timezone']
+
+
+class MeAccountUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for PATCH /api/users/me/account/."""
+
+    class Meta:
+        model = User
+        fields = ['username', 'email']
+        extra_kwargs = {
+            'username': {'required': False},
+            'email': {'required': False},
+        }
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError('At least one field must be provided')
+        return attrs
+
+    def validate_username(self, value):
+        user = self.instance
+        if User.objects.exclude(pk=user.pk).filter(username__iexact=value).exists():
+            raise serializers.ValidationError('A user with that username already exists.')
+        return value
+
+    def validate_email(self, value):
+        user = self.instance
+        if value and User.objects.exclude(pk=user.pk).filter(email__iexact=value).exists():
+            raise serializers.ValidationError('A user with that email already exists.')
+        return value
+
+
+class PublicUserProfileSerializer(serializers.ModelSerializer):
+    """Public profile serializer for /api/users/{username}/profile/."""
+
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'username', 'entry_year', 'display_name', 'avatar_url', 'bio', 'location', 'website',
+            'total_learning_point', 'total_challenge_point', 'total_quiz_point',
+            'course_completed', 'challenge_completed', 'quiz_completed', 'last_active_at'
+        ]
+
+
+class ActivityEventSerializer(serializers.Serializer):
+    """Serializer for unified activity feed items."""
+
+    type = serializers.CharField()
+    timestamp = serializers.DateTimeField()
+    item_title = serializers.CharField(allow_blank=True, allow_null=True)
+    source_id = serializers.IntegerField(allow_null=True)
+
+
 class UserAuthProviderSerializer(serializers.ModelSerializer):
     """SSO provider serializer"""
     

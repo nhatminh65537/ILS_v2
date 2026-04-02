@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-01
+> Last updated: 2026-04-02
 
 ---
 
@@ -94,8 +94,13 @@ Contract notes for frontend integration (completed slices):
 | PUT/PATCH | `/api/users/{id}/` | Yes | Stable | Update user. |
 | DELETE | `/api/users/{id}/` | Yes | Stable | Delete user. |
 | GET | `/api/users/me/` | Yes | Stable | Current user info. |
-| GET | `/api/users/profile/` | Yes | Stable | Current user profile. |
-| PATCH | `/api/users/update_profile/` | Yes | Stable | Partial update for current profile. |
+| GET | `/api/users/me/profile/` | Yes | Stable | Current user profile + stats. |
+| PATCH | `/api/users/me/profile/` | Yes | Stable | Partial update for current profile fields. |
+| PATCH | `/api/users/me/settings/` | Yes | Stable | Updates language, theme, and timezone. |
+| PATCH | `/api/users/me/account/` | Yes | Stable | Updates username and email with validation. |
+| GET | `/api/users/me/activity/` | Yes | Stable | Current user activity feed (latest 30 events). |
+| GET | `/api/users/{username}/profile/` | No | Stable | Public profile for a user by username. |
+| GET | `/api/users/{username}/activity/` | No | Stable | Public activity feed for a user by username. |
 
 ### 3.3 Courses
 

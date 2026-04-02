@@ -209,7 +209,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| User profile API (me + public) | Low | |
+| User profile API (me + public) | Low | ✅ Completed 2026-04-02: `/api/users/me/profile/`, `/api/users/me/settings/`, `/api/users/me/account/`, `/api/users/me/activity/`, `/api/users/{username}/profile/`, `/api/users/{username}/activity/` |
 | Admin user management API | Low | |
 | Frontend: Profile + settings pages | Low | |
 | Frontend: Admin user management | Low | |
