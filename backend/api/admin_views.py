@@ -1,15 +1,21 @@
+from datetime import datetime, time
+
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 from auth_app.permissions import add_role_granted
 
 from .mixins.rbac_action_permission import RBACActionPermissionMixin
-from .models import Permission, Role, RolePermission, SystemConfig, UserRole
+from .models import Permission, Role, RolePermission, SystemConfig, User, UserRole
 from .serializers import (
+    AdminUserManagementSerializer,
     PermissionTreeSerializer,
     RolePermissionSerializer,
     RoleSerializer,
@@ -19,6 +25,68 @@ from .serializers import (
 )
 from .services.permission_service import PermissionService
 from .utils import invalidate_config_cache
+
+
+@add_role_granted('Admin')
+class AdminUserViewSet(
+    RBACActionPermissionMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Admin user management viewset."""
+
+    queryset = User.objects.all()
+    serializer_class = AdminUserManagementSerializer
+    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
+    action_permission_map = {
+        'list': 'api.admin_user.list',
+        'retrieve': 'api.admin_user.retrieve',
+        'create': 'api.admin_user.create',
+        'update': 'api.admin_user.update',
+        'partial_update': 'api.admin_user.partial_update',
+    }
+
+    def get_queryset(self):
+        queryset = User.objects.select_related('profile').prefetch_related('user_roles__role').order_by('id')
+
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None and is_active != '':
+            normalized = is_active.strip().lower()
+            if normalized not in {'true', 'false', '1', '0'}:
+                raise ValidationError({'is_active': 'Use true or false.'})
+            queryset = queryset.filter(is_active=normalized in {'true', '1'})
+
+        date_joined_from = self._parse_joined_filter(self.request.query_params.get('date_joined_from'))
+        date_joined_to = self._parse_joined_filter(self.request.query_params.get('date_joined_to'), end_of_day=True)
+
+        if date_joined_from is not None:
+            queryset = queryset.filter(date_joined__gte=date_joined_from)
+        if date_joined_to is not None:
+            queryset = queryset.filter(date_joined__lte=date_joined_to)
+
+        return queryset
+
+    @staticmethod
+    def _parse_joined_filter(value, *, end_of_day=False):
+        if not value:
+            return None
+
+        parsed_datetime = parse_datetime(value)
+        if parsed_datetime is not None:
+            candidate = parsed_datetime
+        else:
+            parsed_date = parse_date(value)
+            if parsed_date is None:
+                raise ValidationError({'date_joined': 'Use YYYY-MM-DD or an ISO datetime string.'})
+            candidate = datetime.combine(parsed_date, time.max if end_of_day else time.min)
+
+        if timezone.is_naive(candidate):
+            candidate = timezone.make_aware(candidate, timezone.get_current_timezone())
+
+        return candidate
 
 
 @add_role_granted('Admin')

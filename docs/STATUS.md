@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-01
+> Last updated: 2026-04-02
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -94,6 +94,11 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
 | Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
 | Frontend Surface Split + Admin Auth Entry (2026-04-01) | Implemented route-level user/admin surface separation with dedicated admin login (`/{locale}/admin/login`), removed admin-register flow, added full shell layouts (navbar/sidebar/content/footer) for user/admin protected surfaces, moved admin routes out of user route group, and aligned MSW handlers with backend RBAC/system-config contracts including JWT permission bitmap claims for frontend capability checks. |
+| Slice 7 / Task 7.1 (2026-04-01) | Quiz backend API completed: canonical namespaced routes `/api/quiz/quizzes/*`, nested question CRUD, per-user quiz config endpoint, deterministic serializer validation for `single_choice`/`multi_choice`/`fill_blank`, and focused pytest suite (`backend/api/test_quiz_task7_1.py`) passing (`6 passed`). |
+| Slice 7 / Task 7.2 (2026-04-01) | QuizNode tree API completed: `/api/quiz/nodes/*` CRUD with folder-only MVP, one-way quiz FK, cycle-safe move, lazy children, and integration tests passing. |
+| Slice 7 / Task 7.3 (2026-04-01) | Django Channels WebSocket consumer implemented: `/ws/quiz/{quiz_id}/` + first-message JWT auth (Q-INFRA-05 Option B) + auth/start/answer/next/finish actions; attempt lifecycle with config snapshot, question sequencing, polymorphic validation/scoring reusing domain logic; async integration tests for auth/flow/edge-cases in `backend/realtime/tests/test_quiz_consumer.py`. |
+| Slice 7 / Task 7.4 (2026-04-01) | Quiz progress tracking signal handler implemented: Django `post_save` signal on `UserQuizAttempt` automatically updates `UserQuizProgress` with aggregated `best_score`, `attempt_count`, `first_attempted_at`, `last_attempted_at`, and `completed_at` fields; signal handler idempotent and tested with 13 comprehensive pytest tests covering edge cases (perfect score detection, timestamp tracking, multi-user/multi-quiz separation). |
+| Slice 8 / Task 8.2 (2026-04-02) | Admin user management API completed at `/api/admin/users/*` with list filters (`is_active`, `date_joined_from`, `date_joined_to`), optional-password admin create with default Member role assignment, detailed update responses (`user + profile + roles`), and immediate session revocation on disable; focused pytest suite `backend/api/test_admin_users_task8_2.py` passing (`5 passed`). |
 
 ---
 
@@ -119,6 +124,8 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 0 / Task 0.3.5 (2026-04-01) | `docs/reports/2026-04-01_slice0-task0-3-5-seed-roles.md` |
 | Backend Refactor Phase 1-4 (2026-04-01) | `docs/reports/2026-04-01_backend-refactor-phase1-4.md` |
 | Frontend Surface Split + Admin Auth Entry (2026-04-01) | `docs/reports/2026-04-01_frontend-surface-split-admin-shell.md` |
+| Slice 7 / Task 7.1 (2026-04-01) | `docs/reports/2026-04-01_slice7-task7-1-quiz-crud-api.md` |
+| Slice 8 / Task 8.2 (2026-04-02) | `docs/reports/2026-04-02_slice8-task8-2-admin-user-management-api.md` |
 
 ---
 
@@ -198,18 +205,17 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Quiz + Question CRUD API | Medium | |
-| QuizNode tree API | Medium | No circular FK |
-| Django Channels WebSocket consumer | Medium | First-message JWT auth (no query token) |
-| Quiz progress signals | Medium | `best_score`, `attempt_count` |
-| Frontend: Quiz browser + WS session | Low | |
+| QuizNode tree API | Medium | ✅ Completed 2026-04-01: `/api/quiz/nodes/*` + folder-only MVP + cycle-safe move |
+| Django Channels WebSocket consumer | Medium | ✅ Completed 2026-04-01: `/ws/quiz/{id}/` + first-message JWT auth + auth/start/answer/next/finish protocol with polymorphic scoring |
+| Quiz progress signals | Medium | ✅ Completed 2026-04-01: Signal handler + 13 pytest tests, UserQuizProgress auto-updates on attempt finish |
+| Frontend: Quiz browser + WS session | Low | Not yet started (Tasks 7.5-7.6) |
 
 ### Slice 8 — User Profile
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| User profile API (me + public) | Low | |
-| Admin user management API | Low | |
+| User profile API (me + public) | Low | ✅ Completed 2026-04-02: `/api/users/me/profile/`, `/api/users/me/settings/`, `/api/users/me/account/`, `/api/users/me/activity/`, `/api/users/{username}/profile/`, `/api/users/{username}/activity/` |
+| Admin user management API | Low | ✅ Completed 2026-04-02: `/api/admin/users/`, `/api/admin/users/{id}/` with filters + role update + disable-session revoke behavior |
 | Frontend: Profile + settings pages | Low | |
 | Frontend: Admin user management | Low | |
 

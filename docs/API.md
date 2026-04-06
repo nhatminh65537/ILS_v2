@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-01
+> Last updated: 2026-04-02
 
 ---
 
@@ -94,8 +94,22 @@ Contract notes for frontend integration (completed slices):
 | PUT/PATCH | `/api/users/{id}/` | Yes | Stable | Update user. |
 | DELETE | `/api/users/{id}/` | Yes | Stable | Delete user. |
 | GET | `/api/users/me/` | Yes | Stable | Current user info. |
-| GET | `/api/users/profile/` | Yes | Stable | Current user profile. |
-| PATCH | `/api/users/update_profile/` | Yes | Stable | Partial update for current profile. |
+| GET | `/api/users/me/profile/` | Yes | Stable | Current user profile + stats. |
+| PATCH | `/api/users/me/profile/` | Yes | Stable | Partial update for current profile fields. |
+| PATCH | `/api/users/me/settings/` | Yes | Stable | Updates language, theme, and timezone. |
+| PATCH | `/api/users/me/account/` | Yes | Stable | Updates username and email with validation. |
+| GET | `/api/users/me/activity/` | Yes | Stable | Current user activity feed (latest 30 events). |
+| GET | `/api/users/{username}/profile/` | No | Stable | Public profile for a user by username. |
+| GET | `/api/users/{username}/activity/` | No | Stable | Public activity feed for a user by username. |
+| GET | `/api/admin/users/` | Yes (Admin) | Stable | Admin list users with filters: `is_active`, `date_joined_from`, `date_joined_to`. |
+| POST | `/api/admin/users/` | Yes (Admin) | Stable | Admin create user; password is optional; `UserProfile` is auto-created; defaults to `Member` role if `role_ids` is omitted. |
+| GET | `/api/admin/users/{id}/` | Yes (Admin) | Stable | Admin user detail with profile and assigned roles. |
+| PUT/PATCH | `/api/admin/users/{id}/` | Yes (Admin) | Stable | Admin update user account fields and role assignments; disabling user revokes all active sessions immediately. |
+
+Task 8.2 update (2026-04-02):
+- Admin user management API is active under `/api/admin/users/*` via dedicated admin viewset.
+- Update responses include user, profile, and role context for direct frontend state refresh.
+- Date filters accept `YYYY-MM-DD` or ISO datetime values.
 
 ### 3.3 Courses
 
@@ -149,6 +163,14 @@ Historical/runtime note:
 - Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
 - For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
 
+Task 7.1 update (2026-04-01):
+- Canonical namespaced routes for quiz CRUD/question/config are now active under `/api/quiz/quizzes/*`.
+- Legacy routes (`/api/quizzes/*`) remain active for compatibility during migration.
+
+Task 7.2 update (2026-04-01):
+- QuizNode tree CRUD endpoints are active under `/api/quiz/nodes/*`.
+- MVP behavior is folder-only (`is_item=false` enforced); tree operations use dot-separated `path` invariants from `BaseNode`.
+
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/quizzes/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
@@ -158,8 +180,80 @@ Historical/runtime note:
 | DELETE | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
 | POST | `/api/quizzes/{id}/start_attempt/` | Yes | Partial | Runtime route exists; full scoring/session lifecycle is pending. |
 | POST | `/api/quizzes/{id}/submit_answer/` | Yes | Partial | Depends on complete scoring/session persistence flow. |
+| GET | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced list endpoint for Slice 7 Task 7.1; members see published quizzes only. |
+| POST | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced create endpoint; editor/admin role required. |
+| GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced detail endpoint. |
+| PUT/PATCH | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin role required. |
+| DELETE | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced delete endpoint; editor/admin role required. |
+| GET | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question management list endpoint; editor/admin only. |
+| POST | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question create endpoint; supports single/multi/fill_blank validation. |
+| GET | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question detail endpoint; editor/admin only. |
+| PUT | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question update endpoint; editor/admin only. |
+| DELETE | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question delete endpoint; syncs `quiz.total_questions`. |
+| GET | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config retrieval endpoint. |
+| PUT | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config upsert endpoint. |
+| GET | `/api/quiz/nodes/` | Yes | Partial | QuizNode root list (`parent IS NULL`) for quiz tree browsing. |
+| POST | `/api/quiz/nodes/` | Yes | Partial | QuizNode create endpoint; editor/admin only; MVP folder-only validation. |
+| GET | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode detail endpoint. |
+| PUT/PATCH | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode update endpoint; supports rename/reorder/move via `parent`; editor/admin only. |
+| DELETE | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode delete endpoint; subtree deletion via cascade. |
+| GET | `/api/quiz/nodes/{id}/children/` | Yes | Partial | QuizNode lazy children list endpoint. |
+| POST | `/api/quiz/nodes/{id}/move/` | Yes | Partial | Explicit move endpoint (`parent_id`), cycle-safe validation. |
+
+### 3.6.1 Quiz WebSocket (Real-time Practice Sessions)
+
+Task 7.3 update (2026-04-01):
+- WebSocket consumer for real-time quiz practice sessions fully implemented.
+- Protocol: First-message JWT authentication (Q-INFRA-05 Option B); no JWT in URL query string.
+- Endpoint: `ws://host/ws/quiz/{quiz_id}/`
+- Auth flow: Connect without token → send `{type: "auth", token: "<access_jwt>"}` within 5-second timeout.
+- Action protocol: `{"action": "start"|"answer"|"next"}` after authentication.
+
+| Endpoint | Protocol | Auth | Status | Notes |
+|---|---|---|---|---|
+| `GET ws://host/ws/quiz/{quiz_id}/` | WebSocket | JWT first-message | Stable | Real-time quiz session; first-message auth pattern. |
+
+**First-message auth flow:**
+```json
+CLIENT → {"type": "auth", "token": "eyJ..."}
+SERVER ← {"type": "auth_ok", "user_id": 123, "username": "alice"}
+```
+
+**Start attempt:**
+```json
+CLIENT → {"action": "start"}
+SERVER ← {"type": "question", "attempt_id": 789, "question": {...}, "progress": {"current": 1, "total": 10}}
+```
+
+**Submit answer (polymorphic by question type):**
+```json
+// Single-choice
+CLIENT → {"action": "answer", "question_id": 5, "answer_data": {"option_id": 42}}
+SERVER ← {"type": "answer_result", "is_correct": true, "score_obtained": 10, "explanation": "...", "correct_answer": {"option_id": 42}}
+
+// Multi-choice
+CLIENT → {"action": "answer", "question_id": 5, "answer_data": {"option_ids": [42, 43]}}
+SERVER ← {"type": "answer_result", "is_correct": true, "score_obtained": 10, ...}
+
+// Fill-blank
+CLIENT → {"action": "answer", "question_id": 5, "answer_data": {"text": "answer text"}}
+SERVER ← {"type": "answer_result", "is_correct": true, ...}
+```
+
+**Get next question or finish:**
+```json
+CLIENT → {"action": "next"}
+SERVER ← {"type": "question", ...} // if more questions remain
+SERVER ← {"type": "finish", "attempt_id": 789, "total_score": 100, "max_score": 100, "duration_sec": 245}
+```
+
+**Error event:**
+```json
+SERVER → {"type": "error", "code": "already_answered", "message": "Question already answered"}
+```
 
 ### 3.7 Notifications
+
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|

@@ -9,11 +9,12 @@ from .views import (
     UserViewSet,
     CourseViewSet, LessonViewSet,
     ChallengeViewSet,
+    QuizNodeViewSet,
     QuizViewSet,
     NotificationViewSet,
     LeaderboardViewSet,
 )
-from .admin_views import SystemConfigViewSet, PermissionViewSet, RoleViewSet, UserRoleViewSet
+from .admin_views import AdminUserViewSet, SystemConfigViewSet, PermissionViewSet, RoleViewSet, UserRoleViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()
@@ -24,6 +25,7 @@ router.register(r'challenges', ChallengeViewSet, basename='challenge')
 router.register(r'quizzes', QuizViewSet, basename='quiz')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
+router.register(r'admin/users', AdminUserViewSet, basename='admin-user')
 router.register(r'admin/config', SystemConfigViewSet, basename='admin-config')
 router.register(r'admin/permissions', PermissionViewSet, basename='permission')
 router.register(r'admin/roles', RoleViewSet, basename='role')
@@ -43,6 +45,52 @@ user_role_detail_url = re_path(
 urlpatterns = [
     # API routes
     path('', include(router.urls)),
+    # Canonical namespaced quiz routes (Slice 7)
+    re_path(
+        r'^quiz/quizzes/$',
+        QuizViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='quiz-list',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/$',
+        QuizViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='quiz-detail',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/questions/$',
+        QuizViewSet.as_view({'get': 'questions', 'post': 'questions'}),
+        name='quiz-questions',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/questions/(?P<qid>\d+)/$',
+        QuizViewSet.as_view({'get': 'question_detail', 'put': 'question_detail', 'delete': 'question_detail'}),
+        name='quiz-question-detail',
+    ),
+    re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/config/$',
+        QuizViewSet.as_view({'get': 'config', 'put': 'config'}),
+        name='quiz-config',
+    ),
+    re_path(
+        r'^quiz/nodes/$',
+        QuizNodeViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='quiz-node-list',
+    ),
+    re_path(
+        r'^quiz/nodes/(?P<pk>\d+)/$',
+        QuizNodeViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='quiz-node-detail',
+    ),
+    re_path(
+        r'^quiz/nodes/(?P<pk>\d+)/children/$',
+        QuizNodeViewSet.as_view({'get': 'children'}),
+        name='quiz-node-children',
+    ),
+    re_path(
+        r'^quiz/nodes/(?P<pk>\d+)/move/$',
+        QuizNodeViewSet.as_view({'post': 'move'}),
+        name='quiz-node-move',
+    ),
     # User roles custom routes
     user_roles_url,
     user_role_detail_url,
