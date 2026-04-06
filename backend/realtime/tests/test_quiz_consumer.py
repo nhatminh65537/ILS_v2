@@ -10,9 +10,11 @@ Run with: pytest backend/realtime/tests/test_quiz_consumer.py -v
 import pytest
 import asyncio
 from django.contrib.auth import get_user_model
+from django.urls import path
+from channels.db import database_sync_to_async
+from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils import timezone
 
 from api.models import Quiz, QuizQuestion, QuizQuestionOption
 
@@ -24,11 +26,11 @@ User = get_user_model()
 async def test_auth_success():
     """✅ Valid JWT auth message → auth_ok event."""
     # Create user and quiz
-    user = User.objects.create_user(username='alice', email='alice@example.com', password='pass')
-    quiz = Quiz.objects.create(title='Test Quiz', description='', status='published')
+    user = await _create_user('alice', 'alice@example.com')
+    quiz = await _create_quiz('Test Quiz')
     
     # Get JWT token
-    tokens = RefreshToken.for_user(user)
+    tokens = await database_sync_to_async(RefreshToken.for_user)(user)
     access_token = str(tokens.access_token)
     
     # Connect to WebSocket
@@ -55,7 +57,7 @@ async def test_auth_success():
 @pytest.mark.django_db(transaction=True)
 async def test_auth_timeout():
     """✅ No auth message within timeout → close with AUTH_TIMEOUT."""
-    quiz = Quiz.objects.create(title='Test', description='', status='published')
+    quiz = await _create_quiz('Test')
     
     communicator = WebsocketCommunicator(_get_consumer_asgi(), f"/ws/quiz/{quiz.id}/")
     connected, _ = await communicator.connect()
@@ -68,7 +70,7 @@ async def test_auth_timeout():
     try:
         response = await asyncio.wait_for(communicator.receive_output(), timeout=1)
         # Connection should be closed
-        assert response is None or response.get('type') == 'close'
+        assert response is None or response.get('type') == 'websocket.close'
     except asyncio.TimeoutError:
         # Expected - no response after timeout
         pass
@@ -80,26 +82,13 @@ async def test_auth_timeout():
 @pytest.mark.django_db(transaction=True)
 async def test_start_attempt():
     """✅ After auth, start action creates attempt and sends first question."""
-    user = User.objects.create_user(username='bob', email='bob@example.com', password='pass')
-    quiz = Quiz.objects.create(title='Quiz', description='', status='published')
+    user = await _create_user('bob', 'bob@example.com')
+    quiz = await _create_quiz('Quiz')
     
     # Create a question
-    q = QuizQuestion.objects.create(
-        quiz=quiz,
-        question_type='single_choice',
-        content={'text': 'What?'},
-        score=10,
-        position=1,
-        status='published'
-    )
-    opt = QuizQuestionOption.objects.create(
-        question=q,
-        content='Option A',
-        is_correct=True,
-        position=0
-    )
+    q = await _create_question(quiz)
     
-    tokens = RefreshToken.for_user(user)
+    tokens = await database_sync_to_async(RefreshToken.for_user)(user)
     access_token = str(tokens.access_token)
     
     communicator = WebsocketCommunicator(_get_consumer_asgi(), f"/ws/quiz/{quiz.id}/")
@@ -123,5 +112,36 @@ async def test_start_attempt():
 def _get_consumer_asgi():
     """Get ASGI application for consumer."""
     from realtime.consumers import QuizConsumer
-    return QuizConsumer.as_asgi()
+    return URLRouter([
+        path('ws/quiz/<int:quiz_id>/', QuizConsumer.as_asgi()),
+    ])
+
+
+@database_sync_to_async
+def _create_user(username, email):
+    return User.objects.create_user(username=username, email=email, password='pass')
+
+
+@database_sync_to_async
+def _create_quiz(title):
+    return Quiz.objects.create(title=title, description='', status='published')
+
+
+@database_sync_to_async
+def _create_question(quiz):
+    question = QuizQuestion.objects.create(
+        quiz=quiz,
+        question_type='single_choice',
+        content={'text': 'What?'},
+        score=10,
+        position=1,
+        status='published',
+    )
+    QuizQuestionOption.objects.create(
+        question=question,
+        content='Option A',
+        is_correct=True,
+        position=0,
+    )
+    return question
 

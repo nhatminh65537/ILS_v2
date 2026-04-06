@@ -17,9 +17,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
-from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
+from django.conf import settings
 from django.utils import timezone
 from django.db.models import Q
 from django.core.cache import cache
@@ -47,7 +48,7 @@ class AuthTimeout:
     TIMEOUT_SEC = 5
 
 
-class QuizConsumer(AsyncWebsocketConsumer):
+class QuizConsumer(AsyncJsonWebsocketConsumer):
     """
     WebSocket consumer for quiz practice sessions.
     
@@ -136,7 +137,11 @@ class QuizConsumer(AsyncWebsocketConsumer):
         
         try:
             # Decode JWT using TokenBackend
-            backend = TokenBackend(algorithm='HS256')
+            backend = TokenBackend(
+                algorithm='HS256',
+                signing_key=settings.SECRET_KEY,
+                verifying_key=settings.SECRET_KEY,
+            )
             payload = backend.decode(token, verify=True)
             
             # Extract user_id from payload
@@ -351,13 +356,7 @@ class QuizConsumer(AsyncWebsocketConsumer):
         
         # Add options for choice-based questions
         if question.question_type in ['single_choice', 'multi_choice']:
-            options = []
-            for opt in question.options.all():
-                options.append({
-                    'id': opt.id,
-                    'content': opt.content,
-                    'position': opt.position,
-                })
+            options = await self._get_question_options(question)
             if attempt.config.get('random_option', False):
                 # Options already randomized; client can shuffle if needed
                 pass
@@ -421,51 +420,46 @@ class QuizConsumer(AsyncWebsocketConsumer):
         except Quiz.DoesNotExist:
             return None
 
-    @database_sync_to_async
-    def _get_or_create_quiz_config(self, quiz: Quiz, user: User) -> QuizConfig:
-        """Get or create quiz config for user, with defaults."""
-        config, created = QuizConfig.objects.get_or_create(
-            quiz=quiz,
-            user=user,
-            defaults={
-                'total_questions': 0,  # 0 means all available
-                'time_limit_sec': 0,  # 0 means no limit
-                'random_question': False,
-                'random_option': False,
-                'allow_review': True,
-                'allow_retry': True,
-                'max_attempt': None,  # None means unlimited
-            }
-        )
-        return config
+    async def _create_quiz_attempt(self) -> Optional[UserQuizAttempt]:
+        """Create new quiz attempt with config snapshot (TASK-008)."""
+        can_attempt = await self._check_max_attempt_by_id(self.quiz_id, self.user.id)
+        if not can_attempt:
+            return None
+
+        config_snapshot = await self._get_config_snapshot(self.quiz_id, self.user.id)
+        return await self._create_attempt_record(self.quiz_id, self.user, config_snapshot)
 
     @database_sync_to_async
-    def _check_max_attempt(self, quiz: Quiz, user: User) -> bool:
-        """Check if user has exceeded max_attempt limit."""
-        config = QuizConfig.objects.filter(quiz=quiz, user=user).first()
+    def _check_max_attempt_by_id(self, quiz_id: int, user_id: int) -> bool:
+        """Check if user can start a new attempt."""
+        config = QuizConfig.objects.filter(quiz_id=quiz_id, user_id=user_id).first()
         if not config or not config.max_attempt:
-            return True  # No limit or no config
-        
+            return True
+
         completed_count = UserQuizAttempt.objects.filter(
-            quiz=quiz,
-            user=user,
+            quiz_id=quiz_id,
+            user_id=user_id,
             finished_at__isnull=False,
         ).count()
-        
         return completed_count < config.max_attempt
 
     @database_sync_to_async
-    def _create_quiz_attempt(self) -> Optional[UserQuizAttempt]:
-        """Create new quiz attempt with config snapshot (TASK-008)."""
-        quiz = Quiz.objects.get(id=self.quiz_id)
-        config = self._get_or_create_quiz_config(quiz, self.user)
-        
-        # Check max_attempt
-        if not self._check_max_attempt(quiz, self.user):
-            return None
-        
-        # Build config snapshot
-        config_snapshot = {
+    def _get_config_snapshot(self, quiz_id: int, user_id: int) -> Dict[str, Any]:
+        """Get or create config and return as snapshot dict."""
+        config, _ = QuizConfig.objects.get_or_create(
+            quiz_id=quiz_id,
+            user_id=user_id,
+            defaults={
+                'total_questions': None,
+                'time_limit_sec': None,
+                'random_question': True,
+                'random_option': True,
+                'allow_review': True,
+                'allow_retry': True,
+                'max_attempt': None,
+            },
+        )
+        return {
             'total_questions': config.total_questions or 0,
             'time_limit_sec': config.time_limit_sec or 0,
             'random_question': config.random_question,
@@ -474,15 +468,16 @@ class QuizConsumer(AsyncWebsocketConsumer):
             'allow_retry': config.allow_retry,
             'max_attempt': config.max_attempt,
         }
-        
-        attempt = UserQuizAttempt.objects.create(
-            quiz=quiz,
-            user=self.user,
+
+    @database_sync_to_async
+    def _create_attempt_record(self, quiz_id: int, user: User, config_snapshot: Dict[str, Any]) -> UserQuizAttempt:
+        """Persist UserQuizAttempt record."""
+        return UserQuizAttempt.objects.create(
+            quiz_id=quiz_id,
+            user=user,
             config=config_snapshot,
             started_at=timezone.now(),
         )
-        
-        return attempt
 
     @database_sync_to_async
     def _get_attempt(self, attempt_id: int) -> Optional[UserQuizAttempt]:
@@ -509,6 +504,15 @@ class QuizConsumer(AsyncWebsocketConsumer):
             questions = questions[:total_limit]
         
         return questions
+
+    @database_sync_to_async
+    def _get_question_options(self, question: QuizQuestion):
+        """Fetch question options for choice-based questions."""
+        if question.question_type not in ['single_choice', 'multi_choice']:
+            return []
+        return list(
+            question.options.all().values('id', 'content', 'position')
+        )
 
     @database_sync_to_async
     def _get_answered_question_ids(self, attempt: UserQuizAttempt):
@@ -566,9 +570,7 @@ class QuizConsumer(AsyncWebsocketConsumer):
             attempt=attempt,
             question=question,
             answer_data=answer_data,
-            is_correct=is_correct,
             score_obtained=score_obtained,
-            answered_at=timezone.now(),
         )
         return answer
 

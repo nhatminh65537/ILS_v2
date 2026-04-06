@@ -7,9 +7,9 @@ Handles automatic updates to UserQuizProgress when quiz attempts finish.
 import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db.models import Max
+from django.db.models import Max, F
 
-from .models import UserQuizAttempt, UserQuizProgress
+from .models import UserQuizAttempt, UserQuizProgress, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,7 @@ def handle_quiz_attempt_finished(sender, instance, created, **kwargs):
             user=instance.user,
             quiz=instance.quiz
         )
+        previous_completed_at = progress.completed_at
         
         # Compute best_score: max across all finished attempts
         best_score_result = UserQuizAttempt.objects.filter(
@@ -105,6 +106,15 @@ def handle_quiz_attempt_finished(sender, instance, created, **kwargs):
         progress.last_attempted_at = last_attempted_at
         progress.completed_at = completed_at
         progress.save()
+
+        # Sync UserProfile counters only on first completion transition.
+        if previous_completed_at is None and completed_at is not None:
+            profile, _ = UserProfile.objects.get_or_create(user=instance.user)
+            quiz_point = instance.quiz.quiz_point or 0
+            UserProfile.objects.filter(pk=profile.pk).update(
+                quiz_completed=F('quiz_completed') + 1,
+                total_quiz_point=F('total_quiz_point') + quiz_point,
+            )
         
         action = "created" if created_progress else "updated"
         logger.info(

@@ -32,6 +32,14 @@ def test_member_list_quizzes_shows_only_published(member_client, member_user, pu
     assert response.data['results'][0]['id'] == published_quiz.id
 
 
+def test_legacy_quizzes_route_is_removed(member_client, member_user):
+    _assign_role(member_user, 'Member')
+
+    response = member_client.get('/api/quizzes/')
+
+    assert response.status_code == 404
+
+
 def test_member_cannot_create_quiz(member_client, member_user):
     _assign_role(member_user, 'Member')
 

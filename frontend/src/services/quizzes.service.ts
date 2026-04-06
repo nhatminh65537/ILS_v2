@@ -18,7 +18,7 @@ import type {
 } from '@/types/quiz.types'
 
 /**
- * GET /api/quizzes/
+ * GET /api/quiz/quizzes/
  * List quizzes
  */
 export const listQuizzes = async (params?: {
@@ -26,70 +26,70 @@ export const listQuizzes = async (params?: {
   offset?: number
   search?: string
 }): Promise<PaginatedResponse<Quiz>> => {
-  const response = await apiClient.get('/api/quizzes/', { params })
+  const response = await apiClient.get('/api/quiz/quizzes/', { params })
   return response.data
 }
 
 /**
- * POST /api/quizzes/
+ * POST /api/quiz/quizzes/
  * Create new quiz (Editor+)
  */
 export const createQuiz = async (payload: CreateQuizPayload): Promise<Quiz> => {
-  const response = await apiClient.post('/api/quizzes/', payload)
+  const response = await apiClient.post('/api/quiz/quizzes/', payload)
   return response.data
 }
 
 /**
- * GET /api/quizzes/{id}/
+ * GET /api/quiz/quizzes/{id}/
  * Get quiz detail with nested questions
  */
 export const getQuizById = async (id: number): Promise<Quiz> => {
-  const response = await apiClient.get(`/api/quizzes/${id}/`)
+  const response = await apiClient.get(`/api/quiz/quizzes/${id}/`)
   return response.data
 }
 
 /**
- * PUT/PATCH /api/quizzes/{id}/
+ * PUT/PATCH /api/quiz/quizzes/{id}/
  * Update quiz
  */
 export const updateQuiz = async (id: number, payload: UpdateQuizPayload): Promise<Quiz> => {
-  const response = await apiClient.patch(`/api/quizzes/${id}/`, payload)
+  const response = await apiClient.patch(`/api/quiz/quizzes/${id}/`, payload)
   return response.data
 }
 
 /**
- * DELETE /api/quizzes/{id}/
+ * DELETE /api/quiz/quizzes/{id}/
  * Delete quiz
  */
 export const deleteQuiz = async (id: number): Promise<void> => {
-  await apiClient.delete(`/api/quizzes/${id}/`)
+  await apiClient.delete(`/api/quiz/quizzes/${id}/`)
 }
 
 /**
- * POST /api/quizzes/{id}/start_attempt/
+ * POST /api/quiz/quizzes/{id}/start_attempt/
  * Start quiz attempt (creates QuizAttempt, returns first question)
  */
 export const startQuizAttempt = async (id: number): Promise<QuizAttemptResponse> => {
-  const response = await apiClient.post(`/api/quizzes/${id}/start_attempt/`)
+  const response = await apiClient.post(`/api/quiz/quizzes/${id}/start_attempt/`)
   return response.data
 }
 
 /**
- * POST /api/quizzes/{attempt_id}/submit_answer/
+ * POST /api/quiz/quizzes/{attempt_id}/submit_answer/
  * Submit answer to current question via WebSocket or REST
  * Returns result + next question or final score
  */
 export const submitQuizAnswer = async (attemptId: number, payload: SubmitAnswerPayload): Promise<SubmitAnswerResponse> => {
-  const response = await apiClient.post(`/api/quizzes/${attemptId}/submit_answer/`, payload)
+  const response = await apiClient.post(`/api/quiz/quizzes/${attemptId}/submit_answer/`, payload)
   return response.data
 }
 
 /**
- * GET /api/quizzes/{id}/progress/
+ * GET /api/quiz/quizzes/{id}/progress/
  * Get user progress on quiz (best score, attempts, etc)
  */
 export const getQuizProgress = async (id: number): Promise<UserQuizProgress> => {
-  const response = await apiClient.get(`/api/quizzes/${id}/progress/`)
+  const response = await apiClient.get(`/api/quiz/quizzes/${id}/progress/`)
   return response.data
 }
 

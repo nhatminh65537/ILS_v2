@@ -9,7 +9,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 
-from api.models import Quiz, UserQuizAttempt, UserQuizProgress
+from api.models import Quiz, UserProfile, UserQuizAttempt, UserQuizProgress
 
 User = get_user_model()
 
@@ -128,6 +128,31 @@ class TestUserQuizProgressSignal:
         )
         assert progress.completed_at is not None, "completed_at should be set on perfect score"
         assert progress.is_completed, "is_completed property should return True"
+
+    def test_profile_counters_increment_once_on_first_completion(self, member_user, test_quiz):
+        """Profile quiz counters should increment on first completion transition only."""
+        profile, _ = UserProfile.objects.get_or_create(user=member_user)
+        assert profile.quiz_completed == 0
+        assert profile.total_quiz_point == 0
+
+        attempt = UserQuizAttempt.objects.create(
+            quiz=test_quiz,
+            user=member_user,
+            total_score=100,
+            finished_at=timezone.now(),
+        )
+
+        profile.refresh_from_db()
+        assert profile.quiz_completed == 1
+        assert profile.total_quiz_point == test_quiz.quiz_point
+
+        # Re-saving the same finished attempt must not double-count profile counters.
+        attempt.total_score = 100
+        attempt.save()
+
+        profile.refresh_from_db()
+        assert profile.quiz_completed == 1
+        assert profile.total_quiz_point == test_quiz.quiz_point
     
     def test_completed_at_null_if_not_perfect(self, member_user, test_quiz):
         """TEST-005: completed_at NULL if best_score < quiz.quiz_point."""

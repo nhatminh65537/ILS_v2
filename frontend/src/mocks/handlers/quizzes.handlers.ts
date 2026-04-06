@@ -9,7 +9,7 @@ import { notFound, parseNumericId, toPaginatedResponse } from '@/mocks/handlers/
 import { ContentStatus, QuestionType } from '@/types/quiz.types'
 
 export const quizzesHandlers = [
-  http.get('*/api/quizzes/', ({ request }) => {
+  http.get('*/api/quiz/quizzes/', ({ request }) => {
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '10')
     const offset = Number(url.searchParams.get('offset') ?? '0')
@@ -18,12 +18,12 @@ export const quizzesHandlers = [
       toPaginatedResponse(quizzesFixture, {
         limit,
         offset,
-        basePath: '/api/quizzes/',
+        basePath: '/api/quiz/quizzes/',
       })
     )
   }),
 
-  http.post('*/api/quizzes/', async ({ request }) => {
+  http.post('*/api/quiz/quizzes/', async ({ request }) => {
     const payload = (await request.json()) as Partial<(typeof quizzesFixture)[number]>
     const now = new Date().toISOString()
     const nextId = quizzesFixture.length + 1
@@ -45,7 +45,7 @@ export const quizzesHandlers = [
     return HttpResponse.json(created, { status: 201 })
   }),
 
-  http.get('*/api/quizzes/:id/', ({ params }) => {
+  http.get('*/api/quiz/quizzes/:id/', ({ params }) => {
     const id = parseNumericId(String(params.id))
     if (!id) {
       return notFound('Quiz not found')
@@ -59,7 +59,7 @@ export const quizzesHandlers = [
     return HttpResponse.json(quiz)
   }),
 
-  http.patch('*/api/quizzes/:id/', async ({ params, request }) => {
+  http.patch('*/api/quiz/quizzes/:id/', async ({ params, request }) => {
     const id = parseNumericId(String(params.id))
     if (!id) {
       return notFound('Quiz not found')
@@ -81,7 +81,7 @@ export const quizzesHandlers = [
     return HttpResponse.json(updated)
   }),
 
-  http.delete('*/api/quizzes/:id/', ({ params }) => {
+  http.delete('*/api/quiz/quizzes/:id/', ({ params }) => {
     const id = parseNumericId(String(params.id))
     if (!id) {
       return notFound('Quiz not found')
@@ -96,7 +96,7 @@ export const quizzesHandlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.post('*/api/quizzes/:id/start_attempt/', ({ params }) => {
+  http.post('*/api/quiz/quizzes/:id/start_attempt/', ({ params }) => {
     const quizId = parseNumericId(String(params.id))
     if (!quizId) {
       return notFound('Quiz not found')
@@ -126,7 +126,7 @@ export const quizzesHandlers = [
     })
   }),
 
-  http.post('*/api/quizzes/:attemptId/submit_answer/', ({ params }) => {
+  http.post('*/api/quiz/quizzes/:attemptId/submit_answer/', ({ params }) => {
     const attemptId = parseNumericId(String(params.attemptId))
     if (!attemptId) {
       return notFound('Attempt not found')
@@ -157,7 +157,7 @@ export const quizzesHandlers = [
     })
   }),
 
-  http.get('*/api/quizzes/:id/progress/', ({ params }) => {
+  http.get('*/api/quiz/quizzes/:id/progress/', ({ params }) => {
     const id = parseNumericId(String(params.id))
     if (!id) {
       return notFound('Quiz not found')
