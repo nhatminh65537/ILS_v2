@@ -219,3 +219,82 @@ export interface QuizProgressResponse {
   readonly best_score: number
   readonly attempt_count: number
 }
+
+// ─── WebSocket session types ───────────────────────────────────────────────
+
+/** A question option as sent by the WS consumer (no is_correct) */
+export interface SessionQuestionOption {
+  readonly id: number
+  readonly content: string
+  readonly position: number
+}
+
+/** Question payload inside WsQuestionEvent */
+export interface SessionQuestion {
+  readonly id: number
+  readonly type: QuestionType
+  readonly content: { text: string }
+  readonly time_limit_sec?: number
+  readonly options?: readonly SessionQuestionOption[]
+}
+
+export interface SessionProgress {
+  readonly current: number
+  readonly total: number
+}
+
+/** Client → Server messages */
+export interface WsAuthMessage {
+  type: 'auth'
+  token: string
+}
+
+export interface WsStartAction {
+  action: 'start'
+}
+
+export interface WsAnswerAction {
+  action: 'answer'
+  question_id: number
+  answer_data: { option_id?: number; option_ids?: number[]; text?: string }
+}
+
+export interface WsNextAction {
+  action: 'next'
+}
+
+/** Server → Client events */
+export interface WsAuthOkEvent {
+  type: 'auth_ok'
+  user_id: number
+  username: string
+}
+
+export interface WsQuestionEvent {
+  type: 'question'
+  attempt_id: number
+  question: SessionQuestion
+  progress: SessionProgress
+}
+
+export interface WsAnswerResultEvent {
+  type: 'answer_result'
+  is_correct: boolean
+  score_obtained: number
+  explanation?: string
+  correct_answer: Record<string, unknown>
+}
+
+export interface WsFinishEvent {
+  type: 'finish'
+  attempt_id: number
+  total_score: number
+  max_score: number
+  duration_sec: number
+}
+
+export interface WsErrorEvent {
+  type: 'error'
+  code: string
+  message: string
+}

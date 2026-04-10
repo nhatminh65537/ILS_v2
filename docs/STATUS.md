@@ -101,6 +101,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 8 / Task 8.2 (2026-04-02) | Admin user management API completed at `/api/admin/users/*` with list filters (`is_active`, `date_joined_from`, `date_joined_to`), optional-password admin create with default Member role assignment, detailed update responses (`user + profile + roles`), and immediate session revocation on disable; focused pytest suite `backend/api/test_admin_users_task8_2.py` passing (`5 passed`). |
 | Slice 8 / Task 8.3 (2026-04-10) | Frontend profile pages implemented: `ProfileEditForm` (PATCH `/me/profile/`), `AppSettingsForm` (PATCH `/me/settings/`), `AccountForm` (PATCH `/me/account/`), `PublicProfileView` (public profile), `ProfileSettingsView` (settings orchestrator); pages `/profile/[username]` and `/profile/settings` wired and building; `/profile` redirects to settings; avatar dropdown updated to "Hồ sơ" (public view) + "Cài đặt" (settings); MSW mock coverage complete for all Task 8.1 endpoints; `tsc`, lint, and `next build` all pass. |
 | Slice 7 / Task 7.5 (2026-04-10) | Frontend quiz browser implemented: catalog page (`/quizzes`) with sticky filter panel (search, time-limit Select, tag pills), detail page (`/quizzes/[id]`) with metadata, progress card, and "Start" link; `useQuizzes` hook for catalog + detail data-fetching; full quiz type alignment with backend serializers (`time_limit_sec`, `quiz_point`, `total_questions`, removed `pass_score_percent`/`is_shuffled`); MSW fixtures/handlers updated to match; all native `<select>` elements replaced with shadcn `<Select>` across admin UI; `(catalog)` route group introduced with `showSidebar=false` layout — catalog pages render their own internal two-column filter+content layout; Quizzes added to navbar/sidebar navigation; `tsc`, lint, and `next build` all pass. |
+| Slice 7 / Task 7.6 (2026-04-10) | Frontend WebSocket quiz session implemented: `useQuizSession` hook with `useReducer` state machine (`idle→connecting→authenticating→active→finished/error`), first-message JWT auth, full protocol (start/answer/next/finish); `QuizQuestionView` renders all 3 question types (RadioGroup/Checkbox/Input); `QuizAnswerResultCard` shows correct/incorrect feedback + explanation; `QuizFinishScreen` shows score/maxScore/%/duration with Back+TryAgain; `QuizSessionClient` orchestrates based on status+phase; RSC page at `app/[locale]/(catalog)/quizzes/[id]/session/page.tsx`; MSW v2 `ws` handler simulates full protocol using fixture data; shadcn `radio-group`, `checkbox`, `progress` installed; WS types added to `quiz.types.ts`; i18n keys added under `quizzes.session.*`; fixed MSW URL pattern (env-var-derived, not glob) and `onclose` now surfaces auth-rejection as error; `tsc` and `next build` both pass. |
 
 ---
 
@@ -131,6 +132,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 8 / Task 8.3 (2026-04-10) | `docs/reports/2026-04-10_slice8-task8-3-frontend-profile-ui.md` |
 | Slice 7 / Task 7.5 (2026-04-10) | `docs/reports/2026-04-10_slice7-task7-5-frontend-quiz-browser.md` |
 | Slice 8 / Task 8.4 (2026-04-10) | `docs/reports/2026-04-10_slice8-task8-4-frontend-admin-users.md` |
+| Slice 7 / Task 7.6 (2026-04-10) | `docs/reports/2026-04-10_slice7-task7-6-frontend-quiz-session.md` |
 
 ---
 
@@ -213,7 +215,8 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | QuizNode tree API | Medium | ✅ Completed 2026-04-01: `/api/quiz/nodes/*` + folder-only MVP + cycle-safe move |
 | Django Channels WebSocket consumer | Medium | ✅ Completed 2026-04-01: `/ws/quiz/{id}/` + first-message JWT auth + auth/start/answer/next/finish protocol with polymorphic scoring |
 | Quiz progress signals | Medium | ✅ Completed 2026-04-01: Signal handler + 13 pytest tests, UserQuizProgress auto-updates on attempt finish |
-| Frontend: Quiz browser + WS session | Low | Not yet started (Tasks 7.5-7.6) |
+| Frontend: Quiz browser | Low | ✅ Completed 2026-04-10: Task 7.5 — `/quizzes` catalog + `/quizzes/[id]` detail with filter panel, progress card, "Start session" link |
+| Frontend: WS quiz session | Low | ✅ Completed 2026-04-10: Task 7.6 — `/quizzes/[id]/session` with full WS protocol, 3 question types, answer result, finish screen, MSW mock |
 
 ### Slice 8 — User Profile
 
