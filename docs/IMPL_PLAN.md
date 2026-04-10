@@ -670,6 +670,33 @@ learn/[slug]/page.tsx      → course detail with Tree component (lazy expand)
 - Miniquiz: inline question cards + answer reveal
 - Left sidebar: course tree; right sidebar: progress + next/prev navigation
 
+### Task 5.7 — Frontend: Course editor (admin/editor surface)
+
+**Files:**
+```
+app/[locale]/(admin)/admin/(protected)/learn/
+├── courses/
+│   ├── page.tsx               # course list (all statuses): table with status badge, category, filter; create button
+│   ├── new/page.tsx           # create course form: title, slug, description, category, tags, learning_point
+│   └── [slug]/page.tsx        # course editor (tabbed: Metadata | Tree)
+└── lessons/
+    └── [id]/page.tsx          # lesson content editor (tabbed: Markdown | Video | Mini-quiz | Outline)
+```
+
+**Course list (`/admin/learn/courses`):**
+- Table: title, slug, category, status badge, total_lessons, updated_at; quick status toggle (draft ↔ published ↔ archived)
+- Category/Tag management via inline modal (no separate route)
+
+**Course editor (`/admin/learn/courses/[slug]`) tabs:**
+- **Metadata tab:** edit title, description, category, tags, status, learning_point, estimated_time; Save button
+- **Tree tab:** interactive tree panel (using shared `TreeComponent`); actions: add folder, add lesson (atomic POST creates `lesson` + `course_node`), rename, reorder (drag-and-drop or up/down arrows), move node, delete node + subtree; clicking a lesson node navigates to `/admin/learn/lessons/[id]`
+
+**Lesson content editor (`/admin/learn/lessons/[id]`) tabs:**
+- **Markdown tab:** split-pane markdown editor (textarea left, rendered preview right); autosave or explicit Save
+- **Video tab:** video URL input field + embed preview panel (iframe or `<video>`)
+- **Mini-quiz tab:** ordered list of attached `quiz_question` records; add existing question by search/ID, remove, reorder; question preview shown inline
+- **Outline sync tab:** configure Outline document URL (or pick from list via `GET /api/learn/outline/documents/`); trigger `POST /api/learn/lessons/{id}/sync-outline/`; show last-synced timestamp and diff preview
+
 ---
 
 ## Slice 6 — Challenge (CTF)
@@ -727,6 +754,37 @@ challenge/[slug]/page.tsx     → detail + flag submit form
 ### Task 6.6 — Frontend: Challenge detail + flag submit
 - Description (markdown), instance management panel, flag `<input>` + submit
 - Result feedback: correct → success badge; incorrect → retry
+
+### Task 6.7 — Frontend: Challenge editor (admin/editor surface)
+
+**Files:**
+```
+app/[locale]/(admin)/admin/(protected)/challenges/
+├── page.tsx                   # challenge list (all statuses): table with status, category, difficulty, filter; create button
+├── new/page.tsx               # create challenge form: title, slug, description, category, tags, difficulty, challenge_point
+├── [slug]/page.tsx            # challenge editor (tabbed: Metadata | Tree | GitLab Sync)
+├── [slug]/
+│   └── flags/page.tsx         # flag manager: list flags, add/edit/delete, configure flag_type and per-instance option
+└── instances/page.tsx         # instance table: user, challenge, status, started_at; kill action; filter by challenge/user/status
+```
+
+**Challenge list (`/admin/challenges`):**
+- Table: title, category, difficulty badge, status badge, flag count, updated_at; quick status toggle
+- Category/Tag management via inline modal (no separate route)
+
+**Challenge editor (`/admin/challenges/[slug]`) tabs:**
+- **Metadata tab:** edit title, description, category, tags, difficulty, challenge_point, deployable toggle, status; Save button
+- **Tree tab:** same shared `TreeComponent` pattern as Learn; folder + challenge node management; reorder, move, delete
+- **GitLab sync tab:** input GitLab project URL (or read from `system_config[challenge.git.url]`); trigger `POST .../sync-gitlab/`; show last-synced timestamp; README preview panel (markdown-rendered)
+
+**Flag manager (`/admin/challenges/[slug]/flags`):**
+- Table of all flags: value (visible to admin/editor only), flag_type (STATIC/REGEX/INSTANCE), is_per_instance toggle, is_case_sensitive toggle
+- Add / Edit / Delete flag entries; multiple flags per challenge supported (OSINT use-case)
+- ⚠️ Flag values are never exposed in the user-facing challenge detail page
+
+**Instance manager (`/admin/challenges/instances`):**
+- Table: user, challenge, status (running/stopped/error), started_at, destroyed_at; Kill button (calls backend → instance service via Strategy layer)
+- Filter by challenge slug, username, status; pagination
 
 ---
 
@@ -789,6 +847,35 @@ quiz/[id]/session/page.tsx   → active WebSocket quiz session
 - Display question + options; submit answer; show result + explanation
 - Finish screen: score, correct%, time elapsed
 
+### Task 7.7 — Frontend: Quiz editor (admin/editor surface)
+
+**Files:**
+```
+app/[locale]/(admin)/admin/(protected)/quizzes/
+├── page.tsx                   # quiz list (all statuses): table with status badge, total_questions, category; create button
+├── new/page.tsx               # create quiz form: title, description, category, tags, quiz_point, time_limit_sec
+├── [id]/page.tsx              # quiz metadata editor
+└── [id]/
+    └── questions/page.tsx     # question manager
+```
+
+**Quiz list (`/admin/quizzes`):**
+- Table: title, category, status badge, total_questions, quiz_point, updated_at; quick publish/archive toggle
+- Category/Tag management via inline modal (no separate route)
+
+**Quiz metadata editor (`/admin/quizzes/[id]`):**
+- Edit: title, description, category, tags, quiz_point, time_limit_sec, status
+- Link button → Question Manager (`/admin/quizzes/[id]/questions`)
+
+**Question manager (`/admin/quizzes/[id]/questions`):**
+- Ordered list of questions: type badge, score, content preview, position; drag to reorder
+- Add question: type selector (single_choice / multi_choice / fill_blank) opens an inline form or slide-over panel:
+  - **single_choice / multi_choice:** content text + options list (each option: text + `is_correct` toggle); at least one correct option required; set explanation, case_sensitive flag, score
+  - **fill_blank:** content text + list of accepted answer strings; set explanation, case_sensitive flag, score
+- Edit question: same panel; changes saved on confirm
+- Delete question: triggers signal → `quiz.total_questions` updated on backend
+- Preview mode: toggle to see question exactly as member would see it (options shuffled if `random_option=true`)
+
 ---
 
 ## Slice 8 — User Profile
@@ -811,15 +898,31 @@ PUT  /api/admin/users/{id}/    → update is_active, roles
 ```
 
 ### Task 8.3 — Frontend: Profile page
+
+**Files:**
 ```
-profile/[id]/page.tsx      → avatar, stats cards, activity timeline
-profile/settings/page.tsx  → edit display_name, bio, avatar; change password
+app/[locale]/(app)/profile/
+├── [username]/page.tsx    → public profile: avatar, display_name, bio, stats cards (points, solved, completed), activity timeline (last 30 events)
+└── settings/page.tsx      → own settings: edit avatar, display_name, bio; change password form; SSO identity link/unlink section
 ```
+
+> Note: route uses `[username]` (string slug), not `[id]` (numeric) — consistent with `GET /api/users/{username}/profile/` endpoint.
 
 ### Task 8.4 — Frontend: Admin user management
 ```
-admin/users/page.tsx → user table with search, filter, paginate; row actions
+app/[locale]/(admin)/admin/(protected)/users/page.tsx
+→ user table: username, email, roles, is_active, date_joined; search + filter; activate/deactivate toggle; link to user role assignment (/admin/rbac/users/[id]/roles)
 ```
+
+### Task 8.5 — Frontend: Session management page
+
+> ⚠️ **Depends on Task 1.4** (session management API — `GET/DELETE /api/auth/sessions/`) being completed.
+
+**File:** `app/[locale]/(app)/profile/sessions/page.tsx`
+
+- List active sessions: device_info, created_at, last-used indicator; current session highlighted
+- Revoke individual session (DELETE); "Revoke all other sessions" button
+- Cannot revoke own current session
 
 ---
 
@@ -846,9 +949,17 @@ Channel group per user: `notifications_{user.id}`. Push new notifications real-t
 
 ### Task 9.4 — Frontend: Notification bell + inbox
 ```
-components/NotificationBell.tsx          → in header; unread count badge; WS subscription
-app/(app)/notifications/page.tsx         → full inbox list + mark read
+src/components/features/notifications/NotificationBell.tsx   → in user header; unread count badge; WS subscription; dropdown preview (latest 5)
+app/[locale]/(app)/notifications/page.tsx                    → full inbox list (unread first), mark individual read, mark all read
 ```
+
+### Task 9.5 — Frontend: Admin notification broadcast
+
+**File:** `app/[locale]/(admin)/admin/(protected)/notifications/page.tsx`
+
+- Broadcast form: title input, message body (markdown textarea with preview toggle), target = all users (single target for now)
+- Confirm dialog before sending; POST `POST /api/admin/notifications/broadcast/`
+- Broadcast history: list of past manual broadcasts — title, sender, sent_at, recipient count
 
 ---
 
@@ -905,13 +1016,25 @@ GET /api/admin/stats/users/{id}/   → detailed user stats
 
 ### Task 11.3 — Frontend: Leaderboard
 ```
-app/(app)/leaderboard/page.tsx → tab switcher + rank table with avatar
+app/[locale]/(app)/leaderboard/page.tsx → tab switcher (overall | challenge | quiz | course) + rank table with avatar, score, rank delta badge; own rank highlight
 ```
 
-### Task 11.4 — Frontend: Admin stats dashboard
+### Task 11.4 — Frontend: Admin detailed statistics
 ```
-admin/stats/page.tsx → summary cards + user detail lookup
+app/[locale]/(admin)/admin/(protected)/statistics/page.tsx
+→ detailed view: user activity breakdown, content solve rates, weekly trend charts; user detail lookup by username (shows per-user stats)
 ```
+
+### Task 11.5 — Frontend: Admin dashboard home
+
+**File:** `app/[locale]/(admin)/admin/(protected)/dashboard/page.tsx`
+
+- Summary stat cards: total users, active today, new registrations this week, total solves (challenge + quiz), content item counts (courses/challenges/quizzes published)
+- Quick-link tiles to each management section (Learn / Challenges / Quizzes / Users / Config)
+- Recent activity feed: last 10 system events (new user, new solve, content published)
+- Lightweight — uses `GET /api/admin/stats/` overview endpoint; does NOT duplicate the detailed charts in `/admin/statistics`
+
+> ⚠️ Admin entry redirect (`/vi/admin`) points here. Update `(admin)/admin/page.tsx` redirect target to `/{locale}/admin/dashboard` in this task.
 
 ---
 
