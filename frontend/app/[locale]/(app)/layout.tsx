@@ -22,7 +22,9 @@ export default async function UserSurfaceLayout({ children, params }: UserSurfac
         dashboardLabel={tNav('dashboard')}
         footerText={tSurface('footerText')}
         homeLabel={tNav('home')}
+        quizzesLabel={tNav('quizzes')}
         locale={locale}
+        profileLabel={tNav('profile')}
         sidebarTitle={tSurface('user.sidebarTitle')}
         surfaceLabel={tSurface('user.title')}
       >

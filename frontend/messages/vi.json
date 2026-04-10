@@ -19,7 +19,8 @@
     "adminLogin": "Đăng nhập quản trị",
     "login": "Đăng nhập",
     "register": "Đăng ký",
-    "profile": "Hồ sơ"
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt"
   },
   "home": {
     "headline": "Nền tảng học an toàn thông tin có cấu trúc cho đội nhóm nhỏ",
@@ -103,7 +104,46 @@
     "startAttempt": "Bắt đầu làm bài",
     "submitAnswer": "Nộp đáp án",
     "bestScore": "Điểm cao nhất",
-    "attemptCount": "Số lần làm"
+    "attemptCount": "Số lần làm",
+    "catalog": {
+      "subtitle": "Duyệt các bài quiz đã xuất bản và bắt đầu luyện tập",
+      "searchPlaceholder": "Tìm kiếm bài quiz..."
+    },
+    "detail": {
+      "backToCatalog": "Quay lại danh sách",
+      "startSession": "Bắt đầu làm bài",
+      "noProgress": "Chưa làm lần nào"
+    },
+    "labels": {
+      "timeLimit": "Giới hạn thời gian",
+      "quizPoint": "Điểm",
+      "totalQuestions": "Số câu",
+      "category": "Danh mục",
+      "minutes": "{n} phút",
+      "noLimit": "Không giới hạn",
+      "status": "Trạng thái",
+      "published": "Đã xuất bản",
+      "draft": "Nháp",
+      "archived": "Lưu trữ"
+    },
+    "filter": {
+      "title": "Bộ lọc",
+      "reset": "Đặt lại",
+      "tags": "Thẻ",
+      "timeLimit": "Giới hạn thời gian",
+      "timeLimitAny": "Tất cả",
+      "timeLimit15": "≤ 15 phút",
+      "timeLimit30": "≤ 30 phút",
+      "timeLimitNone": "Không giới hạn"
+    },
+    "empty": {
+      "noQuizzes": "Không có bài quiz nào.",
+      "noResults": "Không có bài quiz nào phù hợp bộ lọc."
+    },
+    "errors": {
+      "loadFailed": "Không thể tải danh sách bài quiz.",
+      "detailLoadFailed": "Không thể tải chi tiết bài quiz."
+    }
   },
   "notifications": {
     "title": "Thông báo",
@@ -321,6 +361,55 @@
       "challengeDescription": "Mở thử thách đang chạy và nộp flag mới.",
       "quizTitle": "Quiz",
       "quizDescription": "Bắt đầu phiên quiz mới hoặc xem điểm cao nhất."
+    }
+  },
+  "profile": {
+    "settingsTitle": "Hồ sơ cá nhân",
+    "settingsSubtitle": "Quản lý thông tin hồ sơ, cài đặt và tài khoản của bạn.",
+    "publicProfileTitle": "Hồ sơ người dùng",
+    "editSection": "Thông tin hồ sơ",
+    "accountSection": "Tài khoản",
+    "settingsSection": "Cài đặt",
+    "activitySection": "Hoạt động gần đây",
+    "displayName": "Tên hiển thị",
+    "bio": "Giới thiệu bản thân",
+    "location": "Địa điểm",
+    "website": "Website",
+    "entryYear": "Năm nhập học",
+    "language": "Ngôn ngữ",
+    "theme": "Giao diện",
+    "timezone": "Múi giờ",
+    "username": "Tên đăng nhập",
+    "email": "Email",
+    "saveProfile": "Lưu hồ sơ",
+    "saveSettings": "Lưu cài đặt",
+    "saveAccount": "Lưu tài khoản",
+    "saving": "Đang lưu...",
+    "saveSuccess": "Đã lưu thành công.",
+    "passwordSection": "Đổi mật khẩu",
+    "passwordPending": "Tính năng đổi mật khẩu sẽ có trong cập nhật tiếp theo.",
+    "ssoSection": "Liên kết SSO",
+    "ssoPending": "Quản lý liên kết SSO sẽ có trong cập nhật tiếp theo.",
+    "activityEmpty": "Chưa có hoạt động nào được ghi nhận.",
+    "activityTypes": {
+      "lesson_complete": "Hoàn thành bài học",
+      "challenge_solve": "Giải thử thách",
+      "quiz_complete": "Hoàn thành quiz"
+    },
+    "stats": {
+      "learningPoints": "Điểm học tập",
+      "challengePoints": "Điểm thử thách",
+      "quizPoints": "Điểm quiz",
+      "coursesCompleted": "Khoá học hoàn thành",
+      "challengesCompleted": "Thử thách đã giải",
+      "quizzesCompleted": "Quiz đã hoàn thành"
+    },
+    "errors": {
+      "loadFailed": "Không thể tải hồ sơ. Vui lòng thử lại.",
+      "saveFailed": "Lưu thất bại. Vui lòng thử lại.",
+      "notFound": "Không tìm thấy người dùng này.",
+      "usernameConflict": "Tên đăng nhập đã tồn tại.",
+      "emailConflict": "Email đã được sử dụng."
     }
   }
 }

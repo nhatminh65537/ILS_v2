@@ -5,7 +5,15 @@
 
 import apiClient from '@/lib/axios'
 import type { PaginatedResponse } from '@/types/api'
-import type { User, UserProfile, UpdateProfilePayload } from '@/types/user.types'
+import type {
+  ActivityEvent,
+  MeAccountUpdatePayload,
+  MeSettingsUpdatePayload,
+  PublicProfileResponse,
+  UpdateProfilePayload,
+  User,
+  UserProfile,
+} from '@/types/user.types'
 
 /**
  * GET /api/users/
@@ -74,19 +82,65 @@ export const getMe = async (): Promise<User> => {
 }
 
 /**
- * GET /api/users/profile/
- * Get current user profile (extended)
+ * GET /api/users/me/profile/
+ * Get current user profile with stats
  */
 export const getMyProfile = async (): Promise<UserProfile> => {
-  const response = await apiClient.get('/api/users/profile/')
+  const response = await apiClient.get('/api/users/me/profile/')
   return response.data
 }
 
 /**
- * PATCH /api/users/update_profile/
- * Update current user profile
+ * PATCH /api/users/me/profile/
+ * Update current user profile fields (display_name, bio, avatar_url, location, website, entry_year)
  */
 export const updateMyProfile = async (payload: UpdateProfilePayload): Promise<UserProfile> => {
-  const response = await apiClient.patch('/api/users/update_profile/', payload)
+  const response = await apiClient.patch('/api/users/me/profile/', payload)
+  return response.data
+}
+
+/**
+ * PATCH /api/users/me/settings/
+ * Update current user settings (language, theme, timezone)
+ */
+export const updateMySettings = async (payload: MeSettingsUpdatePayload): Promise<UserProfile> => {
+  const response = await apiClient.patch('/api/users/me/settings/', payload)
+  return response.data
+}
+
+/**
+ * PATCH /api/users/me/account/
+ * Update current user account info (username, email)
+ * Returns User object (not UserProfile)
+ */
+export const updateMyAccount = async (payload: MeAccountUpdatePayload): Promise<User> => {
+  const response = await apiClient.patch('/api/users/me/account/', payload)
+  return response.data
+}
+
+/**
+ * GET /api/users/me/activity/
+ * Get current user activity feed (last 30 events)
+ */
+export const getMyActivity = async (): Promise<ActivityEvent[]> => {
+  const response = await apiClient.get('/api/users/me/activity/')
+  return response.data
+}
+
+/**
+ * GET /api/users/{username}/profile/
+ * Get public profile for any user by username
+ */
+export const getPublicProfile = async (username: string): Promise<PublicProfileResponse> => {
+  const response = await apiClient.get(`/api/users/${username}/profile/`)
+  return response.data
+}
+
+/**
+ * GET /api/users/{username}/activity/
+ * Get public activity feed for any user by username (last 30 events)
+ */
+export const getPublicActivity = async (username: string): Promise<ActivityEvent[]> => {
+  const response = await apiClient.get(`/api/users/${username}/activity/`)
   return response.data
 }

@@ -3,7 +3,7 @@ import { ContentStatus as CourseStatus, type Course, type CourseCategory, type C
 import { type LeaderboardEntry } from '@/types/leaderboard.types'
 import { NotificationType, type Notification } from '@/types/notification.types'
 import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizAttempt, type QuizQuestion, type UserQuizProgress } from '@/types/quiz.types'
-import { type User, type UserProfile } from '@/types/user.types'
+import { type ActivityEvent, type User, type UserProfile } from '@/types/user.types'
 
 const now = '2026-03-31T09:00:00.000Z'
 
@@ -123,57 +123,76 @@ export const challengeInstancesFixture: ChallengeInstance[] = [
 ]
 
 export const quizzesFixture: Quiz[] = [
-  { id: 1, title: 'OWASP Basics Quiz', description: 'Quick OWASP check', status: QuizStatus.Published, category_id: 1, time_limit_seconds: 900, pass_score_percent: 70, is_shuffled: true, created_at: now, updated_at: now },
-  { id: 2, title: 'Networking Essentials', description: 'Routing and protocols', status: QuizStatus.Published, category_id: 2, time_limit_seconds: 1200, pass_score_percent: 75, is_shuffled: false, created_at: now, updated_at: now },
-  { id: 3, title: 'Crypto Warmup', description: 'Hashing and cipher basics', status: QuizStatus.Published, category_id: 3, time_limit_seconds: 600, pass_score_percent: 65, is_shuffled: true, created_at: now, updated_at: now },
-  { id: 4, title: 'Forensics Basics', description: 'Evidence handling', status: QuizStatus.Draft, category_id: 4, time_limit_seconds: 1200, pass_score_percent: 80, is_shuffled: false, created_at: now, updated_at: now },
-  { id: 5, title: 'Cloud Security Quiz', description: 'IAM and posture', status: QuizStatus.Published, category_id: 5, time_limit_seconds: 1000, pass_score_percent: 75, is_shuffled: true, created_at: now, updated_at: now },
+  { id: 1, title: 'OWASP Basics Quiz', description: 'Quick OWASP check', status: QuizStatus.Published, category_id: 1, quiz_point: 100, total_questions: 5, time_limit_sec: 900, created_at: now, updated_at: now },
+  { id: 2, title: 'Networking Essentials', description: 'Routing and protocols', status: QuizStatus.Published, category_id: 2, quiz_point: 80, total_questions: 8, time_limit_sec: 1200, created_at: now, updated_at: now },
+  { id: 3, title: 'Crypto Warmup', description: 'Hashing and cipher basics', status: QuizStatus.Published, category_id: 3, quiz_point: 60, total_questions: 4, time_limit_sec: 600, created_at: now, updated_at: now },
+  { id: 4, title: 'Forensics Basics', description: 'Evidence handling', status: QuizStatus.Draft, category_id: 4, quiz_point: 120, total_questions: 10, time_limit_sec: 1200, created_at: now, updated_at: now },
+  { id: 5, title: 'Cloud Security Quiz', description: 'IAM and posture', status: QuizStatus.Published, category_id: 5, quiz_point: 90, total_questions: 6, time_limit_sec: 1000, created_at: now, updated_at: now },
 ]
 
 export const quizQuestionsFixture: QuizQuestion[] = [
   {
     id: 1,
     quiz_id: 1,
-    question_text: 'Which vulnerability belongs to OWASP Top 10?',
+    content: { text: 'Which vulnerability belongs to OWASP Top 10?' },
     question_type: QuestionType.SingleChoice,
+    status: QuizStatus.Published,
     position: 1,
+    score: 1,
     case_sensitive: false,
     explanation: 'Broken Access Control is part of OWASP Top 10.',
     options: [
-      { id: 11, question_id: 1, text: 'Broken Access Control', position: 1, is_correct: true },
-      { id: 12, question_id: 1, text: 'Buffer Overflow in Kernel', position: 2, is_correct: false },
+      { id: 11, question_id: 1, content: 'Broken Access Control', position: 1, is_correct: true },
+      { id: 12, question_id: 1, content: 'Buffer Overflow in Kernel', position: 2, is_correct: false },
     ],
     created_at: now,
+    updated_at: now,
   },
   {
     id: 2,
     quiz_id: 1,
-    question_text: 'Select secure coding practices.',
+    content: { text: 'Select secure coding practices.' },
     question_type: QuestionType.MultiChoice,
+    status: QuizStatus.Published,
     position: 2,
+    score: 2,
     case_sensitive: false,
     options: [
-      { id: 21, question_id: 2, text: 'Input validation', position: 1, is_correct: true },
-      { id: 22, question_id: 2, text: 'Parameterized queries', position: 2, is_correct: true },
-      { id: 23, question_id: 2, text: 'Disable logs in prod', position: 3, is_correct: false },
+      { id: 21, question_id: 2, content: 'Input validation', position: 1, is_correct: true },
+      { id: 22, question_id: 2, content: 'Parameterized queries', position: 2, is_correct: true },
+      { id: 23, question_id: 2, content: 'Disable logs in prod', position: 3, is_correct: false },
     ],
     created_at: now,
+    updated_at: now,
   },
   {
     id: 3,
     quiz_id: 3,
-    question_text: 'Fill in: SHA-256 is a ____ function.',
+    content: { text: 'Fill in: SHA-256 is a ____ function.' },
     question_type: QuestionType.FillBlank,
+    status: QuizStatus.Published,
     position: 1,
+    score: 1,
     case_sensitive: false,
-    correct_answer: 'hash',
     explanation: 'SHA-256 is a cryptographic hash function.',
     created_at: now,
+    updated_at: now,
   },
 ]
 
 export const quizAttemptsFixture: QuizAttempt[] = [
-  { id: 1, user_id: 1, quiz_id: 1, started_at: now, finished_at: undefined, score: undefined, created_at: now },
+  {
+    id: 1,
+    quiz: 1,
+    quiz_title: 'OWASP Basics Quiz',
+    user: 1,
+    config: { total_questions: 0, time_limit_sec: 900, random_question: true, random_option: true },
+    started_at: now,
+    finished_at: undefined,
+    total_score: 0,
+    is_finished: false,
+    created_at: now,
+  },
 ]
 
 export const quizProgressFixture: UserQuizProgress[] = [
@@ -201,6 +220,19 @@ export const notificationsFixture: Notification[] = Array.from({ length: 10 }, (
   created_at: now,
   updated_at: now,
 }))
+
+export const activityFixture: ActivityEvent[] = [
+  { type: 'lesson_complete', timestamp: '2026-04-09T08:00:00.000Z', item_title: 'Injection Basics', source_id: 2 },
+  { type: 'challenge_solve', timestamp: '2026-04-08T15:30:00.000Z', item_title: 'XSS Lab', source_id: 1 },
+  { type: 'quiz_complete', timestamp: '2026-04-07T10:00:00.000Z', item_title: 'OWASP Basics Quiz', source_id: 1 },
+  { type: 'lesson_complete', timestamp: '2026-04-06T09:00:00.000Z', item_title: 'Broken Access Control', source_id: 3 },
+  { type: 'challenge_solve', timestamp: '2026-04-05T14:00:00.000Z', item_title: 'SQLi Lab', source_id: 2 },
+  { type: 'quiz_complete', timestamp: '2026-04-04T11:00:00.000Z', item_title: 'Networking Essentials', source_id: 2 },
+  { type: 'lesson_complete', timestamp: '2026-04-03T08:30:00.000Z', item_title: 'Secure Coding Checklist', source_id: 5 },
+  { type: 'challenge_solve', timestamp: '2026-04-02T16:00:00.000Z', item_title: 'JWT Pwn', source_id: 3 },
+  { type: 'quiz_complete', timestamp: '2026-04-01T13:00:00.000Z', item_title: 'Crypto Warmup', source_id: 3 },
+  { type: 'lesson_complete', timestamp: '2026-03-31T09:00:00.000Z', item_title: 'Network Basics Intro', source_id: 6 },
+]
 
 export const leaderboardFixture: LeaderboardEntry[] = Array.from({ length: 10 }, (_, index) => ({
   id: index + 1,

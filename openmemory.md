@@ -42,6 +42,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Status
 
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
+- Slice 8 Task 8.3 implemented on 2026-04-10: frontend profile pages complete — `/profile/[username]` (public view: ProfileHeader + ProfileStats + ActivityTimeline) and `/profile/settings` (ProfileEditForm + AppSettingsForm + AccountForm + deferred placeholders for password/SSO); `/profile` redirects server-side to `/profile/settings`; avatar dropdown uses "Hồ sơ" / "Cài đặt" pattern (GitHub-style); MSW coverage extended for all Task 8.1 endpoints; `navigation.settings` i18n key added.
 - Slice 8 Task 8.2 implemented on 2026-04-02: admin user management API is active at `/api/admin/users/*` with `is_active` + `date_joined_from/date_joined_to` filters, optional-password admin create (default Member role when `role_ids` omitted), and immediate session revocation when disabling users.
 - Slice 1 Task 1.1 implemented on 2026-03-26: `auth_app` now serves `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, and `/api/auth/logout-all` with hashed refresh-token session tracking and endpoint tests.
 - Slice 1 Task 1.2 implemented on 2026-03-26: `/api/auth/token/refresh` now validates refresh hash against active `user_session`, rotates refresh token/session on success, enforces per-user refresh rate limit (10/min), and keeps JWT access TTL aligned to 15 minutes.
@@ -82,6 +83,10 @@ Target: one instance per organization, no horizontal scale needed.
 - **AI provider**: `openai` / `anthropic` (NOT `ollama`) — see `CONFIG.md` ai.* group
 - **ORM naming alignment**: Prefer schema-aligned field names from docs (`path`, `external_id`, `encoded_permissions` as TEXT-like payload) and keep permission model flat (no hierarchy).
 - **User profile naming alignment**: Use `total_learning_point`, `total_challenge_point`, `total_quiz_point` naming in code and serializers.
+- **Profile page UX pattern**: Avatar dropdown follows GitHub/GitLab pattern — "Hồ sơ" links to public `/profile/{username}`, "Cài đặt" links to `/profile/settings`. Profile removed from top navbar; kept in sidebar only.
+- **`me/account` PATCH returns `User` not `UserProfile`**: `PATCH /api/users/me/account/` response is `UserSerializer` shape (`id`, `username`, `email`, …). Frontend `AccountForm` handles this distinct response and exposes `onAccountUpdated(user: User)` callback.
+- **MSW handler ordering for user routes**: Register `/me/*` and `/:username/profile` handlers BEFORE the wildcard `/:id/` handler to prevent MSW from capturing `"me"` as a numeric ID parameter.
+- **Deferred profile sections pattern**: Password-change and SSO-identity sections are rendered as `opacity-60` cards with informational `CardDescription` — no API calls wired; activate when Task 1.4 and SSO enhancement are ready.
 - **Auth session storage**: Track refresh tokens in `user_session` using hashed values only.
 - **Auth refresh rotation**: `POST /api/auth/token/refresh` revokes matched active session, mints new access/refresh pair, and creates a new hashed `user_session` record atomically.
 - **Refresh anti-abuse**: Per-user cache key `refresh_rate:{user_id}` blocks refresh requests after 10 hits within 60 seconds.

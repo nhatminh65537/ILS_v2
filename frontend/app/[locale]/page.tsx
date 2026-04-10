@@ -22,7 +22,9 @@ export default async function LocaleHome({ params }: LocaleHomeProps) {
       dashboardLabel={tNav('dashboard')}
       footerText={tSurface('footerText')}
       homeLabel={tNav('home')}
+      quizzesLabel={tNav('quizzes')}
       locale={locale}
+      profileLabel={tNav('profile')}
       showSidebar={false}
       sidebarTitle={tSurface('user.sidebarTitle')}
       surfaceLabel={tSurface('user.title')}

@@ -78,8 +78,8 @@ Route-level inventory for frontend pages across Slices 1–11.
 
 | Route | Page Name | Auth Required | Layout Group | Primary Store | Primary API Calls | Slice | Status |
 |---|---|---|---|---|---|---|---|
-| `/vi/profile/[username]` `/en/profile/[username]` | Public profile | Yes | `[locale]/(app)` | `auth.store` | `users.getUserProfile`, `users.getUserActivity` | 8 | planned |
-| `/vi/profile/settings` `/en/profile/settings` | Profile settings | Yes | `[locale]/(app)` | `auth.store` | `users.getMyProfile`, `users.updateMyProfile`, `users.changePassword`, `auth.linkIdentity` | 8 | planned |
+| `/vi/profile/[username]` `/en/profile/[username]` | Public profile | Yes | `[locale]/(app)` | `auth.store` | `users.getPublicProfile`, `users.getPublicActivity` | 8 | implemented |
+| `/vi/profile/settings` `/en/profile/settings` | Profile settings | Yes | `[locale]/(app)` | `auth.store` | `users.getMyProfile`, `users.updateMyProfile`, `users.updateMySettings`, `users.updateMyAccount` | 8 | implemented |
 | `/vi/profile/sessions` `/en/profile/sessions` | Session management | Yes | `[locale]/(app)` | `auth.store` | `auth.listSessions`, `auth.revokeSession` | 1 | planned |
 
 > ⚠️ `/profile/sessions` phụ thuộc vào Task 1.4 (session management API) hoàn thành.
@@ -178,8 +178,8 @@ frontend/app/
     │   │   ├── [id]/page.tsx                         planned (Task 7.5)
     │   │   └── [id]/session/page.tsx                 planned (Task 7.6)
     │   ├── profile/
-    │   │   ├── [username]/page.tsx                   planned (Task 8.3)
-    │   │   ├── settings/page.tsx                     planned (Task 8.3)
+    │   │   ├── [username]/page.tsx                   ✅ implemented (Task 8.3)
+    │   │   ├── settings/page.tsx                     ✅ implemented (Task 8.3)
     │   │   └── sessions/page.tsx                     planned (Task 8.5)
     │   ├── notifications/page.tsx                    planned (Task 9.4)
     │   └── leaderboard/page.tsx                      planned (Task 11.3)

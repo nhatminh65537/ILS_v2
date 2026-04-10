@@ -21,15 +21,9 @@ type SessionNavControlsProps = {
 }
 
 const getInitials = (name: string | undefined): string => {
-  if (!name) {
-    return 'U'
-  }
-
+  if (!name) return 'U'
   const normalized = name.trim()
-  if (!normalized) {
-    return 'U'
-  }
-
+  if (!normalized) return 'U'
   return normalized.slice(0, 2).toUpperCase()
 }
 
@@ -69,12 +63,18 @@ export function SessionNavControls({ locale }: SessionNavControlsProps) {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-40">
+      <DropdownMenuContent align="end" className="min-w-44">
         <DropdownMenuLabel className="truncate">{user?.username ?? 'user'}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {user?.username && (
+          <DropdownMenuItem asChild>
+            <Link href={`/${locale}/profile/${user.username}`}>{tNav('profile')}</Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
-          <Link href={`/${locale}/profile`}>{tNav('profile')}</Link>
+          <Link href={`/${locale}/profile/settings`}>{tNav('settings')}</Link>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem disabled={isLoading} onSelect={() => void handleLogout()} variant="destructive">
           {tAuth('logout')}
         </DropdownMenuItem>

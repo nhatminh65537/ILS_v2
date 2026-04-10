@@ -58,6 +58,38 @@ export interface UserProfile {
   readonly updated_at?: string
 }
 
+/**
+ * Public profile response from GET /api/users/{username}/profile/
+ * Subset of UserProfile — no user_id, no internal fields
+ */
+export interface PublicProfileResponse {
+  readonly username: string
+  readonly entry_year?: number | null
+  readonly display_name?: string | null
+  readonly avatar_url?: string | null
+  readonly bio?: string | null
+  readonly location?: string | null
+  readonly website?: string | null
+  readonly total_learning_point: number
+  readonly total_challenge_point: number
+  readonly total_quiz_point: number
+  readonly course_completed: number
+  readonly challenge_completed: number
+  readonly quiz_completed: number
+  readonly last_active_at?: string | null
+}
+
+/**
+ * Activity event from /api/users/me/activity/ or /api/users/{username}/activity/
+ * Matches ActivityEventSerializer fields exactly
+ */
+export interface ActivityEvent {
+  readonly type: 'lesson_complete' | 'challenge_solve' | 'quiz_complete'
+  readonly timestamp: string // ISO datetime
+  readonly item_title: string | null
+  readonly source_id: number | null
+}
+
 /** SSO provider link */
 export type IdentityProvider = 'authentik' | 'google' | 'github'
 
@@ -144,7 +176,18 @@ export interface UpdateProfilePayload {
   bio?: string
   location?: string
   website?: string
+  entry_year?: number | null
+}
+
+/** Payload for PATCH /api/users/me/settings/ */
+export interface MeSettingsUpdatePayload {
   language?: string
   theme?: string
   timezone?: string
+}
+
+/** Payload for PATCH /api/users/me/account/ */
+export interface MeAccountUpdatePayload {
+  username?: string
+  email?: string
 }

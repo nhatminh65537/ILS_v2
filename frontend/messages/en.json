@@ -19,7 +19,8 @@
     "adminLogin": "Admin login",
     "login": "Login",
     "register": "Register",
-    "profile": "Profile"
+    "profile": "Profile",
+    "settings": "Settings"
   },
   "home": {
     "headline": "A structured cybersecurity learning platform for small teams",
@@ -103,7 +104,46 @@
     "startAttempt": "Start attempt",
     "submitAnswer": "Submit answer",
     "bestScore": "Best score",
-    "attemptCount": "Attempt count"
+    "attemptCount": "Attempt count",
+    "catalog": {
+      "subtitle": "Browse published quizzes and start a practice session",
+      "searchPlaceholder": "Search quizzes..."
+    },
+    "detail": {
+      "backToCatalog": "Back to quizzes",
+      "startSession": "Start quiz session",
+      "noProgress": "Not attempted yet"
+    },
+    "labels": {
+      "timeLimit": "Time limit",
+      "quizPoint": "Points",
+      "totalQuestions": "Questions",
+      "category": "Category",
+      "minutes": "{n} min",
+      "noLimit": "No limit",
+      "status": "Status",
+      "published": "Published",
+      "draft": "Draft",
+      "archived": "Archived"
+    },
+    "filter": {
+      "title": "Filters",
+      "reset": "Reset",
+      "tags": "Tags",
+      "timeLimit": "Time limit",
+      "timeLimitAny": "Any",
+      "timeLimit15": "≤ 15 min",
+      "timeLimit30": "≤ 30 min",
+      "timeLimitNone": "No limit"
+    },
+    "empty": {
+      "noQuizzes": "No quizzes available.",
+      "noResults": "No quizzes match the filters."
+    },
+    "errors": {
+      "loadFailed": "Failed to load quizzes.",
+      "detailLoadFailed": "Failed to load quiz details."
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -321,6 +361,55 @@
       "challengeDescription": "Open active challenges and submit new flags.",
       "quizTitle": "Quiz",
       "quizDescription": "Start a new quiz session or review best scores."
+    }
+  },
+  "profile": {
+    "settingsTitle": "Profile",
+    "settingsSubtitle": "Manage your profile information, settings, and account.",
+    "publicProfileTitle": "User Profile",
+    "editSection": "Profile Information",
+    "accountSection": "Account",
+    "settingsSection": "Settings",
+    "activitySection": "Recent Activity",
+    "displayName": "Display name",
+    "bio": "Bio",
+    "location": "Location",
+    "website": "Website",
+    "entryYear": "Entry year",
+    "language": "Language",
+    "theme": "Theme",
+    "timezone": "Timezone",
+    "username": "Username",
+    "email": "Email",
+    "saveProfile": "Save profile",
+    "saveSettings": "Save settings",
+    "saveAccount": "Save account",
+    "saving": "Saving...",
+    "saveSuccess": "Saved successfully.",
+    "passwordSection": "Change password",
+    "passwordPending": "Password change will be available in a future update.",
+    "ssoSection": "SSO Identity",
+    "ssoPending": "SSO identity management will be available in a future update.",
+    "activityEmpty": "No activity recorded yet.",
+    "activityTypes": {
+      "lesson_complete": "Completed lesson",
+      "challenge_solve": "Solved challenge",
+      "quiz_complete": "Completed quiz"
+    },
+    "stats": {
+      "learningPoints": "Learning points",
+      "challengePoints": "Challenge points",
+      "quizPoints": "Quiz points",
+      "coursesCompleted": "Courses completed",
+      "challengesCompleted": "Challenges solved",
+      "quizzesCompleted": "Quizzes completed"
+    },
+    "errors": {
+      "loadFailed": "Failed to load profile. Please try again.",
+      "saveFailed": "Save failed. Please try again.",
+      "notFound": "User not found.",
+      "usernameConflict": "Username already taken.",
+      "emailConflict": "Email already in use."
     }
   }
 }
