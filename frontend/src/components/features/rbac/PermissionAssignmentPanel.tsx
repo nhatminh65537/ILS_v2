@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -119,19 +126,21 @@ export function PermissionAssignmentPanel({
             <div className="space-y-2">
               <Label htmlFor="assign-permission-select">{t('labels.permission')}</Label>
               <div className="flex gap-2">
-                <select
-                  className="h-8 w-full rounded-none border border-border bg-background px-2 text-xs"
-                  id="assign-permission-select"
-                  onChange={(event) => setSelectedPermissionId(Number(event.target.value))}
-                  value={selectedPermissionId ?? ''}
+                <Select
+                  value={selectedPermissionId !== null ? String(selectedPermissionId) : ''}
+                  onValueChange={(v) => setSelectedPermissionId(v ? Number(v) : null)}
                 >
-                  <option value="">{t('labels.selectPermission')}</option>
-                  {availablePermissions.map((permission) => (
-                    <option key={permission.id} value={permission.id}>
-                      {permission.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="assign-permission-select" className="h-8 text-xs">
+                    <SelectValue placeholder={t('labels.selectPermission')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePermissions.map((permission) => (
+                      <SelectItem key={permission.id} value={String(permission.id)}>
+                        {permission.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button
                   disabled={isMutating || selectedPermissionId === null}
                   onClick={handleAssign}

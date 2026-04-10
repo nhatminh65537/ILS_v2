@@ -33,9 +33,9 @@ export const quizzesHandlers = [
       description: payload.description,
       status: payload.status ?? ContentStatus.Draft,
       category_id: payload.category_id,
-      time_limit_seconds: payload.time_limit_seconds,
-      pass_score_percent: payload.pass_score_percent,
-      is_shuffled: payload.is_shuffled ?? false,
+      quiz_point: payload.quiz_point ?? 0,
+      total_questions: payload.total_questions ?? 0,
+      time_limit_sec: payload.time_limit_sec,
       tags: payload.tags,
       created_at: now,
       updated_at: now,
@@ -102,28 +102,27 @@ export const quizzesHandlers = [
       return notFound('Quiz not found')
     }
 
-    const firstQuestion = quizQuestionsFixture.find((item) => item.quiz_id === quizId)
-    if (!firstQuestion) {
-      return HttpResponse.json({ detail: 'No questions found for this quiz' }, { status: 400 })
+    const quiz = quizzesFixture.find((item) => item.id === quizId)
+    if (!quiz) {
+      return notFound('Quiz not found')
     }
 
+    const now = new Date().toISOString()
     const attempt = {
       id: quizAttemptsFixture.length + 1,
-      user_id: 1,
-      quiz_id: quizId,
-      started_at: new Date().toISOString(),
+      quiz: quizId,
+      quiz_title: quiz.title,
+      user: 1,
+      config: { total_questions: 0, time_limit_sec: quiz.time_limit_sec ?? 0, random_question: true, random_option: true, allow_review: true, allow_retry: true, max_attempt: null },
+      started_at: now,
       finished_at: undefined,
-      score: undefined,
-      created_at: new Date().toISOString(),
+      total_score: 0,
+      is_finished: false,
+      created_at: now,
     }
 
     quizAttemptsFixture.push(attempt)
-
-    return HttpResponse.json({
-      attempt_id: attempt.id,
-      quiz_id: quizId,
-      first_question: firstQuestion,
-    })
+    return HttpResponse.json(attempt, { status: 201 })
   }),
 
   http.post('*/api/quiz/quizzes/:attemptId/submit_answer/', ({ params }) => {
@@ -137,23 +136,21 @@ export const quizzesHandlers = [
       return notFound('Attempt not found')
     }
 
-    const questions = quizQuestionsFixture.filter((item) => item.quiz_id === attempt.quiz_id)
+    const questions = quizQuestionsFixture.filter((item) => item.quiz_id === attempt.quiz)
     const nextQuestion = questions[1]
 
     if (nextQuestion) {
       return HttpResponse.json({
-        is_correct: true,
+        correct: true,
+        score: 1,
         explanation: 'Mock validation succeeded',
-        next_question: nextQuestion,
-        attempt_finished: false,
       })
     }
 
     return HttpResponse.json({
-      is_correct: true,
+      correct: true,
+      score: 1,
       explanation: 'Mock validation succeeded',
-      attempt_finished: true,
-      final_score: 90,
     })
   }),
 
@@ -177,6 +174,28 @@ export const quizzesHandlers = [
     return HttpResponse.json(progress)
   }),
 
+  http.get('*/api/quiz/quizzes/:id/config/', ({ params }) => {
+    const id = parseNumericId(String(params.id))
+    if (!id) {
+      return notFound('Quiz not found')
+    }
+
+    return HttpResponse.json({
+      id: 1,
+      quiz: id,
+      user: 1,
+      total_questions: 0,
+      time_limit_sec: 0,
+      random_question: true,
+      random_option: true,
+      allow_review: true,
+      allow_retry: true,
+      max_attempt: null,
+      is_default: true,
+      is_active: true,
+    })
+  }),
+
   http.get('*/api/quiz-questions/', ({ request }) => {
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '10')
@@ -196,17 +215,20 @@ export const quizzesHandlers = [
 
   http.post('*/api/quiz-questions/', async ({ request }) => {
     const payload = (await request.json()) as Partial<(typeof quizQuestionsFixture)[number]>
+    const now = new Date().toISOString()
     const created = {
       id: quizQuestionsFixture.length + 1,
       quiz_id: payload.quiz_id ?? 1,
-      question_text: payload.question_text ?? 'Mock question',
+      content: payload.content ?? { text: 'Mock question' },
       question_type: payload.question_type ?? QuestionType.SingleChoice,
+      status: payload.status ?? ContentStatus.Draft,
       position: payload.position ?? quizQuestionsFixture.length + 1,
+      score: payload.score ?? 1,
       case_sensitive: payload.case_sensitive ?? false,
       explanation: payload.explanation,
       options: payload.options,
-      correct_answer: payload.correct_answer,
-      created_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     }
 
     quizQuestionsFixture.push(created)

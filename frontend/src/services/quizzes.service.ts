@@ -7,6 +7,7 @@ import apiClient from '@/lib/axios'
 import type { PaginatedResponse } from '@/types/api'
 import type {
   Quiz,
+  QuizConfig,
   QuizQuestion,
   CreateQuizPayload,
   UpdateQuizPayload,
@@ -75,12 +76,12 @@ export const startQuizAttempt = async (id: number): Promise<QuizAttemptResponse>
 }
 
 /**
- * POST /api/quiz/quizzes/{attempt_id}/submit_answer/
- * Submit answer to current question via WebSocket or REST
- * Returns result + next question or final score
+ * POST /api/quiz/quizzes/{quiz_id}/submit_answer/
+ * Submit answer to current question
+ * Returns is_correct, score, explanation
  */
-export const submitQuizAnswer = async (attemptId: number, payload: SubmitAnswerPayload): Promise<SubmitAnswerResponse> => {
-  const response = await apiClient.post(`/api/quiz/quizzes/${attemptId}/submit_answer/`, payload)
+export const submitQuizAnswer = async (quizId: number, payload: SubmitAnswerPayload): Promise<SubmitAnswerResponse> => {
+  const response = await apiClient.post(`/api/quiz/quizzes/${quizId}/submit_answer/`, payload)
   return response.data
 }
 
@@ -90,6 +91,15 @@ export const submitQuizAnswer = async (attemptId: number, payload: SubmitAnswerP
  */
 export const getQuizProgress = async (id: number): Promise<UserQuizProgress> => {
   const response = await apiClient.get(`/api/quiz/quizzes/${id}/progress/`)
+  return response.data
+}
+
+/**
+ * GET /api/quiz/quizzes/{id}/config/
+ * Get or create user quiz config (per-user overrides)
+ */
+export const getQuizConfig = async (id: number): Promise<QuizConfig> => {
+  const response = await apiClient.get(`/api/quiz/quizzes/${id}/config/`)
   return response.data
 }
 

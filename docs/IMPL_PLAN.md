@@ -835,12 +835,26 @@ class QuizConsumer(AsyncWebsocketConsumer):
 ### Task 7.4 — Quiz progress tracking
 **Signal:** `UserQuizAttempt` finished → update `UserQuizProgress` (best_score, attempt_count).
 
-### Task 7.5 — Frontend: Quiz browser
+### Task 7.5 — Frontend: Quiz browser ✅ (2026-04-10)
+
+**Route group:** `app/[locale]/(catalog)/quizzes/` — uses `(catalog)` layout with `showSidebar=false`.
+Catalog pages render their own two-column layout (sticky filter panel left, content grid right).
+
 ```
-quiz/page.tsx                → catalog + tree browser
-quiz/[id]/page.tsx           → quiz detail + config
-quiz/[id]/session/page.tsx   → active WebSocket quiz session
+(catalog)/quizzes/page.tsx       → QuizCatalogClient — published quiz grid + filter panel
+(catalog)/quizzes/[id]/page.tsx  → QuizDetailClient — metadata, progress card, "Start" link
 ```
+
+**Key files:**
+- `src/hooks/useQuizzes.ts` — `loadQuizzes()` + `loadQuizDetail(id)` with parallel progress fetch
+- `src/components/features/quizzes/QuizCard.tsx`
+- `src/components/features/quizzes/QuizCatalogClient.tsx`
+- `src/components/features/quizzes/QuizDetailClient.tsx`
+- `src/components/features/quizzes/QuizFilterPanel.tsx`
+
+**Type alignment:** all quiz types rewritten to match backend serializers (`time_limit_sec`, `quiz_point`, `total_questions`; removed `pass_score_percent`, `is_shuffled`; `QuizConfig` fully rewritten).
+
+**Catalog layout pattern:** see `docs/FE_CONVENTIONS.md` — Catalog Route Group Pattern section.
 
 ### Task 7.6 — Frontend: WebSocket quiz session
 - WS connect on mount, then send first auth message with JWT token

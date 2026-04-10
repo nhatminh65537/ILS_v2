@@ -3,6 +3,13 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type SystemConfigToolbarProps = {
   categories: readonly string[]
@@ -39,19 +46,19 @@ export function SystemConfigToolbar({
 
       <div className="space-y-1">
         <Label htmlFor="config-category">{t('toolbar.categoryLabel')}</Label>
-        <select
-          className="h-8 w-full rounded-none border border-input bg-transparent px-2.5 py-1 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
-          id="config-category"
-          onChange={(event) => onCategoryChange(event.target.value)}
-          value={selectedCategory}
-        >
-          <option value="">{t('toolbar.categoryAll')}</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
+        <Select value={selectedCategory} onValueChange={onCategoryChange}>
+          <SelectTrigger id="config-category" className="h-8 text-xs">
+            <SelectValue placeholder={t('toolbar.categoryAll')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">{t('toolbar.categoryAll')}</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Button onClick={onRefresh} type="button" variant="outline">

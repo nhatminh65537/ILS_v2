@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -121,19 +128,21 @@ export function UserRoleAssignmentPanel({
             <div className="space-y-2">
               <Label htmlFor="assign-role-select">{t('labels.role')}</Label>
               <div className="flex gap-2">
-                <select
-                  className="h-8 w-full rounded-none border border-border bg-background px-2 text-xs"
-                  id="assign-role-select"
-                  onChange={(event) => setSelectedRoleId(Number(event.target.value))}
-                  value={selectedRoleId ?? ''}
+                <Select
+                  value={selectedRoleId !== null ? String(selectedRoleId) : ''}
+                  onValueChange={(v) => setSelectedRoleId(v ? Number(v) : null)}
                 >
-                  <option value="">{t('labels.selectRole')}</option>
-                  {availableRoles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="assign-role-select" className="h-8 text-xs">
+                    <SelectValue placeholder={t('labels.selectRole')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((role) => (
+                      <SelectItem key={role.id} value={String(role.id)}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button
                   disabled={isMutating || selectedRoleId === null}
                   onClick={handleAssign}
