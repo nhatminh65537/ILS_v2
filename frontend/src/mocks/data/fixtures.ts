@@ -3,7 +3,7 @@ import { ContentStatus as CourseStatus, type Course, type CourseCategory, type C
 import { type LeaderboardEntry } from '@/types/leaderboard.types'
 import { NotificationType, type Notification } from '@/types/notification.types'
 import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizAttempt, type QuizQuestion, type UserQuizProgress } from '@/types/quiz.types'
-import { type ActivityEvent, type User, type UserProfile } from '@/types/user.types'
+import { type ActivityEvent, type AdminUserDto, type User, type UserProfile } from '@/types/user.types'
 
 const now = '2026-03-31T09:00:00.000Z'
 
@@ -233,6 +233,58 @@ export const activityFixture: ActivityEvent[] = [
   { type: 'quiz_complete', timestamp: '2026-04-01T13:00:00.000Z', item_title: 'Crypto Warmup', source_id: 3 },
   { type: 'lesson_complete', timestamp: '2026-03-31T09:00:00.000Z', item_title: 'Network Basics Intro', source_id: 6 },
 ]
+
+// ─── Admin role summaries (must mirror roles in rbac.handlers.ts) ─────────────
+const ROLE_ADMIN = { id: 1, name: 'Admin', description: 'System administrator', is_system: true }
+const ROLE_EDITOR = { id: 2, name: 'Editor', description: 'Content editor', is_system: true }
+const ROLE_MEMBER = { id: 3, name: 'Member', description: 'Default member role', is_system: true }
+
+/** Mutable fixture for GET/POST/PATCH /api/admin/users/ — shape matches AdminUserManagementSerializer */
+export const adminUsersFixture: AdminUserDto[] = Array.from({ length: 10 }, (_, index) => {
+  const user = usersFixture[index]
+  const roles = user.is_superuser
+    ? [ROLE_ADMIN]
+    : user.is_staff
+      ? [ROLE_EDITOR]
+      : [ROLE_MEMBER]
+
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    first_name: user.first_name ?? '',
+    last_name: user.last_name ?? '',
+    is_active: user.is_active ?? true,
+    is_staff: user.is_staff ?? false,
+    is_superuser: user.is_superuser ?? false,
+    date_joined: '2026-01-10T08:00:00.000Z',
+    last_login: index < 5 ? '2026-04-09T10:00:00.000Z' : null,
+    profile: {
+      id: index + 1,
+      user_id: user.id,
+      username: user.username,
+      entry_year: 2024,
+      display_name: index === 0 ? 'Core Admin' : `Member ${index + 1}`,
+      avatar_url: null as unknown as undefined,
+      bio: null as unknown as undefined,
+      location: null as unknown as undefined,
+      website: null as unknown as undefined,
+      language: 'vi',
+      theme: 'system',
+      timezone: 'Asia/Ho_Chi_Minh',
+      total_learning_point: 100 + index * 20,
+      total_challenge_point: 80 + index * 15,
+      total_quiz_point: 60 + index * 10,
+      course_completed: 3 + index,
+      challenge_completed: 2 + index,
+      quiz_completed: 1 + index,
+      last_active_at: '2026-04-09T10:00:00.000Z',
+      created_at: '2026-01-10T08:00:00.000Z',
+      updated_at: '2026-04-09T10:00:00.000Z',
+    },
+    roles,
+  }
+})
 
 export const leaderboardFixture: LeaderboardEntry[] = Array.from({ length: 10 }, (_, index) => ({
   id: index + 1,

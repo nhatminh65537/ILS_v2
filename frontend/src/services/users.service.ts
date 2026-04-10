@@ -7,6 +7,10 @@ import apiClient from '@/lib/axios'
 import type { PaginatedResponse } from '@/types/api'
 import type {
   ActivityEvent,
+  AdminUserCreatePayload,
+  AdminUserDto,
+  AdminUserListParams,
+  AdminUserUpdatePayload,
   MeAccountUpdatePayload,
   MeSettingsUpdatePayload,
   PublicProfileResponse,
@@ -142,5 +146,51 @@ export const getPublicProfile = async (username: string): Promise<PublicProfileR
  */
 export const getPublicActivity = async (username: string): Promise<ActivityEvent[]> => {
   const response = await apiClient.get(`/api/users/${username}/activity/`)
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
+// Admin user management (Task 8.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /api/admin/users/
+ * List all users with optional filters (admin only)
+ */
+export const listAdminUsers = async (
+  params?: AdminUserListParams
+): Promise<PaginatedResponse<AdminUserDto>> => {
+  const response = await apiClient.get('/api/admin/users/', { params })
+  return response.data
+}
+
+/**
+ * GET /api/admin/users/{id}/
+ * Get a single user by ID (admin only)
+ */
+export const getAdminUser = async (id: number): Promise<AdminUserDto> => {
+  const response = await apiClient.get(`/api/admin/users/${id}/`)
+  return response.data
+}
+
+/**
+ * POST /api/admin/users/
+ * Create a new user (admin only); defaults to Member role if role_ids omitted
+ */
+export const createAdminUser = async (payload: AdminUserCreatePayload): Promise<AdminUserDto> => {
+  const response = await apiClient.post('/api/admin/users/', payload)
+  return response.data
+}
+
+/**
+ * PATCH /api/admin/users/{id}/
+ * Update user fields (is_active, role_ids, username, email) (admin only)
+ * Disabling a user also revokes all active sessions server-side.
+ */
+export const updateAdminUser = async (
+  id: number,
+  payload: AdminUserUpdatePayload
+): Promise<AdminUserDto> => {
+  const response = await apiClient.patch(`/api/admin/users/${id}/`, payload)
   return response.data
 }

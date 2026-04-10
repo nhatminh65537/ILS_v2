@@ -191,3 +191,57 @@ export interface MeAccountUpdatePayload {
   username?: string
   email?: string
 }
+
+// ---------------------------------------------------------------------------
+// Admin user management types (Task 8.4)
+// Derived from AdminUserManagementSerializer in backend/api/serializers.py
+// ---------------------------------------------------------------------------
+
+/** Role summary as returned by admin user list/detail endpoints */
+export interface AdminRoleSummaryDto {
+  readonly id: number
+  readonly name: string
+  readonly description: string
+  readonly is_system: boolean
+}
+
+/** Full admin user record returned by GET /api/admin/users/ and GET /api/admin/users/{id}/ */
+export interface AdminUserDto {
+  readonly id: number
+  readonly username: string
+  readonly email: string
+  readonly first_name?: string
+  readonly last_name?: string
+  readonly is_active: boolean
+  readonly is_staff: boolean
+  readonly is_superuser: boolean
+  readonly date_joined: string // ISO datetime
+  readonly last_login: string | null
+  readonly profile: UserProfile | null
+  readonly roles: AdminRoleSummaryDto[]
+}
+
+/** Query params accepted by GET /api/admin/users/ */
+export interface AdminUserListParams {
+  is_active?: boolean
+  date_joined_from?: string
+  date_joined_to?: string
+  limit?: number
+  offset?: number
+}
+
+/** Payload for POST /api/admin/users/ */
+export interface AdminUserCreatePayload {
+  username: string
+  email?: string
+  password?: string
+  role_ids?: number[]
+}
+
+/** Payload for PATCH /api/admin/users/{id}/ */
+export interface AdminUserUpdatePayload {
+  is_active?: boolean
+  role_ids?: number[]
+  username?: string
+  email?: string
+}

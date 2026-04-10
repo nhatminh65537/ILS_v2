@@ -142,7 +142,29 @@
     },
     "errors": {
       "loadFailed": "Failed to load quizzes.",
-      "detailLoadFailed": "Failed to load quiz details."
+      "detailLoadFailed": "Failed to load quiz details.",
+      "connectionFailed": "Could not connect to quiz session.",
+      "authFailed": "Authentication failed. Please log in again.",
+      "sessionError": "An error occurred during the session."
+    },
+    "session": {
+      "connecting": "Connecting...",
+      "authenticating": "Authenticating...",
+      "question": "Question {current} of {total}",
+      "submitAnswer": "Submit answer",
+      "next": "Next question",
+      "correct": "Correct!",
+      "incorrect": "Incorrect",
+      "explanation": "Explanation",
+      "score": "{score} pts",
+      "finish": {
+        "title": "Session complete",
+        "score": "Score",
+        "maxScore": "Max score",
+        "duration": "Time taken",
+        "backToDetail": "Back to quiz",
+        "tryAgain": "Try again"
+      }
     }
   },
   "notifications": {
@@ -361,6 +383,73 @@
       "challengeDescription": "Open active challenges and submit new flags.",
       "quizTitle": "Quiz",
       "quizDescription": "Start a new quiz session or review best scores."
+    }
+  },
+  "adminUsers": {
+    "title": "User Management",
+    "subtitle": "View and manage all platform users, their status, and role assignments.",
+    "navigationHint": "Need to return to admin home? Open",
+    "navigationBackToAdmin": "Admin home",
+    "navigationBackToDashboard": "Dashboard",
+    "createButton": "Create user",
+    "toolbar": {
+      "searchPlaceholder": "Search by username or email",
+      "filterLabel": "Status",
+      "filterAll": "All",
+      "filterActive": "Active",
+      "filterInactive": "Inactive",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing..."
+    },
+    "columns": {
+      "username": "Username",
+      "email": "Email",
+      "roles": "Roles",
+      "status": "Status",
+      "dateJoined": "Date joined",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "manageRoles": "Manage roles",
+      "activate": "Activate",
+      "deactivate": "Deactivate"
+    },
+    "confirmation": {
+      "deactivateTitle": "Deactivate user?",
+      "deactivateDescription": "This will deactivate '{username}' and revoke all their active sessions. You can reactivate the account at any time.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "form": {
+      "createTitle": "Create user",
+      "createDescription": "Create a new platform account. The user will be assigned the Member role by default.",
+      "usernamePlaceholder": "username",
+      "emailPlaceholder": "email (optional)",
+      "passwordPlaceholder": "password (optional)",
+      "usernameLabel": "Username",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "submit": "Create",
+      "submitting": "Creating..."
+    },
+    "pagination": {
+      "pageInfo": "Page {page}",
+      "totalInfo": "Total {total} users",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "empty": {
+      "noUsers": "No users found.",
+      "noResults": "No users match the search."
+    },
+    "errors": {
+      "loadFailed": "Failed to load users.",
+      "toggleFailed": "Failed to update user status.",
+      "createFailed": "Failed to create user."
     }
   },
   "profile": {

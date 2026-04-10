@@ -27,6 +27,7 @@ export default async function AdminProtectedLayout({
         rbacLabel={tAdmin('rbac')}
         sidebarTitle={tSurface('admin.sidebarTitle')}
         surfaceLabel={tSurface('admin.title')}
+        usersLabel={tAdmin('users')}
         userPortalLabel={tSurface('admin.userPortalLabel')}
       >
         {children}

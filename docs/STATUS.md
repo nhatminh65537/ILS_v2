@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-10
+> Last updated: 2026-04-10 (Task 8.4 completed)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -130,6 +130,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 8 / Task 8.2 (2026-04-02) | `docs/reports/2026-04-02_slice8-task8-2-admin-user-management-api.md` |
 | Slice 8 / Task 8.3 (2026-04-10) | `docs/reports/2026-04-10_slice8-task8-3-frontend-profile-ui.md` |
 | Slice 7 / Task 7.5 (2026-04-10) | `docs/reports/2026-04-10_slice7-task7-5-frontend-quiz-browser.md` |
+| Slice 8 / Task 8.4 (2026-04-10) | `docs/reports/2026-04-10_slice8-task8-4-frontend-admin-users.md` |
 
 ---
 
@@ -221,7 +222,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | User profile API (me + public) | Low | ✅ Completed 2026-04-02: `/api/users/me/profile/`, `/api/users/me/settings/`, `/api/users/me/account/`, `/api/users/me/activity/`, `/api/users/{username}/profile/`, `/api/users/{username}/activity/` |
 | Admin user management API | Low | ✅ Completed 2026-04-02: `/api/admin/users/`, `/api/admin/users/{id}/` with filters + role update + disable-session revoke behavior |
 | Frontend: Profile + settings pages | Low | ✅ Completed 2026-04-10: `/profile/[username]` (public) + `/profile/settings` (own settings); avatar dropdown with "Hồ sơ" / "Cài đặt" pattern |
-| Frontend: Admin user management | Low | |
+| Frontend: Admin user management | Low | ✅ Completed 2026-04-10: `/{locale}/admin/users` — paginated user table; search + `is_active` filter; activate/deactivate toggle (deactivate has confirmation dialog); "Manage roles" link to `/admin/rbac/users/{id}/roles`; create-user dialog; MSW handlers added for all 4 admin user endpoints |
 
 ### Slice 9 — Notifications
 

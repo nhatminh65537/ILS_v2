@@ -142,7 +142,29 @@
     },
     "errors": {
       "loadFailed": "Không thể tải danh sách bài quiz.",
-      "detailLoadFailed": "Không thể tải chi tiết bài quiz."
+      "detailLoadFailed": "Không thể tải chi tiết bài quiz.",
+      "connectionFailed": "Không thể kết nối phiên quiz.",
+      "authFailed": "Xác thực thất bại. Vui lòng đăng nhập lại.",
+      "sessionError": "Đã xảy ra lỗi trong phiên làm bài."
+    },
+    "session": {
+      "connecting": "Đang kết nối...",
+      "authenticating": "Đang xác thực...",
+      "question": "Câu {current} / {total}",
+      "submitAnswer": "Nộp đáp án",
+      "next": "Câu tiếp theo",
+      "correct": "Đúng!",
+      "incorrect": "Sai",
+      "explanation": "Giải thích",
+      "score": "{score} điểm",
+      "finish": {
+        "title": "Hoàn thành bài quiz",
+        "score": "Điểm đạt được",
+        "maxScore": "Điểm tối đa",
+        "duration": "Thời gian làm bài",
+        "backToDetail": "Quay lại bài quiz",
+        "tryAgain": "Làm lại"
+      }
     }
   },
   "notifications": {
@@ -361,6 +383,73 @@
       "challengeDescription": "Mở thử thách đang chạy và nộp flag mới.",
       "quizTitle": "Quiz",
       "quizDescription": "Bắt đầu phiên quiz mới hoặc xem điểm cao nhất."
+    }
+  },
+  "adminUsers": {
+    "title": "Quản lý người dùng",
+    "subtitle": "Xem và quản lý tất cả người dùng nền tảng, trạng thái và phân quyền.",
+    "navigationHint": "Cần quay lại trang quản trị? Mở",
+    "navigationBackToAdmin": "Trang quản trị",
+    "navigationBackToDashboard": "Bảng điều khiển",
+    "createButton": "Tạo người dùng",
+    "toolbar": {
+      "searchPlaceholder": "Tìm theo tên đăng nhập hoặc email",
+      "filterLabel": "Trạng thái",
+      "filterAll": "Tất cả",
+      "filterActive": "Đang hoạt động",
+      "filterInactive": "Đã vô hiệu",
+      "refresh": "Làm mới",
+      "refreshing": "Đang làm mới..."
+    },
+    "columns": {
+      "username": "Tên đăng nhập",
+      "email": "Email",
+      "roles": "Vai trò",
+      "status": "Trạng thái",
+      "dateJoined": "Ngày tham gia",
+      "actions": "Thao tác"
+    },
+    "status": {
+      "active": "Hoạt động",
+      "inactive": "Vô hiệu"
+    },
+    "actions": {
+      "manageRoles": "Quản lý vai trò",
+      "activate": "Kích hoạt",
+      "deactivate": "Vô hiệu hoá"
+    },
+    "confirmation": {
+      "deactivateTitle": "Vô hiệu hoá người dùng?",
+      "deactivateDescription": "Thao tác này sẽ vô hiệu hoá '{username}' và thu hồi tất cả phiên đăng nhập đang hoạt động. Bạn có thể kích hoạt lại tài khoản bất kỳ lúc nào.",
+      "confirm": "Xác nhận",
+      "cancel": "Hủy"
+    },
+    "form": {
+      "createTitle": "Tạo người dùng",
+      "createDescription": "Tạo tài khoản mới trên nền tảng. Người dùng sẽ được gán vai trò Member mặc định.",
+      "usernamePlaceholder": "tên đăng nhập",
+      "emailPlaceholder": "email (tuỳ chọn)",
+      "passwordPlaceholder": "mật khẩu (tuỳ chọn)",
+      "usernameLabel": "Tên đăng nhập",
+      "emailLabel": "Email",
+      "passwordLabel": "Mật khẩu",
+      "submit": "Tạo",
+      "submitting": "Đang tạo..."
+    },
+    "pagination": {
+      "pageInfo": "Trang {page}",
+      "totalInfo": "Tổng {total} người dùng",
+      "previous": "Trước",
+      "next": "Tiếp"
+    },
+    "empty": {
+      "noUsers": "Chưa có người dùng nào.",
+      "noResults": "Không tìm thấy người dùng khớp."
+    },
+    "errors": {
+      "loadFailed": "Tải danh sách người dùng thất bại.",
+      "toggleFailed": "Cập nhật trạng thái người dùng thất bại.",
+      "createFailed": "Tạo người dùng thất bại."
     }
   },
   "profile": {
