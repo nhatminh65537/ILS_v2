@@ -9,7 +9,30 @@
       "mcp__lightrag-cybersec__insert_document",
       "mcp__openmemory__search_memory",
       "mcp__openmemory__add_memories",
-      "Bash(Move-Item \"D:\\\\PBL5\\\\ILS_v2\\\\backend\\\\ai\\\\permissons.py\" \"D:\\\\PBL5\\\\ILS_v2\\\\backend\\\\ai\\\\permissions.py\")"
+      "Bash(Move-Item \"D:\\\\PBL5\\\\ILS_v2\\\\backend\\\\ai\\\\permissons.py\" \"D:\\\\PBL5\\\\ILS_v2\\\\backend\\\\ai\\\\permissions.py\")",
+      "Bash(mkdir -p \"D:/PBL5/ILS_v2/frontend/app/[locale]/\\(app\\)/profile/[username]\")",
+      "Bash(mkdir -p \"D:/PBL5/ILS_v2/frontend/app/[locale]/\\(app\\)/profile/settings\")",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npm run:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npx eslint:*)",
+      "Bash(node_modules/.bin/eslint src/hooks/useQuizzes.ts src/components/features/quizzes/ src/types/quiz.types.ts src/services/quizzes.service.ts)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(checkbox)",
+      "Bash(progress)",
+      "Bash(input\")",
+      "Bash(npx shadcn@latest add radio-group checkbox progress --yes)",
+      "Bash(echo \"TSC_EXIT:$?\")",
+      "Bash(echo \"LINT_EXIT:$?\")",
+      "Bash(echo \"BUILD_EXIT:$?\")",
+      "Bash(echo \"TSC:$?\")",
+      "Bash(echo \"BUILD:$?\")",
+      "Bash(python -m pytest api/test_quiz_task7_1.py api/test_quiz_task7_4.py -v)",
+      "Bash(.venv/Scripts/python.exe -m pytest backend/api/test_quiz_task7_1.py backend/api/test_quiz_task7_4.py -v)",
+      "Bash(xargs grep:*)",
+      "Bash(dir \"D:\\\\PBL5\\\\ILS_v2\\\\intests\")"
     ]
   }
 }
