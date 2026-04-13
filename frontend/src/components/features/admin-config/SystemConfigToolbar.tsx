@@ -11,6 +11,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+const ALL_CATEGORIES_VALUE = '__ALL_CATEGORIES__'
+
 type SystemConfigToolbarProps = {
   categories: readonly string[]
   search: string
@@ -32,6 +34,16 @@ export function SystemConfigToolbar({
   onRefresh,
   t,
 }: SystemConfigToolbarProps) {
+  const categorySelectValue =
+    selectedCategory === '' ? ALL_CATEGORIES_VALUE : selectedCategory
+  const selectableCategories = categories.filter(
+    (category) => category.trim().length > 0
+  )
+
+  const handleCategoryChange = (value: string) => {
+    onCategoryChange(value === ALL_CATEGORIES_VALUE ? '' : value)
+  }
+
   return (
     <section className="grid gap-3 rounded-none border border-border p-4 md:grid-cols-[1fr_220px_auto] md:items-end">
       <div className="space-y-1">
@@ -46,13 +58,13 @@ export function SystemConfigToolbar({
 
       <div className="space-y-1">
         <Label htmlFor="config-category">{t('toolbar.categoryLabel')}</Label>
-        <Select value={selectedCategory} onValueChange={onCategoryChange}>
+        <Select value={categorySelectValue} onValueChange={handleCategoryChange}>
           <SelectTrigger id="config-category" className="h-8 text-xs">
             <SelectValue placeholder={t('toolbar.categoryAll')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{t('toolbar.categoryAll')}</SelectItem>
-            {categories.map((category) => (
+            <SelectItem value={ALL_CATEGORIES_VALUE}>{t('toolbar.categoryAll')}</SelectItem>
+            {selectableCategories.map((category) => (
               <SelectItem key={category} value={category}>
                 {category}
               </SelectItem>
