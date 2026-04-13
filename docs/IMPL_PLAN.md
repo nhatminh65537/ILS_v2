@@ -320,17 +320,23 @@ class AuthentikSSOService:
 - Added conflict/idempotency handling for identity linking (`409` when external identity belongs to another user).
 - Added automated test coverage for redirect, callback new-user flow, callback existing-user auto-link flow, invalid state, disabled SSO, idempotent link, and conflict link scenarios.
 
-### Task 1.4 — Password change/reset + session management
-
-> **Status note (2026-03-23):** Password reset email flow is deferred per [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset). Password change and session management can still proceed.
+### Task 1.4A — Password change + session management ✅ COMPLETED (2026-04-13)
 
 **Endpoints:**
 ```
-POST /api/auth/password/change/        → verify current_password, update, revoke all sessions
+POST   /api/auth/password/change/  → verify current_password, update password, revoke all sessions
+GET    /api/auth/sessions/         → list active sessions (revoked_at=null and not expired)
+DELETE /api/auth/sessions/{id}/    → revoke one owned active session
+```
+
+### Task 1.4B — Password reset (email token) ⏸️ DEFERRED
+
+> **Status note:** Deferred per [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) until email backend decision and infrastructure are finalized.
+
+**Deferred endpoints:**
+```
 POST /api/auth/password/reset/         → send HMAC-signed link via email (1hr expiry)
 POST /api/auth/password/reset/confirm/ → verify token, update password, revoke all sessions
-GET  /api/auth/sessions/               → list UserSession(revoked_at=null, expires_at>now)
-DELETE /api/auth/sessions/{id}/        → set revoked_at = now()
 ```
 
 **Password reset token (no DB storage):**

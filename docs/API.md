@@ -75,6 +75,9 @@ Legend:
 | POST | `/api/auth/token/refresh/` | No | Stable | Validates refresh hash in `user_session`, rotates refresh token/session, and enforces per-user refresh rate limit (10/min). |
 | POST | `/api/auth/logout/` | Yes | Stable | Revokes current session by refresh token hash. |
 | POST | `/api/auth/logout-all/` | Yes | Stable | Revokes all active sessions for authenticated user. |
+| POST | `/api/auth/password/change/` | Yes | Stable | Verifies `current_password`, enforces password policy from `auth.password.*` config, updates password hash, and revokes all active user sessions. |
+| GET | `/api/auth/sessions/` | Yes | Stable | Lists active sessions for authenticated user only; excludes `refresh_token_hash`. |
+| DELETE | `/api/auth/sessions/{id}/` | Yes | Stable | Revokes one owned active session; returns `204` on success, `404` if not found or not owned. |
 | GET | `/api/auth/sso/redirect/` | No | Stable | Builds OIDC authorization URL from system config and returns HTTP redirect to Authentik. |
 | GET | `/api/auth/sso/callback/` | No | Stable | Validates OIDC state/nonce, exchanges auth code, links/creates user, and returns access/refresh tokens. |
 | POST | `/api/auth/identity/link/` | Yes | Stable | Links authenticated user to an external identity (`provider`, `external_id`) with conflict protection and idempotent retry behavior. |
@@ -314,11 +317,11 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 
 ### 4.1 Slice 1 — Authentication
 
-- `POST /api/auth/change-password/`
-- `POST /api/auth/reset-password/`
-- `POST /api/auth/reset-password/confirm/`
-- `GET /api/auth/sessions/`
-- `POST /api/auth/sessions/{id}/revoke/`
+- `POST /api/auth/password/reset/`
+- `POST /api/auth/password/reset/confirm/`
+
+Notes:
+- Password reset remains deferred by decision `Q-INFRA-03` until email backend setup is finalized.
 
 ### 4.2 Slice 2 — Authorization/RBAC
 - JWT claims contract for permission checks: `permissions` (base64 bitmap) + `pv` (permission version).

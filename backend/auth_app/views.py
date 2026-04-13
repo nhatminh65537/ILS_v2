@@ -22,7 +22,9 @@ from auth_app.serializers import (
     IdentityLinkRequestSerializer,
     LoginRequestSerializer,
     LogoutRequestSerializer,
+    PasswordChangeRequestSerializer,
     RegisterRequestSerializer,
+    SessionListItemSerializer,
     SSOCallbackQuerySerializer,
     TokenRefreshRequestSerializer,
     TokenRefreshResponseSerializer,
@@ -165,6 +167,43 @@ class LogoutAllView(APIView):
         updated = SessionService().revoke_all_user_sessions(request.user)
 
         return Response({'detail': 'Logged out all sessions.', 'revoked_count': updated}, status=status.HTTP_200_OK)
+
+
+class PasswordChangeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PasswordChangeRequestSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+        revoked_count = SessionService().revoke_all_user_sessions(request.user)
+
+        return Response(
+            {'detail': 'Password changed successfully.', 'revoked_count': revoked_count},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SessionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sessions = SessionService().list_active_sessions_for_user(request.user)
+        serializer = SessionListItemSerializer(sessions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SessionRevokeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, session_id: int):
+        revoked_session = SessionService().revoke_session_by_id_for_user(request.user, session_id)
+        if revoked_session is None:
+            return Response({'detail': 'Session not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SSORedirectView(APIView):

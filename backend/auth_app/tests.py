@@ -178,6 +178,213 @@ class TestAuthApp:
         assert response.data['revoked_count'] >= 2
         assert UserSession.objects.filter(user=member_user, revoked_at__isnull=True).count() == 0
 
+    def test_password_change_success_updates_password_and_revokes_all_sessions(self, api_client, member_user):
+        login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+                'device_info': 'password-change-device',
+            },
+            format='json',
+        )
+        refresh = login.data['refresh']
+        token_hash = hashlib.sha256(refresh.encode('utf-8')).hexdigest()
+
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+        response = api_client.post(
+            '/api/auth/password/change/',
+            {
+                'current_password': 'MemberPass123!',
+                'new_password': 'NewMemberPass123!',
+            },
+            format='json',
+        )
+
+        assert response.status_code == 200
+        assert response.data['revoked_count'] >= 1
+
+        member_user.refresh_from_db()
+        assert member_user.check_password('NewMemberPass123!') is True
+
+        session = UserSession.objects.get(user=member_user, refresh_token_hash=token_hash)
+        assert session.revoked_at is not None
+        assert UserSession.objects.filter(user=member_user, revoked_at__isnull=True).count() == 0
+
+        refresh_after_change = api_client.post('/api/auth/token/refresh/', {'refresh': refresh}, format='json')
+        assert refresh_after_change.status_code == 401
+
+    def test_password_change_rejects_invalid_current_password(self, api_client, member_user):
+        login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+            },
+            format='json',
+        )
+
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+        response = api_client.post(
+            '/api/auth/password/change/',
+            {
+                'current_password': 'WrongCurrentPass!',
+                'new_password': 'NewMemberPass123!',
+            },
+            format='json',
+        )
+
+        assert response.status_code == 401
+        member_user.refresh_from_db()
+        assert member_user.check_password('MemberPass123!') is True
+
+    def test_password_change_enforces_runtime_password_policy(self, api_client, member_user):
+        _set_config('auth.password.min_length', 12, value_type=SystemConfig.ConfigType.INT)
+        _set_config('auth.password.require_uppercase', True)
+        _set_config('auth.password.require_number', True)
+        _set_config('auth.password.require_special', True)
+
+        login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+            },
+            format='json',
+        )
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+
+        response = api_client.post(
+            '/api/auth/password/change/',
+            {
+                'current_password': 'MemberPass123!',
+                'new_password': 'alllowercase123',
+            },
+            format='json',
+        )
+
+        assert response.status_code == 400
+        assert 'new_password' in response.data
+
+    def test_sessions_list_returns_only_active_sessions_for_authenticated_user(self, api_client, member_user, editor_user):
+        member_login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+                'device_info': 'member-active',
+            },
+            format='json',
+        )
+        member_refresh_hash = hashlib.sha256(member_login.data['refresh'].encode('utf-8')).hexdigest()
+        active_member_session = UserSession.objects.get(user=member_user, refresh_token_hash=member_refresh_hash)
+
+        revoked_login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+                'device_info': 'member-revoked',
+            },
+            format='json',
+        )
+        revoked_hash = hashlib.sha256(revoked_login.data['refresh'].encode('utf-8')).hexdigest()
+        UserSession.objects.filter(user=member_user, refresh_token_hash=revoked_hash).update(
+            revoked_at=timezone.now(),
+            revoked_by=member_user,
+        )
+
+        UserSession.objects.create(
+            user=member_user,
+            device_info='member-expired',
+            refresh_token_hash='expired-session-hash',
+            last_used_at=timezone.now() - timedelta(days=1),
+            expires_at=timezone.now() - timedelta(minutes=1),
+        )
+
+        api_client.post(
+            '/api/auth/login/',
+            {
+                'username': editor_user.username,
+                'password': 'EditorPass123!',
+                'device_info': 'editor-active',
+            },
+            format='json',
+        )
+
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {member_login.data['access']}")
+        response = api_client.get('/api/auth/sessions/')
+
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]['id'] == active_member_session.id
+        assert set(response.data[0].keys()) == {'id', 'device_info', 'last_used_at', 'expires_at', 'created_at'}
+
+    def test_session_revoke_by_id_revokes_owned_session(self, api_client, member_user):
+        auth_login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+                'device_info': 'auth-session',
+            },
+            format='json',
+        )
+
+        target_login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+                'device_info': 'target-session',
+            },
+            format='json',
+        )
+        target_hash = hashlib.sha256(target_login.data['refresh'].encode('utf-8')).hexdigest()
+        target_session = UserSession.objects.get(user=member_user, refresh_token_hash=target_hash)
+
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {auth_login.data['access']}")
+        response = api_client.delete(f'/api/auth/sessions/{target_session.id}/')
+
+        assert response.status_code == 204
+
+        target_session.refresh_from_db()
+        assert target_session.revoked_at is not None
+        assert target_session.revoked_by_id == member_user.id
+
+        sessions_response = api_client.get('/api/auth/sessions/')
+        listed_ids = {item['id'] for item in sessions_response.data}
+        assert target_session.id not in listed_ids
+
+    def test_session_revoke_by_id_returns_404_for_other_user_session(self, api_client, member_user, editor_user):
+        editor_login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': editor_user.username,
+                'password': 'EditorPass123!',
+                'device_info': 'editor-session',
+            },
+            format='json',
+        )
+        editor_hash = hashlib.sha256(editor_login.data['refresh'].encode('utf-8')).hexdigest()
+        editor_session = UserSession.objects.get(user=editor_user, refresh_token_hash=editor_hash)
+
+        member_login = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+            },
+            format='json',
+        )
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {member_login.data['access']}")
+
+        response = api_client.delete(f'/api/auth/sessions/{editor_session.id}/')
+        assert response.status_code == 404
+
+        editor_session.refresh_from_db()
+        assert editor_session.revoked_at is None
+
     def test_token_refresh_success_rotates_session(self, api_client, member_user):
         login = api_client.post(
             '/api/auth/login/',

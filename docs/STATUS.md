@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-10 (Task 8.4 completed)
+> Last updated: 2026-04-13 (Task 1.4A completed)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -83,6 +83,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 1 / Task 1.1 (2026-03-26) | New `auth_app` implemented and wired at `/api/auth/*` with native `register`, `login`, `logout`, `logout-all`; session hash storage in `user_session`; login rate-limit; endpoint tests added and passing (`6 passed`) |
 | Slice 1 / Task 1.2 (2026-03-27) | `POST /api/auth/token/refresh/` implemented with session-hash validation, token/session rotation, per-user refresh rate limit (`10/min`), updated JWT access lifetime (`15m`), CORS dev frontend port (`4000`), and expanded auth tests (`15 passed`) |
 | Slice 1 / Task 1.3 (2026-03-30) | SSO/AuthentiK backend endpoints implemented: `GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`; callback validates state/nonce with cache TTL, auto-links by `provider+external_id` and email fallback when linking is enabled, creates JWT session via existing TokenService flow, and adds auth test coverage (`22 passed`) |
+| Slice 1 / Task 1.4A (2026-04-13) | Password change + session management APIs implemented: `POST /api/auth/password/change/`, `GET /api/auth/sessions/`, `DELETE /api/auth/sessions/{id}/`; password change validates current password and runtime policy (`auth.password.*`), then revokes all active sessions; session listing enforces active-session filter and hides token hash; revoke-by-id enforces ownership; focused auth test suite passes including new coverage. |
 | Slice 1 / Task 1.5 (2026-04-01) | Frontend auth UI completed for locale routes (`/vi/login`, `/en/login`, `/vi/register`, `/en/register`) with interactive forms, auth service/hook integration, localized validation + API error mapping, SSO direct redirect flow, axios refresh-loop guard on auth endpoints, and style alignment with shared UI primitives. |
 | Slice 2 / Task 2.1 (2026-03-30) | Permission auto-discovery implemented at startup via `auth_app.services.permission_discovery.discover_permissions()` with idempotent sync (`is_active` reset/reactivate), built-in role mapping from `@add_role_granted`, and normalized permission naming (`{app_label}.{resource_name}.{handler_method_name}` lowercase); tests added and passing in `auth_app/tests.py` |
 | Slice 2 / Task 2.2 (2026-03-31) | Role/Permission CRUD API completed with canonical admin RBAC routes (`/api/admin/permissions/`, `/api/admin/roles/*`, `/api/users/{id}/roles/*`), admin-only access guards, action-level JWT permission-key checks when JWT auth context is present, and deterministic permission-cache invalidation for affected users on role-permission/user-role mutations; RBAC endpoint tests passing (`16 passed`). |
@@ -116,6 +117,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 1 / Task 1.1 (2026-03-26) | `docs/reports/2026-03-26_slice1-task1-1-auth.md` |
 | Slice 1 / Task 1.2 (2026-03-27) | `docs/reports/2026-03-27_slice1-task1-2-jwt-refresh.md` |
 | Slice 1 / Task 1.3 (2026-03-30) | `docs/reports/2026-03-30_slice1-task1-3-sso-implementation.md` |
+| Slice 1 / Task 1.4A (2026-04-13) | `docs/reports/2026-04-13_slice1-task1-4a-password-session.md` |
 | Slice 1 / Task 1.5 (2026-04-01) | `docs/reports/2026-04-01_slice1-task1-5-frontend-auth-ui.md` |
 | Slice 2 / Task 2.1 (2026-03-30) | `docs/reports/2026-03-30_slice2-task2-1-permission-discovery.md` |
 | Slice 3 / Task 3.1 (2026-03-30) | `docs/reports/2026-03-30_slice3-task3-1-system-config-api.md` |
@@ -166,8 +168,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Session listing/revoke APIs | Medium | `GET /api/auth/sessions/`, revoke-by-id not implemented yet |
-| Password change + reset (email token) | Medium | `itsdangerous` TimestampSigner |
+| Password reset email flow (Task 1.4B) | Medium | `POST /api/auth/password/reset/`, `POST /api/auth/password/reset/confirm/` remain deferred by `Q-INFRA-03` |
 
 ### Slice 2 — Authorization / RBAC
 
