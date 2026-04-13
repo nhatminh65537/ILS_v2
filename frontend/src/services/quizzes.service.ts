@@ -1,6 +1,7 @@
 /**
  * Quizzes service
- * Handles quiz CRUD, attempts, Q&A submission, and progress tracking
+ * Handles quiz CRUD, question management, config, and progress tracking.
+ * Quiz sessions (attempt start, answers) are handled via WebSocket (useQuizSession hook).
  */
 
 import apiClient from '@/lib/axios'
@@ -9,17 +10,11 @@ import type {
   Quiz,
   QuizConfig,
   QuizQuestion,
-  CreateQuizPayload,
-  UpdateQuizPayload,
-  CreateQuestionPayload,
   AdminQuizListParams,
   AdminQuizMutationPayload,
   AdminQuizQuestionMutationPayload,
   QuizListResponse,
   QuizQuestionsListResponse,
-  SubmitAnswerPayload,
-  SubmitAnswerResponse,
-  QuizAttemptResponse,
   UserQuizProgress,
 } from '@/types/quiz.types'
 
@@ -53,7 +48,7 @@ const normalizeListResponse = <T>(data: readonly T[] | PaginatedResponse<T>): No
 
 /**
  * GET /api/quiz/quizzes/
- * List quizzes
+ * List quizzes (member view — published only)
  */
 export const listQuizzes = async (params?: {
   limit?: number
@@ -84,15 +79,6 @@ export const listAdminQuizzes = async (
 
 /**
  * POST /api/quiz/quizzes/
- * Create new quiz (Editor+)
- */
-export const createQuiz = async (payload: CreateQuizPayload): Promise<Quiz> => {
-  const response = await apiClient.post('/api/quiz/quizzes/', payload)
-  return response.data
-}
-
-/**
- * POST /api/quiz/quizzes/
  * Create quiz from admin editor surface
  */
 export const createAdminQuiz = async (payload: AdminQuizMutationPayload): Promise<Quiz> => {
@@ -102,19 +88,10 @@ export const createAdminQuiz = async (payload: AdminQuizMutationPayload): Promis
 
 /**
  * GET /api/quiz/quizzes/{id}/
- * Get quiz detail with nested questions
+ * Get quiz detail
  */
 export const getQuizById = async (id: number): Promise<Quiz> => {
   const response = await apiClient.get(`/api/quiz/quizzes/${id}/`)
-  return response.data
-}
-
-/**
- * PUT/PATCH /api/quiz/quizzes/{id}/
- * Update quiz
- */
-export const updateQuiz = async (id: number, payload: UpdateQuizPayload): Promise<Quiz> => {
-  const response = await apiClient.patch(`/api/quiz/quizzes/${id}/`, payload)
   return response.data
 }
 
@@ -129,14 +106,6 @@ export const updateAdminQuiz = async (id: number, payload: Partial<AdminQuizMuta
 
 /**
  * DELETE /api/quiz/quizzes/{id}/
- * Delete quiz
- */
-export const deleteQuiz = async (id: number): Promise<void> => {
-  await apiClient.delete(`/api/quiz/quizzes/${id}/`)
-}
-
-/**
- * DELETE /api/quiz/quizzes/{id}/
  * Delete quiz from admin editor surface
  */
 export const deleteAdminQuiz = async (id: number): Promise<void> => {
@@ -144,27 +113,9 @@ export const deleteAdminQuiz = async (id: number): Promise<void> => {
 }
 
 /**
- * POST /api/quiz/quizzes/{id}/start_attempt/
- * Start quiz attempt (creates QuizAttempt, returns first question)
- */
-export const startQuizAttempt = async (id: number): Promise<QuizAttemptResponse> => {
-  const response = await apiClient.post(`/api/quiz/quizzes/${id}/start_attempt/`)
-  return response.data
-}
-
-/**
- * POST /api/quiz/quizzes/{quiz_id}/submit_answer/
- * Submit answer to current question
- * Returns is_correct, score, explanation
- */
-export const submitQuizAnswer = async (quizId: number, payload: SubmitAnswerPayload): Promise<SubmitAnswerResponse> => {
-  const response = await apiClient.post(`/api/quiz/quizzes/${quizId}/submit_answer/`, payload)
-  return response.data
-}
-
-/**
  * GET /api/quiz/quizzes/{id}/progress/
- * Get user progress on quiz (best score, attempts, etc)
+ * Get user progress on quiz (best score, attempts).
+ * Returns zeros when user has never attempted.
  */
 export const getQuizProgress = async (id: number): Promise<UserQuizProgress> => {
   const response = await apiClient.get(`/api/quiz/quizzes/${id}/progress/`)
@@ -173,7 +124,7 @@ export const getQuizProgress = async (id: number): Promise<UserQuizProgress> => 
 
 /**
  * GET /api/quiz/quizzes/{id}/config/
- * Get or create user quiz config (per-user overrides)
+ * Get or create per-user quiz config
  */
 export const getQuizConfig = async (id: number): Promise<QuizConfig> => {
   const response = await apiClient.get(`/api/quiz/quizzes/${id}/config/`)
@@ -182,7 +133,7 @@ export const getQuizConfig = async (id: number): Promise<QuizConfig> => {
 
 /**
  * GET /api/quiz/quizzes/{id}/questions/
- * Admin question manager list
+ * Admin question manager list (Editor+)
  */
 export const listAdminQuizQuestions = async (quizId: number): Promise<QuizQuestion[]> => {
   const response = await apiClient.get<QuizQuestionsListResponse>(`/api/quiz/quizzes/${quizId}/questions/`)
@@ -191,7 +142,7 @@ export const listAdminQuizQuestions = async (quizId: number): Promise<QuizQuesti
 
 /**
  * POST /api/quiz/quizzes/{id}/questions/
- * Create quiz question in nested canonical route
+ * Create quiz question (Editor+)
  */
 export const createAdminQuizQuestion = async (
   quizId: number,
@@ -203,7 +154,7 @@ export const createAdminQuizQuestion = async (
 
 /**
  * PUT /api/quiz/quizzes/{id}/questions/{qid}/
- * Update quiz question in nested canonical route
+ * Replace quiz question (Editor+)
  */
 export const updateAdminQuizQuestion = async (
   quizId: number,
@@ -216,59 +167,8 @@ export const updateAdminQuizQuestion = async (
 
 /**
  * DELETE /api/quiz/quizzes/{id}/questions/{qid}/
- * Delete quiz question in nested canonical route
+ * Delete quiz question (Editor+)
  */
 export const deleteAdminQuizQuestion = async (quizId: number, questionId: number): Promise<void> => {
   await apiClient.delete(`/api/quiz/quizzes/${quizId}/questions/${questionId}/`)
-}
-
-/**
- * GET /api/quiz-questions/
- * List quiz questions (for editing)
- */
-export const listQuizQuestions = async (params?: {
-  quiz_id?: number
-  limit?: number
-  offset?: number
-}): Promise<PaginatedResponse<QuizQuestion>> => {
-  const response = await apiClient.get('/api/quiz-questions/', { params })
-  return response.data
-}
-
-/**
- * POST /api/quiz-questions/
- * Create quiz question
- */
-export const createQuizQuestion = async (payload: CreateQuestionPayload): Promise<QuizQuestion> => {
-  const response = await apiClient.post('/api/quiz-questions/', payload)
-  return response.data
-}
-
-/**
- * GET /api/quiz-questions/{id}/
- * Get quiz question detail
- */
-export const getQuizQuestionById = async (id: number): Promise<QuizQuestion> => {
-  const response = await apiClient.get(`/api/quiz-questions/${id}/`)
-  return response.data
-}
-
-/**
- * PUT/PATCH /api/quiz-questions/{id}/
- * Update quiz question
- */
-export const updateQuizQuestion = async (
-  id: number,
-  payload: Partial<CreateQuestionPayload>
-): Promise<QuizQuestion> => {
-  const response = await apiClient.patch(`/api/quiz-questions/${id}/`, payload)
-  return response.data
-}
-
-/**
- * DELETE /api/quiz-questions/{id}/
- * Delete quiz question
- */
-export const deleteQuizQuestion = async (id: number): Promise<void> => {
-  await apiClient.delete(`/api/quiz-questions/${id}/`)
 }

@@ -16,7 +16,6 @@ export const usersHandlers = [
     profile = {
       ...profile,
       ...payload,
-      updated_at: new Date().toISOString(),
     }
     return HttpResponse.json(profile)
   }),
@@ -26,7 +25,6 @@ export const usersHandlers = [
     profile = {
       ...profile,
       ...payload,
-      updated_at: new Date().toISOString(),
     }
     return HttpResponse.json(profile)
   }),

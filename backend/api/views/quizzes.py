@@ -7,13 +7,14 @@ from rest_framework.response import Response
 from auth_app.permissions import add_role_granted
 
 from api.mixins.rbac_action_permission import RBACActionPermissionMixin
-from api.models import Quiz, QuizConfig, QuizNode, QuizQuestion
+from api.models import Quiz, QuizConfig, QuizNode, QuizQuestion, UserQuizProgress
 from api.serializers import (
     QuizConfigSerializer,
     QuizDetailSerializer,
     QuizListSerializer,
     QuizNodeSerializer,
     QuizQuestionManageSerializer,
+    UserQuizProgressSerializer,
 )
 
 
@@ -64,6 +65,7 @@ class QuizViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
         'questions': 'api.quiz.questions',
         'question_detail': 'api.quiz.question_detail',
         'config': 'api.quiz.config',
+        'progress': 'api.quiz.progress',
     }
 
     def get_queryset(self):
@@ -167,6 +169,23 @@ class QuizViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(quiz=quiz, user=request.user)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def progress(self, request, pk=None):
+        quiz = self.get_object()
+        try:
+            prog = UserQuizProgress.objects.get(quiz=quiz, user=request.user)
+            return Response(UserQuizProgressSerializer(prog).data)
+        except UserQuizProgress.DoesNotExist:
+            return Response({
+                'id': None,
+                'user_id': request.user.id,
+                'quiz_id': quiz.id,
+                'best_score': 0,
+                'attempt_count': 0,
+                'first_attempted_at': None,
+                'last_attempted_at': None,
+            })
 
 
 

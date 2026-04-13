@@ -23,7 +23,7 @@ from .models import (
     # Quiz models
     Quiz, QuizNode, QuizCategory, QuizTag, QuizTagMap,
     QuizQuestion, QuizQuestionOption, QuizQuestionAnswer,
-    QuizConfig,
+    QuizConfig, UserQuizProgress,
     # System models
     SystemConfig, Notification, AuditLog
 )
@@ -742,6 +742,7 @@ class QuizQuestionManageSerializer(serializers.ModelSerializer):
         model = QuizQuestion
         fields = [
             'id',
+            'status',
             'question_type',
             'content',
             'explanation',
@@ -852,8 +853,8 @@ class QuizListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
         fields = ['id', 'title', 'description', 'status', 'tags',
-                  'quiz_point', 'total_questions', 'time_limit_sec']
-        read_only_fields = ['id']
+                  'quiz_point', 'total_questions', 'time_limit_sec', 'updated_at']
+        read_only_fields = ['id', 'updated_at']
 
     def get_tags(self, obj):
         return QuizTagSerializer(
@@ -871,8 +872,8 @@ class QuizDetailSerializer(serializers.ModelSerializer):
         model = Quiz
         fields = ['id', 'title', 'description', 'status', 'tags',
                   'quiz_point', 'total_questions', 'time_limit_sec',
-                  'questions']
-        read_only_fields = ['id']
+                  'updated_at', 'questions']
+        read_only_fields = ['id', 'updated_at']
 
     def get_tags(self, obj):
         return QuizTagSerializer(
@@ -916,6 +917,26 @@ class QuizConfigSerializer(serializers.ModelSerializer):
         if value is not None and value <= 0:
             raise serializers.ValidationError('max_attempt must be > 0 when provided.')
         return value
+
+
+class UserQuizProgressSerializer(serializers.ModelSerializer):
+    """User quiz progress serializer for GET /api/quiz/quizzes/{id}/progress/."""
+
+    user_id = serializers.IntegerField(source='user_id', read_only=True)
+    quiz_id = serializers.IntegerField(source='quiz_id', read_only=True)
+
+    class Meta:
+        model = UserQuizProgress
+        fields = [
+            'id',
+            'user_id',
+            'quiz_id',
+            'best_score',
+            'attempt_count',
+            'first_attempted_at',
+            'last_attempted_at',
+        ]
+        read_only_fields = fields
 
 
 # ============================================================================

@@ -33,9 +33,8 @@ export interface User {
   readonly updated_at?: string
 }
 
-/** User extended profile (one-to-one with User) */
+/** User extended profile (one-to-one with User) — matches UserProfileSerializer */
 export interface UserProfile {
-  readonly id?: number
   readonly user_id: number
   readonly username: string
   readonly entry_year?: number
@@ -54,8 +53,6 @@ export interface UserProfile {
   readonly challenge_completed: number
   readonly quiz_completed: number
   readonly last_active_at?: string
-  readonly created_at?: string
-  readonly updated_at?: string
 }
 
 /**
