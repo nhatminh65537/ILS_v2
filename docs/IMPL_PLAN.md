@@ -912,9 +912,10 @@ GET       /api/users/{username}/activity/  → public last 30 events
 
 ### Task 8.2 — Admin user management API
 ```
-GET  /api/admin/users/         → list with filters
-POST /api/admin/users/         → create user
-PUT  /api/admin/users/{id}/    → update is_active, roles
+GET       /api/admin/users/         → list with filters (is_active, date_joined_from, date_joined_to)
+POST      /api/admin/users/         → create user (optional password, default Member role)
+GET       /api/admin/users/{id}/    → user detail with profile and assigned roles
+PUT/PATCH /api/admin/users/{id}/    → update is_active, roles; disable revokes all sessions
 ```
 
 ### Task 8.3 — Frontend: Profile page

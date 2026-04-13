@@ -23,7 +23,7 @@ from .models import (
     # Quiz models
     Quiz, QuizNode, QuizCategory, QuizTag, QuizTagMap,
     QuizQuestion, QuizQuestionOption, QuizQuestionAnswer,
-    UserQuizAttempt, UserQuizAnswer, QuizConfig,
+    QuizConfig,
     # System models
     SystemConfig, Notification, AuditLog
 )
@@ -879,23 +879,6 @@ class QuizDetailSerializer(serializers.ModelSerializer):
             [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
             many=True
         ).data
-
-
-class QuizAnswerSubmitSerializer(serializers.Serializer):
-    """Serializer for quiz answer submission"""
-    question_id = serializers.IntegerField()
-    answer_data = serializers.JSONField()
-
-
-class UserQuizAttemptSerializer(serializers.ModelSerializer):
-    """User quiz attempt serializer"""
-    quiz_title = serializers.CharField(source='quiz.title', read_only=True)
-    
-    class Meta:
-        model = UserQuizAttempt
-        fields = ['id', 'quiz', 'quiz_title', 'user', 'config',
-                  'started_at', 'finished_at', 'total_score', 'is_finished']
-        read_only_fields = ['id', 'total_score', 'is_finished']
 
 
 class QuizConfigSerializer(serializers.ModelSerializer):

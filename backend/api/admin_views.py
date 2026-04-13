@@ -6,7 +6,6 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
@@ -40,7 +39,6 @@ class AdminUserViewSet(
 
     queryset = User.objects.all()
     serializer_class = AdminUserManagementSerializer
-    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
     action_permission_map = {
         'list': 'api.admin_user.list',
         'retrieve': 'api.admin_user.retrieve',
@@ -141,8 +139,6 @@ class PermissionViewSet(RBACActionPermissionMixin, viewsets.ReadOnlyModelViewSet
 
     queryset = Permission.objects.all().order_by('id')
     serializer_class = PermissionTreeSerializer
-    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
-
     action_permission_map = {
         'list': 'api.permission.list',
         'retrieve': 'api.permission.retrieve',
@@ -162,8 +158,6 @@ class RoleViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
-
     action_permission_map = {
         'list': 'api.role.list',
         'retrieve': 'api.role.retrieve',
@@ -263,8 +257,6 @@ class RoleViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
 @add_role_granted('Admin')
 class UserRoleViewSet(RBACActionPermissionMixin, viewsets.ViewSet):
     """User role assignment viewset."""
-
-    permission_classes = [IsAuthenticated, permissions.IsAdminUser]
 
     action_permission_map = {
         'list': 'api.user_role.list',

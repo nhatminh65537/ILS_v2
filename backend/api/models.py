@@ -1178,6 +1178,7 @@ class QuizQuestion(FullAudit):
         db_table = 'quiz_question'
         indexes = [
             models.Index(fields=['quiz']),
+            models.Index(fields=['quiz', 'status']),
         ]
         ordering = ['position']
 
@@ -1234,7 +1235,7 @@ class QuizQuestion(FullAudit):
     def _validate_fill_blank(self, answer_payload):
         """Validate fill in the blank answer"""
         try:
-            submitted_answer = answer_payload.get('text', answer_payload.get('answer', '')).strip()
+            submitted_answer = answer_payload.get('text', '').strip()
             
             # Check against all possible answers
             for ans in self.answers.all():
@@ -1615,7 +1616,7 @@ class UserAuthProvider(FullAudit):
         db_column='user_id'
     )
     provider = models.CharField(
-        max_length=20,
+        max_length=50,
         choices=Provider.choices
     )
     external_id = models.TextField()

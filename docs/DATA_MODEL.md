@@ -104,12 +104,14 @@ One-to-one extended profile. Created automatically on user creation.
 #### `user_identity`
 SSO provider links. A user can have multiple identities (one per provider).
 
+> **Python class:** `UserAuthProvider` (`db_table = 'user_identity'`)
+
 | Field | Type | Constraints |
 |-------|------|-------------|
 | `id` | BIGSERIAL | PK |
 | `user_id` | BIGINT | NOT NULL, FK → user(id) CASCADE |
-| `provider` | VARCHAR(50) | NOT NULL |
-| `external_id` | VARCHAR(255) | NOT NULL |
+| `provider` | VARCHAR(50) | NOT NULL, `max_length=50` in ORM |
+| `external_id` | TEXT | NOT NULL — unbounded (some providers use long JWT-based sub claims) |
 | `extra_data` | JSONB | nullable — raw claims from provider |
 | `is_primary` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
@@ -717,14 +719,17 @@ Aggregate progress per (user, quiz). Updated via Django signal on attempt comple
 
 | Field | Type | Constraints |
 |-------|------|-------------|
-| `user_id` | BIGINT | PK part, FK → user(id) CASCADE |
-| `quiz_id` | BIGINT | PK part, FK → quiz(id) CASCADE |
+| `id` | BIGSERIAL | PK (auto — Django ORM FullAudit pattern) |
+| `user_id` | BIGINT | NOT NULL, FK → user(id) CASCADE |
+| `quiz_id` | BIGINT | NOT NULL, FK → quiz(id) CASCADE |
 | `best_score` | INT | DEFAULT 0 |
 | `attempt_count` | INT | DEFAULT 0 |
 | `first_attempted_at` | TIMESTAMPTZ | nullable |
 | `last_attempted_at` | TIMESTAMPTZ | nullable |
 | `completed_at` | TIMESTAMPTZ | nullable |
 | *(audit fields)* | | |
+
+**Note:** ORM uses auto `id` PK + `UNIQUE(user_id, quiz_id)` constraint (standard Django pattern). `updated_at` from FullAudit reflects when the aggregate was last recalculated by signal.
 
 ---
 

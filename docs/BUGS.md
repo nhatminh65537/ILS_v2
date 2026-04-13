@@ -9,17 +9,22 @@
 
 ### High — Breaks functionality
 
-*None currently.*
+| # | File | Description | Fix |
+|---|------|-------------|-----|
+| H1 | `api/admin_views.py` | `AdminUserViewSet`, `PermissionViewSet`, `RoleViewSet`, `UserRoleViewSet` dùng `permission_classes = [IsAuthenticated, IsAdminUser]` — `IsAdminUser` kiểm tra `is_staff=True` (Django built-in), vi phạm ARCHITECTURE.md §7 "Never use Django built-in permission system". User có role "Admin" nhưng `is_staff=False` bị block. `SystemConfigViewSet` không có `RBACActionPermissionMixin` nên `@add_role_granted('Admin')` chỉ tạo DB entry nhưng không enforce runtime. Partial fix (2026-04-13): mixin default đổi thành `(IsAuthenticated,)` cho các viewsets có mixin; `SystemConfigViewSet` cần full fix ở H2. | Xem H2. |
 
 ### Medium — Degrades functionality
 
-*None currently.*
+| # | File | Description | Fix |
+|---|------|-------------|-----|
+| M1 | `api/mixins/rbac_action_permission.py` + `api/admin_views.py` | **Design bug: `action_permission_map` và `HasJWTPermission` hardcode tên permission dạng string** (ví dụ `'api.admin_user.list'`). Vấn đề: (1) `discover_permissions()` tại startup tự derive tên từ class name + handler name — cùng công thức nhưng hai nơi phải đồng bộ bằng tay; (2) Nếu rename ViewSet hay handler, tất cả string trong `action_permission_map` phải sửa theo, dễ mismatch và silent failure; (3) `@action(permission_classes=[HasJWTPermission('api.role.list')])` trong decorator cũng là hardcode tương tự. **Fix đúng:** `RBACActionPermissionMixin.get_permissions()` nên tự derive permission name theo cùng công thức với `discover_permissions()` — `{app_label}.{normalize(ClassName)}.{action}` — thay vì lookup `action_permission_map`. Khi đó `action_permission_map` chỉ dùng để override ngoại lệ. Đây cũng giải quyết hoàn toàn H1 cho mọi viewset kể cả không có mixin. | Implement auto-derive trong mixin: extract `_normalize_resource_name` và `_extract_app_label` từ `permission_discovery.py` thành shared utility, gọi trong `get_permissions()` để derive tên tự động. |
 
 ### Low — Minor issues / tech debt
 
 | # | File | Description | Fix |
 |---|------|-------------|-----|
 | L1 | `ai/services/llm_client.py` | LLM client is a mock — always returns a hardcoded string. | Implement real provider call in Slice 10 (deferred). |
+| L2 | `api/models.py` | `QuizQuestion` thiếu composite index trên `(quiz, status)` — field `status` được filter thường xuyên nhưng chỉ có index trên `quiz` đơn lẻ. | Thêm `models.Index(fields=['quiz', 'status'])` trong Meta. |
 
 ---
 

@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-02
+> Last updated: 2026-04-13
 
 ---
 
@@ -26,9 +26,8 @@ Primary references:
 - Project progress gate: `docs/STATUS.md`, `docs/IMPL_PLAN.md`
 
 Compatibility note:
-- Section 3 lists currently active runtime routes (including legacy non-namespaced endpoints still present in code).
+- Section 3 lists currently active runtime routes. Legacy flat routes (e.g., `/api/quizzes/*`) have been removed and return 404.
 - Target feature contracts for upcoming slices follow namespaced routes (`/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`) and are tracked in Section 4 + `docs/IMPL_PLAN.md`.
-- Legacy-to-target endpoint mapping is maintained in `docs/API_ROUTE_MAPPING.md`.
 
 ---
 
@@ -162,13 +161,10 @@ Historical/runtime note:
 
 ### 3.6 Quizzes
 
-Historical/runtime note:
-- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
-- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
-
 Task 7.1 update (2026-04-01):
 - Canonical namespaced routes for quiz CRUD/question/config are now active under `/api/quiz/quizzes/*`.
-- Legacy routes (`/api/quizzes/*`) remain active for compatibility during migration.
+- Legacy flat routes (`/api/quizzes/*`) have been removed; `GET /api/quizzes/` returns 404.
+- Session lifecycle (start/answer/finish) is handled exclusively via WebSocket — see §3.6.1.
 
 Task 7.2 update (2026-04-01):
 - QuizNode tree CRUD endpoints are active under `/api/quiz/nodes/*`.
@@ -176,13 +172,6 @@ Task 7.2 update (2026-04-01):
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/quizzes/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
-| POST | `/api/quizzes/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
-| GET | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
-| PUT/PATCH | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
-| DELETE | `/api/quizzes/{id}/` | Yes | Partial | Runtime route exists; full Slice 7 lifecycle contract is pending. |
-| POST | `/api/quizzes/{id}/start_attempt/` | Yes | Partial | Runtime route exists; full scoring/session lifecycle is pending. |
-| POST | `/api/quizzes/{id}/submit_answer/` | Yes | Partial | Depends on complete scoring/session persistence flow. |
 | GET | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced list endpoint for Slice 7 Task 7.1; members see published quizzes only. |
 | POST | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced create endpoint; editor/admin role required. |
 | GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced detail endpoint. |
