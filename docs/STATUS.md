@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-13 (Task 1.4A completed)
+> Last updated: 2026-04-13 (Slice 8 Task 8.5 completed)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -101,6 +101,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 / Task 7.4 (2026-04-01) | Quiz progress tracking signal handler implemented: Django `post_save` signal on `UserQuizAttempt` automatically updates `UserQuizProgress` with aggregated `best_score`, `attempt_count`, `first_attempted_at`, `last_attempted_at`, and `completed_at` fields; signal handler idempotent and tested with 13 comprehensive pytest tests covering edge cases (perfect score detection, timestamp tracking, multi-user/multi-quiz separation). |
 | Slice 8 / Task 8.2 (2026-04-02) | Admin user management API completed at `/api/admin/users/*` with list filters (`is_active`, `date_joined_from`, `date_joined_to`), optional-password admin create with default Member role assignment, detailed update responses (`user + profile + roles`), and immediate session revocation on disable; focused pytest suite `backend/api/test_admin_users_task8_2.py` passing (`5 passed`). |
 | Slice 8 / Task 8.3 (2026-04-10) | Frontend profile pages implemented: `ProfileEditForm` (PATCH `/me/profile/`), `AppSettingsForm` (PATCH `/me/settings/`), `AccountForm` (PATCH `/me/account/`), `PublicProfileView` (public profile), `ProfileSettingsView` (settings orchestrator); pages `/profile/[username]` and `/profile/settings` wired and building; `/profile` redirects to settings; avatar dropdown updated to "Hồ sơ" (public view) + "Cài đặt" (settings); MSW mock coverage complete for all Task 8.1 endpoints; `tsc`, lint, and `next build` all pass. |
+| Slice 8 / Task 8.5 (2026-04-13) | Frontend session management page implemented at `/{locale}/profile/sessions` with active session listing (`device_info`, `created_at`, `last_used_at`, `expires_at`), deterministic current-session highlight, protected current-session revoke guard, per-session revoke flow, bulk "revoke all other sessions" flow via `DELETE /api/auth/sessions/{id}/`, new i18n keys (`navigation.sessions`, `profile.sessions.*`), navigation link integration, and MSW auth session handlers; `tsc` and `next build` pass. |
 | Slice 7 / Task 7.5 (2026-04-10) | Frontend quiz browser implemented: catalog page (`/quizzes`) with sticky filter panel (search, time-limit Select, tag pills), detail page (`/quizzes/[id]`) with metadata, progress card, and "Start" link; `useQuizzes` hook for catalog + detail data-fetching; full quiz type alignment with backend serializers (`time_limit_sec`, `quiz_point`, `total_questions`, removed `pass_score_percent`/`is_shuffled`); MSW fixtures/handlers updated to match; all native `<select>` elements replaced with shadcn `<Select>` across admin UI; `(catalog)` route group introduced with `showSidebar=false` layout — catalog pages render their own internal two-column filter+content layout; Quizzes added to navbar/sidebar navigation; `tsc`, lint, and `next build` all pass. |
 | Slice 7 / Task 7.6 (2026-04-10) | Frontend WebSocket quiz session implemented: `useQuizSession` hook with `useReducer` state machine (`idle→connecting→authenticating→active→finished/error`), first-message JWT auth, full protocol (start/answer/next/finish); `QuizQuestionView` renders all 3 question types (RadioGroup/Checkbox/Input); `QuizAnswerResultCard` shows correct/incorrect feedback + explanation; `QuizFinishScreen` shows score/maxScore/%/duration with Back+TryAgain; `QuizSessionClient` orchestrates based on status+phase; RSC page at `app/[locale]/(catalog)/quizzes/[id]/session/page.tsx`; MSW v2 `ws` handler simulates full protocol using fixture data; shadcn `radio-group`, `checkbox`, `progress` installed; WS types added to `quiz.types.ts`; i18n keys added under `quizzes.session.*`; fixed MSW URL pattern (env-var-derived, not glob) and `onclose` now surfaces auth-rejection as error; `tsc` and `next build` both pass. |
 
@@ -132,6 +133,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 / Task 7.1 (2026-04-01) | `docs/reports/2026-04-01_slice7-task7-1-quiz-crud-api.md` |
 | Slice 8 / Task 8.2 (2026-04-02) | `docs/reports/2026-04-02_slice8-task8-2-admin-user-management-api.md` |
 | Slice 8 / Task 8.3 (2026-04-10) | `docs/reports/2026-04-10_slice8-task8-3-frontend-profile-ui.md` |
+| Slice 8 / Task 8.5 (2026-04-13) | `docs/reports/2026-04-13_slice8-task8-5-frontend-session-management.md` |
 | Slice 7 / Task 7.5 (2026-04-10) | `docs/reports/2026-04-10_slice7-task7-5-frontend-quiz-browser.md` |
 | Slice 8 / Task 8.4 (2026-04-10) | `docs/reports/2026-04-10_slice8-task8-4-frontend-admin-users.md` |
 | Slice 7 / Task 7.6 (2026-04-10) | `docs/reports/2026-04-10_slice7-task7-6-frontend-quiz-session.md` |
@@ -227,6 +229,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Admin user management API | Low | ✅ Completed 2026-04-02: `/api/admin/users/`, `/api/admin/users/{id}/` with filters + role update + disable-session revoke behavior |
 | Frontend: Profile + settings pages | Low | ✅ Completed 2026-04-10: `/profile/[username]` (public) + `/profile/settings` (own settings); avatar dropdown with "Hồ sơ" / "Cài đặt" pattern |
 | Frontend: Admin user management | Low | ✅ Completed 2026-04-10: `/{locale}/admin/users` — paginated user table; search + `is_active` filter; activate/deactivate toggle (deactivate has confirmation dialog); "Manage roles" link to `/admin/rbac/users/{id}/roles`; create-user dialog; MSW handlers added for all 4 admin user endpoints |
+| Frontend: Session management page | Low | ✅ Completed 2026-04-13: `/{locale}/profile/sessions` with current-session protection, revoke one, revoke all other sessions, dropdown/settings navigation entry, and MSW support for `/api/auth/sessions/*` |
 
 ### Slice 9 — Notifications
 

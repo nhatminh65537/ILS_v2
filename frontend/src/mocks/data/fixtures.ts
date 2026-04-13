@@ -3,7 +3,7 @@ import { ContentStatus as CourseStatus, type Course, type CourseCategory, type C
 import { type LeaderboardEntry } from '@/types/leaderboard.types'
 import { NotificationType, type Notification } from '@/types/notification.types'
 import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizAttempt, type QuizQuestion, type UserQuizProgress } from '@/types/quiz.types'
-import { type ActivityEvent, type AdminUserDto, type User, type UserProfile } from '@/types/user.types'
+import { type ActivityEvent, type AdminUserDto, type AuthSessionListItem, type User, type UserProfile } from '@/types/user.types'
 
 const now = '2026-03-31T09:00:00.000Z'
 
@@ -175,6 +175,10 @@ export const quizQuestionsFixture: QuizQuestion[] = [
     score: 1,
     case_sensitive: false,
     explanation: 'SHA-256 is a cryptographic hash function.',
+    answers: [
+      { id: 31, answer: 'hash' },
+      { id: 32, answer: 'hash function' },
+    ],
     created_at: now,
     updated_at: now,
   },
@@ -232,6 +236,30 @@ export const activityFixture: ActivityEvent[] = [
   { type: 'challenge_solve', timestamp: '2026-04-02T16:00:00.000Z', item_title: 'JWT Pwn', source_id: 3 },
   { type: 'quiz_complete', timestamp: '2026-04-01T13:00:00.000Z', item_title: 'Crypto Warmup', source_id: 3 },
   { type: 'lesson_complete', timestamp: '2026-03-31T09:00:00.000Z', item_title: 'Network Basics Intro', source_id: 6 },
+]
+
+export const authSessionsFixture: AuthSessionListItem[] = [
+  {
+    id: 101,
+    device_info: 'Chrome on Windows',
+    last_used_at: '2026-04-13T08:30:00.000Z',
+    expires_at: '2026-04-20T08:30:00.000Z',
+    created_at: '2026-04-13T08:00:00.000Z',
+  },
+  {
+    id: 102,
+    device_info: 'Safari on iPhone',
+    last_used_at: '2026-04-12T20:15:00.000Z',
+    expires_at: '2026-04-19T20:15:00.000Z',
+    created_at: '2026-04-10T20:15:00.000Z',
+  },
+  {
+    id: 103,
+    device_info: 'Firefox on Linux',
+    last_used_at: '2026-04-11T09:45:00.000Z',
+    expires_at: '2026-04-18T09:45:00.000Z',
+    created_at: '2026-04-08T09:45:00.000Z',
+  },
 ]
 
 // ─── Admin role summaries (must mirror roles in rbac.handlers.ts) ─────────────

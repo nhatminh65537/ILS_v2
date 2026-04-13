@@ -5,6 +5,7 @@
 
 import apiClient from '@/lib/axios'
 import type {
+  AuthSessionListItem,
   RegisterPayload,
   LoginPayload,
   AuthResponse,
@@ -58,6 +59,23 @@ export const logout = async (payload: LogoutPayload): Promise<void> => {
  */
 export const logoutAll = async (): Promise<void> => {
   await apiClient.post('/api/auth/logout-all/')
+}
+
+/**
+ * GET /api/auth/sessions/
+ * Lists active sessions for authenticated user
+ */
+export const listSessions = async (): Promise<AuthSessionListItem[]> => {
+  const response = await apiClient.get('/api/auth/sessions/')
+  return response.data
+}
+
+/**
+ * DELETE /api/auth/sessions/{id}/
+ * Revokes one active owned session
+ */
+export const revokeSession = async (sessionId: number): Promise<void> => {
+  await apiClient.delete(`/api/auth/sessions/${sessionId}/`)
 }
 
 export const startSsoRedirect = (): void => {

@@ -118,6 +118,15 @@ export interface UserSession {
   readonly updated_at: string
 }
 
+/** Session list payload item from GET /api/auth/sessions/ */
+export interface AuthSessionListItem {
+  readonly id: number
+  readonly device_info?: string
+  readonly last_used_at?: string
+  readonly expires_at?: string
+  readonly created_at: string
+}
+
 /** Auth request/response payloads */
 export interface RegisterPayload {
   username: string

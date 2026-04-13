@@ -20,7 +20,8 @@
     "login": "Đăng nhập",
     "register": "Đăng ký",
     "profile": "Hồ sơ",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "sessions": "Phiên đăng nhập"
   },
   "home": {
     "headline": "Nền tảng học an toàn thông tin có cấu trúc cho đội nhóm nhỏ",
@@ -479,6 +480,52 @@
     "passwordPending": "Tính năng đổi mật khẩu sẽ có trong cập nhật tiếp theo.",
     "ssoSection": "Liên kết SSO",
     "ssoPending": "Quản lý liên kết SSO sẽ có trong cập nhật tiếp theo.",
+    "sessions": {
+      "title": "Quản lý phiên đăng nhập",
+      "subtitle": "Xem các thiết bị đang hoạt động và thu hồi phiên không còn tin cậy.",
+      "sectionTitle": "Phiên đang hoạt động",
+      "columns": {
+        "device": "Thiết bị",
+        "createdAt": "Khởi tạo",
+        "lastUsedAt": "Sử dụng gần nhất",
+        "expiresAt": "Hết hạn",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "status": {
+        "current": "Phiên hiện tại",
+        "active": "Đang hoạt động"
+      },
+      "actions": {
+        "revokeOne": "Thu hồi",
+        "revokeAllOther": "Thu hồi tất cả phiên khác"
+      },
+      "confirm": {
+        "revokeOneTitle": "Thu hồi phiên này?",
+        "revokeOneDescription": "Thiết bị '{device}' sẽ bị đăng xuất.",
+        "revokeAllTitle": "Thu hồi tất cả phiên khác?",
+        "revokeAllDescription": "Thiết bị hiện tại vẫn được giữ đăng nhập, mọi phiên khác sẽ bị thu hồi.",
+        "cancel": "Hủy",
+        "confirm": "Xác nhận"
+      },
+      "success": {
+        "revokeOne": "Thu hồi phiên thành công.",
+        "revokeAll": "Đã thu hồi tất cả phiên khác thành công."
+      },
+      "errors": {
+        "loadFailed": "Tải danh sách phiên thất bại.",
+        "revokeFailed": "Thu hồi phiên thất bại.",
+        "revokeAllFailed": "Thu hồi tất cả phiên khác thất bại.",
+        "currentSessionProtected": "Không thể thu hồi phiên hiện tại."
+      },
+      "empty": {
+        "noSessions": "Không tìm thấy phiên hoạt động nào."
+      },
+      "fallback": {
+        "unknownDevice": "Thiết bị không xác định",
+        "notAvailable": "Không có"
+      }
+    },
     "activityEmpty": "Chưa có hoạt động nào được ghi nhận.",
     "activityTypes": {
       "lesson_complete": "Hoàn thành bài học",

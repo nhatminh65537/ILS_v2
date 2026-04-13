@@ -80,9 +80,7 @@ Route-level inventory for frontend pages across Slices 1–11.
 |---|---|---|---|---|---|---|---|
 | `/vi/profile/[username]` `/en/profile/[username]` | Public profile | Yes | `[locale]/(app)` | `auth.store` | `users.getPublicProfile`, `users.getPublicActivity` | 8 | implemented |
 | `/vi/profile/settings` `/en/profile/settings` | Profile settings | Yes | `[locale]/(app)` | `auth.store` | `users.getMyProfile`, `users.updateMyProfile`, `users.updateMySettings`, `users.updateMyAccount` | 8 | implemented |
-| `/vi/profile/sessions` `/en/profile/sessions` | Session management | Yes | `[locale]/(app)` | `auth.store` | `auth.listSessions`, `auth.revokeSession` | 1 | planned |
-
-> ⚠️ `/profile/sessions` phụ thuộc vào Task 1.4 (session management API) hoàn thành.
+| `/vi/profile/sessions` `/en/profile/sessions` | Session management | Yes | `[locale]/(app)` | `auth.store` | `auth.listSessions`, `auth.revokeSession` | 8 | implemented |
 
 ---
 
@@ -228,5 +226,5 @@ frontend/app/
 - **Implemented** admin pages: RBAC (`/admin/rbac/*`) and System Config (`/admin/config`). All remaining admin pages are `planned`.
 - **Content management pages** (`/admin/learn/*`, `/admin/challenges/*`, `/admin/quizzes/*`) are accessible by both Admin and Editor roles; instance kill and user management require Admin role.
 - **Category/Tag management** for each domain is handled inline (via modal or slide-over) within the respective content list page — no separate routes to avoid route explosion.
-- **Password reset UI** (`/forgot-password`, `/reset-password`) and **session management** (`/profile/sessions`) depend on Task 1.4 (email backend + session API) being completed first.
+- **Password reset UI** (`/forgot-password`, `/reset-password`) vẫn phụ thuộc Task 1.4B (email backend) hoàn thành.
 - Planned routes align with `docs/IMPL_PLAN.md` slices and API inventory in `docs/API.md`.

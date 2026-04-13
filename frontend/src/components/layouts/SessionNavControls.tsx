@@ -74,6 +74,9 @@ export function SessionNavControls({ locale }: SessionNavControlsProps) {
         <DropdownMenuItem asChild>
           <Link href={`/${locale}/profile/settings`}>{tNav('settings')}</Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`/${locale}/profile/sessions`}>{tNav('sessions')}</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={isLoading} onSelect={() => void handleLogout()} variant="destructive">
           {tAuth('logout')}

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { usersFixture } from '@/mocks/data/fixtures'
+import { authSessionsFixture, usersFixture } from '@/mocks/data/fixtures'
 import {
   buildMockAccessToken,
   buildMockRefreshToken,
@@ -7,7 +7,7 @@ import {
   parseUserIdFromRefreshToken,
   permissionFixtures,
 } from '@/mocks/handlers/admin-permissions'
-import { badRequest } from '@/mocks/handlers/shared'
+import { badRequest, parseNumericId } from '@/mocks/handlers/shared'
 
 const ssoRedirectUrl = 'https://authentik.local/application/o/authorize/?client_id=ils&mock=true'
 
@@ -56,6 +56,63 @@ const resolveAccessToken = (request: Request): string | null => {
     return null
   }
   return raw.slice('Bearer '.length)
+}
+
+const decodeBase64Url = (value: string): string => {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+  const padLength = (4 - (normalized.length % 4)) % 4
+  return atob(normalized.padEnd(normalized.length + padLength, '='))
+}
+
+const parseUserIdFromAccessToken = (accessToken: string | null): number | null => {
+  if (!accessToken) {
+    return null
+  }
+
+  const segments = accessToken.split('.')
+  if (segments.length < 2) {
+    return null
+  }
+
+  try {
+    const payload = JSON.parse(decodeBase64Url(segments[1])) as { sub?: string }
+    const userId = Number(payload.sub)
+    return Number.isInteger(userId) && userId > 0 ? userId : null
+  } catch {
+    return null
+  }
+}
+
+const sortSessions = (
+  sessions: ReadonlyArray<(typeof authSessionsFixture)[number]>
+): (typeof authSessionsFixture)[number][] => {
+  return [...sessions].sort((a, b) => {
+    const left = Date.parse(a.last_used_at ?? '')
+    const right = Date.parse(b.last_used_at ?? '')
+    const leftTime = Number.isNaN(left) ? 0 : left
+    const rightTime = Number.isNaN(right) ? 0 : right
+    const delta = rightTime - leftTime
+    if (delta !== 0) {
+      return delta
+    }
+    return b.id - a.id
+  })
+}
+
+const userSessions = new Map<number, typeof authSessionsFixture>()
+
+const getUserSessions = (userId: number): typeof authSessionsFixture => {
+  const existing = userSessions.get(userId)
+  if (existing) {
+    return existing
+  }
+
+  const seeded = authSessionsFixture.map((session) => ({
+    ...session,
+    id: userId * 1000 + session.id,
+  }))
+  userSessions.set(userId, seeded)
+  return seeded
 }
 
 const unauthorized = () =>
@@ -184,6 +241,46 @@ export const authHandlers = [
       },
       { status: 200 }
     )
+  }),
+
+  http.get('*/api/auth/sessions/', ({ request }) => {
+    const accessToken = resolveAccessToken(request)
+    if (!accessToken) {
+      return unauthorized()
+    }
+
+    const userId = parseUserIdFromAccessToken(accessToken)
+    if (!userId) {
+      return unauthorized()
+    }
+
+    return HttpResponse.json(sortSessions(getUserSessions(userId)))
+  }),
+
+  http.delete('*/api/auth/sessions/:id/', ({ request, params }) => {
+    const accessToken = resolveAccessToken(request)
+    if (!accessToken) {
+      return unauthorized()
+    }
+
+    const userId = parseUserIdFromAccessToken(accessToken)
+    if (!userId) {
+      return unauthorized()
+    }
+
+    const sessionId = parseNumericId(String(params.id))
+    if (!sessionId) {
+      return HttpResponse.json({ detail: 'Session not found.' }, { status: 404 })
+    }
+
+    const sessions = getUserSessions(userId)
+    const index = sessions.findIndex((item) => item.id === sessionId)
+    if (index < 0) {
+      return HttpResponse.json({ detail: 'Session not found.' }, { status: 404 })
+    }
+
+    sessions.splice(index, 1)
+    return new HttpResponse(null, { status: 204 })
   }),
 
   http.get('*/api/auth/sso/redirect/', () => new HttpResponse(null, { status: 302, headers: { Location: ssoRedirectUrl } })),

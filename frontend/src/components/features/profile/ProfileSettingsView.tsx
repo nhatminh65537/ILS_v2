@@ -1,7 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getMyProfile } from '@/services/users.service'
@@ -10,8 +12,13 @@ import { AccountForm } from './AccountForm'
 import { AppSettingsForm } from './AppSettingsForm'
 import { ProfileEditForm } from './ProfileEditForm'
 
-export function ProfileSettingsView() {
+type ProfileSettingsViewProps = {
+  locale: string
+}
+
+export function ProfileSettingsView({ locale }: ProfileSettingsViewProps) {
   const t = useTranslations('profile')
+  const tNav = useTranslations('navigation')
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -80,6 +87,19 @@ export function ProfileSettingsView() {
         </CardHeader>
         <CardContent>
           <AccountForm profile={profile} />
+        </CardContent>
+      </Card>
+
+      {/* Session management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('sessions.title')}</CardTitle>
+          <CardDescription>{t('sessions.subtitle')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline">
+            <Link href={`/${locale}/profile/sessions`}>{tNav('sessions')}</Link>
+          </Button>
         </CardContent>
       </Card>
 

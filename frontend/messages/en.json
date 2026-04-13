@@ -20,7 +20,8 @@
     "login": "Login",
     "register": "Register",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sessions": "Sessions"
   },
   "home": {
     "headline": "A structured cybersecurity learning platform for small teams",
@@ -479,6 +480,52 @@
     "passwordPending": "Password change will be available in a future update.",
     "ssoSection": "SSO Identity",
     "ssoPending": "SSO identity management will be available in a future update.",
+    "sessions": {
+      "title": "Session Management",
+      "subtitle": "Review active devices and revoke sessions you no longer trust.",
+      "sectionTitle": "Active Sessions",
+      "columns": {
+        "device": "Device",
+        "createdAt": "Created",
+        "lastUsedAt": "Last used",
+        "expiresAt": "Expires",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "current": "Current session",
+        "active": "Active"
+      },
+      "actions": {
+        "revokeOne": "Revoke",
+        "revokeAllOther": "Revoke all other sessions"
+      },
+      "confirm": {
+        "revokeOneTitle": "Revoke this session?",
+        "revokeOneDescription": "This will sign out device '{device}'.",
+        "revokeAllTitle": "Revoke all other sessions?",
+        "revokeAllDescription": "This keeps your current device signed in and revokes all other active sessions.",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "success": {
+        "revokeOne": "Session revoked successfully.",
+        "revokeAll": "All other sessions revoked successfully."
+      },
+      "errors": {
+        "loadFailed": "Failed to load sessions.",
+        "revokeFailed": "Failed to revoke session.",
+        "revokeAllFailed": "Failed to revoke all other sessions.",
+        "currentSessionProtected": "Current session cannot be revoked."
+      },
+      "empty": {
+        "noSessions": "No active sessions found."
+      },
+      "fallback": {
+        "unknownDevice": "Unknown device",
+        "notAvailable": "N/A"
+      }
+    },
     "activityEmpty": "No activity recorded yet.",
     "activityTypes": {
       "lesson_complete": "Completed lesson",

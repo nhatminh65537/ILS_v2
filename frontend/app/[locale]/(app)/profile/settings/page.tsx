@@ -6,7 +6,7 @@ type ProfileSettingsPageProps = {
 }
 
 export default async function ProfileSettingsPage({ params }: ProfileSettingsPageProps) {
-  await params
+  const { locale } = await params
   const t = await getTranslations('profile')
 
   return (
@@ -15,7 +15,7 @@ export default async function ProfileSettingsPage({ params }: ProfileSettingsPag
         <h1 className="text-3xl font-semibold md:text-4xl">{t('settingsTitle')}</h1>
         <p className="text-sm text-muted-foreground">{t('settingsSubtitle')}</p>
       </header>
-      <ProfileSettingsView />
+      <ProfileSettingsView locale={locale} />
     </section>
   )
 }
