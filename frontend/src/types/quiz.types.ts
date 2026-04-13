@@ -4,6 +4,8 @@
  * Source of truth: backend/api/models.py Quiz domain (lines 1006–1423)
  */
 
+import type { PaginatedResponse } from '@/types/api'
+
 export enum QuestionType {
   SingleChoice = 'single_choice',
   MultiChoice = 'multi_choice',
@@ -87,8 +89,14 @@ export interface QuizQuestion {
   readonly case_sensitive: boolean
   readonly explanation?: string
   readonly options?: readonly QuizQuestionOption[]
+  readonly answers?: readonly QuizQuestionAnswer[]
   readonly created_at: string
   readonly updated_at: string
+}
+
+export interface QuizQuestionAnswer {
+  readonly id: number
+  readonly answer: string
 }
 
 /**
@@ -176,6 +184,67 @@ export interface CreateQuestionPayload {
   case_sensitive?: boolean
   explanation?: string
 }
+
+export interface AdminQuizListParams {
+  search?: string
+  status?: ContentStatus | 'all'
+  limit?: number
+  offset?: number
+}
+
+export interface AdminQuizMutationPayload {
+  title: string
+  description?: string
+  status: ContentStatus
+  quiz_point?: number
+  time_limit_sec?: number
+}
+
+export interface QuizQuestionOptionInput {
+  content: string
+  position: number
+  is_correct: boolean
+}
+
+export interface QuizQuestionAnswerInput {
+  answer: string
+}
+
+export interface AdminQuizQuestionMutationPayload {
+  question_type: QuestionType
+  content: {
+    text: string
+  }
+  explanation?: string
+  case_sensitive: boolean
+  score: number
+  position: number
+  options?: QuizQuestionOptionInput[]
+  answers?: QuizQuestionAnswerInput[]
+}
+
+export type AdminQuestionFormState =
+  | {
+      question_type: QuestionType.SingleChoice | QuestionType.MultiChoice
+      contentText: string
+      explanation: string
+      case_sensitive: boolean
+      score: number
+      position: number
+      options: QuizQuestionOptionInput[]
+    }
+  | {
+      question_type: QuestionType.FillBlank
+      contentText: string
+      explanation: string
+      case_sensitive: boolean
+      score: number
+      position: number
+      answers: QuizQuestionAnswerInput[]
+    }
+
+export type QuizListResponse = readonly Quiz[] | PaginatedResponse<Quiz>
+export type QuizQuestionsListResponse = readonly QuizQuestion[] | PaginatedResponse<QuizQuestion>
 
 /**
  * start_attempt response matches UserQuizAttemptSerializer

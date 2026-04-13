@@ -35,6 +35,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **ai app**: ⚠️ DEFERRED — scaffold only (AIAskView, 3 modes, mock LLM); NOT in INSTALLED_APPS; do not activate until approved
 - **realtime app**: Django Channels scaffold (empty logic)
 - **auth_app**: Implemented for Slice 1 Task 1.1 + 1.2 auth endpoints (`/api/auth/register`, `/api/auth/login`, `/api/auth/token/refresh`, `/api/auth/logout`, `/api/auth/logout-all`) with session hash tracking, refresh-token rotation, and per-user refresh rate limiting.
+- **frontend quiz admin editor (Slice 7 Task 7.7)**: Admin surface routes `/{locale}/admin/quizzes/*` with metadata CRUD, question CRUD/reorder, member-style preview, typed hooks (`useAdminQuizzes`, `useAdminQuizQuestions`), and canonical service contract `/api/quiz/quizzes/*`.
 - **frontend foundation (Slice 4)**: Next.js locale-first app routes under `app/[locale]`, typed service layer in `src/services`, domain Zustand stores in `src/stores`, MSW mock stack in `src/mocks`, and shadcn primitives in `src/components/ui`.
 - **Abstract ORM**: CreateAudit, UpdateAudit, FullAudit, SoftDeleteAudit, BaseNode, BaseCategory, BaseTag
 - **UserSession model**: Added in `api` for refresh-token session tracking (`user_session` table)
@@ -42,6 +43,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Status
 
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
+- Slice 7 Task 7.7 implemented on 2026-04-13: frontend admin quiz editor complete under `/{locale}/admin/quizzes`, `/{locale}/admin/quizzes/new`, `/{locale}/admin/quizzes/{id}`, `/{locale}/admin/quizzes/{id}/questions` with metadata CRUD, question CRUD for `single_choice`/`multi_choice`/`fill_blank`, deterministic reorder, preview panel, i18n (`admin.quizzes`, `adminQuizzes.*`), and MSW nested question handlers/permission fixtures.
 - Slice 7 Task 7.5 implemented on 2026-04-10: quiz browser frontend complete — catalog page (`/quizzes`) with `QuizFilterPanel` (search + shadcn Select time-limit + tag badge pills), detail page (`/quizzes/[id]`) with progress card; `useQuizzes` hook with parallel `getQuizById`+`getQuizProgress`; all quiz types aligned to backend serializers; `(catalog)` route group introduced; Quizzes added to navbar/sidebar; all native `<select>` elements replaced with shadcn `<Select>` across admin UI.
 - Slice 8 Task 8.4 implemented on 2026-04-10: frontend admin user management page complete at `/{locale}/admin/users` — paginated table (20/page) with search + `is_active` server-side filter; activate/deactivate toggle (deactivate guarded by confirmation dialog); "Manage roles" link → `/admin/rbac/users/{id}/roles`; create-user dialog (username required, email/password optional); `adminUsers` i18n namespace added (EN + VI); MSW handlers (`adminUsersHandlers`) + fixture (`adminUsersFixture`) added for all 4 admin user endpoints; `AdminLayout` extended with `usersLabel` prop + sidebar/top-nav link; i18n double-namespace bug fixed (`errors.*` not `adminUsers.errors.*` inside `useTranslations('adminUsers')`).
 - Slice 8 Task 8.5 implemented on 2026-04-13: frontend session management page complete at `/{locale}/profile/sessions` with `GET/DELETE /api/auth/sessions/*` integration, current-session highlight/protection, per-session revoke, bulk "revoke all other sessions" flow, dropdown/settings navigation entry, locale i18n keys (`navigation.sessions`, `profile.sessions.*`), and MSW mock handlers/fixtures for auth sessions.
@@ -71,6 +73,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Patterns
 
 - **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only
+- **Admin quiz editor contract pattern**: Frontend admin quiz flows must consume canonical namespaced routes (`/api/quiz/quizzes/*`) via service-layer helpers and keep question payloads type-safe by question kind (`single_choice`, `multi_choice`, `fill_blank`) before submit.
 - **Admin user management contract**: use dedicated `/api/admin/users/*` viewset + serializer (do not overload public `UserViewSet`), return `user + profile + roles` after mutations, and revoke all active sessions when `is_active` becomes false.
 - Explicit join tables for M2M (not Django ManyToManyField)
 - All models inherit FullAudit; explicit `db_table` and `db_column` on every model

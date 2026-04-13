@@ -10,6 +10,7 @@ type AdminLayoutProps = {
   rbacLabel: string
   configLabel: string
   usersLabel: string
+  quizzesLabel: string
   userPortalLabel: string
   footerText: string
   children: ReactNode
@@ -24,6 +25,7 @@ export function AdminLayout({
   rbacLabel,
   configLabel,
   usersLabel,
+  quizzesLabel,
   userPortalLabel,
   footerText,
   children,
@@ -32,6 +34,7 @@ export function AdminLayout({
   const rbacHref = `/${locale}/admin/rbac`
   const configHref = `/${locale}/admin/config`
   const usersHref = `/${locale}/admin/users`
+  const quizzesHref = `/${locale}/admin/quizzes`
   const userDashboardHref = `/${locale}/dashboard`
 
   return (
@@ -44,6 +47,7 @@ export function AdminLayout({
         { href: rbacHref, label: rbacLabel },
         { href: configHref, label: configLabel },
         { href: usersHref, label: usersLabel },
+        { href: quizzesHref, label: quizzesLabel },
       ]}
       sidebarTitle={sidebarTitle}
       surfaceLabel={surfaceLabel}
@@ -52,6 +56,7 @@ export function AdminLayout({
         { href: rbacHref, label: rbacLabel },
         { href: configHref, label: configLabel },
         { href: usersHref, label: usersLabel },
+        { href: quizzesHref, label: quizzesLabel },
         { href: userDashboardHref, label: userPortalLabel },
       ]}
     >

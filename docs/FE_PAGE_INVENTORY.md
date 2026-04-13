@@ -210,10 +210,10 @@ frontend/app/
             │   ├── [slug]/flags/page.tsx             planned (Task 6.7)
             │   └── instances/page.tsx               planned (Task 6.7)
             └── quizzes/
-                ├── page.tsx                          planned (Task 7.7)
-                ├── new/page.tsx                      planned (Task 7.7)
-                ├── [id]/page.tsx                     planned (Task 7.7)
-                └── [id]/questions/page.tsx           planned (Task 7.7)
+                ├── page.tsx                          ✅ implemented (Task 7.7)
+                ├── new/page.tsx                      ✅ implemented (Task 7.7)
+                ├── [id]/page.tsx                     ✅ implemented (Task 7.7)
+                └── [id]/questions/page.tsx           ✅ implemented (Task 7.7)
 ```
 
 ---
@@ -223,7 +223,7 @@ frontend/app/
 - Locale-first routing is mandatory for all user-facing pages.
 - Service calls listed here must go through `src/services/*` only — no direct Axios calls in components.
 - Admin surface is route-isolated from user surface; both share one Next.js app but use dedicated layout groups.
-- **Implemented** admin pages: RBAC (`/admin/rbac/*`) and System Config (`/admin/config`). All remaining admin pages are `planned`.
+- **Implemented** admin pages: RBAC (`/admin/rbac/*`), System Config (`/admin/config`), Users (`/admin/users`), and Quizzes (`/admin/quizzes/*`).
 - **Content management pages** (`/admin/learn/*`, `/admin/challenges/*`, `/admin/quizzes/*`) are accessible by both Admin and Editor roles; instance kill and user management require Admin role.
 - **Category/Tag management** for each domain is handled inline (via modal or slide-over) within the respective content list page — no separate routes to avoid route explosion.
 - **Password reset UI** (`/forgot-password`, `/reset-password`) vẫn phụ thuộc Task 1.4B (email backend) hoàn thành.

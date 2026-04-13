@@ -180,6 +180,7 @@
     "rbac": "RBAC",
     "config": "Cấu hình hệ thống",
     "users": "Người dùng",
+    "quizzes": "Quiz",
     "roles": "Vai trò",
     "permissions": "Quyền",
     "portalDescription": "Sử dụng cổng admin riêng để quản lý RBAC và cấu hình runtime.",
@@ -451,6 +452,143 @@
       "loadFailed": "Tải danh sách người dùng thất bại.",
       "toggleFailed": "Cập nhật trạng thái người dùng thất bại.",
       "createFailed": "Tạo người dùng thất bại."
+    }
+  },
+  "adminQuizzes": {
+    "title": "Quản lý Quiz",
+    "subtitle": "Tạo mới, chỉnh sửa, xuất bản và duy trì nội dung quiz cho member.",
+    "listTitle": "Danh sách quiz",
+    "createTitle": "Tạo quiz",
+    "createSubtitle": "Tạo quiz mới rồi tiếp tục quản lý câu hỏi.",
+    "createCardTitle": "Metadata quiz",
+    "editTitle": "Chỉnh sửa quiz",
+    "editSubtitle": "Cập nhật metadata và trạng thái xuất bản quiz.",
+    "editCardTitle": "Metadata quiz",
+    "backToList": "Quay lại danh sách quiz",
+    "confirmDelete": "Xóa quiz '{title}'?",
+    "toolbar": {
+      "searchPlaceholder": "Tìm theo tiêu đề hoặc mô tả",
+      "status": "Trạng thái",
+      "all": "Tất cả",
+      "refresh": "Làm mới"
+    },
+    "status": {
+      "draft": "Nháp",
+      "published": "Đã xuất bản",
+      "archived": "Đã lưu trữ",
+      "saving": "Đang lưu...",
+      "saveSuccess": "Lưu thành công."
+    },
+    "columns": {
+      "title": "Tiêu đề",
+      "status": "Trạng thái",
+      "totalQuestions": "Số câu",
+      "quizPoint": "Điểm",
+      "timeLimit": "Giới hạn (giây)",
+      "updatedAt": "Cập nhật",
+      "actions": "Thao tác"
+    },
+    "pagination": {
+      "total": "Tổng {total} quiz",
+      "page": "Trang {page}",
+      "previous": "Trước",
+      "next": "Tiếp"
+    },
+    "form": {
+      "titleLabel": "Tiêu đề",
+      "titlePlaceholder": "tiêu đề quiz",
+      "descriptionLabel": "Mô tả",
+      "descriptionPlaceholder": "mô tả ngắn cho quiz",
+      "statusLabel": "Trạng thái",
+      "quizPointLabel": "Điểm quiz",
+      "timeLimitLabel": "Giới hạn thời gian (giây)",
+      "timeLimitHint": "Dùng 0 nếu không giới hạn thời gian.",
+      "categoryTagInlineHint": "Quản lý Category/Tag inline sẽ bật khi backend cung cấp contract category-tag đầy đủ."
+    },
+    "questions": {
+      "title": "Quản lý câu hỏi",
+      "subtitle": "Thêm, sửa, sắp xếp thứ tự và xem trước câu hỏi quiz.",
+      "forQuiz": "Quiz: {title}",
+      "listTitle": "Danh sách câu hỏi",
+      "empty": "Chưa có câu hỏi nào.",
+      "confirmDelete": "Xóa câu hỏi này?",
+      "previewTitle": "Xem trước cho member",
+      "previewHint": "Bản xem trước hiển thị đúng cấu trúc câu hỏi mà member nhận trong phiên quiz.",
+      "createTitle": "Tạo câu hỏi",
+      "createDescription": "Khai báo nội dung câu hỏi và dữ liệu kiểm tra đáp án.",
+      "editTitle": "Chỉnh sửa câu hỏi",
+      "editDescription": "Cập nhật nội dung câu hỏi và cài đặt chấm điểm.",
+      "type": {
+        "single_choice": "Một lựa chọn",
+        "multi_choice": "Nhiều lựa chọn",
+        "fill_blank": "Điền chỗ trống"
+      },
+      "columns": {
+        "position": "Vị trí",
+        "type": "Loại",
+        "score": "Điểm",
+        "content": "Nội dung",
+        "actions": "Thao tác"
+      },
+      "actions": {
+        "addQuestion": "Thêm câu hỏi",
+        "addOption": "Thêm lựa chọn",
+        "addAnswer": "Thêm đáp án",
+        "moveUp": "Lên trên",
+        "moveDown": "Xuống dưới",
+        "preview": "Xem trước"
+      },
+      "form": {
+        "typeLabel": "Loại câu hỏi",
+        "scoreLabel": "Điểm",
+        "positionLabel": "Vị trí",
+        "contentLabel": "Nội dung câu hỏi",
+        "contentPlaceholder": "nhập nội dung câu hỏi",
+        "explanationLabel": "Giải thích",
+        "explanationPlaceholder": "giải thích tùy chọn để hiển thị sau khi trả lời",
+        "caseSensitiveLabel": "Phân biệt hoa thường khi kiểm tra đáp án",
+        "optionsLabel": "Lựa chọn",
+        "answersLabel": "Đáp án chấp nhận",
+        "optionPlaceholder": "Lựa chọn {index}",
+        "answerPlaceholder": "Đáp án {index}",
+        "correctLabel": "Đúng"
+      },
+      "errors": {
+        "needTwoOptions": "Cần ít nhất hai lựa chọn.",
+        "singleChoiceOneCorrect": "Câu hỏi một lựa chọn phải có đúng một đáp án đúng.",
+        "multiChoiceNeedOneCorrect": "Câu hỏi nhiều lựa chọn phải có ít nhất một đáp án đúng.",
+        "optionEmpty": "Nội dung lựa chọn không được để trống.",
+        "needOneAnswer": "Cần ít nhất một đáp án chấp nhận."
+      }
+    },
+    "actions": {
+      "create": "Tạo",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "edit": "Sửa",
+      "delete": "Xóa",
+      "manageQuestions": "Quản lý câu hỏi",
+      "backToMetadata": "Quay lại metadata"
+    },
+    "empty": {
+      "noResults": "Không có quiz nào.",
+      "noQuizSelected": "Không tìm thấy quiz hoặc không thể truy cập."
+    },
+    "errors": {
+      "unauthenticated": "Bạn cần đăng nhập để tiếp tục.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "notFound": "Không tìm thấy tài nguyên quiz yêu cầu.",
+      "validation": "Vui lòng kiểm tra lại trường bắt buộc và thử lại.",
+      "loadFailed": "Tải danh sách quiz thất bại.",
+      "detailLoadFailed": "Tải chi tiết quiz thất bại.",
+      "createFailed": "Tạo quiz thất bại.",
+      "updateFailed": "Cập nhật quiz thất bại.",
+      "deleteFailed": "Xóa quiz thất bại.",
+      "questionsLoadFailed": "Tải danh sách câu hỏi thất bại.",
+      "questionCreateFailed": "Tạo câu hỏi thất bại.",
+      "questionUpdateFailed": "Cập nhật câu hỏi thất bại.",
+      "questionDeleteFailed": "Xóa câu hỏi thất bại.",
+      "reorderFailed": "Sắp xếp lại câu hỏi thất bại."
     }
   },
   "profile": {

@@ -196,6 +196,149 @@ export const quizzesHandlers = [
     })
   }),
 
+  http.get('*/api/quiz/quizzes/:id/questions/', ({ params }) => {
+    const quizId = parseNumericId(String(params.id))
+    if (!quizId) {
+      return notFound('Quiz not found')
+    }
+
+    const quiz = quizzesFixture.find((item) => item.id === quizId)
+    if (!quiz) {
+      return notFound('Quiz not found')
+    }
+
+    const questions = quizQuestionsFixture
+      .filter((item) => item.quiz_id === quizId)
+      .sort((a, b) => a.position - b.position)
+
+    return HttpResponse.json(questions)
+  }),
+
+  http.post('*/api/quiz/quizzes/:id/questions/', async ({ params, request }) => {
+    const quizId = parseNumericId(String(params.id))
+    if (!quizId) {
+      return notFound('Quiz not found')
+    }
+
+    const quiz = quizzesFixture.find((item) => item.id === quizId)
+    if (!quiz) {
+      return notFound('Quiz not found')
+    }
+
+    const payload = (await request.json()) as Partial<(typeof quizQuestionsFixture)[number]>
+    const now = new Date().toISOString()
+    const created = {
+      id: quizQuestionsFixture.length + 1,
+      quiz_id: quizId,
+      content: payload.content ?? { text: 'Mock question' },
+      question_type: payload.question_type ?? QuestionType.SingleChoice,
+      status: payload.status ?? ContentStatus.Draft,
+      position: payload.position ?? quizQuestionsFixture.filter((item) => item.quiz_id === quizId).length + 1,
+      score: payload.score ?? 1,
+      case_sensitive: payload.case_sensitive ?? false,
+      explanation: payload.explanation,
+      options: payload.options,
+      answers: payload.answers,
+      created_at: now,
+      updated_at: now,
+    }
+
+    quizQuestionsFixture.push(created)
+    const totalQuestions = quizQuestionsFixture.filter((item) => item.quiz_id === quizId).length
+    const quizIndex = quizzesFixture.findIndex((item) => item.id === quizId)
+    if (quizIndex >= 0) {
+      quizzesFixture[quizIndex] = {
+        ...quizzesFixture[quizIndex],
+        total_questions: totalQuestions,
+        updated_at: now,
+      }
+    }
+
+    return HttpResponse.json(created, { status: 201 })
+  }),
+
+  http.get('*/api/quiz/quizzes/:id/questions/:qid/', ({ params }) => {
+    const quizId = parseNumericId(String(params.id))
+    const questionId = parseNumericId(String(params.qid))
+    if (!quizId || !questionId) {
+      return notFound('Question not found')
+    }
+
+    const question = quizQuestionsFixture.find((item) => item.id === questionId && item.quiz_id === quizId)
+    if (!question) {
+      return notFound('Question not found')
+    }
+
+    return HttpResponse.json(question)
+  }),
+
+  http.put('*/api/quiz/quizzes/:id/questions/:qid/', async ({ params, request }) => {
+    const quizId = parseNumericId(String(params.id))
+    const questionId = parseNumericId(String(params.qid))
+    if (!quizId || !questionId) {
+      return notFound('Question not found')
+    }
+
+    const index = quizQuestionsFixture.findIndex((item) => item.id === questionId && item.quiz_id === quizId)
+    if (index < 0) {
+      return notFound('Question not found')
+    }
+
+    const payload = (await request.json()) as Partial<(typeof quizQuestionsFixture)[number]>
+    const updated = {
+      ...quizQuestionsFixture[index],
+      ...payload,
+      updated_at: new Date().toISOString(),
+    }
+
+    quizQuestionsFixture[index] = updated
+    return HttpResponse.json(updated)
+  }),
+
+  http.delete('*/api/quiz/quizzes/:id/questions/:qid/', ({ params }) => {
+    const quizId = parseNumericId(String(params.id))
+    const questionId = parseNumericId(String(params.qid))
+    if (!quizId || !questionId) {
+      return notFound('Question not found')
+    }
+
+    const index = quizQuestionsFixture.findIndex((item) => item.id === questionId && item.quiz_id === quizId)
+    if (index < 0) {
+      return notFound('Question not found')
+    }
+
+    quizQuestionsFixture.splice(index, 1)
+
+    const now = new Date().toISOString()
+    const remaining = quizQuestionsFixture
+      .filter((item) => item.quiz_id === quizId)
+      .sort((a, b) => a.position - b.position)
+
+    remaining.forEach((question, idx) => {
+      const targetIndex = quizQuestionsFixture.findIndex((item) => item.id === question.id)
+      if (targetIndex < 0) {
+        return
+      }
+
+      quizQuestionsFixture[targetIndex] = {
+        ...quizQuestionsFixture[targetIndex],
+        position: idx + 1,
+        updated_at: now,
+      }
+    })
+
+    const quizIndex = quizzesFixture.findIndex((item) => item.id === quizId)
+    if (quizIndex >= 0) {
+      quizzesFixture[quizIndex] = {
+        ...quizzesFixture[quizIndex],
+        total_questions: remaining.length,
+        updated_at: now,
+      }
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.get('*/api/quiz-questions/', ({ request }) => {
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '10')

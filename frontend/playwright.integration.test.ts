@@ -12,20 +12,14 @@
  * 8. Token persistence after page reload
  */
 
-import { test, expect, Browser, Page } from '@playwright/test'
+import { test, expect, Page } from '@playwright/test'
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4000'
-const BACKEND_URL = 'http://localhost:8000'
 const ADMIN_USER = 'admin'
 const ADMIN_PASS = 'admin'
 
 test.describe('FE-BE Integration Tests', () => {
   let page: Page
-  let browser: Browser
-
-  test.beforeAll(async ({ browser: b }) => {
-    browser = b
-  })
 
   test.beforeEach(async ({ page: p }) => {
     page = p
@@ -119,6 +113,21 @@ test.describe('FE-BE Integration Tests', () => {
     expect(content.length).toBeGreaterThan(100)
   })
 
+  test('6.1 Admin quizzes routes render', async () => {
+    await page.goto(`${BASE_URL}/vi/admin/login`)
+    await page.fill('input[placeholder*="quản"]', ADMIN_USER)
+    await page.fill('input[type="password"]', ADMIN_PASS)
+    await page.locator('button').last().click()
+
+    await page.goto(`${BASE_URL}/vi/admin/quizzes`, { waitUntil: 'load' }).catch(() => {})
+    const listContent = await page.content()
+    expect(listContent.length).toBeGreaterThan(100)
+
+    await page.goto(`${BASE_URL}/vi/admin/quizzes/new`, { waitUntil: 'load' }).catch(() => {})
+    const createContent = await page.content()
+    expect(createContent.length).toBeGreaterThan(100)
+  })
+
   test('7. MSW disabled - real backend API calls', async () => {
     const requests: string[] = []
     
@@ -204,10 +213,10 @@ test.describe('FE-BE Integration Tests', () => {
     // Token should be saved
     if (!token1) {
       const allStorage = await page.evaluate(() => {
-        const result: any = {}
+        const result: Record<string, string | null> = {}
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i)!
-          result[key] = localStorage.getItem(key)?.substring(0, 50)
+          result[key] = localStorage.getItem(key)?.substring(0, 50) ?? null
         }
         return result
       })

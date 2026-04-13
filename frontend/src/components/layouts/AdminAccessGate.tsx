@@ -22,7 +22,15 @@ type GuestOnlyGateProps = {
   children: ReactNode
 }
 
-const safeGetPersistApi = () => (useAuthStore as any).persist ?? {}
+type PersistApi = {
+  hasHydrated?: () => boolean
+  onFinishHydration?: (callback: () => void) => () => void
+}
+
+const safeGetPersistApi = (): PersistApi => {
+  const storeWithPersist = useAuthStore as unknown as { persist?: PersistApi }
+  return storeWithPersist.persist ?? {}
+}
 
 const useAuthGuardState = (): { isReady: boolean; isAuthenticated: boolean } => {
   const [isReady, setIsReady] = useState(() => safeGetPersistApi().hasHydrated?.() ?? true)

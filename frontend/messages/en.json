@@ -180,6 +180,7 @@
     "rbac": "RBAC",
     "config": "System configuration",
     "users": "Users",
+    "quizzes": "Quizzes",
     "roles": "Roles",
     "permissions": "Permissions",
     "portalDescription": "Use dedicated admin surface entry to manage RBAC and runtime configuration.",
@@ -451,6 +452,143 @@
       "loadFailed": "Failed to load users.",
       "toggleFailed": "Failed to update user status.",
       "createFailed": "Failed to create user."
+    }
+  },
+  "adminQuizzes": {
+    "title": "Quiz Management",
+    "subtitle": "Create, edit, publish, and maintain quiz content for members.",
+    "listTitle": "Quiz list",
+    "createTitle": "Create quiz",
+    "createSubtitle": "Create a new quiz and continue with question authoring.",
+    "createCardTitle": "Quiz metadata",
+    "editTitle": "Edit quiz",
+    "editSubtitle": "Update quiz metadata and publication status.",
+    "editCardTitle": "Quiz metadata",
+    "backToList": "Back to quiz list",
+    "confirmDelete": "Delete quiz '{title}'?",
+    "toolbar": {
+      "searchPlaceholder": "Search by title or description",
+      "status": "Status",
+      "all": "All",
+      "refresh": "Refresh"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived",
+      "saving": "Saving...",
+      "saveSuccess": "Saved successfully."
+    },
+    "columns": {
+      "title": "Title",
+      "status": "Status",
+      "totalQuestions": "Questions",
+      "quizPoint": "Points",
+      "timeLimit": "Time limit (sec)",
+      "updatedAt": "Updated",
+      "actions": "Actions"
+    },
+    "pagination": {
+      "total": "Total {total} quizzes",
+      "page": "Page {page}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "form": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "quiz title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "brief summary for this quiz",
+      "statusLabel": "Status",
+      "quizPointLabel": "Quiz points",
+      "timeLimitLabel": "Time limit (seconds)",
+      "timeLimitHint": "Use 0 for no time limit.",
+      "categoryTagInlineHint": "Category/Tag inline management is enabled when backend category-tag contracts are available."
+    },
+    "questions": {
+      "title": "Question manager",
+      "subtitle": "Add, edit, reorder, and preview quiz questions.",
+      "forQuiz": "Quiz: {title}",
+      "listTitle": "Questions",
+      "empty": "No questions yet.",
+      "confirmDelete": "Delete this question?",
+      "previewTitle": "Member preview",
+      "previewHint": "Preview renders the question shape members receive in quiz sessions.",
+      "createTitle": "Create question",
+      "createDescription": "Define question content and validation data.",
+      "editTitle": "Edit question",
+      "editDescription": "Update question content and scoring settings.",
+      "type": {
+        "single_choice": "Single choice",
+        "multi_choice": "Multi choice",
+        "fill_blank": "Fill blank"
+      },
+      "columns": {
+        "position": "Position",
+        "type": "Type",
+        "score": "Score",
+        "content": "Content",
+        "actions": "Actions"
+      },
+      "actions": {
+        "addQuestion": "Add question",
+        "addOption": "Add option",
+        "addAnswer": "Add answer",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "preview": "Preview"
+      },
+      "form": {
+        "typeLabel": "Question type",
+        "scoreLabel": "Score",
+        "positionLabel": "Position",
+        "contentLabel": "Question text",
+        "contentPlaceholder": "enter question text",
+        "explanationLabel": "Explanation",
+        "explanationPlaceholder": "optional explanation for answer feedback",
+        "caseSensitiveLabel": "Case sensitive answer check",
+        "optionsLabel": "Options",
+        "answersLabel": "Accepted answers",
+        "optionPlaceholder": "Option {index}",
+        "answerPlaceholder": "Answer {index}",
+        "correctLabel": "Correct"
+      },
+      "errors": {
+        "needTwoOptions": "At least two options are required.",
+        "singleChoiceOneCorrect": "Single choice requires exactly one correct option.",
+        "multiChoiceNeedOneCorrect": "Multi choice requires at least one correct option.",
+        "optionEmpty": "Option text cannot be empty.",
+        "needOneAnswer": "At least one accepted answer is required."
+      }
+    },
+    "actions": {
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "manageQuestions": "Manage questions",
+      "backToMetadata": "Back to metadata"
+    },
+    "empty": {
+      "noResults": "No quizzes found.",
+      "noQuizSelected": "Quiz not found or unavailable."
+    },
+    "errors": {
+      "unauthenticated": "Authentication is required.",
+      "forbidden": "You do not have permission for this action.",
+      "notFound": "Requested quiz resource was not found.",
+      "validation": "Please review required fields and try again.",
+      "loadFailed": "Failed to load quiz list.",
+      "detailLoadFailed": "Failed to load quiz detail.",
+      "createFailed": "Failed to create quiz.",
+      "updateFailed": "Failed to update quiz.",
+      "deleteFailed": "Failed to delete quiz.",
+      "questionsLoadFailed": "Failed to load questions.",
+      "questionCreateFailed": "Failed to create question.",
+      "questionUpdateFailed": "Failed to update question.",
+      "questionDeleteFailed": "Failed to delete question.",
+      "reorderFailed": "Failed to reorder questions."
     }
   },
   "profile": {

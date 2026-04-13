@@ -19,6 +19,12 @@ export const permissionFixtures: PermissionDto[] = [
   { id: 16, name: 'api.system_config.update', description: 'Update system config', is_active: true },
   { id: 17, name: 'api.system_config.partial_update', description: 'Partial update system config', is_active: true },
   { id: 18, name: 'system.config.view_secret', description: 'View clear secret config values', is_active: true },
+  { id: 19, name: 'api.quiz.list', description: 'List quizzes', is_active: true },
+  { id: 20, name: 'api.quiz.create', description: 'Create quiz', is_active: true },
+  { id: 21, name: 'api.quiz.partial_update', description: 'Update quiz metadata', is_active: true },
+  { id: 22, name: 'api.quiz.destroy', description: 'Delete quiz', is_active: true },
+  { id: 23, name: 'api.quiz.questions', description: 'Manage quiz questions', is_active: true },
+  { id: 24, name: 'api.quiz.question_detail', description: 'Edit quiz question detail', is_active: true },
 ]
 
 const permissionIdByName = new Map(permissionFixtures.map((item) => [item.name, item.id]))

@@ -24,6 +24,7 @@ export default async function AdminProtectedLayout({
         configLabel={tAdmin('config')}
         footerText={tSurface('footerText')}
         locale={locale}
+        quizzesLabel={tAdmin('quizzes')}
         rbacLabel={tAdmin('rbac')}
         sidebarTitle={tSurface('admin.sidebarTitle')}
         surfaceLabel={tSurface('admin.title')}
