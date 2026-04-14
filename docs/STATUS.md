@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-14 (Backend bugfix pass M8/M11 + test-structure refactor: member quiz status hardening, me/settings enum validation, domain test split)
+> Last updated: 2026-04-15 (FE layout canonicalization: bỏ nav sidebar, tạo skeleton pages toàn bộ routes, cập nhật Navbar/AdminLayout links, xóa (public)/ group)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.

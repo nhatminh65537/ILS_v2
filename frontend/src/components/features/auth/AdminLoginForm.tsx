@@ -44,7 +44,7 @@ export function AdminLoginForm({ locale }: AdminLoginFormProps) {
       return
     }
 
-    router.push(`/${locale}/admin/rbac`)
+    router.push(`/${locale}/admin/dashboard`)
   }
 
   return (

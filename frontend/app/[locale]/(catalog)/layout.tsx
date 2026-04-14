@@ -24,12 +24,14 @@ export default async function CatalogSurfaceLayout({ children, params }: Catalog
       <UserLayout
         adminPortalLabel={tAdmin('portalEntry')}
         brandLabel={tCommon('appName')}
+        challengesLabel={tNav('challenges')}
+        coursesLabel={tNav('courses')}
         dashboardLabel={tNav('dashboard')}
         footerText={tSurface('footerText')}
         homeLabel={tNav('home')}
-        quizzesLabel={tNav('quizzes')}
         locale={locale}
         profileLabel={tNav('profile')}
+        quizzesLabel={tNav('quizzes')}
         showSidebar={false}
         sidebarTitle={tSurface('user.sidebarTitle')}
         surfaceLabel={tSurface('user.title')}

@@ -21,12 +21,17 @@ export default async function AdminProtectedLayout({
       <AdminLayout
         adminHomeLabel={tSurface('admin.homeLabel')}
         brandLabel={tCommon('appName')}
+        challengesLabel={tAdmin('challenges')}
         configLabel={tAdmin('config')}
+        coursesLabel={tAdmin('courses')}
+        dashboardLabel={tAdmin('dashboard')}
         footerText={tSurface('footerText')}
         locale={locale}
+        notificationsLabel={tAdmin('notifications')}
         quizzesLabel={tAdmin('quizzes')}
         rbacLabel={tAdmin('rbac')}
         sidebarTitle={tSurface('admin.sidebarTitle')}
+        statisticsLabel={tAdmin('statistics')}
         surfaceLabel={tSurface('admin.title')}
         usersLabel={tAdmin('users')}
         userPortalLabel={tSurface('admin.userPortalLabel')}

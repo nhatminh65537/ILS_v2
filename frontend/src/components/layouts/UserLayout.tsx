@@ -8,6 +8,8 @@ type UserLayoutProps = {
   sidebarTitle: string
   homeLabel: string
   dashboardLabel: string
+  coursesLabel: string
+  challengesLabel: string
   quizzesLabel: string
   profileLabel: string
   adminPortalLabel: string
@@ -23,6 +25,8 @@ export function UserLayout({
   sidebarTitle,
   homeLabel,
   dashboardLabel,
+  coursesLabel,
+  challengesLabel,
   quizzesLabel,
   profileLabel,
   adminPortalLabel,
@@ -32,6 +36,8 @@ export function UserLayout({
 }: UserLayoutProps) {
   const homeHref = `/${locale}`
   const dashboardHref = `/${locale}/dashboard`
+  const coursesHref = `/${locale}/courses`
+  const challengesHref = `/${locale}/challenges`
   const quizzesHref = `/${locale}/quizzes`
   const profileHref = `/${locale}/profile/settings`
   const adminLoginHref = `/${locale}/admin/login`
@@ -45,6 +51,8 @@ export function UserLayout({
       showSidebar={showSidebar}
       sidebarLinks={[
         { href: dashboardHref, label: dashboardLabel },
+        { href: coursesHref, label: coursesLabel },
+        { href: challengesHref, label: challengesLabel },
         { href: quizzesHref, label: quizzesLabel },
         { href: profileHref, label: profileLabel },
         { href: homeHref, label: homeLabel },
@@ -55,6 +63,8 @@ export function UserLayout({
       topLinks={[
         { href: homeHref, label: homeLabel },
         { href: dashboardHref, label: dashboardLabel },
+        { href: coursesHref, label: coursesLabel },
+        { href: challengesHref, label: challengesLabel },
         { href: quizzesHref, label: quizzesLabel },
       ]}
     >

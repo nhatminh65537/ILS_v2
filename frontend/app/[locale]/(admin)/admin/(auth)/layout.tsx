@@ -13,7 +13,7 @@ export default async function AdminAuthLayout({ children, params }: AdminAuthLay
   const tSurface = await getTranslations('surface')
 
   return (
-    <GuestOnlyGate loadingLabel={tCommon('loading')} redirectTo={`/${locale}/admin/rbac`}>
+    <GuestOnlyGate loadingLabel={tCommon('loading')} redirectTo={`/${locale}/admin/dashboard`}>
       <AuthLayout
         locale={locale}
         brandHref={`/${locale}/admin`}

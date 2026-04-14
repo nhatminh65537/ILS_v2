@@ -28,6 +28,9 @@ Coding and architecture conventions for frontend development in ILS v2.
 - Admin entry route is `/{locale}/admin/login`; admin registration route is intentionally absent.
 - Admin protected routes remain under `/{locale}/admin/*` for development compatibility.
 - Vhost/domain-level split is deferred to deployment; code must keep route-level separation ready for future host split.
+- **No nav sidebar in user surface.** Navigation is handled entirely by the Navbar (top bar). The `(app)/` layout sets `showSidebar={false}`.
+- **Sidebar = filter panel only.** The left-side sidebar area is never used for navigation links. On catalog pages, each page client renders its own two-column layout (filter panel + content). On non-catalog pages, content is full-width.
+- **Route group assignment:** Use `(app)/` for general authenticated pages (dashboard, profile, notifications, leaderboard). Use `(catalog)/` for content-consumption pages that render a filter panel (quizzes, courses, challenges). New catalog sections must go under `(catalog)/`, not `(app)/`.
 
 ## Naming Conventions
 
