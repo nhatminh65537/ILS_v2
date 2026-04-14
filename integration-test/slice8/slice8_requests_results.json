@@ -1,0 +1,608 @@
+{
+  "base_url": "http://localhost:8000",
+  "total": 75,
+  "passed": 70,
+  "failed": 5,
+  "results": [
+    {
+      "case_id": "I-1.1",
+      "title": "GET /api/users/me/profile/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.2",
+      "title": "PATCH /api/users/me/settings/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.3",
+      "title": "GET /api/users/me/activity/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.4",
+      "title": "GET /api/admin/users/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.5",
+      "title": "GET /api/auth/sessions/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.6",
+      "title": "GET /api/users/member1/profile/ public",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.7",
+      "title": "GET /api/users/member1/activity/ public",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.1",
+      "title": "Member cannot GET /api/admin/users/",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.2",
+      "title": "Member cannot POST /api/admin/users/",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.3",
+      "title": "Member cannot GET /api/admin/users/{id}/",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.4",
+      "title": "Member cannot PATCH /api/admin/users/{id}/",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-3.1",
+      "title": "Admin can GET /api/admin/users/",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "I-3.2",
+      "title": "Admin can GET /api/admin/users/{member1_id}/",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "I-4.1",
+      "title": "Member1 sees only own sessions",
+      "status": "PASS",
+      "expected": "HTTP 200 with own session ids",
+      "actual": "HTTP 200, count=3",
+      "detail": ""
+    },
+    {
+      "case_id": "I-4.2",
+      "title": "Member1 cannot revoke member2 session",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "II-1.1",
+      "title": "GET /api/users/me/profile/",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-1.2",
+      "title": "Me profile has expected username",
+      "status": "FAIL",
+      "expected": "username=member1",
+      "actual": "username=member1_new",
+      "detail": ""
+    },
+    {
+      "case_id": "II-1.3",
+      "title": "Sensitive fields not exposed",
+      "status": "PASS",
+      "expected": "No password/refresh_token_hash",
+      "actual": "keys=['avatar_url', 'bio', 'challenge_completed', 'course_completed', 'display_name', 'entry_year', 'language', 'last_active_at', 'location', 'quiz_completed', 'theme', 'timezone', 'total_challenge_point', 'total_learning_point', 'total_quiz_point', 'user_id', 'username', 'website']",
+      "detail": ""
+    },
+    {
+      "case_id": "II-2.1",
+      "title": "PATCH /api/users/me/profile/ valid",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-2.2",
+      "title": "Profile fields updated",
+      "status": "PASS",
+      "expected": "display_name and entry_year updated",
+      "actual": "display_name=Updated Name, entry_year=2025",
+      "detail": ""
+    },
+    {
+      "case_id": "II-2.3",
+      "title": "entry_year validation behavior",
+      "status": "PASS",
+      "expected": "HTTP 200 or 400",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-2.4",
+      "title": "PATCH profile with nullable display_name",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-3.1",
+      "title": "PATCH /api/users/me/settings/ valid",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-3.2",
+      "title": "Settings updated",
+      "status": "PASS",
+      "expected": "language=en and theme=light",
+      "actual": "language=en, theme=light",
+      "detail": ""
+    },
+    {
+      "case_id": "II-3.3",
+      "title": "PATCH settings invalid language",
+      "status": "FAIL",
+      "expected": "HTTP 400",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-3.4",
+      "title": "PATCH settings invalid theme",
+      "status": "FAIL",
+      "expected": "HTTP 400",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.1",
+      "title": "PATCH account username to member1_new",
+      "status": "PASS",
+      "expected": "HTTP 200 and username changed",
+      "actual": "HTTP 200, username=member1_new",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.2",
+      "title": "PATCH account duplicate username",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.3",
+      "title": "PATCH account duplicate email",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.4",
+      "title": "PATCH account with empty body",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.5",
+      "title": "Restore username to member1",
+      "status": "FAIL",
+      "expected": "HTTP 200 and username restored",
+      "actual": "HTTP 400, username=['A user with that username already exists.']",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.1",
+      "title": "Public profile member1",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.2",
+      "title": "Public profile hides private fields",
+      "status": "PASS",
+      "expected": "No email/language/theme/timezone",
+      "actual": "keys=['avatar_url', 'bio', 'challenge_completed', 'course_completed', 'display_name', 'entry_year', 'last_active_at', 'location', 'quiz_completed', 'total_challenge_point', 'total_learning_point', 'total_quiz_point', 'username', 'website']",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.3",
+      "title": "Public profile member2",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.4",
+      "title": "Member2 minimal profile has null display_name",
+      "status": "PASS",
+      "expected": "display_name is null",
+      "actual": "display_name=None",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.5",
+      "title": "Public profile nonexistent user",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.6",
+      "title": "Disabled user public profile behavior",
+      "status": "PASS",
+      "expected": "HTTP 200 or 404",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-1.1",
+      "title": "GET /api/users/me/activity/",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-1.2",
+      "title": "Member1 has 6 seeded events",
+      "status": "PASS",
+      "expected": "6 events",
+      "actual": "count=6",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-1.3",
+      "title": "Events sorted by timestamp desc",
+      "status": "PASS",
+      "expected": "Sorted desc by timestamp",
+      "actual": "Sorted",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-2.1",
+      "title": "Public activity member1",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-2.2",
+      "title": "Public activity equals me activity count",
+      "status": "PASS",
+      "expected": "same event count",
+      "actual": "public=6, me=6",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-2.3",
+      "title": "Public activity member2",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-2.4",
+      "title": "Member2 has no activity",
+      "status": "PASS",
+      "expected": "[]",
+      "actual": "count=0",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-2.5",
+      "title": "Public activity nonexistent user",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "V-1.1",
+      "title": "GET /api/admin/users/",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "V-1.2",
+      "title": "Admin list response is paginated",
+      "status": "PASS",
+      "expected": "contains count/results",
+      "actual": "keys=['count', 'next', 'previous', 'results']",
+      "detail": ""
+    },
+    {
+      "case_id": "V-1.3",
+      "title": "Admin list includes seeded users",
+      "status": "PASS",
+      "expected": ">=6 users",
+      "actual": "count=11",
+      "detail": ""
+    },
+    {
+      "case_id": "V-2.1",
+      "title": "Admin filter is_active=false",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "V-2.2",
+      "title": "Inactive filter returns disableduser",
+      "status": "PASS",
+      "expected": "all users inactive",
+      "actual": "items=1",
+      "detail": ""
+    },
+    {
+      "case_id": "V-2.3",
+      "title": "Admin filter invalid is_active",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "V-2.4",
+      "title": "Admin filter invalid date",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "V-3.1",
+      "title": "GET /api/admin/users/{member1_id}/",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "V-3.2",
+      "title": "Admin detail includes profile and roles",
+      "status": "PASS",
+      "expected": "profile object and roles list",
+      "actual": "profile_type=dict, roles_type=list",
+      "detail": ""
+    },
+    {
+      "case_id": "V-3.3",
+      "title": "Admin detail does not expose password",
+      "status": "PASS",
+      "expected": "password not present",
+      "actual": "keys=['date_joined', 'email', 'first_name', 'id', 'is_active', 'is_staff', 'is_superuser', 'last_login', 'last_name', 'profile', 'roles', 'username']",
+      "detail": ""
+    },
+    {
+      "case_id": "V-4.1",
+      "title": "Admin create user with password",
+      "status": "PASS",
+      "expected": "HTTP 201",
+      "actual": "HTTP 201",
+      "detail": ""
+    },
+    {
+      "case_id": "V-4.2",
+      "title": "Admin create user without password",
+      "status": "PASS",
+      "expected": "HTTP 201",
+      "actual": "HTTP 201",
+      "detail": ""
+    },
+    {
+      "case_id": "V-4.3",
+      "title": "Admin create duplicate username",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "V-4.4",
+      "title": "Admin create duplicate email",
+      "status": "FAIL",
+      "expected": "HTTP 400",
+      "actual": "HTTP 201",
+      "detail": ""
+    },
+    {
+      "case_id": "V-4.5",
+      "title": "Admin create user with invalid role_ids",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "V-4.6",
+      "title": "Admin create user with weak password",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "V-5.1",
+      "title": "Admin deactivate member2",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "V-5.2",
+      "title": "Member2 old token invalid after deactivate",
+      "status": "PASS",
+      "expected": "HTTP 401/403",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "V-5.3",
+      "title": "Admin reactivate member2",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "V-5.4",
+      "title": "Member2 can login after re-activate",
+      "status": "PASS",
+      "expected": "login success",
+      "actual": "login success",
+      "detail": ""
+    },
+    {
+      "case_id": "VI-1.1",
+      "title": "GET /api/auth/sessions/",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "VI-1.2",
+      "title": "Member1 has at least 1 active session",
+      "status": "PASS",
+      "expected": "session count >= 1",
+      "actual": "count=4",
+      "detail": ""
+    },
+    {
+      "case_id": "VI-1.3",
+      "title": "Session payload has expected fields and hides hash",
+      "status": "PASS",
+      "expected": "expected session fields without refresh_token_hash",
+      "actual": "valid",
+      "detail": ""
+    },
+    {
+      "case_id": "VI-2.1",
+      "title": "DELETE /api/auth/sessions/{id}/ returns 204 for valid own id",
+      "status": "PASS",
+      "expected": "HTTP 204",
+      "actual": "HTTP 204",
+      "detail": ""
+    },
+    {
+      "case_id": "VI-2.2",
+      "title": "DELETE nonexistent session",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "XI-1.1",
+      "title": "Admin creates e2e user",
+      "status": "PASS",
+      "expected": "HTTP 201",
+      "actual": "HTTP 201",
+      "detail": ""
+    },
+    {
+      "case_id": "XI-1.2",
+      "title": "E2E user login",
+      "status": "PASS",
+      "expected": "login success",
+      "actual": "login success",
+      "detail": ""
+    },
+    {
+      "case_id": "XI-1.3",
+      "title": "E2E user can access me profile",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "XI-1.4",
+      "title": "E2E user updates own profile",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "XI-1.5",
+      "title": "Public profile reflects E2E update",
+      "status": "PASS",
+      "expected": "HTTP 200 and display_name=E2E Updated",
+      "actual": "HTTP 200, display_name=E2E Updated",
+      "detail": ""
+    }
+  ]
+}

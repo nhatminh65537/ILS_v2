@@ -89,7 +89,7 @@ from django.utils import timezone
 from datetime import timedelta
 from api.models import (
     Role, UserRole, UserProfile,
-    Course, Lesson, UserLessonProgress,
+    Course, CourseNode, Lesson, UserLessonProgress,
     Challenge, UserChallengeProgress,
     Quiz, QuizCategory, UserQuizProgress,
 )
@@ -161,7 +161,7 @@ m1_profile.quiz_completed = 3
 m1_profile.save()
 
 m2_profile, _ = UserProfile.objects.get_or_create(user=member2)
-# member2 có profile tối giản (display_name=None)
+# member2: profile tối giản (display_name=None)
 m2_profile.save()
 
 UserProfile.objects.get_or_create(user=member3)
@@ -169,54 +169,76 @@ UserProfile.objects.get_or_create(user=editor)
 UserProfile.objects.get_or_create(user=disabled_user)
 
 # ----------------------------------------------------------------
-# Courses & Lessons (3 bài học cho activity feed)
+# Course (slug là required, unique)
+# Lesson KHÔNG có FK course — liên kết qua CourseNode (tree node)
+# Nhưng để seed activity feed, chỉ cần Lesson objects (UserLessonProgress.lesson FK)
 # ----------------------------------------------------------------
 course1 = Course.objects.create(
+    slug='web-security-101',
     title='Web Security 101',
     status='published',
-    pre_path='1',
-    depth=1, position=1, position_path='001',
 )
+
+# Tạo 3 Lessons (lesson_type required; KHÔNG có course FK, KHÔNG có status field)
 lesson1 = Lesson.objects.create(
     title='Injection Basics',
-    course=course1,
-    status='published',
-    pre_path='1.1',
-    depth=2, position=1, position_path='001.001',
+    lesson_type='markdown',
+    content_md='Introduction to injection attacks.',
 )
 lesson2 = Lesson.objects.create(
     title='XSS Fundamentals',
-    course=course1,
-    status='published',
-    pre_path='1.2',
-    depth=2, position=2, position_path='001.002',
+    lesson_type='markdown',
+    content_md='Cross-site scripting fundamentals.',
 )
 lesson3 = Lesson.objects.create(
     title='Broken Access Control',
-    course=course1,
-    status='published',
-    pre_path='1.3',
-    depth=2, position=3, position_path='001.003',
+    lesson_type='markdown',
+    content_md='Broken access control explained.',
+)
+
+# Đặt lessons vào cây của course qua CourseNode
+# (cần để lesson xuất hiện đúng trong context course — không bắt buộc cho activity feed test)
+root_folder = CourseNode.objects.create(
+    course=course1, parent=None, is_item=False,
+    title='Web Security 101', position=0, path='',
+)
+CourseNode.objects.create(
+    course=course1, parent=root_folder, is_item=True,
+    lesson=lesson1, title='Injection Basics',
+    position=0, path=str(root_folder.id),
+)
+CourseNode.objects.create(
+    course=course1, parent=root_folder, is_item=True,
+    lesson=lesson2, title='XSS Fundamentals',
+    position=1, path=str(root_folder.id),
+)
+CourseNode.objects.create(
+    course=course1, parent=root_folder, is_item=True,
+    lesson=lesson3, title='Broken Access Control',
+    position=2, path=str(root_folder.id),
 )
 
 # ----------------------------------------------------------------
-# Challenges (2 challenges cho activity feed)
+# Challenges (slug và storage_path là required; KHÔNG có field flag trực tiếp)
+# Flag được lưu qua model ChallengeFlag riêng — không cần cho test activity feed
 # ----------------------------------------------------------------
 challenge1 = Challenge.objects.create(
+    slug='sql-injection-lab',
     title='SQL Injection Lab',
     status='published',
-    flag='FLAG{sql_test}',
+    storage_path='challenges/sql-injection-lab',
     difficulty='easy',
 )
 challenge2 = Challenge.objects.create(
+    slug='jwt-pwn',
     title='JWT Pwn',
     status='published',
-    flag='FLAG{jwt_test}',
+    storage_path='challenges/jwt-pwn',
     difficulty='medium',
 )
 
 # ----------------------------------------------------------------
-# Quiz (1 quiz cho activity feed)
+# Quiz (không có slug; category là FK nullable)
 # ----------------------------------------------------------------
 cat = QuizCategory.objects.create(name='Web Security')
 quiz1 = Quiz.objects.create(
@@ -229,42 +251,47 @@ quiz1 = Quiz.objects.create(
 
 # ----------------------------------------------------------------
 # Activity Feed data cho member1 (6 sự kiện)
+# is_completed là @property tính từ completed_at — KHÔNG phải DB field
+# UserLessonProgress.started_at nullable; UserChallengeProgress không có started_at
+# UserQuizProgress fields: best_score, attempt_count, first_attempted_at, last_attempted_at, completed_at
 # ----------------------------------------------------------------
 now = timezone.now()
-# Lesson completions
+
+# Lesson completions (started_at nullable; completed_at drives activity feed)
 UserLessonProgress.objects.create(
     user=member1, lesson=lesson1,
+    started_at=now - timedelta(days=5),
     completed_at=now - timedelta(days=5),
-    is_completed=True,
 )
 UserLessonProgress.objects.create(
     user=member1, lesson=lesson2,
+    started_at=now - timedelta(days=3),
     completed_at=now - timedelta(days=3),
-    is_completed=True,
 )
 UserLessonProgress.objects.create(
     user=member1, lesson=lesson3,
+    started_at=now - timedelta(days=1),
     completed_at=now - timedelta(days=1),
-    is_completed=True,
 )
-# Challenge completions
+
+# Challenge completions (chỉ có completed_at; không có started_at)
 UserChallengeProgress.objects.create(
     user=member1, challenge=challenge1,
     completed_at=now - timedelta(days=4),
-    is_completed=True,
 )
 UserChallengeProgress.objects.create(
     user=member1, challenge=challenge2,
     completed_at=now - timedelta(days=2),
-    is_completed=True,
 )
-# Quiz completion
+
+# Quiz completion (best_score, attempt_count thay vì score/total_answered)
 UserQuizProgress.objects.create(
     user=member1, quiz=quiz1,
+    best_score=85,
+    attempt_count=1,
+    first_attempted_at=now - timedelta(days=6),
+    last_attempted_at=now - timedelta(days=6),
     completed_at=now - timedelta(days=6),
-    score=85,
-    total_answered=10,
-    is_completed=True,
 )
 
 print('=== Seed hoàn tất ===')
@@ -611,12 +638,12 @@ python manage.py shell -c "
 from django.contrib.auth import get_user_model
 from api.models import Lesson, UserLessonProgress
 User = get_user_model()
-member1 = User.objects.get(username='member1')
+member2 = User.objects.get(username='member2')
 lesson = Lesson.objects.first()
-# Tạo progress không có completed_at
+# Tạo progress không có completed_at (is_completed là @property, không phải DB field)
 UserLessonProgress.objects.get_or_create(
-    user=member1, lesson=lesson,
-    defaults={'is_completed': False, 'completed_at': None}
+    user=member2, lesson=lesson,
+    defaults={'started_at': None, 'completed_at': None}
 )
 print('Done')
 "
@@ -1236,10 +1263,11 @@ python manage.py seed_roles
 # Chỉ reset sessions của member1 (không mất user data)
 python manage.py shell -c "
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from api.models import UserSession
 User = get_user_model()
 member1 = User.objects.get(username='member1')
-revoked = UserSession.objects.filter(user=member1).update(revoked_at=__import__('django.utils.timezone', fromlist=['timezone']).timezone.now())
+revoked = UserSession.objects.filter(user=member1, revoked_at__isnull=True).update(revoked_at=timezone.now())
 print(f'Revoked {revoked} sessions')
 "
 ```

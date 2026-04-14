@@ -15,6 +15,9 @@
 | H3 | `frontend/src/components/layouts/AdminAccessGate.tsx` + admin routes `frontend/app/[locale]/(admin)/admin/(protected)/*` | **Admin route authorization bypass ở frontend:** user đã đăng nhập nhưng không có quyền admin (ví dụ `member3`) vẫn truy cập được `/vi/admin/users` trong phiên test Slice 8 (F-1-5 fail). Hiện guard chỉ kiểm tra authenticated, không kiểm tra role/permission claim. Khi backend chạy với authz bypass hoặc kiểm tra chưa chặt sẽ thành lỗ hổng truy cập bề mặt quản trị. | Bổ sung authorization gate cho admin surface dựa trên claims/permission đã chuẩn hóa (không dùng Django built-in). Giữ route-level deny rõ ràng (redirect admin login hoặc 403) cho non-admin. |
 | H4 | `backend/api/urls.py` + `backend/api/views/quizzes.py` | **Quiz progress endpoint không truy cập được:** `QuizViewSet.progress()` đã có implementation nhưng route `/api/quiz/quizzes/{id}/progress/` chưa được wire trong URLconf. Integration run 2026-04-14 ghi nhận `I-2.8` và `IV-3.1` trả `404`. | Thêm `re_path` cho `progress` vào quiz URL patterns, rồi bổ sung test API cho cả case có/không có progress record. |
 | H5 | `backend/api/views/quizzes.py` (`QuizNodeViewSet`, `QuizActionPermission`) | **QuizNode RBAC mismatch làm hỏng flow tree API:** editor `POST /api/quiz/nodes/` trả `403` và member `GET /api/quiz/nodes/` cũng `403` trong integration run 2026-04-14 (`V-1.1`, `V-1.6`, `V-2.4`). | Tách permission class riêng cho QuizNode hoặc điều chỉnh `QuizActionPermission.editor_actions` để không vô tình chặn action read/list của node; thêm test cho member read + editor write. |
+| H6 | `backend/api/serializers.py` (`AdminUserManagementSerializer`) | **Admin create chưa chặn email trùng:** integration run 2026-04-14 ghi nhận `POST /api/admin/users/` với email đã tồn tại (`admin@test.local`) vẫn trả `201` (`V-4.4` fail kỳ vọng `400`). Đây là lệch contract trong checklist/API docs của Slice 8. | Thêm validate unique email trong admin create/update serializer (không phân biệt hoa thường), rồi bổ sung test cho duplicate email ở `test_admin_users_task8_2.py`. |
+| H7 | `frontend/app/[locale]/(admin)/admin/users/*` + admin routing guard | **Route admin users không truy cập được ổn định:** browser integration 2026-04-14 cho thấy điều hướng tới `/vi/admin/users` bị trả về `/vi/admin/rbac`, làm checklist Slice 8 Task 8.4 không verify được end-to-end UI. | Kiểm tra route mapping/redirect trong admin shell + middleware/guard; đảm bảo `/admin/users` giữ nguyên URL và render user management page cho admin token hợp lệ. |
+| H8 | `frontend/app/[locale]/(app)/profile/[username]/page.tsx` (hoặc guard liên quan) | **Public profile route bị redirect sai:** truy cập `/vi/profile/{username}` trong browser integration 2026-04-14 không ở lại trang profile public mà bị đưa về dashboard/login flow, trái contract public route của Slice 8. | Rà soát middleware/auth gate của nhánh profile để giữ `/{locale}/profile/[username]` là public route; bổ sung test navigation/public access cho username tồn tại và không tồn tại. |
 
 ### Medium — Degrades functionality
 
@@ -27,6 +30,8 @@
 | M8 | `backend/api/views/quizzes.py` (`QuizViewSet.get_queryset`) | **Member vẫn lọc được draft quiz qua query param:** `GET /api/quiz/quizzes/?status=draft` với member token trả về draft item (`I-3.3` fail). Điều này mâu thuẫn rule "member chỉ thấy published". | Ưu tiên filter theo role trước: nếu không phải editor/admin thì luôn ép `status=published`, bỏ qua query param status từ client. |
 | M9 | `backend/api/serializers.py` (`QuizDetailSerializer`) | **Quiz detail thiếu field category trong response:** integration run `II-3.2` fail, payload detail chỉ có `tags` và `questions` nhưng không có `category`. | Bổ sung `category` vào serializer detail (nested id/name hoặc serializer chuẩn) để khớp contract và FE detail page. |
 | M10 | `backend/api/serializers.py` (`QuizListSerializer`/`QuizDetailSerializer` validate) | **Validation thiếu ràng buộc quiz_point >= 0:** tạo quiz với `quiz_point=-1` vẫn `201` (`II-4.6` fail). | Thêm `min_value=0` (hoặc validator tương đương) cho `quiz_point` ở create/update serializers và thêm test validation âm. |
+| M11 | `backend/api/serializers.py` (`MeSettingsUpdateSerializer`) | **Settings API chưa validate enum theo contract:** `PATCH /api/users/me/settings/` với `language=fr` và `theme=blue` vẫn `200` trong integration run 2026-04-14 (`II-3.3`, `II-3.4` fail kỳ vọng `400`). | Áp ChoiceField/validator theo enum chuẩn của `UserProfile.language` và `UserProfile.theme`; bổ sung test negative case ở `backend/api/test_profile_task8_1.py`. |
+| M12 | `integration-test/slice8/test_slice8_requests.py` + test data lifecycle | **Slice 8 requests runner phụ thuộc trạng thái dữ liệu trước đó:** khi username `member1` đã bị chiếm bởi run cũ, case restore `II-4.5` fail dù không phản ánh lỗi runtime nghiệp vụ. | Bổ sung bước reset fixture cục bộ trước run (hoặc generate username tạm duy nhất và rollback chắc chắn), tách rõ fail do data contamination khỏi fail do API contract. |
 
 ### Low — Minor issues / tech debt
 
@@ -61,6 +66,18 @@
 
 ---
 
+## Doc–Code Inconsistencies (awaiting human decision)
+
+> These are **not runtime bugs** — they are mismatches between `docs/DATA_MODEL.md` (authoritative) and `backend/api/models.py` (implementation). Per conflict rules: DATA_MODEL.md wins. Human must decide whether to implement the missing fields in models.py or explicitly defer/remove from DATA_MODEL.md.
+
+| # | Location | DATA_MODEL.md says | models.py has | Decision needed |
+|---|----------|--------------------|---------------|-----------------|
+| D-DOC-01 | `course` table | `structure_version` INTEGER NOT NULL DEFAULT 1 | **Field missing** | Add to models.py (+ migration) or mark deferred in DATA_MODEL.md |
+| D-DOC-02 | `lesson` table | `status` content_status NOT NULL DEFAULT 'draft' | **Field missing** | Add to models.py (+ migration) or mark deferred in DATA_MODEL.md |
+| D-DOC-03 | `lesson` table | `video_duration` **not documented** | `video_duration` IntegerField nullable exists | Add to DATA_MODEL.md |
+
+---
+
 ## Tracking Notes
 
 - **Discovery session:** 2026-03-09 — full project review
@@ -79,3 +96,4 @@
   - `prd/10-system-config.md` missing `auth.email.use_tls`, `auth.email.username`, `auth.email.sender_name` → added ✅ Fixed 2026-03-12
   - `docs/DATA_MODEL.md` header claimed `dbv3.sql` as source of truth → corrected to self-authoritative ✅ Fixed 2026-03-12
   - `IMPL_PLAN.md` seed_config missing `auth.registration_enabled` → added ✅ Fixed 2026-03-12
+  - `docs/DATA_MODEL.md` vs `backend/api/models.py` — 3 field inconsistencies found 2026-04-14 (see D-DOC-01, D-DOC-02, D-DOC-03 below — awaiting human decision)
