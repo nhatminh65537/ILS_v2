@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-13
+> Last updated: 2026-04-14
 
 ---
 
@@ -169,6 +169,9 @@ Task 7.1 update (2026-04-01):
 Task 7.2 update (2026-04-01):
 - QuizNode tree CRUD endpoints are active under `/api/quiz/nodes/*`.
 - MVP behavior is folder-only (`is_item=false` enforced); tree operations use dot-separated `path` invariants from `BaseNode`.
+
+Integration note (2026-04-14):
+- `QuizViewSet.progress()` exists in backend view code, but route `/api/quiz/quizzes/{id}/progress/` is currently not wired in `backend/api/urls.py`; live request returns `404` until route mapping is added.
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|

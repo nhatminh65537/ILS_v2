@@ -1,0 +1,441 @@
+{
+  "generated_at_epoch": 1776153088,
+  "base_url": "http://localhost:8000",
+  "total": 54,
+  "passed": 46,
+  "failed": 8,
+  "results": [
+    {
+      "case_id": "I-1.1",
+      "title": "GET /api/quiz/quizzes/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.2",
+      "title": "POST /api/quiz/quizzes/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-1.3",
+      "title": "GET /api/quiz/nodes/ unauthenticated",
+      "status": "PASS",
+      "expected": "HTTP 401",
+      "actual": "HTTP 401",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.1",
+      "title": "Member can list quizzes",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.2",
+      "title": "Member cannot create quiz",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.3",
+      "title": "Member cannot patch quiz",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.4",
+      "title": "Member cannot delete quiz",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.5",
+      "title": "Member cannot get questions management endpoint",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.6",
+      "title": "Member cannot post questions",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.7",
+      "title": "Member can get own quiz config",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "I-2.8",
+      "title": "Member get progress endpoint",
+      "status": "FAIL",
+      "expected": "HTTP 200",
+      "actual": "HTTP 404",
+      "detail": "If this fails with 404, route may be missing although view action exists."
+    },
+    {
+      "case_id": "I-3.1",
+      "title": "Member list does not include draft quiz",
+      "status": "PASS",
+      "expected": "Draft quiz hidden",
+      "actual": "Draft hidden",
+      "detail": ""
+    },
+    {
+      "case_id": "I-3.2",
+      "title": "Member cannot retrieve draft quiz detail",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "I-3.3",
+      "title": "Member cannot effectively filter draft",
+      "status": "FAIL",
+      "expected": "HTTP 403 or empty list",
+      "actual": "HTTP 200, items=1",
+      "detail": ""
+    },
+    {
+      "case_id": "I-4.1",
+      "title": "Editor can list quizzes",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "I-4.2",
+      "title": "Editor can filter draft quizzes",
+      "status": "PASS",
+      "expected": "HTTP 200 and includes draft quiz",
+      "actual": "HTTP 200, found=True",
+      "detail": ""
+    },
+    {
+      "case_id": "II-1.1",
+      "title": "Member list status",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-1.2",
+      "title": "Member list has at least seeded published quizzes",
+      "status": "PASS",
+      "expected": ">=3 published quizzes",
+      "actual": "count=4",
+      "detail": ""
+    },
+    {
+      "case_id": "II-1.3",
+      "title": "List item structure",
+      "status": "PASS",
+      "expected": "contains ['description', 'id', 'quiz_point', 'status', 'time_limit_sec', 'title', 'total_questions', 'updated_at']",
+      "actual": "keys=['description', 'id', 'quiz_point', 'status', 'tags', 'time_limit_sec', 'title', 'total_questions', 'updated_at']",
+      "detail": ""
+    },
+    {
+      "case_id": "II-1.4",
+      "title": "Member list excludes draft",
+      "status": "PASS",
+      "expected": "No draft",
+      "actual": "No draft",
+      "detail": ""
+    },
+    {
+      "case_id": "II-2.1",
+      "title": "Editor filter status=draft",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-2.3",
+      "title": "Editor filter status=published",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-2.4",
+      "title": "Editor filter status=archived",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-3.1",
+      "title": "Member retrieve quiz detail",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-3.2",
+      "title": "Detail includes category/tags",
+      "status": "FAIL",
+      "expected": "category and tags present",
+      "actual": "keys=['description', 'id', 'questions', 'quiz_point', 'status', 'tags', 'time_limit_sec', 'title', 'total_questions', 'updated_at']",
+      "detail": ""
+    },
+    {
+      "case_id": "II-3.5",
+      "title": "Quiz detail 9999 returns 404",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.1",
+      "title": "Editor create quiz",
+      "status": "PASS",
+      "expected": "HTTP 201 with id",
+      "actual": "HTTP 201, id=6",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.5",
+      "title": "Create quiz with empty title rejected",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "II-4.6",
+      "title": "Create quiz with negative point rejected",
+      "status": "FAIL",
+      "expected": "HTTP 400",
+      "actual": "HTTP 201",
+      "detail": ""
+    },
+    {
+      "case_id": "II-5.1",
+      "title": "Editor patch quiz",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "II-5.2",
+      "title": "Patch updates title",
+      "status": "PASS",
+      "expected": "title=Updated Quiz Title",
+      "actual": "title=Updated Quiz Title",
+      "detail": ""
+    },
+    {
+      "case_id": "II-6.1",
+      "title": "Editor delete quiz",
+      "status": "PASS",
+      "expected": "HTTP 204",
+      "actual": "HTTP 204",
+      "detail": ""
+    },
+    {
+      "case_id": "II-6.2",
+      "title": "Deleted quiz not retrievable",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "II-6.4",
+      "title": "Delete missing quiz returns 404",
+      "status": "PASS",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.1",
+      "title": "Editor gets question list",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.2",
+      "title": "Question list has seeded items",
+      "status": "PASS",
+      "expected": ">=3 questions",
+      "actual": "count=3",
+      "detail": ""
+    },
+    {
+      "case_id": "III-1.8",
+      "title": "Member forbidden on question list",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "III-2.1",
+      "title": "Editor creates single_choice question",
+      "status": "PASS",
+      "expected": "HTTP 201 + id",
+      "actual": "HTTP 201, id=6",
+      "detail": ""
+    },
+    {
+      "case_id": "III-3.1",
+      "title": "Validation: single_choice missing options",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "III-3.2",
+      "title": "Validation: single_choice multiple correct",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "III-3.5",
+      "title": "Validation: fill_blank missing answers",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "III-3.7",
+      "title": "Validation: score zero",
+      "status": "PASS",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "detail": ""
+    },
+    {
+      "case_id": "III-4.1",
+      "title": "PUT update question",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "III-4.2",
+      "title": "Updated score is 15",
+      "status": "PASS",
+      "expected": "score=15",
+      "actual": "score=15",
+      "detail": ""
+    },
+    {
+      "case_id": "III-5.1",
+      "title": "Delete question",
+      "status": "PASS",
+      "expected": "HTTP 204",
+      "actual": "HTTP 204",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-1.1",
+      "title": "GET config",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-1.2",
+      "title": "Config has id",
+      "status": "PASS",
+      "expected": "id not null",
+      "actual": "id=1",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-2.1",
+      "title": "PUT config",
+      "status": "PASS",
+      "expected": "HTTP 200",
+      "actual": "HTTP 200",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-2.2",
+      "title": "max_attempt updated",
+      "status": "PASS",
+      "expected": "max_attempt=5",
+      "actual": "max_attempt=5",
+      "detail": ""
+    },
+    {
+      "case_id": "IV-3.1",
+      "title": "GET progress",
+      "status": "FAIL",
+      "expected": "HTTP 200",
+      "actual": "HTTP 404",
+      "detail": ""
+    },
+    {
+      "case_id": "V-1.1",
+      "title": "Create root node",
+      "status": "FAIL",
+      "expected": "HTTP 201 + id",
+      "actual": "HTTP 403, id=None",
+      "detail": ""
+    },
+    {
+      "case_id": "V-1.6",
+      "title": "Member can read nodes",
+      "status": "FAIL",
+      "expected": "HTTP 200",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "V-1.7",
+      "title": "Member cannot create node",
+      "status": "PASS",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "detail": ""
+    },
+    {
+      "case_id": "V-2.4",
+      "title": "Move missing node returns 404",
+      "status": "FAIL",
+      "expected": "HTTP 404",
+      "actual": "HTTP 403",
+      "detail": ""
+    }
+  ]
+}
