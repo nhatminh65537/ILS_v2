@@ -12,18 +12,13 @@ Decision: Q-INFRA-05 Option B (first-message auth pattern)
 """
 
 import asyncio
-import json
 import logging
-from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
 from django.conf import settings
 from django.utils import timezone
-from django.db.models import Q
-from django.core.cache import cache
 from rest_framework_simplejwt.backends import TokenBackend
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
@@ -104,23 +99,38 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
           - {"action": "next"}
         """
         try:
-            msg_type = content.get('type')
-            action = content.get('action')
-            
-            if msg_type == 'auth':
+            message_intent = self._extract_message_intent(content)
+
+            if message_intent['type'] == 'auth':
                 await self._handle_auth(content)
-            elif action:
-                if self.user is None:
-                    await self._send_error('not_authenticated', 'Must authenticate first')
+                return
+
+            action = message_intent['action']
+            if action:
+                if not await self._require_authenticated_action():
                     return
                 await self._handle_action(action, content)
-            else:
-                await self._send_error('invalid_message', 'Expected type or action field')
-        except json.JSONDecodeError:
-            await self._send_error('invalid_json', 'Message must be valid JSON')
+                return
+
+            await self._send_error('invalid_message', 'Expected type or action field')
         except Exception as e:
             logger.error(f"Error in receive_json: {e}")
             await self._send_error('internal_error', 'Server error processing message')
+
+    @staticmethod
+    def _extract_message_intent(content: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract protocol intent from incoming JSON payload."""
+        return {
+            'type': content.get('type'),
+            'action': content.get('action'),
+        }
+
+    async def _require_authenticated_action(self) -> bool:
+        """Ensure action messages are processed only after auth succeeds."""
+        if self.user is None:
+            await self._send_error('not_authenticated', 'Must authenticate first')
+            return False
+        return True
 
     async def _handle_auth(self, content: Dict[str, Any]):
         """
@@ -311,13 +321,7 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             
             # Get answered question IDs
             answered_ids = await self._get_answered_question_ids(attempt)
-            
-            # Find next unanswered question
-            next_question = None
-            for q in questions:
-                if q.id not in answered_ids:
-                    next_question = q
-                    break
+            next_question = self._resolve_next_unanswered_question(questions, answered_ids)
             
             if next_question:
                 # Send next question
@@ -331,6 +335,14 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
         except Exception as e:
             logger.error(f"Next error: {e}")
             await self._send_error('internal_error', 'Failed to get next question')
+
+    @staticmethod
+    def _resolve_next_unanswered_question(questions, answered_ids):
+        """Pick the next unanswered question in attempt order."""
+        for question in questions:
+            if question.id not in answered_ids:
+                return question
+        return None
 
     async def _send_error(self, code: str, message: str):
         """Send error event to client."""
@@ -346,21 +358,7 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
         
         Omits is_correct, hidden answer fields.  Options are serialized with position only.
         """
-        # Serialize question based on type
-        question_payload = {
-            'id': question.id,
-            'type': question.question_type,
-            'content': question.content,
-            'time_limit_sec': attempt.config.get('time_limit_sec', 0),
-        }
-        
-        # Add options for choice-based questions
-        if question.question_type in ['single_choice', 'multi_choice']:
-            options = await self._get_question_options(question)
-            if attempt.config.get('random_option', False):
-                # Options already randomized; client can shuffle if needed
-                pass
-            question_payload['options'] = options
+        question_payload = await self._build_question_payload(question, attempt)
         
         await self.send_json({
             'type': 'question',
@@ -371,6 +369,20 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
                 'total': total,
             },
         })
+
+    async def _build_question_payload(self, question: QuizQuestion, attempt: UserQuizAttempt) -> Dict[str, Any]:
+        """Build safe question payload without correctness metadata."""
+        payload = {
+            'id': question.id,
+            'type': question.question_type,
+            'content': question.content,
+            'time_limit_sec': attempt.config.get('time_limit_sec', 0),
+        }
+
+        if question.question_type in ['single_choice', 'multi_choice']:
+            payload['options'] = await self._get_question_options(question)
+
+        return payload
 
     async def _handle_finish(self, attempt: UserQuizAttempt):
         """

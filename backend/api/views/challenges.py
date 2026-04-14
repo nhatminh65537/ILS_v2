@@ -1,17 +1,17 @@
-from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from auth_app.permissions import add_role_granted
 
-from api.models import Challenge, ChallengeInstance, Notification, UserChallengeProgress, UserChallengeSubmit
+from api.models import Challenge
 from api.serializers import (
     ChallengeDetailSerializer,
     ChallengeFlagSubmitSerializer,
     ChallengeInstanceSerializer,
     ChallengeListSerializer,
 )
+from api.services.challenge_service import ChallengeService
 
 
 @add_role_granted('Admin', 'Editor', 'Member')
@@ -20,26 +20,7 @@ class ChallengeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Challenge.objects.all()
-
-        status_param = self.request.query_params.get('status')
-        if status_param:
-            queryset = queryset.filter(status=status_param)
-        elif not self.request.user.is_staff:
-            queryset = queryset.filter(status=Challenge.Status.PUBLISHED)
-
-        difficulty = self.request.query_params.get('difficulty')
-        if difficulty:
-            queryset = queryset.filter(difficulty=difficulty)
-
-        category = self.request.query_params.get('category')
-        if category:
-            queryset = queryset.filter(category_id=category)
-
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(title__icontains=search)
-
-        return queryset.select_related('category')
+        return ChallengeService.filter_visible_challenges(queryset, self.request.user, self.request.query_params)
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -56,22 +37,12 @@ class ChallengeViewSet(viewsets.ModelViewSet):
 
         submitted_flag = serializer.validated_data['flag']
 
-        instance_flag_hash = None
-        if challenge.instance_required:
-            try:
-                instance = ChallengeInstance.objects.get(
-                    user=request.user,
-                    challenge=challenge,
-                    status=ChallengeInstance.InstanceStatus.RUNNING,
-                )
-                instance_flag_hash = instance.flag_value
-            except ChallengeInstance.DoesNotExist:
-                return Response(
-                    {'error': 'No running instance found for this challenge'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        try:
+            instance_flag_hash = ChallengeService.resolve_instance_flag_hash(challenge, request.user)
+        except LookupError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        challenge_flag = challenge.flags.first()
+        challenge_flag = ChallengeService.get_primary_flag(challenge)
         if not challenge_flag:
             return Response(
                 {'error': 'No flag configured for this challenge'},
@@ -80,31 +51,10 @@ class ChallengeViewSet(viewsets.ModelViewSet):
 
         is_correct = challenge_flag.validate_submission(submitted_flag, instance_flag_hash)
 
-        UserChallengeSubmit.objects.create(
-            user=request.user,
-            challenge=challenge,
-            submitted_flag=submitted_flag,
-            is_correct=is_correct,
-        )
+        ChallengeService.record_submission(request.user, challenge, submitted_flag, is_correct)
 
         if is_correct:
-            progress, _ = UserChallengeProgress.objects.get_or_create(user=request.user, challenge=challenge)
-            if not progress.completed_at:
-                progress.completed_at = timezone.now()
-                progress.save()
-
-                profile = request.user.profile
-                profile.total_challenge_point += challenge.challenge_point
-                profile.save()
-                profile.update_leaderboard_rank()
-
-                Notification.objects.create(
-                    user=request.user,
-                    type=Notification.NotificationType.CHALLENGE,
-                    title='Challenge Solved!',
-                    message=f'You solved: {challenge.title}',
-                    metadata={'challenge_id': challenge.id},
-                )
+            ChallengeService.handle_correct_submission(request.user, challenge)
 
         return Response(
             {
@@ -123,21 +73,17 @@ class ChallengeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        existing = ChallengeInstance.objects.filter(
-            user=request.user,
-            challenge=challenge,
-            status=ChallengeInstance.InstanceStatus.RUNNING,
-        ).first()
+        existing = ChallengeService.get_running_instance(challenge, request.user)
 
         if existing:
             serializer = ChallengeInstanceSerializer(existing)
             return Response(serializer.data)
 
-        instance = ChallengeInstance.objects.create(user=request.user, challenge=challenge)
+        instance = ChallengeService.create_instance(challenge, request.user)
 
         try:
-            instance.start()
-        except Exception as exc:
+            ChallengeService.start_instance(instance)
+        except RuntimeError as exc:
             return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         serializer = ChallengeInstanceSerializer(instance)

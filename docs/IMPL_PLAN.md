@@ -437,7 +437,7 @@ auth_app.register.post           ← RegisterView.post
 
 ### Task 2.2 — Role/Permission CRUD API ✅ COMPLETED (2026-03-31)
 
-**Files:** `backend/api/views.py`, `backend/api/serializers.py`, `backend/api/urls.py`
+**Files:** `backend/api/views/`, `backend/api/serializers/`, `backend/api/urls.py`
 
 **Endpoints:**
 ```
@@ -521,7 +521,7 @@ frontend/app/[locale]/(app)/admin/rbac/
 
 Report: `docs/reports/2026-03-30_slice3-task3-1-system-config-api.md`
 
-**Files:** `backend/api/views.py`, `backend/api/serializers.py`, `backend/api/urls.py`, `backend/api/utils.py`
+**Files:** `backend/api/views/`, `backend/api/serializers/`, `backend/api/urls.py`, `backend/api/utils.py`
 
 **Endpoints:**
 ```
@@ -799,7 +799,7 @@ app/[locale]/(admin)/admin/(protected)/challenges/
 > **Decision prerequisites:** namespaced URLs and WebSocket first-message auth are resolved.
 
 ### Task 7.1 — Quiz + Question CRUD API ✅ COMPLETED (2026-04-01)
-**Files:** `backend/api/views/quizzes.py`, `backend/api/serializers.py`, `backend/api/urls.py`, `backend/api/test_quiz_task7_1.py`
+**Files:** `backend/api/views/quizzes.py`, `backend/api/serializers/quiz.py`, `backend/api/urls.py`, `backend/api/tests/test_quiz_api.py`
 
 **Endpoints:**
 ```
@@ -811,10 +811,10 @@ GET/PUT /api/quiz/quizzes/{id}/config/
 ```
 
 **Implementation notes (2026-04-01):**
-- Added canonical namespaced routes under `/api/quiz/quizzes/*` while preserving legacy `/api/quizzes/*` compatibility routes.
+- Added canonical namespaced routes under `/api/quiz/quizzes/*`; legacy flat routes (`/api/quizzes/*`) have been removed and return 404.
 - Added role-aware action guard in quiz viewset: member read + own config; editor/admin for quiz/question write actions.
 - Added deterministic question validation for `single_choice` / `multi_choice` / `fill_blank` in serializer layer.
-- Added focused backend tests in `backend/api/test_quiz_task7_1.py` (6 passing).
+- Added focused backend tests in `backend/api/tests/test_quiz_api.py` (6 passing).
 
 ### Task 7.2 — QuizNode tree API
 Same pattern as Course/Challenge nodes. **No circular FK** — `quiz_node.quiz_id → quiz` only (one-way).

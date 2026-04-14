@@ -6,7 +6,7 @@ from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from ..models import SystemConfig
 from ..serializers import SystemConfigSerializer
-from ..utils import invalidate_config_cache
+from ..services.system_config_service import SystemConfigService
 
 
 @add_role_granted('Admin')
@@ -29,12 +29,7 @@ class SystemConfigViewSet(
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        grouped = {}
-
-        for config in queryset:
-            category = config.category or 'uncategorized'
-            grouped.setdefault(category, []).append(self.get_serializer(config).data)
-
+        grouped = SystemConfigService.group_by_category(queryset, self.get_serializer)
         return Response(grouped)
 
     def update(self, request, *args, **kwargs):
@@ -48,8 +43,5 @@ class SystemConfigViewSet(
         partial = kwargs.pop('partial', False)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        invalidate_config_cache(instance.key)
-
-        return Response(serializer.data)
+        data = SystemConfigService.update_config(instance, serializer)
+        return Response(data)

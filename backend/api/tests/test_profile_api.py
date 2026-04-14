@@ -61,6 +61,19 @@ class TestProfileTask81:
         assert profile.theme == 'dark'
         assert profile.timezone == 'Asia/Ho_Chi_Minh'
 
+    def test_patch_me_settings_rejects_invalid_language_and_theme(self, member_client, member_user):
+        member_client.get('/api/users/me/profile/')
+
+        response = member_client.patch(
+            '/api/users/me/settings/',
+            {'language': 'fr', 'theme': 'blue'},
+            format='json',
+        )
+
+        assert response.status_code == 400
+        assert 'language' in response.data
+        assert 'theme' in response.data
+
     def test_patch_me_account_updates_username_and_email(self, member_client, member_user):
         response = member_client.patch(
             '/api/users/me/account/',

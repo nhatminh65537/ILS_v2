@@ -200,7 +200,7 @@ Flat API-scoped permission. Auto-discovered at startup via endpoint scan. **No h
 
 ---
 
-#### `user_role` (join table)
+#### `user_role` (join table, CreateAudit only)
 
 | Field | Type | Constraints |
 |-------|------|-------------|
@@ -210,7 +210,7 @@ Flat API-scoped permission. Auto-discovered at startup via endpoint scan. **No h
 
 ---
 
-#### `user_permission` (join table)
+#### `user_permission` (join table, CreateAudit only)
 Direct permission deny overrides for a user. **Deny-only** — row existence = deny. No `is_granted` column.
 
 | Field | Type | Constraints |

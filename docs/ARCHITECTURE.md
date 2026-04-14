@@ -94,6 +94,9 @@ ILS_v2/
 │   ├── api/                # Main app — all domain models
 │   │   ├── models.py       # Complete ORM for all domains
 │   │   ├── urls.py         # API router registration
+│   │   ├── serializers/     # Domain serializers package (exported via serializers/__init__.py)
+│   │   ├── services/        # Domain service layer for thin-view orchestration
+│   │   ├── tests/           # API test modules (test_*.py)
 │   │   └── views/          # All viewsets (domain + admin), unified permission pattern
 │   │       ├── auth.py
 │   │       ├── users.py
@@ -124,7 +127,10 @@ ILS_v2/
 │   │       ├── context_loader.py   # Loads Lesson/Challenge context from DB
 │   │       ├── prompt_builder.py   # Builds prompts for 3 AI modes
 │   │       └── llm_client.py       # MOCK — returns hardcoded string
-│   └── realtime/           # WebSocket app (scaffold only — no logic yet)
+│   └── realtime/           # WebSocket app (quiz consumer implemented)
+│       ├── consumers/      # QuizConsumer protocol/state handling
+│       ├── routing.py      # WS URL routing
+│       └── tests/          # Realtime test modules (test_*.py)
 │
 └── frontend/
     ├── package.json

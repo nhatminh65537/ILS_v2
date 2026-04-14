@@ -7,7 +7,7 @@ from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from ..models import Permission, Role, RolePermission
 from ..serializers import PermissionTreeSerializer, RolePermissionSerializer, RoleSerializer
-from ..services.permission_service import PermissionService
+from ..services.role_service import RoleService
 
 
 @add_role_granted('Admin')
@@ -49,7 +49,7 @@ class RoleViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        self._invalidate_role_users_cache(instance)
+        RoleService.invalidate_role_users_cache(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -72,29 +72,16 @@ class RoleViewSet(viewsets.ModelViewSet):
 
         permission_id = serializer.validated_data['permission_id']
         try:
-            permission = Permission.objects.get(id=permission_id)
-            _, created = RolePermission.objects.get_or_create(role=role, permission=permission)
-
-            if created:
-                self._invalidate_role_users_cache(role)
-
+            RoleService.assign_permission(role, permission_id)
             return Response({'detail': 'Permission assigned'}, status=status.HTTP_201_CREATED)
-        except Exception as exc:
-            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-
-    def _invalidate_role_users_cache(self, role):
-        for user_role in role.users.select_related('user').all():
-            PermissionService.invalidate_cache(user_role.user)
+        except Permission.DoesNotExist:
+            return Response({'detail': 'Permission not found'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['delete'], url_path=r'permissions/(?P<perm_id>\d+)')
     def revoke_permission(self, request, pk=None, perm_id=None):
         role = self.get_object()
         try:
-            role_perm = RolePermission.objects.get(role=role, permission_id=perm_id)
-            role_perm.delete()
-
-            self._invalidate_role_users_cache(role)
-
+            RoleService.revoke_permission(role, perm_id)
             return Response(status=status.HTTP_204_NO_CONTENT)
         except RolePermission.DoesNotExist:
             return Response(

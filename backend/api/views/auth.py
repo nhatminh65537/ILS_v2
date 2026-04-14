@@ -1,6 +1,6 @@
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from api.models import User
+from api.services.auth_service import AuthService
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -8,11 +8,4 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-
-        user = User.objects.get(username=request.data.get('username'))
-        response.data['user'] = {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-        }
-        return response
+        return AuthService.attach_user_payload(response, request.data.get('username'))

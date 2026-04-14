@@ -1,4 +1,3 @@
-from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -6,7 +5,7 @@ from rest_framework.response import Response
 
 from auth_app.permissions import add_role_granted
 
-from api.models import Course, CourseNode, Lesson, UserCourseProgress
+from api.models import Course, Lesson
 from api.serializers import (
     CourseDetailSerializer,
     CourseListSerializer,
@@ -14,6 +13,7 @@ from api.serializers import (
     LessonSerializer,
     UserCourseProgressSerializer,
 )
+from api.services.course_service import CourseService
 
 
 @add_role_granted('Admin', 'Editor', 'Member')
@@ -22,22 +22,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Course.objects.all()
-
-        status_param = self.request.query_params.get('status')
-        if status_param:
-            queryset = queryset.filter(status=status_param)
-        elif not self.request.user.is_staff:
-            queryset = queryset.filter(status=Course.Status.PUBLISHED)
-
-        category = self.request.query_params.get('category')
-        if category:
-            queryset = queryset.filter(category_id=category)
-
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(title__icontains=search)
-
-        return queryset.select_related('category')
+        return CourseService.filter_visible_courses(queryset, self.request.user, self.request.query_params)
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -52,24 +37,21 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def tree(self, request, pk=None):
         course = self.get_object()
-        nodes = CourseNode.objects.filter(course=course, parent__isnull=True).prefetch_related('children', 'lesson')
+        nodes = CourseService.get_course_tree_nodes(course)
         serializer = CourseNodeSerializer(nodes, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def progress(self, request, pk=None):
         course = self.get_object()
-        progress, _ = UserCourseProgress.objects.get_or_create(user=request.user, course=course)
+        progress, _ = CourseService.get_or_create_progress(request.user, course)
         serializer = UserCourseProgressSerializer(progress)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def enroll(self, request, pk=None):
         course = self.get_object()
-        progress, created = UserCourseProgress.objects.get_or_create(user=request.user, course=course)
-        if created:
-            progress.started_at = timezone.now()
-            progress.save()
+        CourseService.enroll_user(request.user, course)
         return Response({'message': 'Enrolled successfully'})
 
 

@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.models import Quiz, QuizConfig, QuizNode, QuizQuestion, UserQuizProgress
+from api.models import Quiz, QuizNode
 from api.serializers import (
     QuizConfigSerializer,
     QuizDetailSerializer,
@@ -15,6 +15,7 @@ from api.serializers import (
     QuizQuestionManageSerializer,
     UserQuizProgressSerializer,
 )
+from api.services.quiz_service import QuizService
 
 
 @add_role_granted('Admin', 'Editor', 'Member')
@@ -27,11 +28,7 @@ class QuizViewSet(viewsets.ModelViewSet):
         queryset = Quiz.objects.all().select_related('category')
 
         status_param = self.request.query_params.get('status')
-        if status_param:
-            queryset = queryset.filter(status=status_param)
-        elif not self._is_editor_or_admin(self.request.user):
-            queryset = queryset.filter(status=Quiz.Status.PUBLISHED)
-
+        queryset = QuizService.filter_visible_quizzes(queryset, self.request.user, status_param)
         return queryset.order_by('id')
 
     def get_serializer_class(self):
@@ -42,20 +39,6 @@ class QuizViewSet(viewsets.ModelViewSet):
         if self.action == 'config':
             return QuizConfigSerializer
         return QuizListSerializer
-
-    def _is_editor_or_admin(self, user):
-        if user.is_superuser:
-            return True
-        return user.user_roles.filter(role__name__in=['Admin', 'Editor']).exists()
-
-    def _get_quiz_question(self, quiz, qid):
-        return get_object_or_404(QuizQuestion, id=qid, quiz=quiz)
-
-    def _sync_total_questions(self, quiz):
-        total = quiz.questions.count()
-        if quiz.total_questions != total:
-            quiz.total_questions = total
-            quiz.save(update_fields=['total_questions', 'updated_at'])
 
     @add_role_granted('Admin', 'Editor')
     def create(self, request, *args, **kwargs):
@@ -88,14 +71,14 @@ class QuizViewSet(viewsets.ModelViewSet):
         serializer = QuizQuestionManageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(quiz=quiz)
-        self._sync_total_questions(quiz)
+        QuizService.sync_total_questions(quiz)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @add_role_granted('Admin', 'Editor')
     @action(detail=True, methods=['get', 'put', 'delete'], url_path=r'questions/(?P<qid>\d+)')
     def question_detail(self, request, pk=None, qid=None):
         quiz = self.get_object()
-        question = self._get_quiz_question(quiz, qid)
+        question = QuizService.get_quiz_question(quiz, qid)
 
         if request.method.lower() == 'get':
             serializer = QuizQuestionManageSerializer(question)
@@ -103,7 +86,7 @@ class QuizViewSet(viewsets.ModelViewSet):
 
         if request.method.lower() == 'delete':
             question.delete()
-            self._sync_total_questions(quiz)
+            QuizService.sync_total_questions(quiz)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         serializer = QuizQuestionManageSerializer(question, data=request.data)
@@ -114,7 +97,7 @@ class QuizViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get', 'put'])
     def config(self, request, pk=None):
         quiz = self.get_object()
-        config, _ = QuizConfig.objects.get_or_create(quiz=quiz, user=request.user)
+        config, _ = QuizService.get_or_create_user_config(quiz, request.user)
 
         if request.method.lower() == 'get':
             serializer = QuizConfigSerializer(config)
@@ -128,19 +111,10 @@ class QuizViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def progress(self, request, pk=None):
         quiz = self.get_object()
-        try:
-            prog = UserQuizProgress.objects.get(quiz=quiz, user=request.user)
+        prog = QuizService.get_user_progress(quiz, request.user)
+        if prog is not None:
             return Response(UserQuizProgressSerializer(prog).data)
-        except UserQuizProgress.DoesNotExist:
-            return Response({
-                'id': None,
-                'user_id': request.user.id,
-                'quiz_id': quiz.id,
-                'best_score': 0,
-                'attempt_count': 0,
-                'first_attempted_at': None,
-                'last_attempted_at': None,
-            })
+        return Response(QuizService.build_default_progress_payload(quiz.id, request.user.id))
 
 
 @add_role_granted('Admin', 'Editor', 'Member')
