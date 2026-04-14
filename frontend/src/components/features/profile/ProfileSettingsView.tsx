@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getMyProfile } from '@/services/users.service'
+import { useAuthStore } from '@/stores/auth.store'
 import type { UserProfile } from '@/types/user.types'
 import { AccountForm } from './AccountForm'
 import { AppSettingsForm } from './AppSettingsForm'
@@ -23,6 +24,12 @@ export function ProfileSettingsView({ locale }: ProfileSettingsViewProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
+  const setAuthUser = useAuthStore((state) => state.setUser)
+
+  const handleAccountUpdated = (user: { id: number; username: string; email: string }) => {
+    setAuthUser(user)
+    setProfile((prev) => (prev ? { ...prev, username: user.username } : prev))
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -86,7 +93,7 @@ export function ProfileSettingsView({ locale }: ProfileSettingsViewProps) {
           <CardTitle>{t('accountSection')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <AccountForm profile={profile} />
+          <AccountForm locale={locale} profile={profile} onAccountUpdated={handleAccountUpdated} />
         </CardContent>
       </Card>
 

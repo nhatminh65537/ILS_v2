@@ -148,6 +148,22 @@ class AdminUserManagementSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'role_ids': f'Role ids not found: {missing_role_ids}'})
         return unique_role_ids
 
+    def validate_username(self, value):
+        user = self.instance
+        queryset = User.objects.exclude(pk=getattr(user, 'pk', None))
+        if queryset.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('A user with that username already exists.')
+        return value
+
+    def validate_email(self, value):
+        user = self.instance
+        if not value:
+            return value
+        queryset = User.objects.exclude(pk=getattr(user, 'pk', None))
+        if queryset.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('A user with that email already exists.')
+        return value
+
     @staticmethod
     def _default_member_role_ids():
         member_role = Role.objects.filter(name='Member').order_by('id').first()
@@ -849,6 +865,7 @@ class QuizQuestionManageSerializer(serializers.ModelSerializer):
 class QuizListSerializer(serializers.ModelSerializer):
     """Quiz list serializer"""
     tags = serializers.SerializerMethodField()
+    quiz_point = serializers.IntegerField(min_value=0, required=False)
 
     class Meta:
         model = Quiz
@@ -867,10 +884,11 @@ class QuizDetailSerializer(serializers.ModelSerializer):
     """Quiz detail serializer with questions"""
     questions = QuizQuestionSerializer(many=True, read_only=True)
     tags = serializers.SerializerMethodField()
+    category = QuizCategorySerializer(read_only=True)
 
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'description', 'status', 'tags',
+        fields = ['id', 'title', 'description', 'status', 'category', 'tags',
                   'quiz_point', 'total_questions', 'time_limit_sec',
                   'updated_at', 'questions']
         read_only_fields = ['id', 'updated_at']
@@ -922,8 +940,8 @@ class QuizConfigSerializer(serializers.ModelSerializer):
 class UserQuizProgressSerializer(serializers.ModelSerializer):
     """User quiz progress serializer for GET /api/quiz/quizzes/{id}/progress/."""
 
-    user_id = serializers.IntegerField(source='user_id', read_only=True)
-    quiz_id = serializers.IntegerField(source='quiz_id', read_only=True)
+    user_id = serializers.IntegerField(read_only=True)
+    quiz_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = UserQuizProgress

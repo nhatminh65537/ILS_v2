@@ -31,6 +31,34 @@ export const usersHandlers = [
 
   http.patch('*/api/users/me/account/', async ({ request }) => {
     const payload = (await request.json()) as { username?: string; email?: string }
+
+    const targetUsername = payload.username?.trim().toLowerCase()
+    const targetEmail = payload.email?.trim().toLowerCase()
+
+    if (targetUsername) {
+      const usernameExists = usersFixture.some(
+        (user, index) => index !== 0 && user.username.toLowerCase() === targetUsername
+      )
+      if (usernameExists) {
+        return HttpResponse.json(
+          { username: ['A user with that username already exists.'] },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (targetEmail) {
+      const emailExists = usersFixture.some(
+        (user, index) => index !== 0 && user.email.toLowerCase() === targetEmail
+      )
+      if (emailExists) {
+        return HttpResponse.json(
+          { email: ['A user with that email already exists.'] },
+          { status: 400 }
+        )
+      }
+    }
+
     const updatedUser = {
       ...usersFixture[0],
       ...(payload.username ? { username: payload.username } : {}),
@@ -38,6 +66,10 @@ export const usersHandlers = [
       updated_at: new Date().toISOString(),
     }
     usersFixture[0] = updatedUser
+    profile = {
+      ...profile,
+      username: updatedUser.username,
+    }
     return HttpResponse.json(updatedUser)
   }),
 
@@ -46,8 +78,15 @@ export const usersHandlers = [
   // ─── Public profile routes — must come before wildcard /:id/ ─────────────
 
   http.get('*/api/users/:username/profile/', ({ params }) => {
+    const username = String(params.username)
+    const found = usersFixture.find((user) => user.username === username)
+
+    if (!found) {
+      return notFound('User not found')
+    }
+
     return HttpResponse.json({
-      username: String(params.username),
+      username,
       entry_year: profile.entry_year,
       display_name: profile.display_name,
       avatar_url: profile.avatar_url,

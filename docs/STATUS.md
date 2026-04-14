@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-14 (Permission system refactor: unified views, auto-derive permission key, BUG H1/H5/M1 resolved)
+> Last updated: 2026-04-14 (Bugfix pass H4/H6/H8/M6/M7/M9/M10: quiz progress route, admin-user unique validation, public profile route, account relogin flow)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -109,6 +109,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 integration validation snapshot (2026-04-14) | Added runnable requests-based integration runner at `integration-test/slice7/run_requests_integration.py` and executed against real backend (`54` checks: `46` pass, `8` fail). Browser sampling logged additional FE regressions (user quiz route redirect and admin surface gate bypass behavior). Findings tracked in `docs/BUGS.md` as H4/H5/M8/M9/M10 plus existing H3 reproduction. |
 | Slice 8 integration validation snapshot (2026-04-14) | Added runnable requests-based integration runner at `integration-test/slice8/test_slice8_requests.py` and executed against real backend (`75` checks: `70` pass, `5` fail). Browser validation confirmed session/settings core UI works and logged route-level regressions for `/admin/users` and public profile route. Findings tracked in `docs/BUGS.md` as H6/H7/H8/M11/M12. |
 | Permission system refactor (2026-04-14) | Unified all backend views into `api/views/`; added `derive_permission_key()` shared utility; `HasJWTPermission` auto-derives key from `view.__class__+action` matching scanner logic; removed `action_permission_map`, `RBACActionPermissionMixin`, `QuizActionPermission`, `admin_views.py`, `mixins/`; all ViewSets use `permission_classes = [IsAuthenticated, HasJWTPermission]`; fixed BUG H1 (SystemConfigViewSet IsAdminUser), H5 (QuizNodeViewSet RBAC mismatch), M1 (hardcoded strings); 112 tests pass. |
+| Bugfix pass H4/H6/H8/M6/M7/M9/M10 (2026-04-14) | Backend: wired `/api/quiz/quizzes/{id}/progress/`, enforced admin-user `username/email` uniqueness, added `quiz_point >= 0` validation and quiz detail `category` payload, added regression tests in `backend/api/test_quiz_task7_1.py`. Frontend: moved public profile route to public surface (no auth redirect), added not-found dialog UX, fixed MSW public-profile/account uniqueness behavior, added username-change confirmation + forced re-login flow in account settings, and preserved field-level API errors in axios error normalization. |
 
 ---
 

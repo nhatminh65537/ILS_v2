@@ -614,6 +614,12 @@
     "saveAccount": "Lưu tài khoản",
     "saving": "Đang lưu...",
     "saveSuccess": "Đã lưu thành công.",
+    "accountConfirm": {
+      "title": "Đổi tên đăng nhập và đăng nhập lại?",
+      "description": "Khi đổi tên đăng nhập, bạn sẽ bị đăng xuất ngay lập tức. Bạn cần đăng nhập lại bằng tên đăng nhập mới.",
+      "cancel": "Hủy",
+      "confirm": "Lưu và đăng xuất"
+    },
     "passwordSection": "Đổi mật khẩu",
     "passwordPending": "Tính năng đổi mật khẩu sẽ có trong cập nhật tiếp theo.",
     "ssoSection": "Liên kết SSO",
@@ -681,7 +687,9 @@
     "errors": {
       "loadFailed": "Không thể tải hồ sơ. Vui lòng thử lại.",
       "saveFailed": "Lưu thất bại. Vui lòng thử lại.",
+      "notFoundTitle": "Không tìm thấy người dùng",
       "notFound": "Không tìm thấy người dùng này.",
+      "backToHome": "Quay lại trang chủ",
       "usernameConflict": "Tên đăng nhập đã tồn tại.",
       "emailConflict": "Email đã được sử dụng."
     }

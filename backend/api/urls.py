@@ -60,6 +60,11 @@ urlpatterns = [
         name='quiz-detail',
     ),
     re_path(
+        r'^quiz/quizzes/(?P<pk>\d+)/progress/$',
+        QuizViewSet.as_view({'get': 'progress'}),
+        name='quiz-progress',
+    ),
+    re_path(
         r'^quiz/quizzes/(?P<pk>\d+)/questions/$',
         QuizViewSet.as_view({'get': 'questions', 'post': 'questions'}),
         name='quiz-questions',

@@ -116,13 +116,12 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Other errors — normalize to ApiError
+    // Other errors — keep field-level validation payload when available.
+    const responseData = error.response?.data
     const apiError: ApiError =
-      ((typeof error.response?.data === 'object' &&
-      error.response?.data !== null &&
-      'detail' in error.response.data)
-        ? error.response.data
-        : { detail: error.message }) as ApiError
+      (typeof responseData === 'object' && responseData !== null
+        ? (responseData as ApiError)
+        : { detail: error.message })
     return Promise.reject(apiError)
   }
 )

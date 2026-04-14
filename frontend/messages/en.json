@@ -614,6 +614,12 @@
     "saveAccount": "Save account",
     "saving": "Saving...",
     "saveSuccess": "Saved successfully.",
+    "accountConfirm": {
+      "title": "Change username and sign in again?",
+      "description": "Changing username will sign you out immediately. You need to log in again with the new username.",
+      "cancel": "Cancel",
+      "confirm": "Save and sign out"
+    },
     "passwordSection": "Change password",
     "passwordPending": "Password change will be available in a future update.",
     "ssoSection": "SSO Identity",
@@ -681,7 +687,9 @@
     "errors": {
       "loadFailed": "Failed to load profile. Please try again.",
       "saveFailed": "Save failed. Please try again.",
+      "notFoundTitle": "User not found",
       "notFound": "User not found.",
+      "backToHome": "Back to home",
       "usernameConflict": "Username already taken.",
       "emailConflict": "Email already in use."
     }

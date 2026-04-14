@@ -1,6 +1,6 @@
 import pytest
 
-from api.models import Quiz, QuizNode, QuizQuestion, Role, UserRole
+from api.models import Quiz, QuizCategory, QuizNode, QuizQuestion, Role, UserQuizProgress, UserRole
 
 
 pytestmark = pytest.mark.integration
@@ -72,6 +72,68 @@ def test_editor_can_create_quiz(editor_client, editor_user):
 
     assert response.status_code == 201
     assert response.data['title'] == 'Editor Quiz'
+
+
+def test_editor_cannot_create_quiz_with_negative_points(editor_client, editor_user):
+    _assign_role(editor_user, 'Editor')
+
+    response = editor_client.post(
+        '/api/quiz/quizzes/',
+        {
+            'title': 'Negative Quiz Point',
+            'status': Quiz.Status.DRAFT,
+            'quiz_point': -1,
+        },
+        format='json',
+    )
+
+    assert response.status_code == 400
+    assert 'quiz_point' in response.data
+
+
+def test_member_can_read_quiz_progress(member_client, member_user, published_quiz):
+    _assign_role(member_user, 'Member')
+
+    UserQuizProgress.objects.create(
+        user=member_user,
+        quiz=published_quiz,
+        best_score=77,
+        attempt_count=2,
+    )
+
+    response = member_client.get(f'/api/quiz/quizzes/{published_quiz.id}/progress/')
+
+    assert response.status_code == 200
+    assert response.data['quiz_id'] == published_quiz.id
+    assert response.data['best_score'] == 77
+    assert response.data['attempt_count'] == 2
+
+
+def test_member_quiz_progress_defaults_when_missing(member_client, member_user, published_quiz):
+    _assign_role(member_user, 'Member')
+
+    response = member_client.get(f'/api/quiz/quizzes/{published_quiz.id}/progress/')
+
+    assert response.status_code == 200
+    assert response.data['quiz_id'] == published_quiz.id
+    assert response.data['best_score'] == 0
+    assert response.data['attempt_count'] == 0
+
+
+def test_quiz_detail_includes_category(member_client, member_user):
+    _assign_role(member_user, 'Member')
+    category = QuizCategory.objects.create(name='Web Security')
+    quiz = Quiz.objects.create(
+        title='Category Quiz',
+        status=Quiz.Status.PUBLISHED,
+        category=category,
+    )
+
+    response = member_client.get(f'/api/quiz/quizzes/{quiz.id}/')
+
+    assert response.status_code == 200
+    assert response.data['category']['id'] == category.id
+    assert response.data['category']['name'] == category.name
 
 
 def test_editor_can_create_question_and_sync_total_questions(editor_client, editor_user, published_quiz):

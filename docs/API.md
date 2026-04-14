@@ -171,7 +171,7 @@ Task 7.2 update (2026-04-01):
 - MVP behavior is folder-only (`is_item=false` enforced); tree operations use dot-separated `path` invariants from `BaseNode`.
 
 Integration note (2026-04-14):
-- `QuizViewSet.progress()` exists in backend view code, but route `/api/quiz/quizzes/{id}/progress/` is currently not wired in `backend/api/urls.py`; live request returns `404` until route mapping is added.
+- `GET /api/quiz/quizzes/{id}/progress/` is now wired and returns per-user aggregate progress (`best_score`, `attempt_count`, attempt timestamps), with deterministic zero/default payload when no progress exists.
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
@@ -180,6 +180,7 @@ Integration note (2026-04-14):
 | GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced detail endpoint. |
 | PUT/PATCH | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin role required. |
 | DELETE | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced delete endpoint; editor/admin role required. |
+| GET | `/api/quiz/quizzes/{id}/progress/` | Yes | Partial | Canonical namespaced per-user progress endpoint; returns zero/default aggregate when user has no attempts. |
 | GET | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question management list endpoint; editor/admin only. |
 | POST | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question create endpoint; supports single/multi/fill_blank validation. |
 | GET | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question detail endpoint; editor/admin only. |

@@ -1,8 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getPublicActivity, getPublicProfile } from '@/services/users.service'
 import type { ActivityEvent, PublicProfileResponse } from '@/types/user.types'
@@ -11,10 +14,11 @@ import { ProfileHeader } from './ProfileHeader'
 import { ProfileStats } from './ProfileStats'
 
 type PublicProfileViewProps = {
+  locale: string
   username: string
 }
 
-export function PublicProfileView({ username }: PublicProfileViewProps) {
+export function PublicProfileView({ locale, username }: PublicProfileViewProps) {
   const t = useTranslations('profile')
 
   const [profile, setProfile] = useState<PublicProfileResponse | null>(null)
@@ -83,7 +87,21 @@ export function PublicProfileView({ username }: PublicProfileViewProps) {
   }
 
   if (notFound) {
-    return <p className="text-sm text-muted-foreground">{t('errors.notFound')}</p>
+    return (
+      <Dialog open>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>{t('errors.notFoundTitle')}</DialogTitle>
+            <DialogDescription>{t('errors.notFound')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button asChild>
+              <Link href={`/${locale}`}>{t('errors.backToHome')}</Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   if (error || !profile) {
