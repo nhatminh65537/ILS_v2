@@ -94,17 +94,19 @@ ILS_v2/
 │   ├── api/                # Main app — all domain models
 │   │   ├── models.py       # Complete ORM for all domains
 │   │   ├── urls.py         # API router registration
-│   │   ├── admin_views.py  # Admin config + RBAC viewsets
-│   │   ├── views/          # Domain view modules (split from monolith)
-│   │   │   ├── auth.py
-│   │   │   ├── users.py
-│   │   │   ├── courses.py
-│   │   │   ├── challenges.py
-│   │   │   ├── quizzes.py
-│   │   │   ├── notifications.py
-│   │   │   ├── leaderboard.py
-│   │   │   └── __init__.py
-│   │   └── mixins/         # Reusable API mixins (RBAC action permission)
+│   │   └── views/          # All viewsets (domain + admin), unified permission pattern
+│   │       ├── auth.py
+│   │       ├── users.py
+│   │       ├── courses.py
+│   │       ├── challenges.py
+│   │       ├── quizzes.py
+│   │       ├── notifications.py
+│   │       ├── leaderboard.py
+│   │       ├── roles.py         # Admin: RoleViewSet
+│   │       ├── admin_users.py   # Admin: AdminUserViewSet, UserRoleViewSet
+│   │       ├── permissions.py   # Admin: PermissionViewSet
+│   │       ├── system_config.py # Admin: SystemConfigViewSet
+│   │       └── __init__.py
 │   ├── auth_app/           # JWT auth, SSO, session management
 │   │   ├── constants.py    # Shared auth/rbac constants
 │   │   └── services/
@@ -146,13 +148,15 @@ ILS_v2/
 ```
 backend/
 ├── api/
-│   ├── admin_views.py      # System config + RBAC API
-│   ├── views/              # Domain APIs split by module
-│   ├── mixins/             # RBAC action permission mixin
+│   ├── views/              # All viewsets — domain + admin — unified under one directory
+│   │   ├── users.py, courses.py, challenges.py, quizzes.py, ...  # domain
+│   │   ├── roles.py, admin_users.py, permissions.py, system_config.py  # admin
+│   │   └── __init__.py
 │   └── urls.py             # App-level URL routing
 ├── auth_app/               # JWT auth, SSO, session management
+│   ├── permissions.py      # HasJWTPermission, add_role_granted, derive_permission_key
 │   ├── constants.py
-│   └── services/           # token/sso/session services
+│   └── services/           # token/sso/session/permission_discovery services
 ├── realtime/               # Quiz WebSocket consumers
 └── ...
 ```
@@ -227,7 +231,42 @@ Permissions are created automatically by scanning all registered API endpoints a
 
 ---
 
-### 4.5 Dot-Separated Path for Tree Structures
+### 4.5 Runtime Permission Key Derivation (Auto-Derive, No Hardcoding)
+
+`HasJWTPermission` derives the permission key at request time using `derive_permission_key(view_class, action)` — **the same function** as the startup scanner. This guarantees scanner output and runtime checks always match.
+
+```python
+# auth_app/permissions.py
+def derive_permission_key(view_class, action: str) -> str:
+    app_label = view_class.__module__.split('.', 1)[0].lower()
+    resource   = _normalize_resource_name(view_class.__name__)  # CamelCase→snake, strip suffix
+    return f'{app_label}.{resource}.{action}'.lower()
+```
+
+**All ViewSets use the same two-liner pattern:**
+```python
+@add_role_granted('Admin')
+class RoleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+    # No action_permission_map needed — key derived automatically
+```
+
+**Explicit override still supported** (edge cases only):
+```python
+permission_classes = [IsAuthenticated, HasJWTPermission('api.role.list')]
+```
+
+**No-JWT-bitmap fallback (test environments using `force_authenticate`):**
+When `request.auth` is not a JWT dict (no bitmap), `HasJWTPermission` falls back to role-grant metadata:
+1. `user.is_superuser` → allow
+2. `'Member' in effective_roles` → allow (any authenticated user qualifies)
+3. Otherwise → `user.user_roles.filter(role__name__in=effective_roles).exists()` → DB check
+
+This fallback is **never reached in production** (all JWT-authenticated requests carry a bitmap).
+
+---
+
+### 4.6 Dot-Separated Path for Tree Structures
 
 All tree structures (CourseNode, ChallengeNode, QuizNode) use a `path` field storing the dot-separated ancestor IDs:
 
@@ -248,7 +287,7 @@ Root nodes: path = "" (empty string)
 
 ---
 
-### 4.6 Node/Item Pattern for All Content Trees
+### 4.7 Node/Item Pattern for All Content Trees
 
 Every domain (course, challenge, quiz) uses a unified Node model for its tree:
 - `is_item=False` → folder node (no content FK)
@@ -258,7 +297,7 @@ Every domain (course, challenge, quiz) uses a unified Node model for its tree:
 
 ---
 
-### 4.7 External Integrations via system_config
+### 4.8 External Integrations via system_config
 
 External service hostnames (Outline URL, GitLab URL, instance deploy server) are stored in `system_config`, not hardcoded.
 
@@ -268,7 +307,7 @@ Outline integration is server-mediated: frontend does not call Outline directly;
 
 ---
 
-### 4.8 Quiz: No Circular FK
+### 4.9 Quiz: No Circular FK
 
 `quiz` does NOT have a FK to `quiz_node`. Only `quiz_node.quiz_id → quiz` (one-way). Access the node from a quiz via Django's reverse relation accessor.
 
@@ -276,13 +315,13 @@ Outline integration is server-mediated: frontend does not call Outline directly;
 
 ---
 
-### 4.9 Join Table Audit Fields
+### 4.10 Join Table Audit Fields
 
 Many-to-many join tables (tag maps, role_permission) use **CreateAudit only** (no `updated_at`/`updated_by`). Join tables are insert/delete only — records are never updated in-place.
 
 ---
 
-### 4.10 Instance Deployment Interface (Strategy Pattern)
+### 4.11 Instance Deployment Interface (Strategy Pattern)
 
 The instance deployment system (spinning up challenge containers) is an **external system** — not part of this project's scope. ILS defines a **clean interface** to communicate with it.
 
@@ -303,7 +342,7 @@ class InstanceDeploymentBackend(Protocol):
 
 ---
 
-### 4.11 Authorization Bypass for Development
+### 4.12 Authorization Bypass for Development
 
 `system_config[auth.authorization_enabled]` (bool, default `true`) controls whether RBAC permission checks are enforced on API endpoints.
 
@@ -331,7 +370,7 @@ class HasJWTPermission(BasePermission):
 
 ---
 
-### 4.12 Frontend User/Admin Surface Separation
+### 4.13 Frontend User/Admin Surface Separation
 
 Frontend is split into two route-level surfaces while still running in one Next.js application:
 
@@ -357,7 +396,7 @@ Admin registration flow is intentionally absent. Admin authentication uses a ded
 
 ---
 
-### 4.13 No Database Triggers
+### 4.14 No Database Triggers
 
 All denormalized field updates (counters, aggregates, path maintenance) are done at **application level** via Django signals or explicit service method calls. **No PostgreSQL triggers** are used.
 
@@ -530,7 +569,6 @@ Client → POST /challenges/{slug}/submit { flag }
 - ❌ **Never allow deleting permissions** — they become inactive but stay in DB
 - ❌ **Never allow deleting or modifying built-in roles** (`is_system=TRUE`) via API — their permissions are synced at startup
 - ❌ **Never use permission hierarchy** (parent/child) — permissions are flat; roles provide grouping
-- ❌ **Never use DB triggers for denormalized field updates** — all sync via Django signals at app level
 - ❌ **Never deploy with `auth.authorization_enabled=false` in production** — dev-only bypass for testing other features
 
 ### Tree / Nodes
@@ -539,6 +577,7 @@ Client → POST /challenges/{slug}/submit { flag }
 - ❌ **Never forget to update `path` on node move** — update self and ALL descendants
 
 ### Database
+- ❌ **Never use DB triggers for denormalized field updates** — all sync via Django signals at app level
 - ❌ **Never store plaintext refresh tokens** — always hash before storing in `user_session.refresh_token_hash`
 - ❌ **Never expose flag values to client** — flag checking is server-side only
 - ❌ **Never use Django's `ManyToManyField`** for M2M relationships — use explicit join tables
@@ -574,10 +613,11 @@ Client → POST /challenges/{slug}/submit { flag }
 
 **Permission System:**
 - Auto-discover on startup (scan registered endpoints)
-- Permission names auto-generated from `{app_label}.{resource_name}.{handler_method_name}` (lowercase)
+- Permission names auto-generated from `{app_label}.{resource_name}.{handler_method_name}` (lowercase) via shared `derive_permission_key(view_class, action)` in `auth_app/permissions.py`
 - Built-in roles auto-created via `@add_role_granted('Admin', 'Editor', 'Member')` decorator
 - Encode as binary bitmap (base64) in JWT access token
-- Check bitmap bit in DRF permission class (no DB hit)
+- Runtime check: `permission_classes = [IsAuthenticated, HasJWTPermission]` — no hardcoded strings, no `action_permission_map`
+- `HasJWTPermission` auto-derives key from `view.__class__` + `view.action` using the same `derive_permission_key` function as the scanner
 - Permissions are read-only via API (no admin PATCH/DELETE)
 
 ---

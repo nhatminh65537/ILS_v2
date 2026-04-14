@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from auth_app.permissions import add_role_granted
+from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import User, UserChallengeProgress, UserLessonProgress, UserProfile, UserQuizProgress
 from api.serializers import (
@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in {'create', 'public_profile', 'public_activity'}:
             return [AllowAny()]
-        return [IsAuthenticated()]
+        return [IsAuthenticated(), HasJWTPermission()]
 
     @staticmethod
     def _get_or_create_profile(user):

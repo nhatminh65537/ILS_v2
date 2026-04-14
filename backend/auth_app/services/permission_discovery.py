@@ -1,11 +1,10 @@
 import logging
-import re
 
 from django.db import connection, transaction
 from django.urls import URLPattern, URLResolver, get_resolver
 
 from api.models import Permission, Role, RolePermission
-from auth_app.permissions import get_role_granted
+from auth_app.permissions import derive_permission_key, get_role_granted
 
 
 LOGGER = logging.getLogger(__name__)
@@ -124,8 +123,6 @@ def _collect_discovered_permissions() -> tuple[dict, int]:
         if not handlers:
             continue
 
-        app_label = _extract_app_label(view_class)
-        resource_name = _normalize_resource_name(view_class.__name__)
         source = f'{view_class.__module__}.{view_class.__name__}'
         route_has_permission = False
 
@@ -134,7 +131,7 @@ def _collect_discovered_permissions() -> tuple[dict, int]:
             if not effective_roles:
                 continue
 
-            permission_name = f'{app_label}.{resource_name}.{handler_name}'.lower()
+            permission_name = derive_permission_key(view_class, handler_name)
             if permission_name not in discovered:
                 discovered[permission_name] = {
                     'roles': set(),
@@ -194,26 +191,6 @@ def _extract_handler_method_names(callback, view_class) -> list[str]:
         if callable(getattr(view_class, lowered, None)):
             handlers.append(lowered)
     return sorted(set(handlers))
-
-
-def _extract_app_label(view_class) -> str:
-    module = getattr(view_class, '__module__', '')
-    return (module.split('.', 1)[0] or 'api').lower()
-
-
-def _normalize_resource_name(class_name: str) -> str:
-    base_name = class_name or 'endpoint'
-    for suffix in ('GenericViewSet', 'APIView', 'ViewSet', 'View'):
-        if base_name.endswith(suffix):
-            base_name = base_name[: -len(suffix)]
-            break
-
-    if not base_name:
-        base_name = class_name or 'endpoint'
-
-    snake = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', base_name)
-    snake = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', snake)
-    return snake.strip('_').lower() or 'endpoint'
 
 
 def _has_required_tables() -> bool:

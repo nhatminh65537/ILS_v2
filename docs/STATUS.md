@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-14 (Slice 8 integration validation logged; BUGS updated with H6/H7/H8/M11/M12)
+> Last updated: 2026-04-14 (Permission system refactor: unified views, auto-derive permission key, BUG H1/H5/M1 resolved)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -108,6 +108,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Bugfix pass (2026-04-14) | Fixed active FE/MSW bugs H2, M2, M4, M5, L3: admin quiz status filter now applies in MSW list handler, quiz Try Again enforces deterministic session remount, ICU interpolation restored for `{title}` and `{device}` in vi/en locale messages, account save button now disables when no effective changes; `lint` and `next build` pass. |
 | Slice 7 integration validation snapshot (2026-04-14) | Added runnable requests-based integration runner at `integration-test/slice7/run_requests_integration.py` and executed against real backend (`54` checks: `46` pass, `8` fail). Browser sampling logged additional FE regressions (user quiz route redirect and admin surface gate bypass behavior). Findings tracked in `docs/BUGS.md` as H4/H5/M8/M9/M10 plus existing H3 reproduction. |
 | Slice 8 integration validation snapshot (2026-04-14) | Added runnable requests-based integration runner at `integration-test/slice8/test_slice8_requests.py` and executed against real backend (`75` checks: `70` pass, `5` fail). Browser validation confirmed session/settings core UI works and logged route-level regressions for `/admin/users` and public profile route. Findings tracked in `docs/BUGS.md` as H6/H7/H8/M11/M12. |
+| Permission system refactor (2026-04-14) | Unified all backend views into `api/views/`; added `derive_permission_key()` shared utility; `HasJWTPermission` auto-derives key from `view.__class__+action` matching scanner logic; removed `action_permission_map`, `RBACActionPermissionMixin`, `QuizActionPermission`, `admin_views.py`, `mixins/`; all ViewSets use `permission_classes = [IsAuthenticated, HasJWTPermission]`; fixed BUG H1 (SystemConfigViewSet IsAdminUser), H5 (QuizNodeViewSet RBAC mismatch), M1 (hardcoded strings); 112 tests pass. |
 
 ---
 
@@ -133,6 +134,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 4 / Frontend Foundation (2026-03-31) | `docs/reports/2026-03-31_slice4-full-task-report.md` |
 | Slice 0 / Task 0.3.5 (2026-04-01) | `docs/reports/2026-04-01_slice0-task0-3-5-seed-roles.md` |
 | Backend Refactor Phase 1-4 (2026-04-01) | `docs/reports/2026-04-01_backend-refactor-phase1-4.md` |
+| Permission refactor — unified views (2026-04-14) | `docs/reports/2026-04-14_permission-refactor-unified-views.md` |
 | Frontend Surface Split + Admin Auth Entry (2026-04-01) | `docs/reports/2026-04-01_frontend-surface-split-admin-shell.md` |
 | Slice 7 / Task 7.1 (2026-04-01) | `docs/reports/2026-04-01_slice7-task7-1-quiz-crud-api.md` |
 | Slice 8 / Task 8.2 (2026-04-02) | `docs/reports/2026-04-02_slice8-task8-2-admin-user-management-api.md` |

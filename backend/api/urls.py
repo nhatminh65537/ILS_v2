@@ -6,6 +6,7 @@ from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AdminUserViewSet,
     UserViewSet,
     CourseViewSet, LessonViewSet,
     ChallengeViewSet,
@@ -13,8 +14,11 @@ from .views import (
     QuizViewSet,
     NotificationViewSet,
     LeaderboardViewSet,
+    PermissionViewSet,
+    RoleViewSet,
+    SystemConfigViewSet,
+    UserRoleViewSet,
 )
-from .admin_views import AdminUserViewSet, SystemConfigViewSet, PermissionViewSet, RoleViewSet, UserRoleViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()

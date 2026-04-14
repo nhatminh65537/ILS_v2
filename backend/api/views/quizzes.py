@@ -1,12 +1,11 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from auth_app.permissions import add_role_granted
+from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.mixins.rbac_action_permission import RBACActionPermissionMixin
 from api.models import Quiz, QuizConfig, QuizNode, QuizQuestion, UserQuizProgress
 from api.serializers import (
     QuizConfigSerializer,
@@ -18,55 +17,11 @@ from api.serializers import (
 )
 
 
-class QuizActionPermission(permissions.BasePermission):
-    """Role-aware guard for quiz APIs when JWT permission claims are absent."""
-
-    editor_actions = {
-        'create',
-        'update',
-        'partial_update',
-        'destroy',
-        'questions',
-        'question_detail',
-    }
-
-    def _has_role(self, user, role_names):
-        if not user or not user.is_authenticated:
-            return False
-        if user.is_superuser:
-            return True
-        return user.user_roles.filter(role__name__in=role_names).exists()
-
-    def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-
-        if view.action in self.editor_actions:
-            return self._has_role(user, ('Admin', 'Editor'))
-
-        return True
-
-
 @add_role_granted('Admin', 'Editor', 'Member')
-class QuizViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
+class QuizViewSet(viewsets.ModelViewSet):
     """Quiz management viewset."""
 
-    base_permission_classes = (IsAuthenticated, QuizActionPermission)
-    permission_classes = [IsAuthenticated, QuizActionPermission]
-
-    action_permission_map = {
-        'list': 'api.quiz.list',
-        'retrieve': 'api.quiz.retrieve',
-        'create': 'api.quiz.create',
-        'update': 'api.quiz.update',
-        'partial_update': 'api.quiz.partial_update',
-        'destroy': 'api.quiz.destroy',
-        'questions': 'api.quiz.questions',
-        'question_detail': 'api.quiz.question_detail',
-        'config': 'api.quiz.config',
-        'progress': 'api.quiz.progress',
-    }
+    permission_classes = [IsAuthenticated, HasJWTPermission]
 
     def get_queryset(self):
         queryset = Quiz.objects.all().select_related('category')
@@ -188,26 +143,13 @@ class QuizViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
             })
 
 
-
 @add_role_granted('Admin', 'Editor', 'Member')
-class QuizNodeViewSet(RBACActionPermissionMixin, viewsets.ModelViewSet):
+class QuizNodeViewSet(viewsets.ModelViewSet):
     """QuizNode tree CRUD API."""
 
     queryset = QuizNode.objects.all().select_related('parent', 'quiz').order_by('position', 'id')
     serializer_class = QuizNodeSerializer
-    base_permission_classes = (IsAuthenticated, QuizActionPermission)
-    permission_classes = [IsAuthenticated, QuizActionPermission]
-
-    action_permission_map = {
-        'list': 'api.quiznode.list',
-        'retrieve': 'api.quiznode.retrieve',
-        'create': 'api.quiznode.create',
-        'update': 'api.quiznode.update',
-        'partial_update': 'api.quiznode.partial_update',
-        'destroy': 'api.quiznode.destroy',
-        'children': 'api.quiznode.children',
-        'move': 'api.quiznode.move',
-    }
+    permission_classes = [IsAuthenticated, HasJWTPermission]
 
     def get_queryset(self):
         queryset = super().get_queryset()

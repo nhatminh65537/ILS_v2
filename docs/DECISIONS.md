@@ -96,7 +96,7 @@ Task 1.4 deferred password reset but session management still needs clarity:
 | B | Add "logout all" endpoint | Common UX pattern, password-reset-triggered logout | Extra endpoint |
 | C | Both A and B | Complete control | Scope creep for Task 1.4 |
 
-**Decision:** Choose Option A. Use 15-minute access tokens, 7-day refresh tokens, and silent refresh behavior when access token expires.
+**Decision:** Choose Option C. Both single-session revoke (`DELETE /api/auth/sessions/{id}/`) and logout-all (`POST /api/auth/logout-all/`) endpoints are implemented. This gives users granular per-device control while also supporting full session purge (e.g. on password change or security incident).
 
 ---
 
@@ -292,30 +292,11 @@ Task 1.5 references `frontend/src/app/`, `frontend/src/components/`, `frontend/s
 
 **Decision:** Choose Option A. Keep Next.js default `frontend/app/` layout and align implementation plan paths that still point to `frontend/src/`.
 
+**Impact on IMPL_PLAN:** Slice 4, 5, 6, 7, 8, 9, 10, 11 all reference `frontend/src/` — these paths refer to `frontend/src/components/`, `frontend/src/stores/`, etc. (not the app router). The app router itself stays at `frontend/app/`.
+
 ---
 
 ## OPEN Questions
-
----
-
-### Q-INFRA-01: Frontend Source Directory
-
-**Status:** RESOLVED
-**Blocks:** Slice 4 (Frontend Foundation) and all frontend slices
-
-**Problem:**
-The current Next.js scaffold has code at `frontend/app/` (Next.js default flat layout).
-`docs/IMPL_PLAN.md` consistently references `frontend/src/app/`, `frontend/src/components/`, `frontend/src/store/`, `frontend/src/lib/` — implying a `src/` wrapper.
-
-**Options:**
-| Option | Layout | Pros | Cons |
-|--------|--------|------|------|
-| A | `frontend/app/` (current) | No migration needed; fewer directories | Harder to separate app code from config at root |
-| B | `frontend/src/app/` (IMPL_PLAN) | Clean separation; standard convention for large projects | Need to move existing files; update `tsconfig.json` paths |
-
-**Decision:** Choose Option A. Keep current `frontend/app/` structure.
-
-**Impact on IMPL_PLAN:** Slice 4, 5, 6, 7, 8, 9, 10, 11 all reference `frontend/src/`.
 
 ---
 
@@ -601,7 +582,7 @@ Body: { is_item: true, lesson_type: "markdown", title: "...", parent_id: 5, posi
 | Simplicity | Simpler for frontend | More control; needed if same lesson appears in multiple nodes? |
 
 **Sub-question:** Can the same `lesson` record appear in multiple `course_node` records, or is it always 1:1?  
-(Current DB schema has `course_node.lesson_id` as a FK — no UNIQUE constraint mentioned. Clarification needed.)
+(Confirmed 1:1 — `DATA_MODEL.md` §3.4 defines `course_node.lesson_id` as `UNIQUE nullable FK`. One lesson per node at most.)
 
 **Decision:** Choose Option A (atomic one-step creation). Backend creates lesson + course_node in one transaction to eliminate orphan lessons and simplify frontend flow.
 
@@ -1116,7 +1097,7 @@ Permission records are **read-only** via API. Admin can only GET (list/retrieve)
 **Decision date:** 2026-03-12
 **Source:** `docs/ARCHITECTURE.md §4.4`, `docs/prd/02-authorization.md`
 
-Built-in roles (Admin, Editor, Member) are auto-created at startup via `@add_role_granted` decorator. Have `is_system=True` flag — cannot be deleted or renamed via API. Admin can still modify their permission assignments.
+Built-in roles (Admin, Editor, Member) are auto-created at startup via `@add_role_granted` decorator. Have `is_system=True` flag — cannot be deleted, renamed, or have permissions modified via API. Permission assignments for system roles are controlled exclusively by the startup scan (`@add_role_granted` metadata).
 
 ---
 
@@ -1137,7 +1118,7 @@ Permission grant resolution for endpoint handlers uses a hybrid model:
 ### R-ARCH-08: No Database Triggers
 
 **Decision date:** 2026-03-12
-**Source:** `docs/ARCHITECTURE.md §4.11`
+**Source:** `docs/ARCHITECTURE.md §4.13`
 
 All denormalized field updates (counters, aggregates, progress) handled at Django application level (signals/service layer). No PostgreSQL triggers or stored procedures. Rationale: logic stays in codebase, testable, versionable.
 
@@ -1204,6 +1185,47 @@ Both `lesson` and `quiz_question` have `status content_status NOT NULL DEFAULT '
 **Purpose:** Enables feature development (Slices 3–9, 11) without needing Slice 2 (Authorization) fully complete. Decouples feature slices from RBAC implementation.
 
 **Constraint:** Must be `true` in production. Default value is `true` (seed_config sets this).
+
+---
+
+### R-AUTH-13: Permission Key Auto-Derivation — Single Source of Truth
+
+**Decision date:** 2026-04-14
+**Source:** `docs/ARCHITECTURE.md §4.5`, `auth_app/permissions.py`
+
+Permission keys (e.g., `api.role.list`) are **derived at runtime** by `HasJWTPermission` using `derive_permission_key(view_class, action)` — the same shared function used by `discover_permissions()` at startup. This eliminates the previous `action_permission_map` dict (which required manual synchronization between scanner and runtime).
+
+**Key guarantees:**
+- Scanner output and runtime key lookups always match — no possible mismatch.
+- Renaming a ViewSet automatically updates both the scanner-generated permission name AND the runtime check; no string literals to update.
+- `HasJWTPermission('explicit.key')` still works for the rare edge case needing an override.
+
+**No-JWT-bitmap fallback** (for test environments using `force_authenticate`):
+When `request.auth` is not a JWT dict (no bitmap present), `HasJWTPermission` falls back to checking `@add_role_granted` metadata against the user's DB state:
+1. `is_superuser` → allow
+2. `'Member' in effective_roles` → allow (any authenticated user qualifies)
+3. Otherwise → `user.user_roles.filter(...)` DB check
+
+This fallback is **never reached in production** — all JWT-authenticated requests carry a bitmap.
+
+**View pattern (post-refactor):**
+```python
+@add_role_granted('Admin')
+class RoleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+    # No action_permission_map — key derived automatically
+```
+
+---
+
+### R-ARCH-13: Unified Views Directory — No Admin/Regular Split
+
+**Decision date:** 2026-04-14
+**Source:** `docs/ARCHITECTURE.md §3`, `api/views/`
+
+All ViewSets — whether they serve admin operations or regular user operations — live under `api/views/`. There is no `admin_views.py` or similar separation. Access control is enforced uniformly via `permission_classes = [IsAuthenticated, HasJWTPermission]` on every ViewSet, with `@add_role_granted` determining which roles can access each action. The URL prefix (`/api/admin/*` vs `/api/*`) is a routing convention only, not a security boundary.
+
+**Rationale:** Separating admin views created divergent permission patterns (e.g., `IsAdminUser` in `SystemConfigViewSet`, different mixin usage). Unifying the pattern ensures all endpoints go through the same RBAC enforcement regardless of their URL path.
 
 ---
 
