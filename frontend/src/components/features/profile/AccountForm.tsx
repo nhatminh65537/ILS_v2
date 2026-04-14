@@ -37,6 +37,12 @@ export function AccountForm({ profile, onAccountUpdated }: AccountFormProps) {
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
+  const normalizedUsername = username.trim()
+  const normalizedEmail = email.trim()
+  const hasChanges =
+    (normalizedUsername.length > 0 && normalizedUsername !== profile.username) ||
+    normalizedEmail.length > 0
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -44,11 +50,14 @@ export function AccountForm({ profile, onAccountUpdated }: AccountFormProps) {
     setErrorMsg('')
 
     const payload: MeAccountUpdatePayload = {}
-    if (username && username !== profile.username) payload.username = username
-    if (email) payload.email = email
+    if (normalizedUsername.length > 0 && normalizedUsername !== profile.username) {
+      payload.username = normalizedUsername
+    }
+    if (normalizedEmail.length > 0) {
+      payload.email = normalizedEmail
+    }
 
     if (Object.keys(payload).length === 0) {
-      setErrorMsg('Vui lòng thay đổi ít nhất một trường.')
       setSaving(false)
       return
     }
@@ -89,7 +98,7 @@ export function AccountForm({ profile, onAccountUpdated }: AccountFormProps) {
       </div>
       {successMsg && <p className="text-sm text-green-600">{successMsg}</p>}
       {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
-      <Button type="submit" disabled={saving}>
+      <Button type="submit" disabled={saving || !hasChanges}>
         {saving ? t('saving') : t('saveAccount')}
       </Button>
     </form>

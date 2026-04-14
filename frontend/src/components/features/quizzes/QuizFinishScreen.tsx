@@ -24,9 +24,8 @@ export function QuizFinishScreen({ data, quizId, locale }: Props) {
   const router = useRouter()
 
   function handleTryAgain() {
-    // Navigate to the same session URL — causes remount and fresh WS connection
-    router.push(`/${locale}/quizzes/${quizId}/session`)
-    router.refresh()
+    const restart = Date.now()
+    router.replace(`/${locale}/quizzes/${quizId}/session?restart=${restart}`)
   }
 
   const scorePercent = data.max_score > 0

@@ -465,7 +465,7 @@
     "editSubtitle": "Update quiz metadata and publication status.",
     "editCardTitle": "Quiz metadata",
     "backToList": "Back to quiz list",
-    "confirmDelete": "Delete quiz '{title}'?",
+    "confirmDelete": "Delete quiz {title}?",
     "toolbar": {
       "searchPlaceholder": "Search by title or description",
       "status": "Status",
@@ -640,7 +640,7 @@
       },
       "confirm": {
         "revokeOneTitle": "Revoke this session?",
-        "revokeOneDescription": "This will sign out device '{device}'.",
+        "revokeOneDescription": "This will sign out device {device}.",
         "revokeAllTitle": "Revoke all other sessions?",
         "revokeAllDescription": "This keeps your current device signed in and revokes all other active sessions.",
         "cancel": "Cancel",

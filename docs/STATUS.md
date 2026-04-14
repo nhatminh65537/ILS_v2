@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-13 (Slice 7 Task 7.7 completed)
+> Last updated: 2026-04-14 (Bugfix H2/M2/M4/M5/L3 completed)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -105,6 +105,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 / Task 7.5 (2026-04-10) | Frontend quiz browser implemented: catalog page (`/quizzes`) with sticky filter panel (search, time-limit Select, tag pills), detail page (`/quizzes/[id]`) with metadata, progress card, and "Start" link; `useQuizzes` hook for catalog + detail data-fetching; full quiz type alignment with backend serializers (`time_limit_sec`, `quiz_point`, `total_questions`, removed `pass_score_percent`/`is_shuffled`); MSW fixtures/handlers updated to match; all native `<select>` elements replaced with shadcn `<Select>` across admin UI; `(catalog)` route group introduced with `showSidebar=false` layout — catalog pages render their own internal two-column filter+content layout; Quizzes added to navbar/sidebar navigation; `tsc`, lint, and `next build` all pass. |
 | Slice 7 / Task 7.6 (2026-04-10) | Frontend WebSocket quiz session implemented: `useQuizSession` hook with `useReducer` state machine (`idle→connecting→authenticating→active→finished/error`), first-message JWT auth, full protocol (start/answer/next/finish); `QuizQuestionView` renders all 3 question types (RadioGroup/Checkbox/Input); `QuizAnswerResultCard` shows correct/incorrect feedback + explanation; `QuizFinishScreen` shows score/maxScore/%/duration with Back+TryAgain; `QuizSessionClient` orchestrates based on status+phase; RSC page at `app/[locale]/(catalog)/quizzes/[id]/session/page.tsx`; MSW v2 `ws` handler simulates full protocol using fixture data; shadcn `radio-group`, `checkbox`, `progress` installed; WS types added to `quiz.types.ts`; i18n keys added under `quizzes.session.*`; fixed MSW URL pattern (env-var-derived, not glob) and `onclose` now surfaces auth-rejection as error; `tsc` and `next build` both pass. |
 | Slice 7 / Task 7.7 (2026-04-13) | Frontend quiz editor delivered on admin surface: new routes `/{locale}/admin/quizzes`, `/new`, `/{id}`, `/{id}/questions`; typed admin hooks (`useAdminQuizzes`, `useAdminQuizQuestions`) and canonical service methods (`/api/quiz/quizzes/*`) added; metadata create/update/delete flow, question CRUD for single/multi/fill_blank, deterministic reorder (position update), and member-style preview implemented; admin shell navigation now includes Quizzes; i18n namespaces (`admin.quizzes`, `adminQuizzes.*`) and MSW nested question handlers/permission fixtures updated; `lint`, `tsc`, and `next build` pass. |
+| Bugfix pass (2026-04-14) | Fixed active FE/MSW bugs H2, M2, M4, M5, L3: admin quiz status filter now applies in MSW list handler, quiz Try Again enforces deterministic session remount, ICU interpolation restored for `{title}` and `{device}` in vi/en locale messages, account save button now disables when no effective changes; `lint` and `next build` pass. |
 
 ---
 
@@ -139,6 +140,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 8 / Task 8.4 (2026-04-10) | `docs/reports/2026-04-10_slice8-task8-4-frontend-admin-users.md` |
 | Slice 7 / Task 7.6 (2026-04-10) | `docs/reports/2026-04-10_slice7-task7-6-frontend-quiz-session.md` |
 | Slice 7 / Task 7.7 (2026-04-13) | `docs/reports/2026-04-13_slice7-task7-7-frontend-quiz-editor.md` |
+| Bugfix pass H2/M2/M4/M5/L3 (2026-04-14) | `docs/reports/2026-04-14_bugfix-h2-m2-m4-m5-l3.md` |
 
 ---
 

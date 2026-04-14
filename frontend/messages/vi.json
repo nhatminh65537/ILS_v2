@@ -465,7 +465,7 @@
     "editSubtitle": "Cập nhật metadata và trạng thái xuất bản quiz.",
     "editCardTitle": "Metadata quiz",
     "backToList": "Quay lại danh sách quiz",
-    "confirmDelete": "Xóa quiz '{title}'?",
+    "confirmDelete": "Xóa quiz {title}?",
     "toolbar": {
       "searchPlaceholder": "Tìm theo tiêu đề hoặc mô tả",
       "status": "Trạng thái",
@@ -640,7 +640,7 @@
       },
       "confirm": {
         "revokeOneTitle": "Thu hồi phiên này?",
-        "revokeOneDescription": "Thiết bị '{device}' sẽ bị đăng xuất.",
+        "revokeOneDescription": "Thiết bị {device} sẽ bị đăng xuất.",
         "revokeAllTitle": "Thu hồi tất cả phiên khác?",
         "revokeAllDescription": "Thiết bị hiện tại vẫn được giữ đăng nhập, mọi phiên khác sẽ bị thu hồi.",
         "cancel": "Hủy",

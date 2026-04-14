@@ -12,9 +12,14 @@ export const quizzesHandlers = [
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '10')
     const offset = Number(url.searchParams.get('offset') ?? '0')
+    const status = url.searchParams.get('status')
+
+    const filteredQuizzes = status && status !== 'all'
+      ? quizzesFixture.filter((quiz) => quiz.status === status)
+      : quizzesFixture
 
     return HttpResponse.json(
-      toPaginatedResponse(quizzesFixture, {
+      toPaginatedResponse(filteredQuizzes, {
         limit,
         offset,
         basePath: '/api/quiz/quizzes/',
