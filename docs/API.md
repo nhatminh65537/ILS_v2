@@ -156,8 +156,8 @@ Historical/runtime note:
 | GET | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
 | PUT/PATCH | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
 | DELETE | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
-| POST | `/api/challenges/{id}/submit_flag/` | Yes | Partial | Runtime route exists; full Slice 6 verification/workflow contract is pending. |
-| POST | `/api/challenges/{id}/create_instance/` | Yes | Partial | Depends on instance deployment backend/runtime readiness. |
+| POST | `/api/challenges/{id}/submit-flag/` | Yes | Partial | Runtime route exists; full Slice 6 verification/workflow contract is pending. |
+| POST | `/api/challenges/{id}/create-instance/` | Yes | Partial | Depends on instance deployment backend/runtime readiness. |
 
 ### 3.6 Quizzes
 
@@ -250,12 +250,21 @@ SERVER → {"type": "error", "code": "already_answered", "message": "Question al
 
 ### 3.7 Notifications
 
+Active (runtime routes exist; full Slice 9 signal pipeline + frontend inbox pending):
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/notifications/` | Yes | Partial | Runtime route exists; Slice 9 signal pipeline + frontend inbox are pending. |
-| GET | `/api/notifications/{id}/` | Yes | Partial | Runtime route exists; Slice 9 signal pipeline + frontend inbox are pending. |
-| POST | `/api/notifications/{id}/mark_read/` | Yes | Partial | Runtime route exists; Slice 9 signal pipeline + frontend inbox are pending. |
+| GET | `/api/notifications/` | Yes | Partial | List notifications (unread first); Slice 9 signal pipeline pending. |
+| GET | `/api/notifications/{id}/` | Yes | Partial | Notification detail; Slice 9 signal pipeline pending. |
+| POST | `/api/notifications/{id}/mark-read/` | Yes | Partial | Mark single notification as read; Slice 9 full flow pending. |
+
+Planned for Slice 9 (not yet active):
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/api/notifications/mark-all-read/` | Yes | Mark all notifications as read for current user. |
+| GET | `/api/notifications/unread-count/` | Yes | Returns `{count: N}` for unread badge. |
+| POST | `/api/admin/notifications/broadcast/` | Admin | Admin broadcast to all users. |
 
 ### 3.8 Leaderboard
 
@@ -316,21 +325,13 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 Notes:
 - Password reset remains deferred by decision `Q-INFRA-03` until email backend setup is finalized.
 
-### 4.2 Slice 2 — Authorization/RBAC
-- JWT claims contract for permission checks: `permissions` (base64 bitmap) + `pv` (permission version).
-- Endpoint role grant contract: class-level default grant with explicit handler-level decorator overrides.
+### 4.2 Slice 5–8 Domain APIs (not yet active)
 
-### 4.3 Slice 3+ Domain APIs
+- Learn tree management: `/api/learn/courses/*`, `/api/learn/lessons/*` — see IMPL_PLAN Slice 5
+- Challenge node/category/flag: `/api/challenge/*` — see IMPL_PLAN Slice 6
+- Admin statistics: `/api/admin/stats/*` — see IMPL_PLAN Slice 11
 
-- Additional Learn tree management endpoints
-- Additional Challenge node/category endpoints
-- Quiz WebSocket/attempt lifecycle endpoints
-- Admin statistics endpoints
-
-Planned WS auth contract for Slice 7:
-- Client connects to `/ws/quiz/{quiz_id}/` without token in URL.
-- Client must send first message `{type: "auth", token: "<access_jwt>"}` within timeout.
-- Server closes socket if auth fails or times out.
+Note: Quiz WebSocket (`ws://host/ws/quiz/{quiz_id}/`) and CRUD endpoints are now active — see §3.6 and §3.6.1.
 
 ---
 

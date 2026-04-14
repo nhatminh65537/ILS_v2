@@ -337,7 +337,7 @@ Call `add-memory` at least once. Choose the right pattern:
 - API views: DRF `APIView` or `GenericAPIView`; serializers for all I/O
 
 **Critical DB rules:**
-- `pre_path` (materialized path): maintain on create/move; update self + all descendants on move
+- `path` (dot-separated ancestor IDs): maintain on create/move; update self + all descendants on move
 - `user_session.refresh_token_hash`: always hash tokens before storing
 - `challenge_instance`: partial unique index on (user, challenge) WHERE status='running'
 - Join tables (tag maps, role_permission): `CreateAudit` only — no updated fields

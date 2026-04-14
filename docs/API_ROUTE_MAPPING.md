@@ -26,8 +26,8 @@
 | Learn | `/api/lessons/{id}/complete/` | `/api/learn/lessons/{id}/progress/complete/` | Use target for new work | Completion now under progress namespace |
 | Challenge | `/api/challenges/` | `/api/challenge/challenges/` | Use target for new work | Domain namespaced |
 | Challenge | `/api/challenges/{id}/` | `/api/challenge/challenges/{slug}/` | Use target for new work | Identifier changes from `id` to `slug` |
-| Challenge | `/api/challenges/{id}/submit_flag/` | `/api/challenge/challenges/{slug}/submit/` | Use target for new work | Submit contract unified |
-| Challenge | `/api/challenges/{id}/create_instance/` | `/api/challenge/challenges/{slug}/instance/` | Use target for new work | Instance lifecycle endpoint |
+| Challenge | `/api/challenges/{id}/submit-flag/` | `/api/challenge/challenges/{slug}/submit/` | Use target for new work | Submit contract unified |
+| Challenge | `/api/challenges/{id}/create-instance/` | `/api/challenge/challenges/{slug}/instance/` | Use target for new work | Instance lifecycle endpoint |
 | Quiz | `/api/quizzes/` | `/api/quiz/quizzes/` | Use target for new work | Domain namespaced |
 | Quiz | `/api/quizzes/{id}/` | `/api/quiz/quizzes/{id}/` | Use target for new work | Domain namespaced |
 | RBAC | `/api/authz/permissions/` | `/api/admin/permissions/` | Use target for new work | Admin namespace standardized |

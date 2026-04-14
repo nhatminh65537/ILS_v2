@@ -511,7 +511,7 @@ WS disconnect
 ### 5.7 Challenge Flag Submission Flow
 
 ```
-Client → POST /challenges/{slug}/submit { flag }
+Client → POST /api/challenge/challenges/{slug}/submit/ { flag }
   → Validate user is authenticated
   → Load challenge_flag records for this challenge
   → Check submitted flag against each flag definition:

@@ -505,10 +505,10 @@ Report: `docs/reports/2026-04-01_slice2-task2-4-admin-rbac-ui.md`
 
 **Files:**
 ```
-frontend/app/[locale]/(app)/admin/rbac/
-├── page.tsx                  # Role list + permission overview
-├── roles/[id]/page.tsx       # Role detail: assign/revoke permissions
-└── users/[id]/roles/page.tsx # User → role assignment
+app/[locale]/(admin)/admin/(protected)/
+├── rbac/page.tsx                     # Role list + permission overview
+├── rbac/roles/[id]/page.tsx          # Role detail: assign/revoke permissions
+└── rbac/users/[id]/roles/page.tsx    # User → role assignment
 ```
 
 ---
@@ -665,12 +665,12 @@ GET  /api/learn/courses/{slug}/progress/         → {lesson_count, completed, p
 
 ### Task 5.5 — Frontend: Course catalog + tree
 ```
-learn/page.tsx             → course catalog (cards grid, filter sidebar)
-learn/[slug]/page.tsx      → course detail with Tree component (lazy expand)
+app/[locale]/(app)/learn/page.tsx             → course catalog (cards grid, filter sidebar)
+app/[locale]/(app)/learn/[slug]/page.tsx      → course detail with Tree component (lazy expand)
 ```
 
 ### Task 5.6 — Frontend: Lesson viewer
-**File:** `frontend/src/app/(app)/learn/[slug]/[lessonId]/page.tsx`
+**File:** `app/[locale]/(app)/learn/[slug]/[lessonId]/page.tsx`
 - Markdown: `react-markdown` + `rehype-highlight`
 - Video: `<video>` or iframe
 - Miniquiz: inline question cards + answer reveal
@@ -937,8 +937,6 @@ app/[locale]/(admin)/admin/(protected)/users/page.tsx
 
 ### Task 8.5 — Frontend: Session management page
 
-> ⚠️ **Depends on Task 1.4** (session management API — `GET/DELETE /api/auth/sessions/`) being completed.
-
 **File:** `app/[locale]/(app)/profile/sessions/page.tsx`
 
 - List active sessions: device_info, created_at, last-used indicator; current session highlighted
@@ -951,11 +949,11 @@ app/[locale]/(admin)/admin/(protected)/users/page.tsx
 
 ### Task 9.1 — Notification API
 ```
-GET  /api/notifications/                   → list (unread first)
-POST /api/notifications/{id}/read/         → mark read
-POST /api/notifications/read-all/          → mark all read
-GET  /api/notifications/unread-count/      → {count: N}
-POST /api/admin/notifications/broadcast/   → admin broadcast
+GET  /api/notifications/                     → list (unread first)
+POST /api/notifications/{id}/mark-read/      → mark single notification as read
+POST /api/notifications/mark-all-read/       → mark all notifications as read
+GET  /api/notifications/unread-count/        → {count: N}
+POST /api/admin/notifications/broadcast/     → admin broadcast to all users
 ```
 
 ### Task 9.2 — Auto-trigger via signals
