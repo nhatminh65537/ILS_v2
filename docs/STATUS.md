@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-15 (FE layout canonicalization: bỏ nav sidebar, tạo skeleton pages toàn bộ routes, cập nhật Navbar/AdminLayout links, xóa (public)/ group)
+> Last updated: 2026-04-15 (Slice 5 Task 5.1 Learn CRUD API implemented and docs synchronized)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -58,7 +58,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | [Q-LEARN-08](DECISIONS.md#q-learn-08-lesson-completion-trigger) — Lesson completion trigger | Slice 5 | **RESOLVED** |
 | [Q-LEARN-09](DECISIONS.md#q-learn-09-lesson-start-trigger) — Lesson start trigger | Slice 5 | **RESOLVED** |
 | [Q-LEARN-10](DECISIONS.md#q-learn-10-outline-sync-failure-handling) — Outline sync failure handling | Slice 5 | **RESOLVED** |
-| [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances in MVP | Slice 6 | **OPEN** |
+| [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances in MVP | Slice 6 | **RESOLVED** (Option C) |
 | [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth | Slice 7 | **RESOLVED** |
 
 ---
@@ -112,6 +112,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Bugfix pass H4/H6/H8/M6/M7/M9/M10 (2026-04-14) | Backend: wired `/api/quiz/quizzes/{id}/progress/`, enforced admin-user `username/email` uniqueness, added `quiz_point >= 0` validation and quiz detail `category` payload, added regression tests in `backend/api/tests/test_quiz_api.py`. Frontend: moved public profile route to public surface (no auth redirect), added not-found dialog UX, fixed MSW public-profile/account uniqueness behavior, added username-change confirmation + forced re-login flow in account settings, and preserved field-level API errors in axios error normalization. |
 | Backend bugfix pass M8/M11 + test split (2026-04-14) | Backend: fixed member quiz visibility hardening by enforcing published-only results for non-admin/editor regardless of `status` query (`backend/api/services/quiz_service.py`), added regression `status=draft` test in `backend/api/tests/test_quiz_api.py`; enforced enum validation for `/api/users/me/settings/` (`language: vi/en`, `theme: system/light/dark`) in `backend/api/serializers/user.py` with negative-case regression in `backend/api/tests/test_profile_api.py`; split monolithic tests into domain modules (`backend/api/tests/test_system_config_api.py`, `backend/api/tests/test_rbac_api.py`, `backend/api/tests/test_views_exports.py`, `backend/auth_app/tests/test_auth_sso_flow.py`, `backend/auth_app/tests/test_permissions_and_authz.py`) and kept focused suites passing. |
 | Backend refactor closure (2026-04-14) | Finalized serializer package migration (`backend/api/serializers/` + `__init__.py` exports), extracted view logic into domain services (`backend/api/services/*`), normalized backend test layout to app-local `tests/` packages with `test_*.py` naming and updated discovery in `backend/pytest.ini`, refactored realtime quiz consumer internals for readability, and synchronized canonical docs (`BUGS`, `STATUS`, `IMPL_PLAN`, `ARCHITECTURE`). |
+| Slice 5 / Task 5.1 (2026-04-15) | Implemented namespaced Learn CRUD APIs at `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*` with slug detail, member visibility hardening, user_progress payload, slug conflict 409 suggestions, hybrid archive/purge delete flow, and integration regression tests (`backend/api/tests/test_learn_course_api.py`). |
 
 ---
 
@@ -151,6 +152,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 integration validation (2026-04-14) | `docs/reports/2026-04-14_slice7-integration-validation.md` |
 | Slice 8 integration validation (2026-04-14) | `docs/reports/2026-04-14_slice8-integration-validation.md` |
 | Backend refactor closure (2026-04-14) | `docs/reports/2026-04-14_backend-refactor-closure.md` |
+| Slice 5 / Task 5.1 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-1-learn-crud-api.md` |
 
 ---
 
@@ -208,22 +210,30 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Course + Category CRUD API | Medium | |
-| CourseNode tree API | Medium | dot-separated `path` + `bulk_update` on move |
-| Lesson CRUD + Outline sync | Medium | |
+| Course + Category CRUD API | Medium | ✅ Completed 2026-04-15: activated `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*`; slug-based detail, member visibility hardening, slug conflict 409 suggestions, archive default + admin-only purge, and regression tests in `backend/api/tests/test_learn_course_api.py`. |
+| CourseNode tree API | Medium | dot-separated `path` + `bulk_update` on move; increment `structure_version` on change |
+| Lesson CRUD | Medium | Outline extracted to Task 5.8 |
 | User progress tracking signals | Medium | |
 | Frontend: Course catalog + tree | Low | |
 | Frontend: Lesson viewer (md/video/miniquiz) | Low | |
+| Frontend: Course editor (admin/editor surface) | Low | |
+| Outline sync API + tab (deferrable) | Low | Sync blocking MVP; no Celery needed |
 
 ### Slice 6 — Challenge (CTF)
 
+> No blockers. Q-CHALL-01 resolved 2026-04-15 → Option C (Wave 1: static/regex functional; instance stubs with MockDeploymentBackend).
+> ⚠️ Existing challenge views/services are inaccurate stubs — rewrite from scratch per IMPL_PLAN.
+
 | Task | Priority | Notes |
 |------|----------|-------|
-| Challenge + Category CRUD API | Medium | |
-| ChallengeNode tree + ChallengeFlag CRUD | Medium | Flag values never returned to members |
-| Flag submission (server-side only) | Medium | Static, regex, instance-specific |
-| GitLab sync | Medium | Read base URL from `system_config` |
-| Frontend: Challenge browser + submit | Low | |
+| 6.1 Challenge + Category + Tag CRUD API + URL namespace migration | Medium | Remove flat router entry; wire `/api/challenge/*` explicitly |
+| 6.2 ChallengeNode tree API (children, move, cycle-safe) | Medium | Reference: QuizNodeViewSet.move pattern |
+| 6.3 ChallengeFlag CRUD | Medium | flag_value hidden from Member; STATIC hashed / REGEX plaintext |
+| 6.4 Flag submission + progress (Static, Regex, Instance) | Medium | Rewrite flag_service from scratch; server-side only |
+| 6.5 Instance API stubs (MockDeploymentBackend) | Medium | Wave 2: swap to SocketDeploymentBackend when external system ready |
+| 6.6 Frontend: Challenge browser + detail + flag submit | Low | (catalog) layout; instance panel if instance_required |
+| 6.7 Frontend: Challenge editor (admin/editor) | Low | Tabs: Metadata, Tree, Flags; no GitLab tab yet |
+| 6.8 GitLab sync (separate delivery) | Low | Not a blocker for 6.1–6.7; self-contained integration |
 
 ### Slice 7 — Quiz
 

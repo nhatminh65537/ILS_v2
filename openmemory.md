@@ -32,6 +32,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Components
 
 - **api app**: All domain models and current domain viewsets for users, courses, lessons, challenges, quizzes, notifications, leaderboard, and system config.
+- **learn namespaced API (Slice 5 Task 5.1)**: Active canonical endpoints `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*` implemented in `backend/api/views/courses.py` with slug detail lookup and compatibility-preserved legacy `/api/courses/*` routes.
 - **ai app**: ⚠️ DEFERRED — scaffold only (AIAskView, 3 modes, mock LLM); NOT in INSTALLED_APPS; do not activate until approved
 - **realtime app**: Django Channels scaffold (empty logic)
 - **auth_app**: Implemented for Slice 1 Task 1.1 + 1.2 auth endpoints (`/api/auth/register`, `/api/auth/login`, `/api/auth/token/refresh`, `/api/auth/logout`, `/api/auth/logout-all`) with session hash tracking, refresh-token rotation, and per-user refresh rate limiting.
@@ -43,6 +44,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Status
 
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
+- Slice 5 Task 5.1 completed on 2026-04-15: namespaced Learn CRUD APIs active with member published-only visibility enforcement, course `user_progress` projection, slug-conflict `409` suggestions, and archive-default/admin-purge delete behavior.
 - Backend refactor wrap-up completed on 2026-04-14: API serializers split into domain package `backend/api/serializers/`, view business logic extracted to `backend/api/services/*`, backend tests normalized under app-local `tests/` packages with `test_*.py` naming, and canonical docs synchronized (`STATUS/IMPL_PLAN/BUGS/ARCHITECTURE`).
 - Bugfix pass completed on 2026-04-14 for H4/H6/H8/M6/M7/M9/M10: wired quiz progress endpoint, enforced admin-user username/email uniqueness checks, aligned quiz detail payload with `category` and non-negative `quiz_point` validation, moved public profile route to public surface with not-found dialog UX, and added username-change confirmation + forced re-login flow with field-level error preservation.
 - Bugfix pass completed on 2026-04-14 for active FE/MSW issues H2, M2, M4, M5, L3: admin quiz status filter now applies in MSW list handler, Try Again remounts quiz session deterministically via restart nonce keying, ICU placeholders `{title}`/`{device}` interpolate correctly in vi/en, and account save button is disabled when no effective changes exist.
@@ -76,6 +78,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Patterns
 
 - **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only
+- **Learn slug conflict contract**: Course create on duplicate slug must return HTTP `409` with deterministic `suggestions` array; do not fall back to silent auto-slug mutation.
 - **Backend monolith split pattern**: keep import compatibility while moving code from monolithic modules to domain packages (`serializers/`, `services/`, `tests/`), then remove legacy entry files only after all imports and test discovery are aligned.
 - **Same-route restart pattern for WS session UIs**: when restarting a stateful session on the same path, append deterministic nonce query (e.g., `?restart=<timestamp>`) and key the session client by route id + nonce to force guaranteed remount/cleanup/reconnect.
 - **Admin quiz editor contract pattern**: Frontend admin quiz flows must consume canonical namespaced routes (`/api/quiz/quizzes/*`) via service-layer helpers and keep question payloads type-safe by question kind (`single_choice`, `multi_choice`, `fill_blank`) before submit.

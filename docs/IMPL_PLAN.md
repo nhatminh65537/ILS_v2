@@ -612,7 +612,7 @@ interface TreeProps {
 > **Decision prerequisites:** all Slice 5 decisions are resolved in `docs/DECISIONS.md` (2026-04-01).
 
 ### Task 5.1 — Course + Category CRUD API
-**Files:** `backend/api/views/course.py`, `backend/api/serializers/course.py`, `backend/api/urls.py`
+**Files:** `backend/api/views/courses.py`, `backend/api/serializers/course.py`, `backend/api/urls.py`
 
 **Endpoints:**
 ```
@@ -622,13 +622,16 @@ GET/PUT/DELETE /api/learn/courses/{slug}/
 GET  /api/learn/categories/                 → list
 POST /api/learn/categories/                 → create (Admin)
 GET/PUT/DELETE /api/learn/categories/{id}/
-GET  /api/learn/tags/
+GET    /api/learn/tags/
+POST   /api/learn/tags/             → create tag (permission-gated, Q-LEARN-07 Option D)
+PUT    /api/learn/tags/{id}/
+DELETE /api/learn/tags/{id}/
 ```
 
 **Course list response includes:** `user_progress: {completed, total}` if authenticated.
 
 ### Task 5.2 — CourseNode tree API
-**Files:** `backend/api/views/course.py`
+**Files:** `backend/api/views/courses.py`
 
 **Endpoints:**
 ```
@@ -641,17 +644,17 @@ DELETE /api/learn/courses/{slug}/nodes/{node_id}/    → delete node + subtree
 
 **Move node:** update `path` for self + all descendants using `bulk_update`.
 **Atomicity:** lesson item node creation is one-step atomic (create lesson + node in one transaction).
+**`course.structure_version`** must be incremented on any node create/update/delete to invalidate lazy progress caches (see Task 5.4).
 
-### Task 5.3 — Lesson CRUD + Outline sync
+### Task 5.3 — Lesson CRUD
 **Endpoints:**
 ```
 GET/PUT  /api/learn/lessons/{id}/
-POST     /api/learn/lessons/{id}/sync-outline/      → enqueue async sync from Outline API
 GET/POST /api/learn/lessons/{id}/questions/         → LessonQuestion CRUD (shared `quiz_question`)
 GET/PUT/DELETE /api/learn/lesson-questions/{id}/
 ```
 
-**Outline integration** is backend-mediated: FE never calls Outline directly; backend reads `outline.url` and `outline.api_token` from system_config.
+> Outline sync is extracted to Task 5.8 (deferrable).
 
 ### Task 5.4 — User progress tracking
 **Endpoints:**
@@ -701,96 +704,128 @@ app/[locale]/(admin)/admin/(protected)/learn/
 - **Markdown tab:** split-pane markdown editor (textarea left, rendered preview right); autosave or explicit Save
 - **Video tab:** video URL input field + embed preview panel (iframe or `<video>`)
 - **Mini-quiz tab:** ordered list of attached `quiz_question` records; add existing question by search/ID, remove, reorder; question preview shown inline
-- **Outline sync tab:** configure Outline document URL (or pick from list via `GET /api/learn/outline/documents/`); trigger `POST /api/learn/lessons/{id}/sync-outline/`; show last-synced timestamp and diff preview
+
+> Outline sync tab is part of Task 5.8 (deferrable).
+
+### Task 5.8 — Outline Sync (deferrable)
+
+**Prerequisite:** Task 5.3 completed. `outline.enabled=true` in system_config.
+
+**Endpoints:**
+```
+GET  /api/learn/outline/documents/              → list Outline documents (requires outline.enabled=true)
+POST /api/learn/lessons/{id}/outline/           → create/update LessonOutline record (link doc)
+POST /api/learn/lessons/{id}/sync-outline/      → synchronous blocking sync from Outline API
+```
+
+**Behavior:** Synchronous blocking (MVP — no Celery). Backend calls Outline API using `outline.url` + `outline.api_token` from system_config, updates `lesson.content_md` and `lesson_outline.last_synced_at`/`revision`. On timeout/failure: return 503 with error detail; old content preserved intact.
+
+> Async via Celery is a future enhancement deferred until Celery is added to the stack (see Q-LEARN-10 revision).
+
+**Frontend:** Add "Outline sync tab" to lesson editor (`/admin/learn/lessons/[id]/page.tsx`):
+- Input Outline document URL or pick from list via `GET /api/learn/outline/documents/`
+- Trigger `POST /sync-outline/`; show `last_synced_at` + sync status
 
 ---
 
 ## Slice 6 — Challenge (CTF)
 
-> **Decision prerequisites:**
-> - Namespaced URLs are used (`/api/challenge/*`).
-> - [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) remains OPEN.
-> - [Q-CHALL-02](DECISIONS.md#q-chall-02-instance-deployment-protocol) is RESOLVED.
+> **Decision prerequisites:** all resolved — no blockers.
+> - [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) **RESOLVED** → Option C: API stubs + MockDeploymentBackend; static/regex flags fully functional in Wave 1.
+> - [Q-CHALL-02](DECISIONS.md#q-chall-02-instance-deployment-protocol) **RESOLVED** → Strategy pattern, SocketDeploymentBackend (Wave 2).
+> - Namespaced URLs: `/api/challenge/*` — see `docs/API.md §4.3` for full endpoint contracts.
+>
+> ⚠️ Existing code in `backend/api/views/challenges.py`, `backend/api/services/challenge_service.py`, and `backend/api/services/flag_validation_service.py` are inaccurate stubs — **rewrite from scratch** for all tasks below.
 
-### Task 6.1 — Challenge CRUD API
-**Files:** `backend/api/views/challenge.py`, `backend/api/serializers/challenge.py`
+### Task 6.1 — Challenge + Category + Tag CRUD API
+**Files:** `backend/api/views/challenges.py`, `backend/api/serializers/challenge.py`, `backend/api/urls.py`
 
-**Endpoints:** (same pattern as courses)
+- Challenge CRUD with slug-based lookup; status filter (Members see `published` only; Admin/Editor see all statuses)
+- Category CRUD (Admin/Editor write; all roles read)
+- Tag CRUD (same permission pattern as course tags per [Q-LEARN-07](DECISIONS.md#q-learn-07-tag-creation-permissions))
+- Migrate URL routing: remove legacy flat `/api/challenges/*` from DRF router; wire namespaced `/api/challenge/*` routes explicitly (same explicit pattern as Quiz in `urls.py`)
+- Endpoint contracts: `docs/API.md §4.3`
+
+### Task 6.2 — ChallengeNode tree API
+**Files:** `backend/api/views/challenge_nodes.py` (new file), `backend/api/serializers/challenge.py`
+
+- Node CRUD: create folder/item node, update `title`/`position`, delete
+- `children` action: return direct children of a node (lazy-load pattern; same as `QuizNodeViewSet`)
+- `move` action: move node to new parent; update `path` for self + all descendants; cycle-safe (check `target.path` does not start with `source.path + '.' + str(source.id)`)
+- Reference implementation: `QuizNodeViewSet.move` in `backend/api/views/quizzes.py`
+- Endpoint contracts: `docs/API.md §4.3`
+
+### Task 6.3 — ChallengeFlag CRUD
+**Files:** `backend/api/views/challenges.py`, `backend/api/serializers/challenge.py`
+
+- Flags nested under challenge resource: add / edit / delete
+- Storage rule: STATIC flags stored as HMAC hash; REGEX flags store the plaintext pattern (cannot be hashed — must be readable server-side for `re.fullmatch`). Serializer handles this distinction on write.
+- `flag_value` **never** returned to Member role; visible only to Admin/Editor
+- Fields: `is_regex`, `is_case_sensitive`, `random_tail_length`; multiple flags per challenge supported (OSINT multi-flag use-case)
+- Endpoint contracts: `docs/API.md §4.3`
+
+### Task 6.4 — Flag submission + progress
+**File:** `backend/api/services/flag_service.py` (rewrite; discard existing stub)
+
+Server-side only flag checking — three modes:
+- **STATIC**: HMAC-hash submitted flag → compare against stored hash; if `is_case_sensitive=False`, hash lowercased input
+- **REGEX**: `re.fullmatch(flag_value, submitted)`; apply `re.IGNORECASE` if `is_case_sensitive=False`
+- **INSTANCE**: compare submitted against `challenge_instance.flag_value` for the user's currently running instance; requires `challenge.instance_required=True`
+
+On correct first solve: upsert `UserChallengeProgress.completed_at` → update `UserProfile` counters (`challenge_completed`, `total_challenge_point`) → create `Notification(type=auto_challenge_complete)`.
+
+Progress endpoint: aggregate `UserChallengeProgress` + `UserChallengeSubmit` for current user across all challenges.
+
+Endpoint contracts: `docs/API.md §4.3`
+
+### Task 6.5 — Instance API stubs (Wave 1: MockDeploymentBackend)
+**Files:** `backend/api/views/challenges.py`, `backend/api/services/instance_service.py` (rewrite; discard existing stub)
+
+- Define `InstanceDeploymentBackend` Protocol per [R-ARCH-12](DECISIONS.md#r-arch-12-instance-deployment--strategy-pattern)
+- `MockDeploymentBackend`: `deploy()` → persists `ChallengeInstance` to DB with fake `instance_info` JSON; `stop()` → updates status to stopped; `status()` → reads DB record
+- Wire into start/stop/status endpoints; DB records are real, only connection info is mocked
+- ⚠️ **Wave 2:** Swap `MockDeploymentBackend` → `SocketDeploymentBackend` when external system is ready; no API contract or frontend change required
+- Endpoint contracts: `docs/API.md §4.3`
+
+### Task 6.6 — Frontend: Challenge browser + detail
+**Route group:** `app/[locale]/(catalog)/challenges/` — uses `(catalog)` layout with `showSidebar=false`
+
 ```
-GET/POST /api/challenge/challenges/
-GET/PUT/DELETE /api/challenge/challenges/{slug}/
-GET/POST /api/challenge/categories/
-GET/POST /api/challenge/tags/
+(catalog)/challenges/page.tsx         → ChallengeCatalogClient — published challenge grid + filter panel
+(catalog)/challenges/[slug]/page.tsx  → ChallengeDetailClient — description, flag submit, instance panel, progress card
 ```
 
-### Task 6.2 — ChallengeNode tree + ChallengeFlag CRUD
-**Endpoints:**
-```
-GET/POST /api/challenge/nodes/
-PUT/DELETE /api/challenge/nodes/{id}/
-
-GET/POST /api/challenge/challenges/{slug}/flags/         → editor/admin only; never returns values to Members
-PUT/DELETE /api/challenge/challenges/{slug}/flags/{id}/
-```
-
-### Task 6.3 — Flag submission + progress
-**File:** `backend/api/services/flag_service.py`
-
-Server-side only flag checking: STATIC (string match), REGEX (re.match), INSTANCE (compare against running instance flag).
-
-```
-POST /api/challenge/challenges/{slug}/submit/   → {flag: "..."} → {correct: bool}
-GET  /api/challenge/progress/                   → {solved_count, total_attempts}
-```
-
-On correct: update `UserChallengeProgress` → signal → `UserProfile` counters.
-
-### Task 6.4 — GitLab sync
-```
-POST /api/challenge/challenges/{slug}/sync-gitlab/   → admin/editor only
-```
-Reads `challenge.git.url` from system_config.
-
-### Task 6.5 — Frontend: Challenge browser + tree
-```
-challenge/page.tsx            → catalog (filter by category, difficulty, tags)
-challenge/[slug]/page.tsx     → detail + flag submit form
-```
-
-### Task 6.6 — Frontend: Challenge detail + flag submit
-- Description (markdown), instance management panel, flag `<input>` + submit
-- Result feedback: correct → success badge; incorrect → retry
+- Filter panel: category, difficulty, tags, search
+- Progress card: solved badge, attempt count
+- Flag submit form: `<input>` + submit; result feedback badge (correct/incorrect); throttle on retry
+- Instance panel: rendered only if `instance_required=true`; start/stop instance; show connection info (mock in Wave 1)
+- MSW handlers for all challenge endpoints; follow `(catalog)` layout pattern from `docs/FE_CONVENTIONS.md`
 
 ### Task 6.7 — Frontend: Challenge editor (admin/editor surface)
 
-**Files:**
 ```
 app/[locale]/(admin)/admin/(protected)/challenges/
-├── page.tsx                   # challenge list (all statuses): table with status, category, difficulty, filter; create button
-├── new/page.tsx               # create challenge form: title, slug, description, category, tags, difficulty, challenge_point
-├── [slug]/page.tsx            # challenge editor (tabbed: Metadata | Tree | GitLab Sync)
-├── [slug]/
-│   └── flags/page.tsx         # flag manager: list flags, add/edit/delete, configure flag_type and per-instance option
-└── instances/page.tsx         # instance table: user, challenge, status, started_at; kill action; filter by challenge/user/status
+├── page.tsx                   # challenge list: table with status, category, difficulty badge, flag count, updated_at; create button; category/tag inline modal
+├── new/page.tsx               # create challenge form: title, slug, description, category, tags, difficulty, challenge_point, instance_required toggle
+├── [slug]/page.tsx            # challenge editor — tabbed: Metadata | Tree | Flags
+├── [slug]/flags/page.tsx      # flag manager: list flags; add/edit/delete; is_regex, is_case_sensitive, random_tail_length fields
+└── instances/page.tsx         # instance table: user, challenge, status, started_at; Kill action; filter by challenge/user/status
 ```
 
-**Challenge list (`/admin/challenges`):**
-- Table: title, category, difficulty badge, status badge, flag count, updated_at; quick status toggle
-- Category/Tag management via inline modal (no separate route)
+- **Metadata tab:** edit title, description, category, tags, difficulty, challenge_point, instance_required toggle, status; Save button
+- **Tree tab:** shared `TreeComponent` pattern (folder node + challenge item node; reorder; move; delete); same as Learn tree
+- **Flags tab:** link to `/admin/challenges/[slug]/flags`
+- ⚠️ GitLab Sync tab deferred to Task 6.8; do not scaffold in this task
+- MSW handlers for all admin challenge endpoints
 
-**Challenge editor (`/admin/challenges/[slug]`) tabs:**
-- **Metadata tab:** edit title, description, category, tags, difficulty, challenge_point, deployable toggle, status; Save button
-- **Tree tab:** same shared `TreeComponent` pattern as Learn; folder + challenge node management; reorder, move, delete
-- **GitLab sync tab:** input GitLab project URL (or read from `system_config[challenge.git.url]`); trigger `POST .../sync-gitlab/`; show last-synced timestamp; README preview panel (markdown-rendered)
+### Task 6.8 — GitLab sync *(separate delivery — not a blocker for Tasks 6.1–6.7)*
+**Files:** `backend/api/views/challenges.py`, `backend/api/services/gitlab_service.py` (new)
 
-**Flag manager (`/admin/challenges/[slug]/flags`):**
-- Table of all flags: value (visible to admin/editor only), flag_type (STATIC/REGEX/INSTANCE), is_per_instance toggle, is_case_sensitive toggle
-- Add / Edit / Delete flag entries; multiple flags per challenge supported (OSINT use-case)
-- ⚠️ Flag values are never exposed in the user-facing challenge detail page
-
-**Instance manager (`/admin/challenges/instances`):**
-- Table: user, challenge, status (running/stopped/error), started_at, destroyed_at; Kill button (calls backend → instance service via Strategy layer)
-- Filter by challenge slug, username, status; pagination
+- `POST /api/challenge/challenges/{slug}/sync-gitlab/` — Admin/Editor only
+- Reads `challenge.git.url` from `system_config`; calls GitLab API to fetch project metadata + README markdown
+- Populates/updates `ChallengeGitlab` record (`project_id`, `project_url`, `last_commit_sha`, `last_synced_at`)
+- Frontend: add GitLab Sync tab to `/admin/challenges/[slug]` challenge editor — trigger sync button, last-synced timestamp, README preview (markdown-rendered)
+- Self-contained; can be started and shipped independently after Tasks 6.1–6.7 are complete
 
 ---
 

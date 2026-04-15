@@ -9,6 +9,9 @@ from .views import (
     AdminUserViewSet,
     UserViewSet,
     CourseViewSet, LessonViewSet,
+    LearnCourseCategoryViewSet,
+    LearnCourseTagViewSet,
+    LearnCourseViewSet,
     ChallengeViewSet,
     QuizNodeViewSet,
     QuizViewSet,
@@ -48,6 +51,37 @@ user_role_detail_url = re_path(
 urlpatterns = [
     # API routes
     path('', include(router.urls)),
+    # Canonical namespaced learn routes (Slice 5)
+    re_path(
+        r'^learn/courses/$',
+        LearnCourseViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='learn-course-list',
+    ),
+    re_path(
+        r'^learn/courses/(?P<slug>[a-z0-9-]+)/$',
+        LearnCourseViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
+        name='learn-course-detail',
+    ),
+    re_path(
+        r'^learn/categories/$',
+        LearnCourseCategoryViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='learn-category-list',
+    ),
+    re_path(
+        r'^learn/categories/(?P<pk>\d+)/$',
+        LearnCourseCategoryViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
+        name='learn-category-detail',
+    ),
+    re_path(
+        r'^learn/tags/$',
+        LearnCourseTagViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='learn-tag-list',
+    ),
+    re_path(
+        r'^learn/tags/(?P<pk>\d+)/$',
+        LearnCourseTagViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
+        name='learn-tag-detail',
+    ),
     # Canonical namespaced quiz routes (Slice 7)
     re_path(
         r'^quiz/quizzes/$',

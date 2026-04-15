@@ -28,6 +28,7 @@
 | L1 | `ai/services/llm_client.py` | LLM client is a mock — always returns a hardcoded string. | Implement real provider call in Slice 10 (deferred). |
 | L2 | `api/models.py` | `QuizQuestion` thiếu composite index trên `(quiz, status)` — field `status` được filter thường xuyên nhưng chỉ có index trên `quiz` đơn lẻ. | Thêm `models.Index(fields=['quiz', 'status'])` trong Meta. |
 | L4 | Frontend testing environment (Playwright integrated browser viewport) | Case responsive J-3 (`<=768px`) chưa xác thực được trong phiên tool hiện tại vì viewport thực tế bị giữ ~804px; chưa kết luận pass/fail. | **Deferred test note:** chạy lại bằng Playwright CLI headless/headed ngoài integrated browser để kiểm tra breakpoint chuẩn. |
+| L5 | `frontend/src/lib/rbac-claim.ts`, `frontend/src/components/layouts/AdminAccessGate.tsx`, admin feature hooks/pages | FE đang hardcode permission key/capability check để chặn thao tác sớm; chưa khớp định hướng dài hạn "BE authoritative authorization". Mục tiêu tương lai: FE cho phép thao tác bình thường, backend trả `403` cho cả GET/mutation khi không đủ quyền, FE hiển thị dialog lỗi thống nhất. Guard admin hiện tại là cơ chế tạm thời. | Refactor dần sang mô hình BE-first authz: giảm/bỏ hardcoded permission map ở FE, chuẩn hóa xử lý `403` tại interceptor + UX dialog, giữ guard tạm ở mức tối thiểu cho đến khi rollout hoàn tất. |
 
 ---
 

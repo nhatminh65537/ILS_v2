@@ -3,7 +3,13 @@
 from .admin_users import AdminUserViewSet, UserRoleViewSet
 from .auth import CustomTokenObtainPairView
 from .challenges import ChallengeViewSet
-from .courses import CourseViewSet, LessonViewSet
+from .courses import (
+    CourseViewSet,
+    LearnCourseCategoryViewSet,
+    LearnCourseTagViewSet,
+    LearnCourseViewSet,
+    LessonViewSet,
+)
 from .leaderboard import LeaderboardViewSet
 from .notifications import NotificationViewSet
 from .permissions import PermissionViewSet
@@ -18,6 +24,9 @@ __all__ = [
     'CourseViewSet',
     'CustomTokenObtainPairView',
     'LeaderboardViewSet',
+    'LearnCourseCategoryViewSet',
+    'LearnCourseTagViewSet',
+    'LearnCourseViewSet',
     'LessonViewSet',
     'NotificationViewSet',
     'PermissionViewSet',

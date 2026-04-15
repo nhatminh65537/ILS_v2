@@ -50,8 +50,8 @@
 | [Q-LEARN-07](#q-learn-07-tag-creation-permissions) | Who can create course tags | Slice 5 | **RESOLVED** (Option D) |
 | [Q-LEARN-08](#q-learn-08-lesson-completion-trigger) | Lesson completion trigger (scroll enforcement) | Slice 5 | **RESOLVED** (Option D) |
 | [Q-LEARN-09](#q-learn-09-lesson-start-trigger) | Lesson start: implicit or explicit | Slice 5 | **RESOLVED** (Option B) |
-| [Q-LEARN-10](#q-learn-10-outline-sync-failure-handling) | Outline sync failure / timeout behavior | Slice 5 | **RESOLVED** (Option B) |
-| [Q-CHALL-01](#q-chall-01-challenge-instance-scope) | Challenge instances in MVP or deferred | Slice 6 | **OPEN** |
+| [Q-LEARN-10](#q-learn-10-outline-sync-failure-handling) | Outline sync failure / timeout behavior | Slice 5 | **REVISED** (Option A — sync blocking MVP) |
+| [Q-CHALL-01](#q-chall-01-challenge-instance-scope) | Challenge instances in MVP or deferred | Slice 6 | **RESOLVED** (Option C) |
 | [Q-CHALL-02](#q-chall-02-instance-deployment-protocol) | Instance deployment external system spec | Slice 6 | **RESOLVED** → [R-ARCH-12](#r-arch-12-instance-deployment--strategy-pattern) |
 
 ---
@@ -793,30 +793,39 @@ When `POST /api/learn/lessons/{id}/sync-outline/` is called but Outline is unrea
 | B | Async via Celery/background task | Non-blocking; better UX | Requires Celery setup (new dependency) |
 | C | Async via Django Channels (existing dep) | Non-blocking; reuses existing infra | More complex implementation |
 
-**Decision:** Choose Option B. Outline sync runs async through background jobs. API returns accepted job state; previous lesson content remains active until sync success.
+**Decision (original):** Choose Option B. Outline sync runs async through background jobs. API returns accepted job state; previous lesson content remains active until sync success.
+
+**Decision (revised 2026-04-15):** MVP uses **Option A — synchronous blocking**. Celery is not in the current tech stack; adding it for a single deferrable feature is premature. Backend calls Outline API synchronously, returns 503 on failure, old content preserved. Async via Celery remains a future enhancement to add when Celery is introduced for other features.
 
 ---
 
 ### Q-CHALL-01: Challenge Instance Scope in MVP
 
-**Status:** OPEN
-**Blocks:** Slice 6 (Task 6.3 — deployment, instance management)
+**Status:** RESOLVED → Option C
+**Decision date:** 2026-04-15
+**Blocks:** ~~Slice 6 (Task 6.3 — deployment, instance management)~~ — unblocked
 
 **Problem:**
 Challenges can have deployable instances (e.g., Docker containers for CTF boxes). The `challenge_instance` table exists with `expires_at`, `status`, etc. But the "external deployment system" is not specified anywhere in the codebase or docs.
 
-Instance management may be a significant external integration effort. The question is whether it belongs in the initial MVP.
-
-**Options:**
+**Options considered:**
 | Option | Scope |
 |--------|-------|
 | A | Full instance management in Slice 6 (deploy, status check, stop, expire) | Feature-complete; significant complexity |
 | B | Defer instance management; implement static+regex flag challenges only in MVP | Launch sooner; add instances post-MVP |
 | C | Implement instance model + API stubs; no real deployment (mock responses) | Frontend can be built; deferred integration |
 
-**Sub-question:** Is there an existing container orchestration system at the organization (Kubernetes, Docker Compose, custom HTTP API)?
+**Decision: Option C — API stubs with MockDeploymentBackend**
 
-**Decision:** _(not yet made)_
+**Rationale:**
+- External deployment system (`SocketDeploymentBackend`) is a separate project, not yet built. Full integration (Option A) is blocked by external dependency.
+- Content split is ~50/50 static/instance. Fully deferring (Option B) would leave the instance frontend half-built.
+- Option C ships Wave 1 (static + regex flags fully functional) while letting frontend build the full instance panel against a mock backend. When the external system is ready, only the backend implementation swaps — no API contract change.
+
+**Implementation notes:**
+- Wave 1 (Slice 6): Implement `MockDeploymentBackend` satisfying `InstanceDeploymentBackend` Protocol (R-ARCH-12). `deploy()` returns fake `instance_info`; `stop()` returns True.
+- Wave 2 (post-MVP): Replace `MockDeploymentBackend` with `SocketDeploymentBackend`. No API or frontend change required.
+- INSTANCE-type flag submission (comparing against `challenge_instance.flag_value`) is included in Wave 1 since the flag-check logic doesn't depend on the real deployment backend.
 
 ---
 

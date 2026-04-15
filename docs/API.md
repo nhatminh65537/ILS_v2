@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-14
+> Last updated: 2026-04-15
 
 ---
 
@@ -27,7 +27,8 @@ Primary references:
 
 Compatibility note:
 - Section 3 lists currently active runtime routes. Legacy flat routes (e.g., `/api/quizzes/*`) have been removed and return 404.
-- Target feature contracts for upcoming slices follow namespaced routes (`/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`) and are tracked in Section 4 + `docs/IMPL_PLAN.md`.
+- Learn namespaced routes (`/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*`) are now active for Slice 5 Task 5.1.
+- Target feature contracts for remaining upcoming slices continue to follow namespaced routes (`/api/challenge/*`, `/api/quiz/*`) and are tracked in Section 4 + `docs/IMPL_PLAN.md`.
 
 ---
 
@@ -116,16 +117,37 @@ Task 8.2 update (2026-04-02):
 ### 3.3 Courses
 
 Historical/runtime note:
-- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
-- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
+- Namespaced Learn routes are active for Task 5.1.
+- Legacy-flat routes remain active for compatibility and are considered transitional.
+
+Task 5.1 update (2026-04-15):
+- Canonical namespaced Learn CRUD endpoints are active under `/api/learn/courses/*`, `/api/learn/categories/*`, and `/api/learn/tags/*`.
+- Course detail uses slug identifier (`/api/learn/courses/{slug}/`).
+- Course list includes `user_progress` object (`completed`, `total`) for authenticated users.
+- Legacy routes (`/api/courses/*`) are intentionally kept active during migration.
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/courses/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
-| POST | `/api/courses/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
-| GET | `/api/courses/{id}/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
-| PUT/PATCH | `/api/courses/{id}/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
-| DELETE | `/api/courses/{id}/` | Yes | Partial | Runtime route exists; full Slice 5 contract and frontend flow are still pending. |
+| GET | `/api/learn/courses/` | Yes | Partial | Canonical namespaced list endpoint; supports `category`, `status`, `search`; member visibility enforced to published-only. |
+| POST | `/api/learn/courses/` | Yes | Partial | Canonical namespaced create endpoint; editor/admin only; slug conflict returns `409` with suggestions. |
+| GET | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced detail endpoint with slug lookup. |
+| PUT | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin only. |
+| DELETE | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced delete endpoint; default archive, optional admin-only purge (`?mode=purge`). |
+| GET | `/api/learn/categories/` | Yes | Partial | Canonical category list endpoint. |
+| POST | `/api/learn/categories/` | Yes | Partial | Canonical category create endpoint; admin only. |
+| GET | `/api/learn/categories/{id}/` | Yes | Partial | Canonical category detail endpoint. |
+| PUT | `/api/learn/categories/{id}/` | Yes | Partial | Canonical category update endpoint; admin only. |
+| DELETE | `/api/learn/categories/{id}/` | Yes | Partial | Canonical category delete endpoint; admin only. |
+| GET | `/api/learn/tags/` | Yes | Partial | Canonical tag list endpoint. |
+| POST | `/api/learn/tags/` | Yes | Partial | Canonical tag create endpoint; permission-gated (admin/editor in current implementation). |
+| GET | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag detail endpoint. |
+| PUT | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag update endpoint; permission-gated (admin/editor in current implementation). |
+| DELETE | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag delete endpoint; permission-gated (admin/editor in current implementation). |
+| GET | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
+| POST | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
+| GET | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
+| PUT/PATCH | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
+| DELETE | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
 | GET | `/api/courses/{id}/tree/` | Yes | Partial | Runtime route exists; tree integrity rules for full Slice 5 scope are pending. |
 | GET | `/api/courses/{id}/progress/` | Yes | Partial | Runtime route exists; full progress-signal contract is pending. |
 | POST | `/api/courses/{id}/enroll/` | Yes | Partial | Runtime route exists; full Slice 5 enrollment/progress contract is pending. |
@@ -325,13 +347,87 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 Notes:
 - Password reset remains deferred by decision `Q-INFRA-03` until email backend setup is finalized.
 
-### 4.2 Slice 5–8 Domain APIs (not yet active)
+### 4.2 Slice 5 — Learn (pending beyond Task 5.1)
 
-- Learn tree management: `/api/learn/courses/*`, `/api/learn/lessons/*` — see IMPL_PLAN Slice 5
-- Challenge node/category/flag: `/api/challenge/*` — see IMPL_PLAN Slice 6
+- Learn tree and lesson management: `/api/learn/courses/{slug}/nodes/*`, `/api/learn/lessons/*` — see IMPL_PLAN Slice 5
+
+### 4.3 Slice 6 — Challenge (CTF)
+
+All routes under `/api/challenge/*` are planned. None are active in current routing.
+
+**Challenge resource:**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/challenge/challenges/` | Yes | List; Members see `published` only; Admin/Editor see all statuses. Filters: `status`, `difficulty`, `category`, `search`. |
+| POST | `/api/challenge/challenges/` | Admin/Editor | Create challenge. |
+| GET | `/api/challenge/challenges/{slug}/` | Yes | Detail. |
+| PUT/PATCH | `/api/challenge/challenges/{slug}/` | Admin/Editor | Update challenge metadata. |
+| DELETE | `/api/challenge/challenges/{slug}/` | Admin | Delete challenge. |
+
+**Category + Tag:**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/challenge/categories/` | Yes | List categories. |
+| POST | `/api/challenge/categories/` | Admin/Editor | Create category. |
+| GET | `/api/challenge/categories/{id}/` | Yes | Detail. |
+| PUT/PATCH | `/api/challenge/categories/{id}/` | Admin/Editor | Update. |
+| DELETE | `/api/challenge/categories/{id}/` | Admin | Delete. |
+| GET | `/api/challenge/tags/` | Yes | List tags. |
+| POST | `/api/challenge/tags/` | Admin/Editor | Create tag. |
+| PUT/PATCH | `/api/challenge/tags/{id}/` | Admin/Editor | Update tag. |
+| DELETE | `/api/challenge/tags/{id}/` | Admin/Editor | Delete tag. |
+
+**Tree nodes:**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/challenge/nodes/` | Yes | List root nodes (no parent). Filter: `parent_id`. |
+| POST | `/api/challenge/nodes/` | Admin/Editor | Create node. `is_item=false` → folder; `is_item=true` → requires `challenge_id`. |
+| GET | `/api/challenge/nodes/{id}/` | Yes | Node detail. |
+| PUT/PATCH | `/api/challenge/nodes/{id}/` | Admin/Editor | Update title/position. |
+| DELETE | `/api/challenge/nodes/{id}/` | Admin/Editor | Delete node (and subtree). |
+| GET | `/api/challenge/nodes/{id}/children/` | Yes | Lazy-load direct children. |
+| POST | `/api/challenge/nodes/{id}/move/` | Admin/Editor | Move node to new parent. Payload: `{parent_id}` (null = root). Cycle-safe. |
+
+**Flags:**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | List flags. `flag_value` never returned to Member. |
+| POST | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | Create flag. `is_regex=true` stores plaintext pattern; `is_regex=false` stores HMAC hash. |
+| PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Update flag. |
+| DELETE | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Delete flag. |
+
+**Flag submission + progress:**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/api/challenge/challenges/{slug}/submit/` | Member+ | Payload: `{flag: string}`. Response: `{correct: bool}`. Server-side check only; flag values never returned. |
+| GET | `/api/challenge/progress/` | Yes | Aggregate progress for current user: `{solved_count, total_attempts}`. |
+
+**Instance management (Wave 1: MockDeploymentBackend):**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/api/challenge/challenges/{slug}/instance/start/` | Member+ | Start instance. Returns `ChallengeInstance` with `instance_info`. Idempotent if running instance exists. |
+| POST | `/api/challenge/challenges/{slug}/instance/stop/` | Member+ | Stop running instance for current user. |
+| GET | `/api/challenge/challenges/{slug}/instance/status/` | Member+ | Get current user's instance status for this challenge. |
+| GET | `/api/challenge/instances/` | Admin/Editor | Admin view: list all instances with filters (challenge, user, status). |
+| POST | `/api/challenge/instances/{id}/kill/` | Admin | Force-kill any instance. |
+
+**GitLab sync (Task 6.8 — separate delivery):**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/api/challenge/challenges/{slug}/sync-gitlab/` | Admin/Editor | Trigger GitLab sync. Reads `challenge.git.url` from `system_config`. Returns updated `ChallengeGitlab` record. |
+
+Notes:
+- Legacy flat routes (`/api/challenges/*`) will be removed when Task 6.1 is implemented.
+- `flag_value` is role-gated at serializer level — Member responses never include the field.
+- Instance routes are active in Wave 1 with `MockDeploymentBackend`; `instance_info` contains mock connection data until Wave 2 wires `SocketDeploymentBackend`.
+
+### 4.4 Slice 11 — Statistics
+
 - Admin statistics: `/api/admin/stats/*` — see IMPL_PLAN Slice 11
 
-Note: Quiz WebSocket (`ws://host/ws/quiz/{quiz_id}/`) and CRUD endpoints are now active — see §3.6 and §3.6.1.
+Note:
+- Quiz WebSocket (`ws://host/ws/quiz/{quiz_id}/`) and CRUD endpoints are active — see §3.6 and §3.6.1.
+- Learn Task 5.1 endpoints are active — see §3.3.
 
 ---
 
