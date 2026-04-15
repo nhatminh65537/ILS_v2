@@ -822,24 +822,14 @@ class Lesson(FullAudit):
         return self.title
 
     def mark_completed(self, user):
-        """Mark this lesson as completed for user and award learning points"""
-        from django.utils import timezone
-        progress, created = UserLessonProgress.objects.get_or_create(
+        """Mark this lesson as completed for user using the learn progress pipeline."""
+        from .services.learn_progress_service import LearnProgressService
+
+        LearnProgressService.complete_lesson(
             user=user,
             lesson=self,
-            defaults={'started_at': timezone.now()}
+            actor=user,
         )
-        if not progress.completed_at:
-            progress.completed_at = timezone.now()
-            if not progress.started_at:
-                progress.started_at = progress.completed_at
-            progress.save()
-
-            # Award learning points
-            profile = user.profile
-            profile.total_learning_point += self.learning_point
-            profile.save()
-            profile.update_leaderboard_rank()
 
 
 class CourseNode(BaseNode):
@@ -951,6 +941,10 @@ class UserCourseProgress(FullAudit):
     )
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    completed_lessons_cache = models.IntegerField(default=0)
+    total_lessons_cache = models.IntegerField(default=0)
+    progress_percent_cache = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    last_computed_version = models.IntegerField(default=0)
 
     class Meta:
         db_table = 'user_course_progress'

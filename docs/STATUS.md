@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-15 (Slice 5 Task 5.3 Learn Lesson CRUD API implemented and docs updated)
+> Last updated: 2026-04-15 (Slice 5 Task 5.4 Learn progress tracking API/signal chain implemented and docs updated)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -115,6 +115,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 5 / Task 5.1 (2026-04-15) | Implemented namespaced Learn CRUD APIs at `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*` with slug detail, member visibility hardening, user_progress payload, slug conflict 409 suggestions, hybrid archive/purge delete flow, and integration regression tests (`backend/api/tests/test_learn_course_api.py`). |
 | Slice 5 / Task 5.2 (2026-04-15) | Implemented canonical Learn course node tree endpoints at `/api/learn/courses/{slug}/nodes/*` (root list + lazy children), editor/admin node writes (atomic `Lesson + CourseNode` create), max depth enforcement (`learn.max_tree_depth`), subtree delete lesson cleanup, bulk move descendant `path` updates via `bulk_update`, and structure_version bumping; integration tests in `backend/api/tests/test_learn_course_node_api.py`. |
 | Slice 5 / Task 5.3 (2026-04-15) | Implemented canonical Learn Lesson endpoints at `/api/learn/lessons/{id}/` (GET/PUT) plus miniquiz question mapping endpoints (`/api/learn/lessons/{id}/questions/`, `/api/learn/lesson-questions/{id}/`); member visibility restricted to lessons whose owning course is `published`; editor/admin write gates; service layer helpers in `backend/api/services/lesson_service.py`; integration tests added in `backend/api/tests/test_learn_lesson_api.py` and executed in local `.venv` (pass). |
+| Slice 5 / Task 5.4 (2026-04-15) | Implemented canonical Learn progress endpoints: `POST /api/learn/lessons/{id}/progress/start/`, `POST /api/learn/lessons/{id}/progress/complete/`, `GET /api/learn/courses/{slug}/progress/`; added `user_course_progress` cache/version fields (`completed_lessons_cache`, `total_lessons_cache`, `progress_percent_cache`, `last_computed_version`) with migration `0007`; added `LearnProgressService` + lesson-completion signal chain (`UserLessonProgress` -> `UserCourseProgress` -> `UserProfile` first-completion counters); unified legacy completion path (`/api/lessons/{id}/complete/`) to the same pipeline; added integration tests in `backend/api/tests/test_learn_progress_api.py` and ran Learn regression suites (pass). |
 
 ---
 
@@ -157,6 +158,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 5 / Task 5.1 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-1-learn-crud-api.md` |
 | Slice 5 / Task 5.2 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-2-course-node-tree-api.md` |
 | Slice 5 / Task 5.3 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-3-learn-lesson-crud-api.md` |
+| Slice 5 / Task 5.4 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-4-learn-progress-api.md` |
 
 ---
 
@@ -216,8 +218,8 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 |------|----------|-------|
 | Course + Category CRUD API | Medium | ✅ Completed 2026-04-15: activated `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*`; slug-based detail, member visibility hardening, slug conflict 409 suggestions, archive default + admin-only purge, and regression tests in `backend/api/tests/test_learn_course_api.py`. |
 | CourseNode tree API | Medium | ✅ Completed 2026-04-15: `/api/learn/courses/{slug}/nodes/`, `/api/learn/courses/{slug}/nodes/{id}/children/`, plus editor/admin `POST/PUT/DELETE` node management; atomic item (Lesson+Node) create, move with descendant `path` updates via `bulk_update`, max depth enforcement via `learn.max_tree_depth`, subtree delete cleans up lessons, and `course.structure_version` bump. Tests: `backend/api/tests/test_learn_course_node_api.py`. |
-| Lesson CRUD | Medium | Outline extracted to Task 5.8 |
-| User progress tracking signals | Medium | |
+| Lesson CRUD | Medium | ✅ Completed 2026-04-15: `/api/learn/lessons/{id}/` plus miniquiz mapping endpoints `/api/learn/lessons/{id}/questions/` and `/api/learn/lesson-questions/{id}/`; member published-only visibility and editor/admin writes enforced. |
+| User progress tracking signals | Medium | ✅ Completed 2026-04-15: namespaced progress endpoints active (`/api/learn/lessons/{id}/progress/start/`, `/progress/complete/`, `/api/learn/courses/{slug}/progress/`), idempotent start/complete, versioned lazy recompute by `course.structure_version`, and profile first-completion reward updates via signal chain. |
 | Frontend: Course catalog + tree | Low | |
 | Frontend: Lesson viewer (md/video/miniquiz) | Low | |
 | Frontend: Course editor (admin/editor surface) | Low | |

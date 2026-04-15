@@ -518,3 +518,11 @@ class UserLessonProgressSerializer(serializers.ModelSerializer):
         model = UserLessonProgress
         fields = ['id', 'user', 'lesson', 'started_at', 'completed_at', 'is_completed']
         read_only_fields = ['id', 'is_completed']
+
+
+class LearnCourseProgressSerializer(serializers.Serializer):
+    """Response serializer for canonical learn course progress endpoint."""
+
+    lesson_count = serializers.IntegerField(min_value=0)
+    completed = serializers.IntegerField(min_value=0)
+    percent = serializers.DecimalField(max_digits=5, decimal_places=2)

@@ -133,6 +133,12 @@ Task 5.2 update (2026-04-15):
 - `system_config[learn.max_tree_depth]` is enforced on create and move.
 - Node mutations bump `course.structure_version`.
 
+Task 5.4 update (2026-04-15):
+- Canonical namespaced Learn progress endpoints are active under `/api/learn/lessons/{id}/progress/*` and `/api/learn/courses/{slug}/progress/`.
+- Progress start and completion endpoints are idempotent.
+- Course progress now uses versioned lazy recompute (`last_computed_version` vs `course.structure_version`) and denormalized cache fields on `user_course_progress`.
+- Lesson completion updates `user_course_progress` via Django signal and increments profile course counters/points only on first completion transition.
+
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/learn/courses/` | Yes | Partial | Canonical namespaced list endpoint; supports `category`, `status`, `search`; member visibility enforced to published-only. |
@@ -140,6 +146,7 @@ Task 5.2 update (2026-04-15):
 | GET | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced detail endpoint with slug lookup. |
 | PUT | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin only. |
 | DELETE | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced delete endpoint; default archive, optional admin-only purge (`?mode=purge`). |
+| GET | `/api/learn/courses/{slug}/progress/` | Yes | Partial | Canonical namespaced course progress endpoint; response `{lesson_count, completed, percent}`; versioned lazy recompute when structure version changes. |
 | GET | `/api/learn/courses/{slug}/nodes/` | Yes | Partial | Root-level course nodes (`parent=null`); lazy tree payload with `has_children`. |
 | GET | `/api/learn/courses/{slug}/nodes/{id}/children/` | Yes | Partial | Lazy-load children for a folder node. |
 | POST | `/api/learn/courses/{slug}/nodes/` | Yes | Partial | Create folder or lesson item node; editor/admin only; item create performs atomic lesson creation; max depth enforced. |
@@ -157,6 +164,8 @@ Task 5.2 update (2026-04-15):
 | DELETE | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag delete endpoint; permission-gated (admin/editor in current implementation). |
 | GET | `/api/learn/lessons/{id}/` | Yes | Partial | Canonical lesson detail endpoint; member visibility restricted to lessons whose owning course is `published`. |
 | PUT | `/api/learn/lessons/{id}/` | Yes | Partial | Canonical lesson update endpoint; editor/admin only. |
+| POST | `/api/learn/lessons/{id}/progress/start/` | Yes | Partial | Canonical explicit lesson-start endpoint; idempotent upsert of `user_lesson_progress.started_at`. |
+| POST | `/api/learn/lessons/{id}/progress/complete/` | Yes | Partial | Canonical lesson-complete endpoint; idempotent completion; triggers course/profile aggregate updates via signal chain. |
 | GET | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Mini-quiz lesson question mapping list; requires `lesson_type=miniquiz` (otherwise 400). |
 | POST | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Attach existing `QuizQuestion` to a mini-quiz lesson; editor/admin only; returns mapping; duplicate attach returns 409. |
 | GET | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Mini-quiz lesson-question mapping detail; member visibility restricted to published courses. |
@@ -168,7 +177,7 @@ Task 5.2 update (2026-04-15):
 | PUT/PATCH | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
 | DELETE | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
 | GET | `/api/courses/{id}/tree/` | Yes | Partial | Runtime route exists; tree integrity rules for full Slice 5 scope are pending. |
-| GET | `/api/courses/{id}/progress/` | Yes | Partial | Runtime route exists; full progress-signal contract is pending. |
+| GET | `/api/courses/{id}/progress/` | Yes | Partial | Legacy-flat compatibility route retained; progress now uses the same versioned recompute pipeline as namespaced Learn progress endpoint. |
 | POST | `/api/courses/{id}/enroll/` | Yes | Partial | Runtime route exists; full Slice 5 enrollment/progress contract is pending. |
 
 ### 3.4 Lessons
@@ -181,7 +190,7 @@ Historical/runtime note:
 |---|---|---|---|---|
 | GET | `/api/lessons/` | Yes | Stable | Read-only list endpoint. |
 | GET | `/api/lessons/{id}/` | Yes | Stable | Read-only detail endpoint. |
-| POST | `/api/lessons/{id}/complete/` | Yes | Partial | Depends on lesson completion method and full progress workflow. |
+| POST | `/api/lessons/{id}/complete/` | Yes | Partial | Legacy-flat compatibility route retained; delegates to unified lesson completion pipeline. |
 | GET | `/api/lessons/{id}/render/` | Yes | Partial | Depends on lesson rendering implementation details. |
 
 ### 3.5 Challenges
@@ -366,9 +375,9 @@ These contracts are planned by slices and PRDs, but are not active in the curren
 Notes:
 - Password reset remains deferred by decision `Q-INFRA-03` until email backend setup is finalized.
 
-### 4.2 Slice 5 — Learn (pending beyond Task 5.1)
+### 4.2 Slice 5 — Learn (pending beyond Task 5.4)
 
-- Learn tree and lesson management: `/api/learn/courses/{slug}/nodes/*`, `/api/learn/lessons/*` — see IMPL_PLAN Slice 5
+- Frontend Learn delivery and Outline integration remain pending (`Task 5.5` to `Task 5.8`) — see `docs/IMPL_PLAN.md` Slice 5.
 
 ### 4.3 Slice 6 — Challenge (CTF)
 

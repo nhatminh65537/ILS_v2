@@ -4,6 +4,7 @@ from .admin_user_service import AdminUserService
 from .auth_service import AuthService
 from .challenge_service import ChallengeService
 from .course_service import CourseService
+from .learn_progress_service import LearnProgressService
 from .lesson_service import LessonService
 from .quiz_service import QuizService
 from .role_service import RoleService
@@ -15,6 +16,7 @@ __all__ = [
     'AuthService',
     'ChallengeService',
     'CourseService',
+    'LearnProgressService',
     'LessonService',
     'QuizService',
     'RoleService',

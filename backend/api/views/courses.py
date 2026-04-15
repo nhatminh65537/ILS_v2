@@ -10,6 +10,7 @@ from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson, LessonQuestion, QuizQuestion
 from api.serializers import (
+    LearnCourseProgressSerializer,
     CourseDetailSerializer,
     CourseListSerializer,
     CourseNodeSerializer,
@@ -28,8 +29,10 @@ from api.serializers import (
     LearnLessonUpdateSerializer,
     LessonSerializer,
     UserCourseProgressSerializer,
+    UserLessonProgressSerializer,
 )
 from api.services.course_service import CourseService
+from api.services.learn_progress_service import LearnProgressService
 from api.services.lesson_service import LessonService
 
 
@@ -217,6 +220,15 @@ class LearnCourseViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
+    def progress(self, request, slug=None):
+        course = self.get_object()
+        payload = LearnProgressService.recompute_course_progress_if_stale(
+            user=request.user,
+            course=course,
+        )
+        serializer = LearnCourseProgressSerializer(payload)
+        return Response(serializer.data)
+
 
 @add_role_granted('Admin', 'Editor', 'Member')
 class LearnCourseCategoryViewSet(viewsets.ModelViewSet):
@@ -395,6 +407,24 @@ class LearnLessonViewSet(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
         lesson = self._get_lesson_or_404(pk, request.user)
         return Response(LearnLessonDetailSerializer(lesson).data)
+
+    def start_progress(self, request, pk=None):
+        lesson = self._get_lesson_or_404(pk, request.user)
+        progress = LearnProgressService.start_lesson(
+            user=request.user,
+            lesson=lesson,
+            actor=request.user,
+        )
+        return Response(UserLessonProgressSerializer(progress).data)
+
+    def complete_progress(self, request, pk=None):
+        lesson = self._get_lesson_or_404(pk, request.user)
+        progress, _transitioned = LearnProgressService.complete_lesson(
+            user=request.user,
+            lesson=lesson,
+            actor=request.user,
+        )
+        return Response(UserLessonProgressSerializer(progress).data)
 
     @add_role_granted('Admin', 'Editor')
     def update(self, request, pk=None):

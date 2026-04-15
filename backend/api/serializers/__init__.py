@@ -24,6 +24,7 @@ from .course import (
 	CourseNodeSerializer,
 	CourseTagSerializer,
 	LearnCourseNodeSerializer,
+	LearnCourseProgressSerializer,
 	LearnCourseNodeUpdateSerializer,
 	LearnCourseNodeWriteSerializer,
 	LearnCourseDetailSerializer,

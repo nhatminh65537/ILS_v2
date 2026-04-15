@@ -1,17 +1,45 @@
-"""
-Django signals for Quiz domain.
-
-Handles automatic updates to UserQuizProgress when quiz attempts finish.
-"""
+"""Django signals for denormalized progress updates."""
 
 import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Max, F
 
-from .models import UserQuizAttempt, UserQuizProgress, UserProfile
+from .models import CourseNode, UserLessonProgress, UserProfile, UserQuizAttempt, UserQuizProgress
+from .services.learn_progress_service import LearnProgressService
 
 logger = logging.getLogger(__name__)
+
+
+@receiver(post_save, sender=UserLessonProgress)
+def handle_lesson_progress_saved(sender, instance, created, **kwargs):
+    """Update course aggregate progress when a lesson is completed."""
+
+    if instance.completed_at is None:
+        return
+
+    try:
+        try:
+            node = instance.lesson.node
+        except CourseNode.DoesNotExist:
+            logger.warning(
+                'Learn progress signal skipped: lesson %s has no course node',
+                instance.lesson_id,
+            )
+            return
+
+        LearnProgressService.recompute_course_progress(
+            user=instance.user,
+            course=node.course,
+        )
+    except Exception as exc:
+        logger.error(
+            'Signal error updating UserCourseProgress for lesson progress %s: %s',
+            instance.id,
+            str(exc),
+            exc_info=True,
+        )
+        raise
 
 
 @receiver(post_save, sender=UserQuizAttempt)

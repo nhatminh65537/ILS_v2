@@ -66,6 +66,11 @@ urlpatterns = [
         name='learn-course-detail',
     ),
     re_path(
+        r'^learn/courses/(?P<slug>[a-z0-9-]+)/progress/$',
+        LearnCourseViewSet.as_view({'get': 'progress'}),
+        name='learn-course-progress',
+    ),
+    re_path(
         r'^learn/courses/(?P<slug>[a-z0-9-]+)/nodes/$',
         LearnCourseNodeViewSet.as_view({'get': 'list', 'post': 'create'}),
         name='learn-course-node-list',
@@ -106,6 +111,16 @@ urlpatterns = [
         r'^learn/lessons/(?P<pk>\d+)/$',
         LearnLessonViewSet.as_view({'get': 'retrieve', 'put': 'update'}),
         name='learn-lesson-detail',
+    ),
+    re_path(
+        r'^learn/lessons/(?P<pk>\d+)/progress/start/$',
+        LearnLessonViewSet.as_view({'post': 'start_progress'}),
+        name='learn-lesson-progress-start',
+    ),
+    re_path(
+        r'^learn/lessons/(?P<pk>\d+)/progress/complete/$',
+        LearnLessonViewSet.as_view({'post': 'complete_progress'}),
+        name='learn-lesson-progress-complete',
     ),
     re_path(
         r'^learn/lessons/(?P<pk>\d+)/questions/$',
