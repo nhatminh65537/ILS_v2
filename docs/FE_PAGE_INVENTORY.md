@@ -50,9 +50,9 @@ Route-level inventory for frontend pages across Slices 1–11.
 
 | Route | Page Name | Auth Required | Layout Group | Primary Store | Primary API Calls | Slice | Status |
 |---|---|---|---|---|---|---|---|
-| `/vi/courses` `/en/courses` | Course catalog | Yes | `[locale]/(catalog)` | `courses.store` | `courses.listCourses` | 5 | skeleton |
-| `/vi/courses/[slug]` `/en/courses/[slug]` | Course detail + tree | Yes | `[locale]/(catalog)` | `courses.store` | `courses.getCourseBySlug`, `courses.getCourseNodes`, `courses.getCourseProgress` | 5 | skeleton |
-| `/vi/courses/[slug]/lessons/[id]` `/en/courses/[slug]/lessons/[id]` | Lesson viewer | Yes | `[locale]/(catalog)` | `courses.store` | `lessons.getLessonById`, `lessons.startProgress`, `lessons.completeProgress` | 5 | skeleton |
+| `/vi/courses` `/en/courses` | Course catalog | Yes | `[locale]/(catalog)` | `courses.store` | `courses.listCourses` | 5 | implemented |
+| `/vi/courses/[slug]` `/en/courses/[slug]` | Course detail + tree | Yes | `[locale]/(catalog)` | `courses.store` | `courses.getCourseBySlug`, `courses.getCourseNodes`, `courses.getCourseProgress` | 5 | implemented |
+| `/vi/courses/[slug]/lessons/[id]` `/en/courses/[slug]/lessons/[id]` | Lesson viewer | Yes | `[locale]/(catalog)` | `courses.store` | `lessons.getLessonById`, `lessons.getLessonQuestions`, `lessons.startProgress`, `lessons.completeProgress` | 5 | implemented |
 
 ---
 
@@ -179,10 +179,10 @@ frontend/app/
     │   │       ├── page.tsx                          ✅ implemented (Task 7.5)
     │   │       └── session/page.tsx                  ✅ implemented (Task 7.6)
     │   ├── courses/
-    │   │   ├── page.tsx                              🔲 skeleton (Task 5.5)
+    │   │   ├── page.tsx                              ✅ implemented (Task 5.5)
     │   │   └── [slug]/
-    │   │       ├── page.tsx                          🔲 skeleton (Task 5.5)
-    │   │       └── lessons/[id]/page.tsx             🔲 skeleton (Task 5.6)
+    │   │       ├── page.tsx                          ✅ implemented (Task 5.5)
+    │   │       └── lessons/[id]/page.tsx             ✅ implemented (Task 5.6)
     │   └── challenges/
     │       ├── page.tsx                              🔲 skeleton (Task 6.5)
     │       └── [slug]/page.tsx                       🔲 skeleton (Task 6.6)

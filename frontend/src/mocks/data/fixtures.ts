@@ -1,5 +1,6 @@
 import { ChallengeDifficulty, ChallengeSource, InstanceStatus, type Challenge, type ChallengeFlag, type ChallengeNode, type ChallengeSubmission, type UserChallengeProgress, type ChallengeInstance } from '@/types/challenge.types'
 import { ContentStatus as CourseStatus, LessonSource, LessonType, type Course, type CourseCategory, type CourseNode, type CourseTag, type UserCourseProgress } from '@/types/course.types'
+import { type LearnLessonDetail, type LearnLessonProgress, type LearnLessonQuestionMapping } from '@/types/lesson.types'
 import { type LeaderboardEntry } from '@/types/leaderboard.types'
 import { NotificationType, type Notification } from '@/types/notification.types'
 import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizQuestion, type QuizQuestionOption, type UserQuizProgress } from '@/types/quiz.types'
@@ -204,6 +205,25 @@ export const courseChildrenByParentIdFixture: Record<number, CourseNode[]> = {
         learning_time: 18,
       },
     },
+    {
+      id: 113,
+      parent: 101,
+      is_item: true,
+      title: 'Miniquiz Practice',
+      position: 3,
+      path: '1.3',
+      has_children: false,
+      lesson: {
+        id: 7004,
+        title: 'Miniquiz Practice',
+        lesson_type: LessonType.MiniQuiz,
+        source: LessonSource.Manual,
+        video_url: null,
+        video_duration: null,
+        learning_point: 15,
+        learning_time: 10,
+      },
+    },
   ],
   102: [
     {
@@ -271,6 +291,108 @@ export const courseProgressFixture: Record<string, UserCourseProgress> = {
     percent: '14.29',
   },
 }
+
+export const learnLessonsFixture: Record<number, LearnLessonDetail> = {
+  7001: {
+    id: 7001,
+    title: 'Injection Basics',
+    lesson_type: LessonType.Markdown,
+    source: LessonSource.Manual,
+    content_md: '# Injection Basics\n\nReview common injection vectors and baseline defenses.\n\n```sql\nSELECT * FROM users WHERE username = ?\n```\n',
+    video_url: null,
+    video_duration: null,
+    learning_point: 10,
+    learning_time: 20,
+  },
+  7002: {
+    id: 7002,
+    title: 'Broken Access Control',
+    lesson_type: LessonType.Markdown,
+    source: LessonSource.Manual,
+    content_md: '# Broken Access Control\n\nUnderstand horizontal and vertical privilege escalation patterns.',
+    video_url: null,
+    video_duration: null,
+    learning_point: 10,
+    learning_time: 18,
+  },
+  7003: {
+    id: 7003,
+    title: 'Secure Coding Checklist',
+    lesson_type: LessonType.Video,
+    source: LessonSource.Manual,
+    content_md: null,
+    video_url: 'https://videos.example.com/secure-coding.mp4',
+    video_duration: 840,
+    learning_point: 12,
+    learning_time: 25,
+  },
+  7004: {
+    id: 7004,
+    title: 'Miniquiz Practice',
+    lesson_type: LessonType.MiniQuiz,
+    source: LessonSource.Manual,
+    content_md: null,
+    video_url: null,
+    video_duration: null,
+    learning_point: 15,
+    learning_time: 10,
+  },
+}
+
+export const learnLessonQuestionsFixture: Record<number, LearnLessonQuestionMapping[]> = {
+  7004: [
+    {
+      id: 9001,
+      lesson: 7004,
+      position: 0,
+      question: {
+        id: 1,
+        question_type: QuestionType.SingleChoice,
+        content: { text: 'Which vulnerability belongs to OWASP Top 10?' },
+        explanation: 'Broken Access Control is part of OWASP Top 10.',
+        score: 1,
+        position: 1,
+        options: [
+          { id: 11, content: 'Broken Access Control', position: 1 },
+          { id: 12, content: 'Kernel buffer overflow', position: 2 },
+        ],
+      },
+    },
+    {
+      id: 9002,
+      lesson: 7004,
+      position: 1,
+      question: {
+        id: 2,
+        question_type: QuestionType.MultiChoice,
+        content: { text: 'Select secure coding practices.' },
+        explanation: 'Input validation and parameterized queries are baseline controls.',
+        score: 2,
+        position: 2,
+        options: [
+          { id: 21, content: 'Input validation', position: 1 },
+          { id: 22, content: 'Parameterized queries', position: 2 },
+          { id: 23, content: 'Disable logs in production', position: 3 },
+        ],
+      },
+    },
+    {
+      id: 9003,
+      lesson: 7004,
+      position: 2,
+      question: {
+        id: 3,
+        question_type: QuestionType.FillBlank,
+        content: { text: 'Fill in: SQL injection is prevented by using ____ queries.' },
+        explanation: 'Parameterized queries isolate code from user input.',
+        score: 1,
+        position: 3,
+      },
+    },
+  ],
+}
+
+export const learnLessonProgressFixture: Record<number, LearnLessonProgress> = {}
 
 export const challengesFixture: Challenge[] = [
   { id: 1, slug: 'xss-lab', title: 'XSS Lab', description: 'Find and exploit reflected XSS', status: 'published', difficulty: ChallengeDifficulty.Easy, category_id: 1, source: ChallengeSource.Manual, storage_path: '/challenges/xss-lab', challenge_point: 100, instance_required: false, created_at: now, updated_at: now },

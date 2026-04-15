@@ -1,5 +1,10 @@
 import { create } from 'zustand'
 import type { Course, CourseNode, UserCourseProgress } from '@/types/course.types'
+import type {
+  LearnLessonDetail,
+  LearnLessonProgress,
+  LearnLessonQuestionMapping,
+} from '@/types/lesson.types'
 
 interface CoursesState {
   courses: Course[]
@@ -12,6 +17,15 @@ interface CoursesState {
   isDetailLoading: boolean
   isTreeLoadingByNodeId: Record<number, boolean>
   error: string | null
+  activeLesson: LearnLessonDetail | null
+  lessonQuestions: LearnLessonQuestionMapping[]
+  lessonProgress: LearnLessonProgress | null
+  isLessonLoading: boolean
+  isLessonQuestionsLoading: boolean
+  isLessonProgressSubmitting: boolean
+  lessonError: string | null
+  isStarted: boolean
+  isCompleted: boolean
   setCourses: (courses: Course[]) => void
   setSelectedCourse: (course: Course | null) => void
   setCourseProgress: (progress: UserCourseProgress | null) => void
@@ -23,6 +37,16 @@ interface CoursesState {
   setDetailLoading: (isLoading: boolean) => void
   setTreeNodeLoading: (nodeId: number, isLoading: boolean) => void
   setError: (error: string | null) => void
+  setActiveLesson: (lesson: LearnLessonDetail | null) => void
+  setLessonQuestions: (questions: LearnLessonQuestionMapping[]) => void
+  setLessonProgress: (progress: LearnLessonProgress | null) => void
+  setLessonLoading: (isLoading: boolean) => void
+  setLessonQuestionsLoading: (isLoading: boolean) => void
+  setLessonProgressSubmitting: (isSubmitting: boolean) => void
+  setLessonError: (error: string | null) => void
+  setStarted: (started: boolean) => void
+  setCompleted: (completed: boolean) => void
+  resetLessonState: () => void
   reset: () => void
 }
 
@@ -37,6 +61,27 @@ const initialState = {
   isDetailLoading: false,
   isTreeLoadingByNodeId: {} as Record<number, boolean>,
   error: null as string | null,
+  activeLesson: null as LearnLessonDetail | null,
+  lessonQuestions: [] as LearnLessonQuestionMapping[],
+  lessonProgress: null as LearnLessonProgress | null,
+  isLessonLoading: false,
+  isLessonQuestionsLoading: false,
+  isLessonProgressSubmitting: false,
+  lessonError: null as string | null,
+  isStarted: false,
+  isCompleted: false,
+}
+
+const initialLessonState = {
+  activeLesson: null as LearnLessonDetail | null,
+  lessonQuestions: [] as LearnLessonQuestionMapping[],
+  lessonProgress: null as LearnLessonProgress | null,
+  isLessonLoading: false,
+  isLessonQuestionsLoading: false,
+  isLessonProgressSubmitting: false,
+  lessonError: null as string | null,
+  isStarted: false,
+  isCompleted: false,
 }
 
 export const useCoursesStore = create<CoursesState>()((set) => ({
@@ -69,5 +114,23 @@ export const useCoursesStore = create<CoursesState>()((set) => ({
       },
     })),
   setError: (error) => set({ error }),
+  setActiveLesson: (activeLesson) => set({ activeLesson }),
+  setLessonQuestions: (lessonQuestions) => set({ lessonQuestions }),
+  setLessonProgress: (lessonProgress) =>
+    set({
+      lessonProgress,
+      isStarted: lessonProgress?.started_at != null,
+      isCompleted: Boolean(lessonProgress?.is_completed),
+    }),
+  setLessonLoading: (isLessonLoading) => set({ isLessonLoading }),
+  setLessonQuestionsLoading: (isLessonQuestionsLoading) => set({ isLessonQuestionsLoading }),
+  setLessonProgressSubmitting: (isLessonProgressSubmitting) => set({ isLessonProgressSubmitting }),
+  setLessonError: (lessonError) => set({ lessonError }),
+  setStarted: (isStarted) => set({ isStarted }),
+  setCompleted: (isCompleted) => set({ isCompleted }),
+  resetLessonState: () =>
+    set({
+      ...initialLessonState,
+    }),
   reset: () => set(initialState),
 }))

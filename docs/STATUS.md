@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-15 (Slice 5 Task 5.5 frontend course catalog + lazy tree implemented and validated)
+> Last updated: 2026-04-15 (Slice 5 Task 5.6 frontend lesson viewer implemented and validated)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -117,6 +117,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 5 / Task 5.3 (2026-04-15) | Implemented canonical Learn Lesson endpoints at `/api/learn/lessons/{id}/` (GET/PUT) plus miniquiz question mapping endpoints (`/api/learn/lessons/{id}/questions/`, `/api/learn/lesson-questions/{id}/`); member visibility restricted to lessons whose owning course is `published`; editor/admin write gates; service layer helpers in `backend/api/services/lesson_service.py`; integration tests added in `backend/api/tests/test_learn_lesson_api.py` and executed in local `.venv` (pass). |
 | Slice 5 / Task 5.4 (2026-04-15) | Implemented canonical Learn progress endpoints: `POST /api/learn/lessons/{id}/progress/start/`, `POST /api/learn/lessons/{id}/progress/complete/`, `GET /api/learn/courses/{slug}/progress/`; added `user_course_progress` cache/version fields (`completed_lessons_cache`, `total_lessons_cache`, `progress_percent_cache`, `last_computed_version`) with migration `0007`; added `LearnProgressService` + lesson-completion signal chain (`UserLessonProgress` -> `UserCourseProgress` -> `UserProfile` first-completion counters); unified legacy completion path (`/api/lessons/{id}/complete/`) to the same pipeline; added integration tests in `backend/api/tests/test_learn_progress_api.py` and ran Learn regression suites (pass). |
 | Slice 5 / Task 5.5 (2026-04-15) | Implemented frontend course catalog + lazy tree delivery on canonical catalog routes: `/{locale}/courses` and `/{locale}/courses/{slug}` with namespaced Learn service contract (`/api/learn/courses/*`, `/nodes/*`, `/progress/`, `/categories/`, `/tags/`), Zustand courses store + `useCourses` orchestration, lazy child-fetch tree UI, i18n parity updates (`en/vi`), and MSW contract alignment; validation gates `lint`, `tsc --noEmit`, `next build` all pass. |
+| Slice 5 / Task 5.6 (2026-04-15) | Implemented frontend lesson viewer delivery on canonical catalog route `/{locale}/courses/{slug}/lessons/{id}` with dedicated viewer orchestration (`LessonViewerClient`), lesson-type rendering (`markdown`, `video`, `miniquiz`), explicit start/complete actions (`/api/learn/lessons/{id}/progress/start|complete/`), guided completion signals, deterministic prev/next navigation from flattened course tree, localized error/loading states, and MSW lesson endpoint coverage (`/api/learn/lessons/*`); validation gates `lint`, `tsc --noEmit`, `next build` all pass. |
 
 ---
 
@@ -161,6 +162,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 5 / Task 5.3 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-3-learn-lesson-crud-api.md` |
 | Slice 5 / Task 5.4 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-4-learn-progress-api.md` |
 | Slice 5 / Task 5.5 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-5-frontend-course-catalog-tree.md` |
+| Slice 5 / Task 5.6 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-6-frontend-lesson-viewer.md` |
 
 ---
 
@@ -223,7 +225,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Lesson CRUD | Medium | ✅ Completed 2026-04-15: `/api/learn/lessons/{id}/` plus miniquiz mapping endpoints `/api/learn/lessons/{id}/questions/` and `/api/learn/lesson-questions/{id}/`; member published-only visibility and editor/admin writes enforced. |
 | User progress tracking signals | Medium | ✅ Completed 2026-04-15: namespaced progress endpoints active (`/api/learn/lessons/{id}/progress/start/`, `/progress/complete/`, `/api/learn/courses/{slug}/progress/`), idempotent start/complete, versioned lazy recompute by `course.structure_version`, and profile first-completion reward updates via signal chain. |
 | Frontend: Course catalog + tree | Low | ✅ Completed 2026-04-15: implemented `/{locale}/courses` catalog and `/{locale}/courses/{slug}` detail with sticky filter panel, typed namespaced Learn services, `useCourses` + `courses.store` state orchestration, lazy tree children loading, progress card, i18n parity (`en`/`vi`), and MSW handlers aligned to `/api/learn/*`; validation gates (`lint`, `tsc --noEmit`, `next build`) pass. |
-| Frontend: Lesson viewer (md/video/miniquiz) | Low | |
+| Frontend: Lesson viewer (md/video/miniquiz) | Low | ✅ Completed 2026-04-15: implemented `/{locale}/courses/{slug}/lessons/{id}` with lesson-type renderer (`markdown`/`video`/`miniquiz`), explicit start/complete progress actions, deterministic prev/next navigation derived from full course tree, and i18n parity + MSW handlers for `/api/learn/lessons/*`; validation gates (`lint`, `tsc --noEmit`, `next build`) pass. |
 | Frontend: Course editor (admin/editor surface) | Low | |
 | Outline sync API + tab (deferrable) | Low | Sync blocking MVP; no Celery needed |
 

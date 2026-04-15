@@ -32,6 +32,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Components
 
 - **api app**: All domain models and current domain viewsets for users, courses, lessons, challenges, quizzes, notifications, leaderboard, and system config.
+- **frontend lesson viewer (Slice 5 Task 5.6)**: User lesson route `/{locale}/courses/{slug}/lessons/{id}` delivered with `LessonViewerClient`, type-specific renderers (`LessonMarkdownContent`, `LessonVideoContent`, `LessonMiniQuizContent`), sidebars (`LessonCourseTreeSidebar`, `LessonProgressSidebar`), and canonical lesson API service (`lessons.service.ts`).
 - **frontend learn catalog + lazy tree (Slice 5 Task 5.5)**: User-facing course routes `/{locale}/courses` and `/{locale}/courses/{slug}` delivered with client components (`CourseCatalogClient`, `CourseDetailClient`, tree panel/node renderer), domain hook/store (`useCourses`, `courses.store`), and namespaced Learn service contract (`/api/learn/*`).
 - **learn namespaced API (Slice 5 Task 5.1)**: Active canonical endpoints `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*` implemented in `backend/api/views/courses.py` with slug detail lookup and compatibility-preserved legacy `/api/courses/*` routes.
 - **learn course node tree API (Slice 5 Task 5.2)**: Active canonical endpoints `/api/learn/courses/{slug}/nodes/`, `/api/learn/courses/{slug}/nodes/{id}/children/` plus editor/admin writes (`POST/PUT/DELETE`). Supports atomic item create (Lesson+Node), bulk subtree move with descendant `path` updates via `bulk_update`, max depth enforcement via `system_config[learn.max_tree_depth]`, subtree delete lesson cleanup, and `course.structure_version` bump.
@@ -48,6 +49,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Status
 
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
+- Slice 5 Task 5.6 completed on 2026-04-15: frontend lesson viewer is active on `/{locale}/courses/{slug}/lessons/{id}` with explicit start/complete actions (`/api/learn/lessons/{id}/progress/start|complete/`), guided completion signals by lesson type (markdown/video/miniquiz), deterministic prev/next navigation derived from flattened course tree, and lesson API/MSW alignment (`/api/learn/lessons/*`); frontend validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
 - Slice 5 Task 5.5 completed on 2026-04-15: frontend course catalog + lazy tree is active on canonical catalog routes (`/{locale}/courses`, `/{locale}/courses/{slug}`) with namespaced Learn client services, lazy children loading (`/nodes/{id}/children/`), progress card integration, and en/vi i18n parity updates; frontend validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
 - Slice 5 Task 5.1 completed on 2026-04-15: namespaced Learn CRUD APIs active with member published-only visibility enforcement, course `user_progress` projection, slug-conflict `409` suggestions, and archive-default/admin-purge delete behavior.
 - Slice 5 Task 5.2 completed on 2026-04-15: namespaced Learn course node tree API active at `/api/learn/courses/{slug}/nodes/*` with lazy children loading, atomic lesson+node create, bulk subtree moves, max depth enforcement (`learn.max_tree_depth`), subtree delete lesson cleanup, and `course.structure_version` bumping.
@@ -86,6 +88,8 @@ Target: one instance per organization, no horizontal scale needed.
 ## Patterns
 
 - **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only
+- **Lesson viewer guided-signal pattern**: Keep completion hints local and deterministic by lesson type (`markdown` scroll %, `video` watch %, `miniquiz` revealed answers) while still requiring explicit user action for `/progress/complete/` (hybrid UX per Q-LEARN-08 + Q-LEARN-09).
+- **Lesson prev/next derivation pattern**: Build deterministic neighbor links by fully expanding course tree nodes once, flattening lesson nodes with stable `position` then `id` ordering, and resolving neighbors against current `lessonId`.
 - **Learn catalog lazy-tree frontend pattern**: For `/{locale}/courses/{slug}`, fetch root nodes once, cache children by `parentId`, and only request `/nodes/{id}/children/` on first folder expansion; preserve expanded-node state and per-node loading flags in domain store.
 - **Learn slug conflict contract**: Course create on duplicate slug must return HTTP `409` with deterministic `suggestions` array; do not fall back to silent auto-slug mutation.
 - **Learn lesson visibility hardening**: For member role, canonical learn lesson endpoints must return not-found for lessons whose owning course is not `published` (avoid existence leaks); editor/admin can access regardless of course status.

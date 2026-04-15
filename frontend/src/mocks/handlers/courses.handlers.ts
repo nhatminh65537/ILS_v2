@@ -2,13 +2,17 @@ import { http, HttpResponse } from 'msw'
 import {
   courseChildrenByParentIdFixture,
   courseCategoriesFixture,
+  learnLessonProgressFixture,
+  learnLessonQuestionsFixture,
+  learnLessonsFixture,
   courseRootNodesFixture,
   courseTagsFixture,
   courseProgressFixture,
   coursesFixture,
 } from '@/mocks/data/fixtures'
-import { notFound, parseNumericId, toPaginatedResponse } from '@/mocks/handlers/shared'
+import { badRequest, notFound, parseNumericId, toPaginatedResponse } from '@/mocks/handlers/shared'
 import { ContentStatus } from '@/types/course.types'
+import { LessonType } from '@/types/course.types'
 
 export const coursesHandlers = [
   http.get('*/api/learn/courses/', ({ request }) => {
@@ -173,6 +177,88 @@ export const coursesHandlers = [
     }
 
     return HttpResponse.json(courseChildrenByParentIdFixture[nodeId] ?? [])
+  }),
+
+  http.get('*/api/learn/lessons/:id/', ({ params }) => {
+    const lessonId = parseNumericId(String(params.id))
+    if (!lessonId) {
+      return notFound('Lesson not found')
+    }
+
+    const lesson = learnLessonsFixture[lessonId]
+    if (!lesson) {
+      return notFound('Lesson not found')
+    }
+
+    return HttpResponse.json(lesson)
+  }),
+
+  http.get('*/api/learn/lessons/:id/questions/', ({ params }) => {
+    const lessonId = parseNumericId(String(params.id))
+    if (!lessonId) {
+      return notFound('Lesson not found')
+    }
+
+    const lesson = learnLessonsFixture[lessonId]
+    if (!lesson) {
+      return notFound('Lesson not found')
+    }
+
+    if (lesson.lesson_type !== LessonType.MiniQuiz) {
+      return badRequest('Lesson is not miniquiz type')
+    }
+
+    return HttpResponse.json(learnLessonQuestionsFixture[lessonId] ?? [])
+  }),
+
+  http.post('*/api/learn/lessons/:id/progress/start/', ({ params }) => {
+    const lessonId = parseNumericId(String(params.id))
+    if (!lessonId) {
+      return notFound('Lesson not found')
+    }
+
+    if (!learnLessonsFixture[lessonId]) {
+      return notFound('Lesson not found')
+    }
+
+    const now = new Date().toISOString()
+    const existing = learnLessonProgressFixture[lessonId]
+    const nextProgress = {
+      id: existing?.id ?? 10000 + lessonId,
+      user: 1,
+      lesson: lessonId,
+      started_at: existing?.started_at ?? now,
+      completed_at: existing?.completed_at ?? null,
+      is_completed: existing?.is_completed ?? false,
+    }
+
+    learnLessonProgressFixture[lessonId] = nextProgress
+    return HttpResponse.json(nextProgress)
+  }),
+
+  http.post('*/api/learn/lessons/:id/progress/complete/', ({ params }) => {
+    const lessonId = parseNumericId(String(params.id))
+    if (!lessonId) {
+      return notFound('Lesson not found')
+    }
+
+    if (!learnLessonsFixture[lessonId]) {
+      return notFound('Lesson not found')
+    }
+
+    const now = new Date().toISOString()
+    const existing = learnLessonProgressFixture[lessonId]
+    const nextProgress = {
+      id: existing?.id ?? 10000 + lessonId,
+      user: 1,
+      lesson: lessonId,
+      started_at: existing?.started_at ?? now,
+      completed_at: existing?.completed_at ?? now,
+      is_completed: true,
+    }
+
+    learnLessonProgressFixture[lessonId] = nextProgress
+    return HttpResponse.json(nextProgress)
   }),
 
   http.get('*/api/learn/categories/', ({ request }) => {
