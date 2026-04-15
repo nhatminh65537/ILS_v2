@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson
+from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson, LessonQuestion, QuizQuestion
 from api.serializers import (
     CourseDetailSerializer,
     CourseListSerializer,
@@ -21,10 +21,16 @@ from api.serializers import (
     LearnCourseDetailSerializer,
     LearnCourseListSerializer,
     LearnCourseWriteSerializer,
+    LearnLessonDetailSerializer,
+    LearnLessonQuestionAttachSerializer,
+    LearnLessonQuestionSerializer,
+    LearnLessonQuestionUpdateSerializer,
+    LearnLessonUpdateSerializer,
     LessonSerializer,
     UserCourseProgressSerializer,
 )
 from api.services.course_service import CourseService
+from api.services.lesson_service import LessonService
 
 
 @add_role_granted('Admin', 'Editor', 'Member')
@@ -370,4 +376,113 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
         node = self._get_node(course, pk)
 
         CourseService.delete_course_node_subtree(course, node)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@add_role_granted('Admin', 'Editor', 'Member')
+class LearnLessonViewSet(viewsets.ViewSet):
+    """Canonical learn lesson endpoints under /api/learn/lessons/* (Task 5.3)."""
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    @staticmethod
+    def _get_lesson_or_404(lesson_id: int, user):
+        try:
+            return LessonService.get_visible_lesson_by_id(int(lesson_id), user)
+        except (Lesson.DoesNotExist, ValueError) as exc:
+            raise NotFound('Lesson not found') from exc
+
+    def retrieve(self, request, pk=None):
+        lesson = self._get_lesson_or_404(pk, request.user)
+        return Response(LearnLessonDetailSerializer(lesson).data)
+
+    @add_role_granted('Admin', 'Editor')
+    def update(self, request, pk=None):
+        lesson = self._get_lesson_or_404(pk, request.user)
+        serializer = LearnLessonUpdateSerializer(lesson, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        lesson.refresh_from_db()
+        return Response(LearnLessonDetailSerializer(lesson).data)
+
+    def questions(self, request, pk=None):
+        lesson = self._get_lesson_or_404(pk, request.user)
+        try:
+            LessonService.require_miniquiz(lesson)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        mappings = LessonService.list_lesson_questions(lesson)
+        return Response(LearnLessonQuestionSerializer(mappings, many=True).data)
+
+    @add_role_granted('Admin', 'Editor')
+    def add_question(self, request, pk=None):
+        lesson = self._get_lesson_or_404(pk, request.user)
+        try:
+            LessonService.require_miniquiz(lesson)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = LearnLessonQuestionAttachSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            mapping = LessonService.attach_question(
+                lesson=lesson,
+                question_id=serializer.validated_data['question_id'],
+                position=serializer.validated_data.get('position'),
+                actor=request.user,
+            )
+        except QuizQuestion.DoesNotExist:
+            raise NotFound('Question not found')
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_409_CONFLICT)
+
+        return Response(LearnLessonQuestionSerializer(mapping).data, status=status.HTTP_201_CREATED)
+
+
+@add_role_granted('Admin', 'Editor', 'Member')
+class LearnLessonQuestionViewSet(viewsets.ViewSet):
+    """Canonical lesson-question mapping endpoints under /api/learn/lesson-questions/*."""
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    @staticmethod
+    def _get_mapping(pk: int):
+        return LessonQuestion.objects.select_related('lesson__node__course', 'question').get(id=pk)
+
+    def retrieve(self, request, pk=None):
+        try:
+            mapping = self._get_mapping(int(pk))
+            LessonService.get_visible_lesson_by_id(mapping.lesson_id, request.user)
+        except (LessonQuestion.DoesNotExist, Lesson.DoesNotExist, ValueError) as exc:
+            raise NotFound('Lesson question not found') from exc
+
+        return Response(LearnLessonQuestionSerializer(mapping).data)
+
+    @add_role_granted('Admin', 'Editor')
+    def update(self, request, pk=None):
+        try:
+            mapping = self._get_mapping(int(pk))
+        except (LessonQuestion.DoesNotExist, ValueError) as exc:
+            raise NotFound('Lesson question not found') from exc
+
+        serializer = LearnLessonQuestionUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        mapping = LessonService.update_mapping_position(
+            mapping=mapping,
+            position=serializer.validated_data['position'],
+            actor=request.user,
+        )
+        return Response(LearnLessonQuestionSerializer(mapping).data)
+
+    @add_role_granted('Admin', 'Editor')
+    def destroy(self, request, pk=None):
+        try:
+            mapping = self._get_mapping(int(pk))
+        except (LessonQuestion.DoesNotExist, ValueError) as exc:
+            raise NotFound('Lesson question not found') from exc
+
+        LessonService.delete_mapping(mapping=mapping)
         return Response(status=status.HTTP_204_NO_CONTENT)

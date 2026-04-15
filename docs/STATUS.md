@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-15 (Slice 5 Task 5.2 Learn CourseNode tree API implemented and docs synchronized)
+> Last updated: 2026-04-15 (Slice 5 Task 5.3 Learn Lesson CRUD API implemented and docs updated)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -114,6 +114,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Backend refactor closure (2026-04-14) | Finalized serializer package migration (`backend/api/serializers/` + `__init__.py` exports), extracted view logic into domain services (`backend/api/services/*`), normalized backend test layout to app-local `tests/` packages with `test_*.py` naming and updated discovery in `backend/pytest.ini`, refactored realtime quiz consumer internals for readability, and synchronized canonical docs (`BUGS`, `STATUS`, `IMPL_PLAN`, `ARCHITECTURE`). |
 | Slice 5 / Task 5.1 (2026-04-15) | Implemented namespaced Learn CRUD APIs at `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*` with slug detail, member visibility hardening, user_progress payload, slug conflict 409 suggestions, hybrid archive/purge delete flow, and integration regression tests (`backend/api/tests/test_learn_course_api.py`). |
 | Slice 5 / Task 5.2 (2026-04-15) | Implemented canonical Learn course node tree endpoints at `/api/learn/courses/{slug}/nodes/*` (root list + lazy children), editor/admin node writes (atomic `Lesson + CourseNode` create), max depth enforcement (`learn.max_tree_depth`), subtree delete lesson cleanup, bulk move descendant `path` updates via `bulk_update`, and structure_version bumping; integration tests in `backend/api/tests/test_learn_course_node_api.py`. |
+| Slice 5 / Task 5.3 (2026-04-15) | Implemented canonical Learn Lesson endpoints at `/api/learn/lessons/{id}/` (GET/PUT) plus miniquiz question mapping endpoints (`/api/learn/lessons/{id}/questions/`, `/api/learn/lesson-questions/{id}/`); member visibility restricted to lessons whose owning course is `published`; editor/admin write gates; service layer helpers in `backend/api/services/lesson_service.py`; integration tests added in `backend/api/tests/test_learn_lesson_api.py` and executed in local `.venv` (pass). |
 
 ---
 
@@ -155,6 +156,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Backend refactor closure (2026-04-14) | `docs/reports/2026-04-14_backend-refactor-closure.md` |
 | Slice 5 / Task 5.1 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-1-learn-crud-api.md` |
 | Slice 5 / Task 5.2 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-2-course-node-tree-api.md` |
+| Slice 5 / Task 5.3 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-3-learn-lesson-crud-api.md` |
 
 ---
 

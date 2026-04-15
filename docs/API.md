@@ -155,6 +155,13 @@ Task 5.2 update (2026-04-15):
 | GET | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag detail endpoint. |
 | PUT | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag update endpoint; permission-gated (admin/editor in current implementation). |
 | DELETE | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag delete endpoint; permission-gated (admin/editor in current implementation). |
+| GET | `/api/learn/lessons/{id}/` | Yes | Partial | Canonical lesson detail endpoint; member visibility restricted to lessons whose owning course is `published`. |
+| PUT | `/api/learn/lessons/{id}/` | Yes | Partial | Canonical lesson update endpoint; editor/admin only. |
+| GET | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Mini-quiz lesson question mapping list; requires `lesson_type=miniquiz` (otherwise 400). |
+| POST | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Attach existing `QuizQuestion` to a mini-quiz lesson; editor/admin only; returns mapping; duplicate attach returns 409. |
+| GET | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Mini-quiz lesson-question mapping detail; member visibility restricted to published courses. |
+| PUT | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Update mapping position; editor/admin only. |
+| DELETE | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Delete mapping; editor/admin only. |
 | GET | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
 | POST | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
 | GET | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |

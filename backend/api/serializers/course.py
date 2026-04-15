@@ -2,7 +2,8 @@ import re
 
 from rest_framework import serializers
 
-from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson, UserCourseProgress, UserLessonProgress
+from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson, LessonQuestion, UserCourseProgress, UserLessonProgress
+from api.serializers.quiz import QuizQuestionSerializer
 
 
 class CourseCategorySerializer(serializers.ModelSerializer):
@@ -292,6 +293,87 @@ class LessonSerializer(serializers.ModelSerializer):
         if lesson_type == Lesson.LessonType.VIDEO and not attrs.get('video_url'):
             raise serializers.ValidationError({'video_url': 'Required for video lessons'})
         return attrs
+
+
+class LearnLessonDetailSerializer(serializers.ModelSerializer):
+    """Lesson detail serializer for canonical /api/learn/lessons/{id}/ endpoints."""
+
+    class Meta:
+        model = Lesson
+        fields = [
+            'id',
+            'title',
+            'lesson_type',
+            'source',
+            'content_md',
+            'video_url',
+            'video_duration',
+            'learning_point',
+            'learning_time',
+        ]
+        read_only_fields = fields
+
+
+class LearnLessonUpdateSerializer(serializers.ModelSerializer):
+    """Write serializer for canonical /api/learn/lessons/{id}/ update endpoint."""
+
+    class Meta:
+        model = Lesson
+        fields = [
+            'title',
+            'content_md',
+            'video_url',
+            'video_duration',
+            'learning_point',
+            'learning_time',
+        ]
+
+    def validate(self, attrs):
+        instance = getattr(self, 'instance', None)
+        lesson_type = getattr(instance, 'lesson_type', None)
+
+        content_md = attrs.get('content_md', None)
+        if isinstance(content_md, str):
+            content_md = content_md.strip()
+            attrs['content_md'] = content_md
+
+        video_url = attrs.get('video_url', None)
+        if isinstance(video_url, str):
+            video_url = video_url.strip()
+            attrs['video_url'] = video_url
+
+        # Type-specific rules (partial update semantics)
+        if lesson_type == Lesson.LessonType.MARKDOWN:
+            effective_md = content_md if 'content_md' in attrs else getattr(instance, 'content_md', None)
+            if not (effective_md or ''):
+                raise serializers.ValidationError({'content_md': 'Required for markdown lessons'})
+
+        if lesson_type == Lesson.LessonType.VIDEO:
+            effective_url = video_url if 'video_url' in attrs else getattr(instance, 'video_url', None)
+            if not (effective_url or ''):
+                raise serializers.ValidationError({'video_url': 'Required for video lessons'})
+
+        return attrs
+
+
+class LearnLessonQuestionSerializer(serializers.ModelSerializer):
+    """LessonQuestion mapping serializer for mini-quiz lesson question endpoints."""
+
+    question = QuizQuestionSerializer(read_only=True)
+
+    class Meta:
+        model = LessonQuestion
+        fields = ['id', 'lesson', 'question', 'position']
+        read_only_fields = ['id', 'lesson', 'question', 'position']
+
+
+class LearnLessonQuestionAttachSerializer(serializers.Serializer):
+    question_id = serializers.IntegerField(min_value=1)
+    position = serializers.IntegerField(required=False, min_value=0)
+
+
+class LearnLessonQuestionUpdateSerializer(serializers.Serializer):
+    position = serializers.IntegerField(min_value=0)
 
 
 class CourseNodeSerializer(serializers.ModelSerializer):

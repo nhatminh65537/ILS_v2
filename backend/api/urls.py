@@ -10,6 +10,8 @@ from .views import (
     UserViewSet,
     CourseViewSet, LessonViewSet,
     LearnCourseCategoryViewSet,
+    LearnLessonQuestionViewSet,
+    LearnLessonViewSet,
     LearnCourseNodeViewSet,
     LearnCourseTagViewSet,
     LearnCourseViewSet,
@@ -97,6 +99,23 @@ urlpatterns = [
         r'^learn/tags/(?P<pk>\d+)/$',
         LearnCourseTagViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
         name='learn-tag-detail',
+    ),
+
+    # Canonical namespaced learn lesson routes (Slice 5 / Task 5.3)
+    re_path(
+        r'^learn/lessons/(?P<pk>\d+)/$',
+        LearnLessonViewSet.as_view({'get': 'retrieve', 'put': 'update'}),
+        name='learn-lesson-detail',
+    ),
+    re_path(
+        r'^learn/lessons/(?P<pk>\d+)/questions/$',
+        LearnLessonViewSet.as_view({'get': 'questions', 'post': 'add_question'}),
+        name='learn-lesson-questions',
+    ),
+    re_path(
+        r'^learn/lesson-questions/(?P<pk>\d+)/$',
+        LearnLessonQuestionViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
+        name='learn-lesson-question-detail',
     ),
     # Canonical namespaced quiz routes (Slice 7)
     re_path(
