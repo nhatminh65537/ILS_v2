@@ -1,7 +1,9 @@
 from django.utils import timezone
-from django.db.models import Count
+from django.db import transaction
+from django.db.models import Count, F, Q
 
-from api.models import Course, CourseNode, CourseTagMap, UserCourseProgress, UserLessonProgress
+from api.models import Course, CourseNode, CourseTagMap, Lesson, UserCourseProgress, UserLessonProgress
+from api.utils import get_config
 
 
 class CourseService:
@@ -39,6 +41,184 @@ class CourseService:
     @staticmethod
     def get_course_tree_nodes(course):
         return CourseNode.objects.filter(course=course, parent__isnull=True).prefetch_related('children', 'lesson')
+
+    @classmethod
+    def get_visible_course_by_slug(cls, slug, user):
+        queryset = Course.objects.filter(slug=slug)
+        if not cls.is_editor_or_admin(user):
+            queryset = queryset.filter(status=Course.Status.PUBLISHED)
+        return queryset.get()
+
+    @staticmethod
+    def get_course_node_or_404(course, node_id):
+        return CourseNode.objects.get(course_id=course.id, id=node_id)
+
+    @staticmethod
+    def compute_node_path(parent):
+        if not parent:
+            return ''
+        if parent.path:
+            return f'{parent.path}.{parent.id}'
+        return str(parent.id)
+
+    @staticmethod
+    def _depth_for_path(path):
+        if not path:
+            return 0
+        return path.count('.') + 1
+
+    @classmethod
+    def validate_max_depth(cls, parent, max_depth):
+        candidate_path = cls.compute_node_path(parent)
+        depth = cls._depth_for_path(candidate_path)
+        if depth > max_depth:
+            raise ValueError('Maximum folder depth exceeded')
+        return depth
+
+    @staticmethod
+    def bump_course_structure_version(course_id):
+        Course.objects.filter(id=course_id).update(structure_version=F('structure_version') + 1)
+
+    @classmethod
+    def create_course_node_atomic(cls, course, payload, actor):
+        max_depth = int(get_config('learn.max_tree_depth', default=5) or 5)
+        parent = None
+        parent_id = payload.get('parent_id', None)
+        if parent_id is not None:
+            parent = CourseNode.objects.get(course_id=course.id, id=parent_id)
+            if parent.is_item:
+                raise ValueError('Parent must be a folder node')
+
+        cls.validate_max_depth(parent, max_depth)
+
+        title = (payload.get('title') or '').strip()
+        if not title:
+            raise ValueError('title is required')
+
+        position = payload.get('position', 0)
+        is_item = bool(payload.get('is_item'))
+        lesson_payload = payload.get('lesson')
+
+        now = timezone.now()
+
+        with transaction.atomic():
+            lesson = None
+            if is_item:
+                if not lesson_payload:
+                    raise ValueError('lesson is required when is_item=true')
+
+                lesson_title = (lesson_payload.get('title') or title).strip()
+                if not lesson_title:
+                    raise ValueError('lesson.title is required')
+
+                lesson_fields = {
+                    'title': lesson_title,
+                    'lesson_type': lesson_payload.get('lesson_type'),
+                    'source': lesson_payload.get('source') or Lesson.Source.MANUAL,
+                    'content_md': lesson_payload.get('content_md'),
+                    'video_url': lesson_payload.get('video_url'),
+                    'video_duration': lesson_payload.get('video_duration'),
+                    'learning_point': lesson_payload.get('learning_point', 0),
+                    'learning_time': lesson_payload.get('learning_time'),
+                    'created_by': actor,
+                    'updated_by': actor,
+                }
+                lesson = Lesson.objects.create(**lesson_fields)
+
+            node = CourseNode.objects.create(
+                course=course,
+                parent=parent,
+                is_item=is_item,
+                title=title,
+                position=position,
+                lesson=lesson,
+                path=cls.compute_node_path(parent),
+                created_by=actor,
+                updated_by=actor,
+                created_at=now,
+                updated_at=now,
+            )
+
+            cls.bump_course_structure_version(course.id)
+
+        return node
+
+    @classmethod
+    def move_course_node_bulk(cls, node, new_parent):
+        max_depth = int(get_config('learn.max_tree_depth', default=5) or 5)
+
+        if new_parent is not None:
+            if new_parent.course_id != node.course_id:
+                raise ValueError('Parent must belong to the same course')
+            if new_parent.is_item:
+                raise ValueError('Parent must be a folder node')
+
+        old_path = node.path
+        old_prefix = f'{old_path}.{node.id}' if old_path else str(node.id)
+
+        if new_parent is not None:
+            if new_parent.id == node.id:
+                raise ValueError('Node cannot be parent of itself')
+            if new_parent.path == old_prefix or new_parent.path.startswith(f'{old_prefix}.'):
+                raise ValueError('Moving to this parent would create a cycle')
+
+        new_path = cls.compute_node_path(new_parent)
+        cls.validate_max_depth(new_parent, max_depth)
+
+        new_prefix = f'{new_path}.{node.id}' if new_path else str(node.id)
+
+        old_depth = cls._depth_for_path(old_path)
+        new_depth = cls._depth_for_path(new_path)
+        depth_delta = new_depth - old_depth
+
+        descendants = list(
+            CourseNode.objects.filter(course_id=node.course_id)
+            .filter(Q(path=old_prefix) | Q(path__startswith=f'{old_prefix}.'))
+            .only('id', 'path', 'updated_at')
+        )
+
+        for descendant in descendants:
+            descendant_depth = cls._depth_for_path(descendant.path)
+            if descendant_depth + depth_delta > max_depth:
+                raise ValueError('Maximum folder depth exceeded')
+
+        with transaction.atomic():
+            now = timezone.now()
+            node.parent = new_parent
+            node.path = new_path
+            node.updated_at = now
+            node.save(update_fields=['parent', 'path', 'updated_at'])
+
+            for descendant in descendants:
+                descendant.path = f'{new_prefix}{descendant.path[len(old_prefix):]}'
+                descendant.updated_at = now
+
+            if descendants:
+                CourseNode.objects.bulk_update(descendants, ['path', 'updated_at'])
+
+            cls.bump_course_structure_version(node.course_id)
+
+    @classmethod
+    def delete_course_node_subtree(cls, course, node):
+        prefix = f'{node.path}.{node.id}' if node.path else str(node.id)
+
+        subtree = list(
+            CourseNode.objects.filter(course_id=course.id)
+            .filter(Q(id=node.id) | Q(path=prefix) | Q(path__startswith=f'{prefix}.'))
+            .values_list('id', 'lesson_id')
+        )
+        if not subtree:
+            return
+
+        subtree_ids = [row[0] for row in subtree]
+        lesson_ids = sorted({row[1] for row in subtree if row[1] is not None})
+
+        with transaction.atomic():
+            if lesson_ids:
+                Lesson.objects.filter(id__in=lesson_ids).delete()
+
+            CourseNode.objects.filter(id__in=subtree_ids).delete()
+            cls.bump_course_structure_version(course.id)
 
     @staticmethod
     def build_course_progress_map(user, courses):

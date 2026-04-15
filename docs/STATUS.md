@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-15 (Slice 5 Task 5.1 Learn CRUD API implemented and docs synchronized)
+> Last updated: 2026-04-15 (Slice 5 Task 5.2 Learn CourseNode tree API implemented and docs synchronized)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -113,6 +113,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Backend bugfix pass M8/M11 + test split (2026-04-14) | Backend: fixed member quiz visibility hardening by enforcing published-only results for non-admin/editor regardless of `status` query (`backend/api/services/quiz_service.py`), added regression `status=draft` test in `backend/api/tests/test_quiz_api.py`; enforced enum validation for `/api/users/me/settings/` (`language: vi/en`, `theme: system/light/dark`) in `backend/api/serializers/user.py` with negative-case regression in `backend/api/tests/test_profile_api.py`; split monolithic tests into domain modules (`backend/api/tests/test_system_config_api.py`, `backend/api/tests/test_rbac_api.py`, `backend/api/tests/test_views_exports.py`, `backend/auth_app/tests/test_auth_sso_flow.py`, `backend/auth_app/tests/test_permissions_and_authz.py`) and kept focused suites passing. |
 | Backend refactor closure (2026-04-14) | Finalized serializer package migration (`backend/api/serializers/` + `__init__.py` exports), extracted view logic into domain services (`backend/api/services/*`), normalized backend test layout to app-local `tests/` packages with `test_*.py` naming and updated discovery in `backend/pytest.ini`, refactored realtime quiz consumer internals for readability, and synchronized canonical docs (`BUGS`, `STATUS`, `IMPL_PLAN`, `ARCHITECTURE`). |
 | Slice 5 / Task 5.1 (2026-04-15) | Implemented namespaced Learn CRUD APIs at `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*` with slug detail, member visibility hardening, user_progress payload, slug conflict 409 suggestions, hybrid archive/purge delete flow, and integration regression tests (`backend/api/tests/test_learn_course_api.py`). |
+| Slice 5 / Task 5.2 (2026-04-15) | Implemented canonical Learn course node tree endpoints at `/api/learn/courses/{slug}/nodes/*` (root list + lazy children), editor/admin node writes (atomic `Lesson + CourseNode` create), max depth enforcement (`learn.max_tree_depth`), subtree delete lesson cleanup, bulk move descendant `path` updates via `bulk_update`, and structure_version bumping; integration tests in `backend/api/tests/test_learn_course_node_api.py`. |
 
 ---
 
@@ -153,6 +154,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 8 integration validation (2026-04-14) | `docs/reports/2026-04-14_slice8-integration-validation.md` |
 | Backend refactor closure (2026-04-14) | `docs/reports/2026-04-14_backend-refactor-closure.md` |
 | Slice 5 / Task 5.1 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-1-learn-crud-api.md` |
+| Slice 5 / Task 5.2 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-2-course-node-tree-api.md` |
 
 ---
 
@@ -211,7 +213,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Task | Priority | Notes |
 |------|----------|-------|
 | Course + Category CRUD API | Medium | ✅ Completed 2026-04-15: activated `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*`; slug-based detail, member visibility hardening, slug conflict 409 suggestions, archive default + admin-only purge, and regression tests in `backend/api/tests/test_learn_course_api.py`. |
-| CourseNode tree API | Medium | dot-separated `path` + `bulk_update` on move; increment `structure_version` on change |
+| CourseNode tree API | Medium | ✅ Completed 2026-04-15: `/api/learn/courses/{slug}/nodes/`, `/api/learn/courses/{slug}/nodes/{id}/children/`, plus editor/admin `POST/PUT/DELETE` node management; atomic item (Lesson+Node) create, move with descendant `path` updates via `bulk_update`, max depth enforcement via `learn.max_tree_depth`, subtree delete cleans up lessons, and `course.structure_version` bump. Tests: `backend/api/tests/test_learn_course_node_api.py`. |
 | Lesson CRUD | Medium | Outline extracted to Task 5.8 |
 | User progress tracking signals | Medium | |
 | Frontend: Course catalog + tree | Low | |

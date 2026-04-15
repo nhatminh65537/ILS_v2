@@ -126,6 +126,13 @@ Task 5.1 update (2026-04-15):
 - Course list includes `user_progress` object (`completed`, `total`) for authenticated users.
 - Legacy routes (`/api/courses/*`) are intentionally kept active during migration.
 
+Task 5.2 update (2026-04-15):
+- Canonical namespaced Learn course node tree endpoints are active under `/api/learn/courses/{slug}/nodes/*`.
+- Tree responses are lazy-loaded (no recursive embedding); clients rely on `has_children` and call `children/`.
+- Folder/item node create is supported; item create performs atomic `Lesson + CourseNode` creation in one request.
+- `system_config[learn.max_tree_depth]` is enforced on create and move.
+- Node mutations bump `course.structure_version`.
+
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/learn/courses/` | Yes | Partial | Canonical namespaced list endpoint; supports `category`, `status`, `search`; member visibility enforced to published-only. |
@@ -133,6 +140,11 @@ Task 5.1 update (2026-04-15):
 | GET | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced detail endpoint with slug lookup. |
 | PUT | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin only. |
 | DELETE | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced delete endpoint; default archive, optional admin-only purge (`?mode=purge`). |
+| GET | `/api/learn/courses/{slug}/nodes/` | Yes | Partial | Root-level course nodes (`parent=null`); lazy tree payload with `has_children`. |
+| GET | `/api/learn/courses/{slug}/nodes/{id}/children/` | Yes | Partial | Lazy-load children for a folder node. |
+| POST | `/api/learn/courses/{slug}/nodes/` | Yes | Partial | Create folder or lesson item node; editor/admin only; item create performs atomic lesson creation; max depth enforced. |
+| PUT | `/api/learn/courses/{slug}/nodes/{id}/` | Yes | Partial | Rename/reorder/move node; editor/admin only; move updates descendant paths via `bulk_update`; bumps structure_version. |
+| DELETE | `/api/learn/courses/{slug}/nodes/{id}/` | Yes | Partial | Delete node + subtree; editor/admin only; deletes attached lessons to avoid orphans; bumps structure_version. |
 | GET | `/api/learn/categories/` | Yes | Partial | Canonical category list endpoint. |
 | POST | `/api/learn/categories/` | Yes | Partial | Canonical category create endpoint; admin only. |
 | GET | `/api/learn/categories/{id}/` | Yes | Partial | Canonical category detail endpoint. |

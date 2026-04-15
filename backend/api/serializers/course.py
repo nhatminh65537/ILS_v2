@@ -312,6 +312,112 @@ class CourseNodeSerializer(serializers.ModelSerializer):
         return CourseNodeSerializer(children, many=True, context=self.context).data
 
 
+class LearnLessonSummarySerializer(serializers.ModelSerializer):
+    """Lesson summary for Learn tree endpoints."""
+
+    class Meta:
+        model = Lesson
+        fields = [
+            'id',
+            'title',
+            'lesson_type',
+            'source',
+            'video_url',
+            'video_duration',
+            'learning_point',
+            'learning_time',
+        ]
+        read_only_fields = fields
+
+
+class LearnCourseNodeSerializer(serializers.ModelSerializer):
+    """Lazy tree serializer for canonical /api/learn/courses/{slug}/nodes/* endpoints."""
+
+    lesson = LearnLessonSummarySerializer(read_only=True)
+    has_children = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = CourseNode
+        fields = ['id', 'parent', 'is_item', 'title', 'position', 'path', 'lesson', 'has_children']
+        read_only_fields = ['id', 'path', 'lesson', 'has_children']
+
+    def get_has_children(self, obj):
+        children_count = getattr(obj, 'children_count', None)
+        if children_count is not None:
+            return children_count > 0
+        return obj.children.exists()
+
+
+class LearnLessonWriteSerializer(serializers.Serializer):
+    """Write payload for lesson creation within a CourseNode item create."""
+
+    title = serializers.CharField(required=False, allow_blank=False, trim_whitespace=True)
+    lesson_type = serializers.ChoiceField(choices=Lesson.LessonType.choices)
+    source = serializers.ChoiceField(choices=Lesson.Source.choices, required=False)
+    content_md = serializers.CharField(required=False, allow_null=True, allow_blank=False)
+    video_url = serializers.CharField(required=False, allow_null=True, allow_blank=False)
+    video_duration = serializers.IntegerField(required=False, allow_null=True, min_value=0)
+    learning_point = serializers.IntegerField(required=False, min_value=0)
+    learning_time = serializers.IntegerField(required=False, allow_null=True, min_value=0)
+
+    def validate(self, attrs):
+        lesson_type = attrs.get('lesson_type')
+
+        content_md = attrs.get('content_md')
+        if isinstance(content_md, str):
+            content_md = content_md.strip()
+
+        video_url = attrs.get('video_url')
+        if isinstance(video_url, str):
+            video_url = video_url.strip()
+
+        if lesson_type == Lesson.LessonType.MARKDOWN and not content_md:
+            raise serializers.ValidationError({'content_md': 'Required for markdown lessons'})
+        if lesson_type == Lesson.LessonType.VIDEO and not video_url:
+            raise serializers.ValidationError({'video_url': 'Required for video lessons'})
+
+        return attrs
+
+
+class LearnCourseNodeWriteSerializer(serializers.Serializer):
+    """Write payload for canonical learn node create endpoint."""
+
+    title = serializers.CharField(allow_blank=False, trim_whitespace=True)
+    parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    position = serializers.IntegerField(required=False, min_value=0)
+    is_item = serializers.BooleanField()
+    lesson = LearnLessonWriteSerializer(required=False)
+
+    def validate(self, attrs):
+        is_item = attrs.get('is_item')
+        lesson = attrs.get('lesson')
+
+        if is_item:
+            if not lesson:
+                raise serializers.ValidationError({'lesson': 'Required when is_item=true'})
+            if not (lesson.get('title') or '').strip():
+                lesson['title'] = attrs.get('title')
+            attrs['lesson'] = lesson
+        else:
+            if lesson is not None:
+                raise serializers.ValidationError({'lesson': 'Not allowed when is_item=false'})
+
+        return attrs
+
+
+class LearnCourseNodeUpdateSerializer(serializers.Serializer):
+    """Write payload for canonical learn node update endpoint."""
+
+    title = serializers.CharField(required=False, allow_blank=False, trim_whitespace=True)
+    parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    position = serializers.IntegerField(required=False, min_value=0)
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError('At least one field must be provided')
+        return attrs
+
+
 class UserCourseProgressSerializer(serializers.ModelSerializer):
     """User course progress serializer"""
 

@@ -1,19 +1,23 @@
 from django.db import IntegrityError
+from django.db.models import Count
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.models import Course, CourseCategory, CourseTag, Lesson
+from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson
 from api.serializers import (
     CourseDetailSerializer,
     CourseListSerializer,
     CourseNodeSerializer,
     CourseCategorySerializer,
     CourseTagSerializer,
+    LearnCourseNodeSerializer,
+    LearnCourseNodeUpdateSerializer,
+    LearnCourseNodeWriteSerializer,
     LearnCourseDetailSerializer,
     LearnCourseListSerializer,
     LearnCourseWriteSerializer,
@@ -256,3 +260,114 @@ class LearnCourseTagViewSet(viewsets.ModelViewSet):
     @add_role_granted('Admin', 'Editor')
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
+
+@add_role_granted('Admin', 'Editor', 'Member')
+class LearnCourseNodeViewSet(viewsets.ViewSet):
+    """Canonical learn course node tree API under /api/learn/courses/{slug}/nodes/*."""
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    def _get_course(self, slug, user):
+        try:
+            return CourseService.get_visible_course_by_slug(slug, user)
+        except Course.DoesNotExist as exc:
+            raise NotFound('Course not found') from exc
+
+    def _get_node(self, course, node_id):
+        try:
+            return CourseService.get_course_node_or_404(course, node_id)
+        except CourseNode.DoesNotExist as exc:
+            raise NotFound('Node not found') from exc
+
+    def list(self, request, slug=None):
+        course = self._get_course(slug, request.user)
+        nodes = (
+            CourseNode.objects.filter(course_id=course.id, parent__isnull=True)
+            .select_related('lesson')
+            .annotate(children_count=Count('children'))
+            .order_by('position', 'id')
+        )
+        serializer = LearnCourseNodeSerializer(nodes, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def children(self, request, slug=None, pk=None):
+        course = self._get_course(slug, request.user)
+        node = self._get_node(course, pk)
+
+        if node.is_item:
+            return Response([])
+
+        children = (
+            CourseNode.objects.filter(course_id=course.id, parent_id=node.id)
+            .select_related('lesson')
+            .annotate(children_count=Count('children'))
+            .order_by('position', 'id')
+        )
+        serializer = LearnCourseNodeSerializer(children, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @add_role_granted('Admin', 'Editor')
+    def create(self, request, slug=None):
+        course = self._get_course(slug, request.user)
+        serializer = LearnCourseNodeWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            node = CourseService.create_course_node_atomic(course, serializer.validated_data, request.user)
+        except CourseNode.DoesNotExist:
+            raise ValidationError({'parent_id': 'Invalid parent_id'})
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        response_serializer = LearnCourseNodeSerializer(node, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    @add_role_granted('Admin', 'Editor')
+    def update(self, request, slug=None, pk=None):
+        course = self._get_course(slug, request.user)
+        node = self._get_node(course, pk)
+
+        serializer = LearnCourseNodeUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
+
+        moved = False
+        if 'parent_id' in payload and payload['parent_id'] != node.parent_id:
+            parent_id = payload['parent_id']
+            new_parent = None
+            if parent_id is not None:
+                try:
+                    new_parent = CourseNode.objects.get(course_id=course.id, id=parent_id)
+                except CourseNode.DoesNotExist:
+                    raise ValidationError({'parent_id': 'Invalid parent_id'})
+
+            try:
+                CourseService.move_course_node_bulk(node, new_parent)
+            except ValueError as exc:
+                return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            moved = True
+
+        updated_fields = []
+        if 'title' in payload:
+            node.title = payload['title']
+            updated_fields.append('title')
+        if 'position' in payload:
+            node.position = payload['position']
+            updated_fields.append('position')
+
+        if updated_fields:
+            node.save(update_fields=updated_fields + ['updated_at'])
+            if not moved:
+                CourseService.bump_course_structure_version(course.id)
+
+        response_serializer = LearnCourseNodeSerializer(node, context={'request': request})
+        return Response(response_serializer.data)
+
+    @add_role_granted('Admin', 'Editor')
+    def destroy(self, request, slug=None, pk=None):
+        course = self._get_course(slug, request.user)
+        node = self._get_node(course, pk)
+
+        CourseService.delete_course_node_subtree(course, node)
+        return Response(status=status.HTTP_204_NO_CONTENT)

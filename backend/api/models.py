@@ -712,6 +712,12 @@ class Course(FullAudit):
     )
     learning_point = models.IntegerField(default=0)
 
+    structure_version = models.IntegerField(
+        default=1,
+        db_column='structure_version',
+        help_text='Increments when course tree/lesson structure changes'
+    )
+
     class Meta:
         db_table = 'course'
         indexes = [

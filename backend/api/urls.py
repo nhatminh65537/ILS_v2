@@ -10,6 +10,7 @@ from .views import (
     UserViewSet,
     CourseViewSet, LessonViewSet,
     LearnCourseCategoryViewSet,
+    LearnCourseNodeViewSet,
     LearnCourseTagViewSet,
     LearnCourseViewSet,
     ChallengeViewSet,
@@ -61,6 +62,21 @@ urlpatterns = [
         r'^learn/courses/(?P<slug>[a-z0-9-]+)/$',
         LearnCourseViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
         name='learn-course-detail',
+    ),
+    re_path(
+        r'^learn/courses/(?P<slug>[a-z0-9-]+)/nodes/$',
+        LearnCourseNodeViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='learn-course-node-list',
+    ),
+    re_path(
+        r'^learn/courses/(?P<slug>[a-z0-9-]+)/nodes/(?P<pk>\d+)/$',
+        LearnCourseNodeViewSet.as_view({'put': 'update', 'delete': 'destroy'}),
+        name='learn-course-node-detail',
+    ),
+    re_path(
+        r'^learn/courses/(?P<slug>[a-z0-9-]+)/nodes/(?P<pk>\d+)/children/$',
+        LearnCourseNodeViewSet.as_view({'get': 'children'}),
+        name='learn-course-node-children',
     ),
     re_path(
         r'^learn/categories/$',
