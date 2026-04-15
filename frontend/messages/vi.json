@@ -84,12 +84,50 @@
   "courses": {
     "title": "Khoá học",
     "description": "Theo dõi tiến độ theo cây nội dung và hoàn thành lesson theo từng bước.",
-    "enroll": "Ghi danh",
-    "continue": "Tiếp tục học",
-    "completed": "Đã hoàn thành",
-    "draft": "Bản nháp",
-    "published": "Đã phát hành",
-    "archived": "Đã lưu trữ"
+    "catalog": {
+      "subtitle": "Duyệt các khoá học đã phát hành và tiếp tục lộ trình học",
+      "searchPlaceholder": "Tìm kiếm khoá học..."
+    },
+    "detail": {
+      "backToCatalog": "Quay lại khoá học",
+      "treeTitle": "Cây nội dung",
+      "progressTitle": "Tiến độ của bạn",
+      "courseInfoTitle": "Thông tin khoá học"
+    },
+    "labels": {
+      "category": "Danh mục",
+      "learningPoint": "Điểm",
+      "estimatedTime": "Phút",
+      "progress": "Tiến độ",
+      "lessonCount": "Số bài",
+      "completed": "Đã hoàn thành",
+      "percent": "Tỉ lệ",
+      "noProgress": "Chưa có tiến độ",
+      "statusPublished": "Đã phát hành",
+      "statusDraft": "Nháp",
+      "statusArchived": "Đã lưu trữ"
+    },
+    "filter": {
+      "title": "Bộ lọc",
+      "reset": "Đặt lại",
+      "status": "Trạng thái",
+      "statusAll": "Chỉ đã phát hành",
+      "statusPublished": "Đã phát hành",
+      "statusDraft": "Nháp",
+      "statusArchived": "Đã lưu trữ",
+      "categories": "Danh mục",
+      "tags": "Thẻ"
+    },
+    "empty": {
+      "noCourses": "Không có khoá học nào.",
+      "noResults": "Không có khoá học nào phù hợp bộ lọc.",
+      "noNodes": "Không có node nội dung nào."
+    },
+    "errors": {
+      "loadFailed": "Không thể tải danh sách khoá học.",
+      "detailLoadFailed": "Không thể tải chi tiết khoá học.",
+      "treeLoadFailed": "Không thể tải cây nội dung khoá học."
+    }
   },
   "challenges": {
     "title": "Thử thách CTF",

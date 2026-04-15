@@ -1,8 +1,10 @@
-export default function CourseCatalogPage() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Courses</h1>
-      <p className="text-muted-foreground">Coming soon.</p>
-    </div>
-  )
+import { CourseCatalogClient } from '@/components/features/courses/CourseCatalogClient'
+
+type CoursesPageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function CourseCatalogPage({ params }: CoursesPageProps) {
+  const { locale } = await params
+  return <CourseCatalogClient locale={locale} />
 }

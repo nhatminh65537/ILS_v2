@@ -1,5 +1,5 @@
 import { ChallengeDifficulty, ChallengeSource, InstanceStatus, type Challenge, type ChallengeFlag, type ChallengeNode, type ChallengeSubmission, type UserChallengeProgress, type ChallengeInstance } from '@/types/challenge.types'
-import { ContentStatus as CourseStatus, type Course, type CourseCategory, type CourseNode, type UserCourseProgress } from '@/types/course.types'
+import { ContentStatus as CourseStatus, LessonSource, LessonType, type Course, type CourseCategory, type CourseNode, type CourseTag, type UserCourseProgress } from '@/types/course.types'
 import { type LeaderboardEntry } from '@/types/leaderboard.types'
 import { NotificationType, type Notification } from '@/types/notification.types'
 import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizQuestion, type QuizQuestionOption, type UserQuizProgress } from '@/types/quiz.types'
@@ -42,33 +42,235 @@ export const profileFixture: UserProfile = {
 }
 
 export const courseCategoriesFixture: CourseCategory[] = [
-  { id: 1, name: 'Web Security', description: 'OWASP and appsec', created_at: now, updated_at: now },
-  { id: 2, name: 'Network', description: 'Networking fundamentals', created_at: now, updated_at: now },
-  { id: 3, name: 'Crypto', description: 'Applied cryptography', created_at: now, updated_at: now },
-  { id: 4, name: 'Forensics', description: 'Incident response and forensics', created_at: now, updated_at: now },
-  { id: 5, name: 'Cloud', description: 'Cloud security essentials', created_at: now, updated_at: now },
+  { id: 1, name: 'Web Security', description: 'OWASP and appsec' },
+  { id: 2, name: 'Network', description: 'Networking fundamentals' },
+  { id: 3, name: 'Crypto', description: 'Applied cryptography' },
+  { id: 4, name: 'Forensics', description: 'Incident response and forensics' },
+  { id: 5, name: 'Cloud', description: 'Cloud security essentials' },
+]
+
+export const courseTagsFixture: CourseTag[] = [
+  { id: 1, name: 'OWASP', description: 'OWASP related topics' },
+  { id: 2, name: 'XSS', description: 'Cross-site scripting' },
+  { id: 3, name: 'SQLi', description: 'SQL injection' },
+  { id: 4, name: 'Blue Team', description: 'Defensive security content' },
+  { id: 5, name: 'Cloud', description: 'Cloud security topics' },
 ]
 
 export const coursesFixture: Course[] = [
-  { id: 1, slug: 'owasp-top-10', title: 'OWASP Top 10', description: 'Modern web attack vectors', status: CourseStatus.Published, category_id: 1, learning_point: 120, coverage: '80%', created_at: now, updated_at: now },
-  { id: 2, slug: 'net-basics', title: 'Network Basics', description: 'TCP/IP and practical labs', status: CourseStatus.Published, category_id: 2, learning_point: 100, coverage: '60%', created_at: now, updated_at: now },
-  { id: 3, slug: 'crypto-101', title: 'Crypto 101', description: 'Hashing and encryption', status: CourseStatus.Published, category_id: 3, learning_point: 95, coverage: '40%', created_at: now, updated_at: now },
-  { id: 4, slug: 'intro-forensics', title: 'Intro to Forensics', description: 'Disk and memory artifacts', status: CourseStatus.Draft, category_id: 4, learning_point: 80, coverage: '10%', created_at: now, updated_at: now },
-  { id: 5, slug: 'cloud-sec-fundamentals', title: 'Cloud Security Fundamentals', description: 'IAM and cloud misconfigurations', status: CourseStatus.Published, category_id: 5, learning_point: 130, coverage: '25%', created_at: now, updated_at: now },
+  {
+    id: 1,
+    slug: 'owasp-top-10',
+    title: 'OWASP Top 10',
+    description: 'Modern web attack vectors and mitigation strategy.',
+    status: CourseStatus.Published,
+    category: courseCategoriesFixture[0],
+    tags: [courseTagsFixture[0], courseTagsFixture[1], courseTagsFixture[2]],
+    estimated_time: 120,
+    learning_point: 120,
+    user_progress: { completed: 2, total: 5 },
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 2,
+    slug: 'net-basics',
+    title: 'Network Basics',
+    description: 'TCP/IP and practical lab walk-through.',
+    status: CourseStatus.Published,
+    category: courseCategoriesFixture[1],
+    tags: [courseTagsFixture[3]],
+    estimated_time: 90,
+    learning_point: 100,
+    user_progress: { completed: 1, total: 6 },
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 3,
+    slug: 'crypto-101',
+    title: 'Crypto 101',
+    description: 'Hashing, encryption, and signing fundamentals.',
+    status: CourseStatus.Published,
+    category: courseCategoriesFixture[2],
+    tags: [courseTagsFixture[0]],
+    estimated_time: 75,
+    learning_point: 95,
+    user_progress: { completed: 0, total: 4 },
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 4,
+    slug: 'intro-forensics',
+    title: 'Intro to Forensics',
+    description: 'Disk and memory artifacts for incident response.',
+    status: CourseStatus.Draft,
+    category: courseCategoriesFixture[3],
+    tags: [courseTagsFixture[3]],
+    estimated_time: 60,
+    learning_point: 80,
+    user_progress: { completed: 0, total: 3 },
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 5,
+    slug: 'cloud-sec-fundamentals',
+    title: 'Cloud Security Fundamentals',
+    description: 'IAM, posture management, and common cloud misconfigurations.',
+    status: CourseStatus.Published,
+    category: courseCategoriesFixture[4],
+    tags: [courseTagsFixture[4]],
+    estimated_time: 110,
+    learning_point: 130,
+    user_progress: { completed: 1, total: 7 },
+    created_at: now,
+    updated_at: now,
+  },
 ]
 
-export const courseNodesFixture: CourseNode[] = [
-  { id: 1, course_id: 1, path: '1', position: 1, node_type: 'section', title: 'Introduction' },
-  { id: 2, course_id: 1, parent_id: 1, path: '1.1', position: 1, node_type: 'lesson', title: 'Injection Basics' },
-  { id: 3, course_id: 1, parent_id: 1, path: '1.2', position: 2, node_type: 'lesson', title: 'Broken Access Control' },
-  { id: 4, course_id: 1, path: '2', position: 2, node_type: 'section', title: 'Defense' },
-  { id: 5, course_id: 1, parent_id: 4, path: '2.1', position: 1, node_type: 'lesson', title: 'Secure Coding Checklist' },
-]
+export const courseRootNodesFixture: Record<string, CourseNode[]> = {
+  'owasp-top-10': [
+    {
+      id: 101,
+      parent: null,
+      is_item: false,
+      title: 'Introduction',
+      position: 1,
+      path: '1',
+      has_children: true,
+    },
+    {
+      id: 102,
+      parent: null,
+      is_item: false,
+      title: 'Defense',
+      position: 2,
+      path: '2',
+      has_children: true,
+    },
+  ],
+  'net-basics': [
+    {
+      id: 201,
+      parent: null,
+      is_item: false,
+      title: 'TCP/IP Core',
+      position: 1,
+      path: '1',
+      has_children: true,
+    },
+  ],
+}
 
-export const courseProgressFixture: UserCourseProgress[] = [
-  { id: 1, user_id: 1, course_id: 1, started_at: now, completed_at: undefined, percent_complete: 60, created_at: now, updated_at: now },
-  { id: 2, user_id: 1, course_id: 2, started_at: now, completed_at: undefined, percent_complete: 30, created_at: now, updated_at: now },
-]
+export const courseChildrenByParentIdFixture: Record<number, CourseNode[]> = {
+  101: [
+    {
+      id: 111,
+      parent: 101,
+      is_item: true,
+      title: 'Injection Basics',
+      position: 1,
+      path: '1.1',
+      has_children: false,
+      lesson: {
+        id: 7001,
+        title: 'Injection Basics',
+        lesson_type: LessonType.Markdown,
+        source: LessonSource.Manual,
+        video_url: null,
+        video_duration: null,
+        learning_point: 10,
+        learning_time: 20,
+      },
+    },
+    {
+      id: 112,
+      parent: 101,
+      is_item: true,
+      title: 'Broken Access Control',
+      position: 2,
+      path: '1.2',
+      has_children: false,
+      lesson: {
+        id: 7002,
+        title: 'Broken Access Control',
+        lesson_type: LessonType.Markdown,
+        source: LessonSource.Manual,
+        video_url: null,
+        video_duration: null,
+        learning_point: 10,
+        learning_time: 18,
+      },
+    },
+  ],
+  102: [
+    {
+      id: 121,
+      parent: 102,
+      is_item: true,
+      title: 'Secure Coding Checklist',
+      position: 1,
+      path: '2.1',
+      has_children: false,
+      lesson: {
+        id: 7003,
+        title: 'Secure Coding Checklist',
+        lesson_type: LessonType.Video,
+        source: LessonSource.Manual,
+        video_url: 'https://videos.example.com/secure-coding',
+        video_duration: 840,
+        learning_point: 12,
+        learning_time: 25,
+      },
+    },
+  ],
+  201: [
+    {
+      id: 211,
+      parent: 201,
+      is_item: true,
+      title: 'Routing Fundamentals',
+      position: 1,
+      path: '1.1',
+      has_children: false,
+      lesson: {
+        id: 7101,
+        title: 'Routing Fundamentals',
+        lesson_type: LessonType.Markdown,
+        source: LessonSource.Manual,
+        video_url: null,
+        video_duration: null,
+        learning_point: 9,
+        learning_time: 15,
+      },
+    },
+  ],
+}
+
+export const courseProgressFixture: Record<string, UserCourseProgress> = {
+  'owasp-top-10': {
+    lesson_count: 5,
+    completed: 2,
+    percent: '40.00',
+  },
+  'net-basics': {
+    lesson_count: 6,
+    completed: 1,
+    percent: '16.67',
+  },
+  'crypto-101': {
+    lesson_count: 4,
+    completed: 0,
+    percent: '0.00',
+  },
+  'cloud-sec-fundamentals': {
+    lesson_count: 7,
+    completed: 1,
+    percent: '14.29',
+  },
+}
 
 export const challengesFixture: Challenge[] = [
   { id: 1, slug: 'xss-lab', title: 'XSS Lab', description: 'Find and exploit reflected XSS', status: 'published', difficulty: ChallengeDifficulty.Easy, category_id: 1, source: ChallengeSource.Manual, storage_path: '/challenges/xss-lab', challenge_point: 100, instance_required: false, created_at: now, updated_at: now },

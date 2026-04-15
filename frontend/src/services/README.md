@@ -5,7 +5,7 @@ Strongly-typed API service layer. Each service file wraps domain endpoints via A
 Files:
 - `auth.service.ts` — Authentication (register, login, logout, SSO, token refresh)
 - `users.service.ts` — User CRUD and profile management
-- `courses.service.ts` — Course CRUD, tree navigation, progress, enrollment
+- `courses.service.ts` — Canonical Learn routes (`/api/learn/courses/*`, lazy tree, progress)
 - `challenges.service.ts` — Challenge CRUD, flag submission, instances, progress
 - `quizzes.service.ts` — Quiz CRUD, attempts, Q&A submission, progress
 - `notifications.service.ts` — Notification listing, reading, marking

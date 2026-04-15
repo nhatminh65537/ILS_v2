@@ -1,7 +1,9 @@
 /**
  * Course domain types
- * Derived from DATA_MODEL.md Course Domain section
+ * Aligned with backend canonical Learn serializers in backend/api/serializers/course.py.
  */
+
+import type { PaginatedResponse } from '@/types/api'
 
 export enum ContentStatus {
   Draft = 'draft',
@@ -20,141 +22,107 @@ export enum LessonSource {
   Outline = 'outline',
 }
 
-/** Course category */
 export interface CourseCategory {
   readonly id: number
   readonly name: string
   readonly description?: string
-  readonly created_at: string
-  readonly updated_at: string
 }
 
-/** Core course entity */
+export interface CourseTag {
+  readonly id: number
+  readonly name: string
+  readonly description?: string
+}
+
+export interface CourseUserProgress {
+  readonly completed: number
+  readonly total: number
+}
+
+/**
+ * Canonical course list/detail payload for /api/learn/courses/*.
+ */
 export interface Course {
   readonly id: number
-  readonly slug: string // URL-friendly unique identifier
+  readonly slug: string
   readonly title: string
   readonly description?: string
   readonly status: ContentStatus
-  readonly category_id?: number
+  readonly category: CourseCategory | null
+  readonly tags: readonly CourseTag[]
+  readonly estimated_time: number
   readonly learning_point: number
-  readonly coverage?: string // Percentage like "50%"
+  readonly user_progress?: CourseUserProgress
   readonly created_at: string
   readonly updated_at: string
 }
 
-/** Course with user progress */
-export interface CourseWithProgress extends Course {
-  readonly user_progress?: {
-    readonly completed: number
-    readonly total: number
-    readonly percent: number
-  }
-}
+export type CourseWithProgress = Course
 
-/** Course tree node (hierarchical structure) */
-export interface CourseNode {
+export interface LessonSummary {
   readonly id: number
-  readonly course_id: number
-  readonly parent_id?: number
-  readonly path: string // dot-separated: "1.3.2"
-  readonly position: number
-  readonly node_type: 'section' | 'lesson'
   readonly title: string
-  readonly children?: readonly CourseNode[]
-}
-
-/** Lesson entity */
-export interface Lesson {
-  readonly id: number
-  readonly course_node_id: number
-  readonly title: string
-  readonly content?: string // markdown or HTML
   readonly lesson_type: LessonType
   readonly source: LessonSource
-  readonly outline_url?: string // for outline-sourced lessons
-  readonly status: ContentStatus
-  readonly created_at: string
-  readonly updated_at: string
+  readonly video_url?: string | null
+  readonly video_duration?: number | null
+  readonly learning_point: number
+  readonly learning_time?: number | null
 }
 
-/** Mini-quiz question within a lesson */
-export interface LessonQuestion {
+/**
+ * Canonical tree node payload for /api/learn/courses/{slug}/nodes/*.
+ */
+export interface CourseNode {
   readonly id: number
-  readonly lesson_id: number
-  readonly question_text: string
+  readonly parent: number | null
+  readonly is_item: boolean
+  readonly title: string
   readonly position: number
-  readonly options: readonly QuestionOption[]
-  readonly correct_answer: string
-  readonly explanation?: string
-  readonly created_at: string
+  readonly path: string
+  readonly lesson?: LessonSummary | null
+  readonly has_children: boolean
 }
 
-export interface QuestionOption {
-  readonly id: number
-  readonly text: string
-  readonly position: number
-}
-
-/** User course progress tracking */
+/**
+ * Canonical course progress payload for /api/learn/courses/{slug}/progress/.
+ * DRF DecimalField may serialize percent as string.
+ */
 export interface UserCourseProgress {
-  readonly id: number
-  readonly user_id: number
-  readonly course_id: number
-  readonly started_at?: string
-  readonly completed_at?: string
-  readonly percent_complete: number
-  readonly created_at: string
-  readonly updated_at: string
+  readonly lesson_count: number
+  readonly completed: number
+  readonly percent: number | string
 }
 
-/** User lesson progress tracking */
-export interface UserLessonProgress {
-  readonly id: number
-  readonly user_id: number
-  readonly lesson_id: number
-  readonly started_at?: string
-  readonly completed_at?: string
-  readonly created_at: string
-  readonly updated_at: string
+export interface CourseListParams {
+  limit?: number
+  offset?: number
+  status?: ContentStatus | 'all'
+  category?: number
+  search?: string
 }
 
-/** Course request/response payloads */
 export interface CreateCoursePayload {
   title: string
+  slug: string
   description?: string
-  status: ContentStatus
-  category_id?: number
+  status?: ContentStatus
+  category_id?: number | null
+  tag_ids?: number[]
   learning_point?: number
+  estimated_time?: number
 }
 
 export interface UpdateCoursePayload {
   title?: string
   description?: string
   status?: ContentStatus
-  category_id?: number
+  category_id?: number | null
+  tag_ids?: number[]
   learning_point?: number
+  estimated_time?: number
 }
 
-export interface CreateLessonPayload {
-  course_node_id: number
-  title: string
-  content?: string
-  lesson_type: LessonType
-  source: LessonSource
-  outline_url?: string
-}
-
-export interface UpdateLessonPayload {
-  title?: string
-  content?: string
-  lesson_type?: LessonType
-  status?: ContentStatus
-}
-
-export interface CourseProgressResponse {
-  readonly course_id: number
-  readonly lessons_total: number
-  readonly lessons_completed: number
-  readonly percent: number
-}
+export type CourseListResponse = readonly Course[] | PaginatedResponse<Course>
+export type CourseCategoryListResponse = readonly CourseCategory[] | PaginatedResponse<CourseCategory>
+export type CourseTagListResponse = readonly CourseTag[] | PaginatedResponse<CourseTag>

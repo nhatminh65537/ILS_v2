@@ -1,7 +1,9 @@
 import { http, HttpResponse } from 'msw'
 import {
+  courseChildrenByParentIdFixture,
   courseCategoriesFixture,
-  courseNodesFixture,
+  courseRootNodesFixture,
+  courseTagsFixture,
   courseProgressFixture,
   coursesFixture,
 } from '@/mocks/data/fixtures'
@@ -9,27 +11,63 @@ import { notFound, parseNumericId, toPaginatedResponse } from '@/mocks/handlers/
 import { ContentStatus } from '@/types/course.types'
 
 export const coursesHandlers = [
-  http.get('*/api/courses/', ({ request }) => {
+  http.get('*/api/learn/courses/', ({ request }) => {
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '10')
     const offset = Number(url.searchParams.get('offset') ?? '0')
+    const search = (url.searchParams.get('search') ?? '').trim().toLowerCase()
+    const status = url.searchParams.get('status')
+    const category = url.searchParams.get('category')
 
-    return HttpResponse.json(toPaginatedResponse(coursesFixture, { limit, offset, basePath: '/api/courses/' }))
+    const filteredCourses = coursesFixture
+      .filter((course) => {
+        if (!status || status === 'all') {
+          return true
+        }
+        return course.status === status
+      })
+      .filter((course) => {
+        if (!category) {
+          return true
+        }
+        return course.category?.id === Number(category)
+      })
+      .filter((course) => {
+        if (!search) {
+          return true
+        }
+        return (
+          course.title.toLowerCase().includes(search) ||
+          (course.description ?? '').toLowerCase().includes(search)
+        )
+      })
+
+    return HttpResponse.json(
+      toPaginatedResponse(filteredCourses, { limit, offset, basePath: '/api/learn/courses/' })
+    )
   }),
 
-  http.post('*/api/courses/', async ({ request }) => {
+  http.post('*/api/learn/courses/', async ({ request }) => {
     const payload = (await request.json()) as Partial<(typeof coursesFixture)[number]>
     const now = new Date().toISOString()
     const nextId = coursesFixture.length + 1
+
+    const selectedCategory =
+      typeof payload.category === 'object' && payload.category !== null
+        ? courseCategoriesFixture.find((item) => item.id === payload.category?.id) ?? null
+        : null
+
     const created = {
       id: nextId,
       slug: payload.slug ?? `course-${nextId}`,
       title: payload.title ?? `Course ${nextId}`,
       description: payload.description,
       status: payload.status ?? ContentStatus.Draft,
-      category_id: payload.category_id,
+      category: selectedCategory,
+      tags: [],
+      estimated_time: payload.estimated_time ?? 60,
       learning_point: payload.learning_point ?? 0,
-      coverage: payload.coverage,
+      user_progress: { completed: 0, total: 0 },
       created_at: now,
       updated_at: now,
     }
@@ -38,37 +76,27 @@ export const coursesHandlers = [
     return HttpResponse.json(created, { status: 201 })
   }),
 
-  http.get('*/api/courses/:id/', ({ params }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
+  http.get('*/api/learn/courses/:slug/', ({ params }) => {
+    const slug = String(params.slug)
+    if (!slug) {
       return notFound('Course not found')
     }
 
-    const course = coursesFixture.find((item) => item.id === id)
+    const course = coursesFixture.find((item) => item.slug === slug)
     if (!course) {
       return notFound('Course not found')
     }
 
-    const progress = courseProgressFixture.find((item) => item.course_id === id)
-    return HttpResponse.json({
-      ...course,
-      user_progress: progress
-        ? {
-            completed: Math.round((progress.percent_complete / 100) * 10),
-            total: 10,
-            percent: progress.percent_complete,
-          }
-        : undefined,
-    })
+    return HttpResponse.json(course)
   }),
 
-  http.patch('*/api/courses/:id/', async ({ params, request }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
+  http.patch('*/api/learn/courses/:slug/', async ({ params, request }) => {
+    const slug = String(params.slug)
+    if (!slug) {
       return notFound('Course not found')
     }
 
-    const index = coursesFixture.findIndex((item) => item.id === id)
+    const index = coursesFixture.findIndex((item) => item.slug === slug)
     if (index < 0) {
       return notFound('Course not found')
     }
@@ -84,13 +112,13 @@ export const coursesHandlers = [
     return HttpResponse.json(updated)
   }),
 
-  http.delete('*/api/courses/:id/', ({ params }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
+  http.delete('*/api/learn/courses/:slug/', ({ params }) => {
+    const slug = String(params.slug)
+    if (!slug) {
       return notFound('Course not found')
     }
 
-    const index = coursesFixture.findIndex((item) => item.id === id)
+    const index = coursesFixture.findIndex((item) => item.slug === slug)
     if (index < 0) {
       return notFound('Course not found')
     }
@@ -99,66 +127,55 @@ export const coursesHandlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.get('*/api/courses/:id/tree/', ({ params, request }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
+  http.get('*/api/learn/courses/:slug/progress/', ({ params }) => {
+    const slug = String(params.slug)
+    if (!slug) {
       return notFound('Course not found')
     }
 
-    const parent = new URL(request.url).searchParams.get('parent')
-    const parentId = parent ? parseNumericId(parent) : null
-
-    const nodes = courseNodesFixture.filter((item) => item.course_id === id)
-    const filtered = parentId ? nodes.filter((item) => item.parent_id === parentId) : nodes
-
-    return HttpResponse.json(filtered)
-  }),
-
-  http.get('*/api/courses/:id/progress/', ({ params }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
+    const course = coursesFixture.find((item) => item.slug === slug)
+    if (!course) {
       return notFound('Course not found')
     }
 
-    const progress =
-      courseProgressFixture.find((item) => item.course_id === id) ??
-      {
-        id: courseProgressFixture.length + 1,
-        user_id: 1,
-        course_id: id,
-        started_at: new Date().toISOString(),
-        completed_at: undefined,
-        percent_complete: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    return HttpResponse.json(
+      courseProgressFixture[slug] ?? {
+        lesson_count: 0,
+        completed: 0,
+        percent: '0.00',
       }
-
-    return HttpResponse.json(progress)
+    )
   }),
 
-  http.post('*/api/courses/:id/enroll/', ({ params }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
+  http.get('*/api/learn/courses/:slug/nodes/', ({ params }) => {
+    const slug = String(params.slug)
+    if (!slug) {
       return notFound('Course not found')
     }
 
-    const now = new Date().toISOString()
-    const enrollment = {
-      id: courseProgressFixture.length + 1,
-      user_id: 1,
-      course_id: id,
-      started_at: now,
-      completed_at: undefined,
-      percent_complete: 0,
-      created_at: now,
-      updated_at: now,
+    const root = courseRootNodesFixture[slug]
+    if (!root) {
+      return notFound('Course not found')
     }
 
-    courseProgressFixture.push(enrollment)
-    return HttpResponse.json(enrollment, { status: 201 })
+    return HttpResponse.json(root)
   }),
 
-  http.get('*/api/course-categories/', ({ request }) => {
+  http.get('*/api/learn/courses/:slug/nodes/:id/children/', ({ params }) => {
+    const slug = String(params.slug)
+    const nodeId = parseNumericId(String(params.id))
+    if (!slug || !nodeId) {
+      return notFound('Node not found')
+    }
+
+    if (!courseRootNodesFixture[slug]) {
+      return notFound('Course not found')
+    }
+
+    return HttpResponse.json(courseChildrenByParentIdFixture[nodeId] ?? [])
+  }),
+
+  http.get('*/api/learn/categories/', ({ request }) => {
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '10')
     const offset = Number(url.searchParams.get('offset') ?? '0')
@@ -167,74 +184,22 @@ export const coursesHandlers = [
       toPaginatedResponse(courseCategoriesFixture, {
         limit,
         offset,
-        basePath: '/api/course-categories/',
+        basePath: '/api/learn/categories/',
       })
     )
   }),
 
-  http.post('*/api/course-categories/', async ({ request }) => {
-    const payload = (await request.json()) as Partial<(typeof courseCategoriesFixture)[number]>
-    const now = new Date().toISOString()
-    const created = {
-      id: courseCategoriesFixture.length + 1,
-      name: payload.name ?? `Category ${courseCategoriesFixture.length + 1}`,
-      description: payload.description,
-      created_at: now,
-      updated_at: now,
-    }
+  http.get('*/api/learn/tags/', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? '10')
+    const offset = Number(url.searchParams.get('offset') ?? '0')
 
-    courseCategoriesFixture.push(created)
-    return HttpResponse.json(created, { status: 201 })
-  }),
-
-  http.get('*/api/course-categories/:id/', ({ params }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
-      return notFound('Course category not found')
-    }
-
-    const category = courseCategoriesFixture.find((item) => item.id === id)
-    if (!category) {
-      return notFound('Course category not found')
-    }
-
-    return HttpResponse.json(category)
-  }),
-
-  http.patch('*/api/course-categories/:id/', async ({ params, request }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
-      return notFound('Course category not found')
-    }
-
-    const index = courseCategoriesFixture.findIndex((item) => item.id === id)
-    if (index < 0) {
-      return notFound('Course category not found')
-    }
-
-    const payload = (await request.json()) as Partial<(typeof courseCategoriesFixture)[number]>
-    const updated = {
-      ...courseCategoriesFixture[index],
-      ...payload,
-      updated_at: new Date().toISOString(),
-    }
-
-    courseCategoriesFixture[index] = updated
-    return HttpResponse.json(updated)
-  }),
-
-  http.delete('*/api/course-categories/:id/', ({ params }) => {
-    const id = parseNumericId(String(params.id))
-    if (!id) {
-      return notFound('Course category not found')
-    }
-
-    const index = courseCategoriesFixture.findIndex((item) => item.id === id)
-    if (index < 0) {
-      return notFound('Course category not found')
-    }
-
-    courseCategoriesFixture.splice(index, 1)
-    return new HttpResponse(null, { status: 204 })
+    return HttpResponse.json(
+      toPaginatedResponse(courseTagsFixture, {
+        limit,
+        offset,
+        basePath: '/api/learn/tags/',
+      })
+    )
   }),
 ]

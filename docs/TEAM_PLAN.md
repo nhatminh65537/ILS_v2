@@ -175,7 +175,7 @@ Dựa trên kiến trúc **Backend (Django) + Frontend (Next.js)**, phân công 
 
 | ID | Vấn đề | Gợi ý lựa chọn |
 |----|--------|-----------------|
-| Q-INFRA-01 | Thư mục frontend `src/` | **ĐÃ CHỐT:** Giữ `frontend/app/` (không dùng `src/`) |
+| Q-INFRA-01 | Thư mục frontend `src/` | **ĐÃ CHỐT:** Giữ App Router tại `frontend/app/`; domain code đặt tại `frontend/src/` |
 | Q-INFRA-07 | Chiến lược i18n | **ĐÃ CHỐT:** Vietnamese-first, i18n từ Slice 4 |
 | Q-INFRA-08 | UI component library | **Gợi ý Option A:** `shadcn/ui` — tương thích Tailwind v4, có sẵn components |
 | Q-INFRA-05 | JWT auth cho WebSocket | **ĐÃ CHỐT:** Option B — first auth message, không truyền JWT qua query string |
@@ -193,7 +193,7 @@ Dựa trên kiến trúc **Backend (Django) + Frontend (Next.js)**, phân công 
 | Q-LEARN-07 | Ai được tạo tag | **ĐÃ CHỐT:** Permission-based (không hardcode theo role) |
 | Q-LEARN-08 | Trigger hoàn thành bài học | **ĐÃ CHỐT:** Hybrid |
 | Q-LEARN-09 | Trigger bắt đầu bài học | **ĐÃ CHỐT:** Explicit |
-| Q-LEARN-10 | Outline sync thất bại | **ĐÃ CHỐT:** Async queue |
+| Q-LEARN-10 | Outline sync thất bại | **ĐÃ CHỐT:** Sync blocking MVP (không Celery ở giai đoạn hiện tại) |
 | Q-CHALL-01 | Instance scope trong MVP | **Gợi ý:** Triển khai cơ bản, interface sẵn sàng cho mở rộng |
 
 ---
@@ -361,11 +361,11 @@ Timeline ước tính:  ~1 ngày    ~5 ngày     ~5 ngày         ~10 ngày     
 | **A** | Task 2.1: Permission auto-discovery at startup | `auth_app/services/permission_discovery.py` | Permissions tự tạo khi khởi động |
 | **A** | Task 2.2: Role/Permission CRUD API | `api/views/rbac.py` | Admin CRUD roles + assign permissions |
 | **A** | Task 2.3: Permission cache + JWT encoding (bitmap) | `auth_app/services/permission_service.py` | Login → JWT chứa encoded permissions |
-| **B** | Task 4.1: App structure + Axios + auth interceptor | `frontend/src/lib/api.ts` | Auto-refresh token on 401 |
-| **B** | Task 4.1: Zustand auth store | `frontend/src/store/authStore.ts` | State management cho auth |
+| **B** | Task 4.1: App structure + Axios + auth interceptor | `frontend/src/lib/axios.ts` | Auto-refresh token on 401 |
+| **B** | Task 4.1: Zustand auth store | `frontend/src/stores/auth.store.ts` | State management cho auth |
 | **B** | Task 4.1: Shared Tree component | `frontend/src/components/Tree/` | Component tái sử dụng 3 domain |
 | **B** | Task 1.5: Login/Register UI | `frontend/src/app/(auth)/` | Giao diện login/register hoạt động |
-| **B** | Task 3.2: System Config Admin UI | `frontend/src/app/admin/config/` | Admin quản lý config |
+| **B** | Task 3.2: System Config Admin UI | `frontend/app/[locale]/(admin)/admin/(protected)/config/` | Admin quản lý config |
 
 **Điểm phối hợp quan trọng:**
 - B cần A hoàn thành Slice 1 API contract (đã có từ Phase 1)
@@ -403,10 +403,10 @@ B:          [wait...][===== S5 Frontend =====][===== S6 Frontend =====]
 | **A** | Task 6.2: ChallengeNode + Flag CRUD | `api/views/challenge.py` |
 | **A** | Task 6.3: Flag submission + progress | `api/services/flag_service.py` |
 | **A** | Task 6.4: GitLab sync | `api/views/challenge.py` |
-| **B** | Task 5.5: Course catalog + tree (bắt đầu khi A xong S5 BE) | `app/(app)/learn/` |
-| **B** | Task 5.6: Lesson viewer | `app/(app)/learn/[slug]/[lessonId]/` |
-| **B** | Task 6.5: Challenge browser + tree (bắt đầu khi A xong S6 BE) | `app/(app)/challenge/` |
-| **B** | Task 6.6: Challenge detail + flag submit | `app/(app)/challenge/[slug]/` |
+| **B** | Task 5.5: Course catalog + tree (bắt đầu khi A xong S5 BE) | `app/[locale]/(catalog)/courses/` |
+| **B** | Task 5.6: Lesson viewer | `app/[locale]/(catalog)/courses/[slug]/lessons/[id]/` |
+| **B** | Task 6.5: Challenge browser + tree (bắt đầu khi A xong S6 BE) | `app/[locale]/(catalog)/challenges/` |
+| **B** | Task 6.6: Challenge detail + flag submit | `app/[locale]/(catalog)/challenges/[slug]/` |
 
 **Gate:** Tạo course → thêm node → tạo lesson → complete → progress cập nhật; Submit flag đúng → solved.
 
@@ -424,10 +424,10 @@ B:          [wait...][===== S5 Frontend =====][===== S6 Frontend =====]
 | **A** | Task 7.4: Quiz progress signals | `api/signals.py` |
 | **A** | Task 8.1: User profile API | `api/views/user.py` |
 | **A** | Task 8.2: Admin user management API | `api/views/admin_user.py` |
-| **B** | Task 7.5: Quiz browser (bắt đầu khi A xong S7 BE) | `app/(app)/quiz/` |
-| **B** | Task 7.6: WebSocket quiz session | `app/(app)/quiz/[id]/session/` |
-| **B** | Task 8.3: Profile page + settings | `app/(app)/profile/` |
-| **B** | Task 8.4: Admin user management UI | `app/admin/users/` |
+| **B** | Task 7.5: Quiz browser (bắt đầu khi A xong S7 BE) | `app/[locale]/(catalog)/quizzes/` |
+| **B** | Task 7.6: WebSocket quiz session | `app/[locale]/(catalog)/quizzes/[id]/session/` |
+| **B** | Task 8.3: Profile page + settings | `app/[locale]/(app)/profile/` |
+| **B** | Task 8.4: Admin user management UI | `app/[locale]/(admin)/admin/(protected)/users/` |
 
 **⚠️ Lưu ý đặc biệt cho Slice 7:**
 - WebSocket là phần phức tạp nhất — A và B cần **pair-programming** cho phần kết nối WS
@@ -448,8 +448,8 @@ B:          [wait...][===== S5 Frontend =====][===== S6 Frontend =====]
 | **A** | Task 11.1–11.2: Leaderboard + Admin stats API | `api/views/stats.py` |
 | **A** | Bật `auth.authorization_enabled=true` + integration test | `settings.py`, tests |
 | **B** | Task 9.4: Notification bell + inbox | `components/NotificationBell.tsx` |
-| **B** | Task 11.3–11.4: Leaderboard + Admin stats pages | `app/(app)/leaderboard/`, `app/admin/stats/` |
-| **B** | Task 2.4: Admin RBAC UI | `app/admin/rbac/` |
+| **B** | Task 11.3–11.4: Leaderboard + Admin stats pages | `app/[locale]/(app)/leaderboard/`, `app/[locale]/(admin)/admin/(protected)/statistics/` |
+| **B** | Task 2.4: Admin RBAC UI | `app/[locale]/(admin)/admin/(protected)/rbac/` |
 | **B** | Permission-aware rendering (ẩn UI theo quyền) | Tất cả pages |
 
 **Gate:** Notification realtime dưới 2s; Leaderboard sắp xếp đúng; RBAC chặn đúng permission.
@@ -518,7 +518,7 @@ Error:    { detail: string }  (401, 403, 429)
 | `backend/realtime/` | A | Không |
 | `frontend/src/app/` | B | A có thể review |
 | `frontend/src/components/` | B | A có thể review |
-| `frontend/src/store/` | B | A có thể review |
+| `frontend/src/stores/` | B | A có thể review |
 | `frontend/src/lib/` | B | A có thể review |
 | `docs/*.md` | Cả 2 | Cả 2 (thống nhất trước khi sửa) |
 | `backend/backend/settings.py` | A | B hỏi trước |

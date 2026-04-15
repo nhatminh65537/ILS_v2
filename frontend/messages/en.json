@@ -84,12 +84,50 @@
   "courses": {
     "title": "Courses",
     "description": "Track progress through the content tree and complete lessons step by step.",
-    "enroll": "Enroll",
-    "continue": "Continue learning",
-    "completed": "Completed",
-    "draft": "Draft",
-    "published": "Published",
-    "archived": "Archived"
+    "catalog": {
+      "subtitle": "Browse published courses and continue your learning path",
+      "searchPlaceholder": "Search courses..."
+    },
+    "detail": {
+      "backToCatalog": "Back to courses",
+      "treeTitle": "Course tree",
+      "progressTitle": "Your progress",
+      "courseInfoTitle": "Course information"
+    },
+    "labels": {
+      "category": "Category",
+      "learningPoint": "Points",
+      "estimatedTime": "Minutes",
+      "progress": "Progress",
+      "lessonCount": "Lessons",
+      "completed": "Completed",
+      "percent": "Percent",
+      "noProgress": "No progress",
+      "statusPublished": "Published",
+      "statusDraft": "Draft",
+      "statusArchived": "Archived"
+    },
+    "filter": {
+      "title": "Filters",
+      "reset": "Reset",
+      "status": "Status",
+      "statusAll": "Published only",
+      "statusPublished": "Published",
+      "statusDraft": "Draft",
+      "statusArchived": "Archived",
+      "categories": "Categories",
+      "tags": "Tags"
+    },
+    "empty": {
+      "noCourses": "No courses available.",
+      "noResults": "No courses match the selected filters.",
+      "noNodes": "No learning nodes available."
+    },
+    "errors": {
+      "loadFailed": "Failed to load courses.",
+      "detailLoadFailed": "Failed to load course details.",
+      "treeLoadFailed": "Failed to load course tree."
+    }
   },
   "challenges": {
     "title": "CTF Challenges",

@@ -32,6 +32,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Components
 
 - **api app**: All domain models and current domain viewsets for users, courses, lessons, challenges, quizzes, notifications, leaderboard, and system config.
+- **frontend learn catalog + lazy tree (Slice 5 Task 5.5)**: User-facing course routes `/{locale}/courses` and `/{locale}/courses/{slug}` delivered with client components (`CourseCatalogClient`, `CourseDetailClient`, tree panel/node renderer), domain hook/store (`useCourses`, `courses.store`), and namespaced Learn service contract (`/api/learn/*`).
 - **learn namespaced API (Slice 5 Task 5.1)**: Active canonical endpoints `/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*` implemented in `backend/api/views/courses.py` with slug detail lookup and compatibility-preserved legacy `/api/courses/*` routes.
 - **learn course node tree API (Slice 5 Task 5.2)**: Active canonical endpoints `/api/learn/courses/{slug}/nodes/`, `/api/learn/courses/{slug}/nodes/{id}/children/` plus editor/admin writes (`POST/PUT/DELETE`). Supports atomic item create (Lesson+Node), bulk subtree move with descendant `path` updates via `bulk_update`, max depth enforcement via `system_config[learn.max_tree_depth]`, subtree delete lesson cleanup, and `course.structure_version` bump.
 - **learn lesson CRUD + miniquiz mappings (Slice 5 Task 5.3)**: Active canonical endpoints `/api/learn/lessons/{id}/` (GET/PUT), `/api/learn/lessons/{id}/questions/` (GET/POST attach), and `/api/learn/lesson-questions/{id}/` (GET/PUT/DELETE). Member visibility is restricted to lessons whose owning course is `published`. Write operations are editor/admin only.
@@ -47,6 +48,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Status
 
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
+- Slice 5 Task 5.5 completed on 2026-04-15: frontend course catalog + lazy tree is active on canonical catalog routes (`/{locale}/courses`, `/{locale}/courses/{slug}`) with namespaced Learn client services, lazy children loading (`/nodes/{id}/children/`), progress card integration, and en/vi i18n parity updates; frontend validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
 - Slice 5 Task 5.1 completed on 2026-04-15: namespaced Learn CRUD APIs active with member published-only visibility enforcement, course `user_progress` projection, slug-conflict `409` suggestions, and archive-default/admin-purge delete behavior.
 - Slice 5 Task 5.2 completed on 2026-04-15: namespaced Learn course node tree API active at `/api/learn/courses/{slug}/nodes/*` with lazy children loading, atomic lesson+node create, bulk subtree moves, max depth enforcement (`learn.max_tree_depth`), subtree delete lesson cleanup, and `course.structure_version` bumping.
 - Slice 5 Task 5.3 completed on 2026-04-15: namespaced Learn lesson detail/update is active at `/api/learn/lessons/{id}/` plus miniquiz question mapping endpoints under `/api/learn/lessons/{id}/questions/` and `/api/learn/lesson-questions/{id}/` with published-only member visibility and editor/admin write gates.
@@ -84,6 +86,7 @@ Target: one instance per organization, no horizontal scale needed.
 ## Patterns
 
 - **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only
+- **Learn catalog lazy-tree frontend pattern**: For `/{locale}/courses/{slug}`, fetch root nodes once, cache children by `parentId`, and only request `/nodes/{id}/children/` on first folder expansion; preserve expanded-node state and per-node loading flags in domain store.
 - **Learn slug conflict contract**: Course create on duplicate slug must return HTTP `409` with deterministic `suggestions` array; do not fall back to silent auto-slug mutation.
 - **Learn lesson visibility hardening**: For member role, canonical learn lesson endpoints must return not-found for lessons whose owning course is not `published` (avoid existence leaks); editor/admin can access regardless of course status.
 - **Learn progress idempotency pattern**: `start` and `complete` progress endpoints are idempotent, preserving first timestamps and preventing duplicate completion side effects.

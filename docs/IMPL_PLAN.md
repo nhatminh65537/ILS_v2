@@ -668,12 +668,12 @@ GET  /api/learn/courses/{slug}/progress/         → {lesson_count, completed, p
 
 ### Task 5.5 — Frontend: Course catalog + tree
 ```
-app/[locale]/(app)/learn/page.tsx             → course catalog (cards grid, filter sidebar)
-app/[locale]/(app)/learn/[slug]/page.tsx      → course detail with Tree component (lazy expand)
+app/[locale]/(catalog)/courses/page.tsx             → course catalog (cards grid, filter sidebar)
+app/[locale]/(catalog)/courses/[slug]/page.tsx      → course detail with Tree component (lazy expand)
 ```
 
 ### Task 5.6 — Frontend: Lesson viewer
-**File:** `app/[locale]/(app)/learn/[slug]/[lessonId]/page.tsx`
+**File:** `app/[locale]/(catalog)/courses/[slug]/lessons/[id]/page.tsx`
 - Markdown: `react-markdown` + `rehype-highlight`
 - Video: `<video>` or iframe
 - Miniquiz: inline question cards + answer reveal
