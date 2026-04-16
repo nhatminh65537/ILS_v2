@@ -1,13 +1,10 @@
-type Props = {
+import { AdminLearnCourseEditorPageClient } from '@/components/features/courses/admin/AdminLearnCourseEditorPageClient'
+
+type AdminLearnCourseEditorPageProps = {
   params: Promise<{ locale: string; slug: string }>
 }
 
-export default async function AdminCourseEditorPage({ params }: Props) {
-  const { slug } = await params
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Course Editor: {slug}</h1>
-      <p className="text-muted-foreground">Coming soon.</p>
-    </div>
-  )
+export default async function AdminLearnCourseEditorPage({ params }: AdminLearnCourseEditorPageProps) {
+  const { locale, slug } = await params
+  return <AdminLearnCourseEditorPageClient locale={locale} slug={slug} />
 }

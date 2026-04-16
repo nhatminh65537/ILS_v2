@@ -681,6 +681,210 @@
       "reorderFailed": "Failed to reorder questions."
     }
   },
+  "adminLearn": {
+    "title": "Learn Management",
+    "subtitle": "Manage Learn courses, taxonomy, tree structure, and lesson content.",
+    "create": {
+      "title": "Create course",
+      "subtitle": "Create a new Learn course and continue in editor mode.",
+      "formTitle": "Course metadata"
+    },
+    "editor": {
+      "title": "Edit course",
+      "subtitle": "Update metadata and manage course node hierarchy.",
+      "loadingTitle": "Loading course..."
+    },
+    "lessonEditor": {
+      "title": "Edit lesson",
+      "subtitle": "Update lesson content and mini-quiz mapping.",
+      "loadingTitle": "Loading lesson..."
+    },
+    "navigation": {
+      "backToList": "Back to course list"
+    },
+    "form": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "course title",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "course-slug",
+      "slugImmutableHint": "Slug is fixed after creation.",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "brief summary for this course",
+      "statusLabel": "Status",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Select category",
+      "categoryNone": "No category",
+      "learningPointLabel": "Learning points",
+      "estimatedTimeLabel": "Estimated time (minutes)",
+      "tagsLabel": "Tags"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived",
+      "saving": "Saving...",
+      "saved": "Saved successfully.",
+      "loading": "Loading...",
+      "loadingTree": "Loading tree..."
+    },
+    "toolbar": {
+      "searchPlaceholder": "Search by title or description",
+      "statusAll": "All statuses"
+    },
+    "list": {
+      "title": "Course list"
+    },
+    "taxonomy": {
+      "manageCategories": "Manage categories",
+      "manageTags": "Manage tags",
+      "categoryTitle": "Category manager",
+      "categoryDescription": "Create, update, or remove categories.",
+      "tagTitle": "Tag manager",
+      "tagDescription": "Create, update, or remove tags.",
+      "namePlaceholder": "name",
+      "descriptionPlaceholder": "description"
+    },
+    "actions": {
+      "createCourse": "Create course",
+      "refresh": "Refresh",
+      "create": "Create",
+      "save": "Save",
+      "close": "Close",
+      "delete": "Delete",
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "filterQuiz": "Filter quiz",
+      "attachQuestion": "Attach question",
+      "moveUp": "Up",
+      "moveDown": "Down",
+      "move": "Move",
+      "rename": "Rename"
+    },
+    "columns": {
+      "title": "Title",
+      "slug": "Slug",
+      "category": "Category",
+      "status": "Status",
+      "totalLessons": "Total lessons",
+      "updatedAt": "Updated",
+      "actions": "Actions",
+      "position": "Position",
+      "question": "Question",
+      "type": "Type"
+    },
+    "pagination": {
+      "total": "Total {total} courses",
+      "page": "Page {page}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "confirm": {
+      "deleteCourse": "Delete course {title}?",
+      "deleteMapping": "Delete this mapping?"
+    },
+    "empty": {
+      "noTags": "No tags yet.",
+      "noCategories": "No categories yet.",
+      "noCourses": "No courses found.",
+      "noCourse": "Course not found.",
+      "noLesson": "Lesson not found.",
+      "noMappings": "No mapped questions yet.",
+      "noNodes": "No nodes yet."
+    },
+    "tabs": {
+      "metadata": "Metadata",
+      "tree": "Tree",
+      "markdown": "Markdown",
+      "video": "Video",
+      "miniquiz": "Mini-quiz",
+      "outline": "Outline"
+    },
+    "tree": {
+      "createFolderTitle": "Create folder",
+      "folderTitlePlaceholder": "folder title",
+      "parentLabel": "Parent",
+      "parentRoot": "Root",
+      "positionPlaceholder": "position",
+      "createFolder": "Create folder",
+      "createLessonNodeTitle": "Create lesson node",
+      "lessonNodeTitlePlaceholder": "node title",
+      "lessonTitlePlaceholder": "lesson title",
+      "markdownPlaceholder": "markdown content",
+      "videoUrlPlaceholder": "video URL",
+      "createLessonNode": "Create lesson node",
+      "treeTitle": "Course tree",
+      "renamePrompt": "Rename node",
+      "movePrompt": "Move node to parent id (blank for root)",
+      "deleteConfirm": "Delete this node and its subtree?",
+      "pathLabel": "path: {path}",
+      "badgeLesson": "Lesson",
+      "badgeFolder": "Folder",
+      "loadingChildren": "Loading children...",
+      "emptyFolder": "Empty folder"
+    },
+    "lessonTypes": {
+      "markdown": "Markdown",
+      "video": "Video",
+      "miniquiz": "Mini-quiz"
+    },
+    "lesson": {
+      "markdownPlaceholder": "Write markdown lesson content",
+      "previewTitle": "Preview",
+      "previewEmpty": "No content yet.",
+      "videoUrlPlaceholder": "Paste video URL",
+      "videoPreviewEmpty": "Provide a video URL to preview.",
+      "quizSelectorTitle": "Quiz-filtered question selector",
+      "quizSearchPlaceholder": "Search quiz by title",
+      "quizSelectPlaceholder": "Select quiz",
+      "questionSelectPlaceholder": "Select question",
+      "miniQuizHelp": "Attach questions from selected quiz and reorder them for this lesson.",
+      "notMarkdown": "This lesson is not markdown type.",
+      "notVideo": "This lesson is not video type.",
+      "notMiniQuiz": "This lesson is not mini-quiz type."
+    },
+    "outline": {
+      "deferredMessage": "Outline source editing is deferred to Task 5.8."
+    },
+    "errors": {
+      "invalidLessonId": "Invalid lesson id.",
+      "unauthenticated": "Authentication is required.",
+      "forbidden": "You do not have permission for this action.",
+      "notFound": "Requested resource was not found.",
+      "validation": "Please review required fields and try again.",
+      "slugConflict": "Course slug already exists.",
+      "loadCoursesFailed": "Failed to load course list.",
+      "loadCourseDetailFailed": "Failed to load course detail.",
+      "loadTaxonomyFailed": "Failed to load categories/tags.",
+      "createCourseFailed": "Failed to create course.",
+      "updateCourseFailed": "Failed to update course.",
+      "deleteCourseFailed": "Failed to delete course.",
+      "createCategoryFailed": "Failed to create category.",
+      "updateCategoryFailed": "Failed to update category.",
+      "deleteCategoryFailed": "Failed to delete category.",
+      "createTagFailed": "Failed to create tag.",
+      "updateTagFailed": "Failed to update tag.",
+      "deleteTagFailed": "Failed to delete tag.",
+      "loadTreeFailed": "Failed to load course tree.",
+      "loadTreeChildrenFailed": "Failed to load node children.",
+      "createFolderFailed": "Failed to create folder.",
+      "createLessonNodeFailed": "Failed to create lesson node.",
+      "renameNodeFailed": "Failed to rename node.",
+      "moveNodeFailed": "Failed to move node.",
+      "reorderNodeFailed": "Failed to reorder node.",
+      "deleteNodeFailed": "Failed to delete node.",
+      "loadLessonFailed": "Failed to load lesson.",
+      "loadMappingsFailed": "Failed to load lesson-question mappings.",
+      "loadQuizzesFailed": "Failed to load quizzes.",
+      "loadQuizQuestionsFailed": "Failed to load quiz questions.",
+      "updateLessonFailed": "Failed to update lesson.",
+      "markdownContentRequired": "Markdown content is required.",
+      "videoUrlRequired": "Video URL is required.",
+      "quizSelectionRequired": "Please select a quiz and question.",
+      "attachMappingFailed": "Failed to attach question.",
+      "deleteMappingFailed": "Failed to delete mapping.",
+      "reorderMappingFailed": "Failed to reorder mappings."
+    }
+  },
   "profile": {
     "settingsTitle": "Profile",
     "settingsSubtitle": "Manage your profile information, settings, and account.",

@@ -31,6 +31,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Components
 
+- **frontend admin Learn editor (Slice 5 Task 5.7)**: Admin surface routes `/{locale}/admin/learn/courses`, `/new`, `/{slug}`, and `/{locale}/admin/learn/lessons/{id}` implemented with course list/create/edit, taxonomy inline CRUD (category/tag dialogs), tree authoring (folder/lesson node create, rename, move, reorder, delete), and lesson tabs (`markdown`, `video`, `miniquiz`, deferred `outline`).
 - **api app**: All domain models and current domain viewsets for users, courses, lessons, challenges, quizzes, notifications, leaderboard, and system config.
 - **frontend lesson viewer (Slice 5 Task 5.6)**: User lesson route `/{locale}/courses/{slug}/lessons/{id}` delivered with `LessonViewerClient`, type-specific renderers (`LessonMarkdownContent`, `LessonVideoContent`, `LessonMiniQuizContent`), sidebars (`LessonCourseTreeSidebar`, `LessonProgressSidebar`), and canonical lesson API service (`lessons.service.ts`).
 - **frontend learn catalog + lazy tree (Slice 5 Task 5.5)**: User-facing course routes `/{locale}/courses` and `/{locale}/courses/{slug}` delivered with client components (`CourseCatalogClient`, `CourseDetailClient`, tree panel/node renderer), domain hook/store (`useCourses`, `courses.store`), and namespaced Learn service contract (`/api/learn/*`).
@@ -48,6 +49,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Status
 
+- Slice 5 Task 5.7 completed on 2026-04-16: frontend admin Learn course editor is active with canonical admin routes, typed service/hook orchestration, quiz-filtered mini-quiz mapping flow (`/api/quiz/quizzes/` -> `/api/quiz/quizzes/{id}/questions/` -> `/api/learn/lessons/{id}/questions/`), i18n parity (`adminLearn.*` in en/vi), and MSW write-contract coverage; validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
 - Slice 5 Task 5.6 completed on 2026-04-15: frontend lesson viewer is active on `/{locale}/courses/{slug}/lessons/{id}` with explicit start/complete actions (`/api/learn/lessons/{id}/progress/start|complete/`), guided completion signals by lesson type (markdown/video/miniquiz), deterministic prev/next navigation derived from flattened course tree, and lesson API/MSW alignment (`/api/learn/lessons/*`); frontend validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
 - Slice 5 Task 5.5 completed on 2026-04-15: frontend course catalog + lazy tree is active on canonical catalog routes (`/{locale}/courses`, `/{locale}/courses/{slug}`) with namespaced Learn client services, lazy children loading (`/nodes/{id}/children/`), progress card integration, and en/vi i18n parity updates; frontend validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
@@ -87,6 +89,8 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Patterns
 
+- **Mini-quiz quiz-filter selector pattern (admin Learn)**: For lesson mini-quiz mapping, always select question in three deterministic steps: filter/load quizzes (`status`, `search`) -> load questions for selected quiz -> attach selected question by `question_id`; avoid global question search endpoint assumptions.
+- **Admin Learn tree mutation refresh pattern**: After node create/move/reorder/delete, refresh tree state deterministically (root + cached branch invalidation) so client ordering/path displays stay consistent with backend canonical node order.
 - **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only
 - **Lesson viewer guided-signal pattern**: Keep completion hints local and deterministic by lesson type (`markdown` scroll %, `video` watch %, `miniquiz` revealed answers) while still requiring explicit user action for `/progress/complete/` (hybrid UX per Q-LEARN-08 + Q-LEARN-09).
 - **Lesson prev/next derivation pattern**: Build deterministic neighbor links by fully expanding course tree nodes once, flattening lesson nodes with stable `position` then `id` ordering, and resolving neighbors against current `lessonId`.

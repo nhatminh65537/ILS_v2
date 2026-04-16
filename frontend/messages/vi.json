@@ -681,6 +681,210 @@
       "reorderFailed": "Sắp xếp lại câu hỏi thất bại."
     }
   },
+  "adminLearn": {
+    "title": "Quản lý Learn",
+    "subtitle": "Quản lý khóa học Learn, taxonomy, cây nội dung và nội dung bài học.",
+    "create": {
+      "title": "Tạo khóa học",
+      "subtitle": "Tạo khóa học Learn mới và chuyển sang chế độ chỉnh sửa.",
+      "formTitle": "Metadata khóa học"
+    },
+    "editor": {
+      "title": "Chỉnh sửa khóa học",
+      "subtitle": "Cập nhật metadata và quản lý cấu trúc cây khóa học.",
+      "loadingTitle": "Đang tải khóa học..."
+    },
+    "lessonEditor": {
+      "title": "Chỉnh sửa bài học",
+      "subtitle": "Cập nhật nội dung bài học và mapping mini-quiz.",
+      "loadingTitle": "Đang tải bài học..."
+    },
+    "navigation": {
+      "backToList": "Quay lại danh sách khóa học"
+    },
+    "form": {
+      "titleLabel": "Tiêu đề",
+      "titlePlaceholder": "tiêu đề khóa học",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "slug-khoa-hoc",
+      "slugImmutableHint": "Slug không đổi sau khi tạo.",
+      "descriptionLabel": "Mô tả",
+      "descriptionPlaceholder": "mô tả ngắn cho khóa học này",
+      "statusLabel": "Trạng thái",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Chọn category",
+      "categoryNone": "Không có category",
+      "learningPointLabel": "Điểm học tập",
+      "estimatedTimeLabel": "Thời lượng dự kiến (phút)",
+      "tagsLabel": "Tag"
+    },
+    "status": {
+      "draft": "Nháp",
+      "published": "Đã xuất bản",
+      "archived": "Đã lưu trữ",
+      "saving": "Đang lưu...",
+      "saved": "Đã lưu thành công.",
+      "loading": "Đang tải...",
+      "loadingTree": "Đang tải cây nội dung..."
+    },
+    "toolbar": {
+      "searchPlaceholder": "Tìm theo tiêu đề hoặc mô tả",
+      "statusAll": "Tất cả trạng thái"
+    },
+    "list": {
+      "title": "Danh sách khóa học"
+    },
+    "taxonomy": {
+      "manageCategories": "Quản lý category",
+      "manageTags": "Quản lý tag",
+      "categoryTitle": "Quản lý category",
+      "categoryDescription": "Tạo, cập nhật hoặc xóa category.",
+      "tagTitle": "Quản lý tag",
+      "tagDescription": "Tạo, cập nhật hoặc xóa tag.",
+      "namePlaceholder": "tên",
+      "descriptionPlaceholder": "mô tả"
+    },
+    "actions": {
+      "createCourse": "Tạo khóa học",
+      "refresh": "Làm mới",
+      "create": "Tạo",
+      "save": "Lưu",
+      "close": "Đóng",
+      "delete": "Xóa",
+      "edit": "Sửa",
+      "cancel": "Hủy",
+      "filterQuiz": "Lọc quiz",
+      "attachQuestion": "Gắn câu hỏi",
+      "moveUp": "Lên",
+      "moveDown": "Xuống",
+      "move": "Di chuyển",
+      "rename": "Đổi tên"
+    },
+    "columns": {
+      "title": "Tiêu đề",
+      "slug": "Slug",
+      "category": "Category",
+      "status": "Trạng thái",
+      "totalLessons": "Tổng bài học",
+      "updatedAt": "Cập nhật",
+      "actions": "Thao tác",
+      "position": "Vị trí",
+      "question": "Câu hỏi",
+      "type": "Loại"
+    },
+    "pagination": {
+      "total": "Tổng {total} khóa học",
+      "page": "Trang {page}",
+      "previous": "Trước",
+      "next": "Tiếp"
+    },
+    "confirm": {
+      "deleteCourse": "Xóa khóa học {title}?",
+      "deleteMapping": "Xóa mapping này?"
+    },
+    "empty": {
+      "noTags": "Chưa có tag.",
+      "noCategories": "Chưa có category.",
+      "noCourses": "Không tìm thấy khóa học.",
+      "noCourse": "Không tìm thấy khóa học.",
+      "noLesson": "Không tìm thấy bài học.",
+      "noMappings": "Chưa có câu hỏi nào được gắn.",
+      "noNodes": "Chưa có node nào."
+    },
+    "tabs": {
+      "metadata": "Metadata",
+      "tree": "Cây nội dung",
+      "markdown": "Markdown",
+      "video": "Video",
+      "miniquiz": "Mini-quiz",
+      "outline": "Outline"
+    },
+    "tree": {
+      "createFolderTitle": "Tạo thư mục",
+      "folderTitlePlaceholder": "tiêu đề thư mục",
+      "parentLabel": "Nút cha",
+      "parentRoot": "Gốc",
+      "positionPlaceholder": "vị trí",
+      "createFolder": "Tạo thư mục",
+      "createLessonNodeTitle": "Tạo node bài học",
+      "lessonNodeTitlePlaceholder": "tiêu đề node",
+      "lessonTitlePlaceholder": "tiêu đề bài học",
+      "markdownPlaceholder": "nội dung markdown",
+      "videoUrlPlaceholder": "URL video",
+      "createLessonNode": "Tạo node bài học",
+      "treeTitle": "Cây khóa học",
+      "renamePrompt": "Đổi tên node",
+      "movePrompt": "Di chuyển node tới parent id (để trống để về gốc)",
+      "deleteConfirm": "Xóa node này và toàn bộ cây con?",
+      "pathLabel": "path: {path}",
+      "badgeLesson": "Bài học",
+      "badgeFolder": "Thư mục",
+      "loadingChildren": "Đang tải node con...",
+      "emptyFolder": "Thư mục rỗng"
+    },
+    "lessonTypes": {
+      "markdown": "Markdown",
+      "video": "Video",
+      "miniquiz": "Mini-quiz"
+    },
+    "lesson": {
+      "markdownPlaceholder": "Nhập nội dung markdown cho bài học",
+      "previewTitle": "Xem trước",
+      "previewEmpty": "Chưa có nội dung.",
+      "videoUrlPlaceholder": "Dán URL video",
+      "videoPreviewEmpty": "Hãy nhập URL video để xem trước.",
+      "quizSelectorTitle": "Bộ chọn câu hỏi theo quiz",
+      "quizSearchPlaceholder": "Tìm quiz theo tiêu đề",
+      "quizSelectPlaceholder": "Chọn quiz",
+      "questionSelectPlaceholder": "Chọn câu hỏi",
+      "miniQuizHelp": "Gắn câu hỏi từ quiz đã chọn và sắp xếp thứ tự cho bài học này.",
+      "notMarkdown": "Bài học này không phải loại markdown.",
+      "notVideo": "Bài học này không phải loại video.",
+      "notMiniQuiz": "Bài học này không phải loại mini-quiz."
+    },
+    "outline": {
+      "deferredMessage": "Chỉnh sửa nguồn Outline được hoãn sang Task 5.8."
+    },
+    "errors": {
+      "invalidLessonId": "ID bài học không hợp lệ.",
+      "unauthenticated": "Bạn cần đăng nhập để tiếp tục.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "notFound": "Không tìm thấy tài nguyên yêu cầu.",
+      "validation": "Vui lòng kiểm tra các trường bắt buộc và thử lại.",
+      "slugConflict": "Slug khóa học đã tồn tại.",
+      "loadCoursesFailed": "Tải danh sách khóa học thất bại.",
+      "loadCourseDetailFailed": "Tải chi tiết khóa học thất bại.",
+      "loadTaxonomyFailed": "Tải category/tag thất bại.",
+      "createCourseFailed": "Tạo khóa học thất bại.",
+      "updateCourseFailed": "Cập nhật khóa học thất bại.",
+      "deleteCourseFailed": "Xóa khóa học thất bại.",
+      "createCategoryFailed": "Tạo category thất bại.",
+      "updateCategoryFailed": "Cập nhật category thất bại.",
+      "deleteCategoryFailed": "Xóa category thất bại.",
+      "createTagFailed": "Tạo tag thất bại.",
+      "updateTagFailed": "Cập nhật tag thất bại.",
+      "deleteTagFailed": "Xóa tag thất bại.",
+      "loadTreeFailed": "Tải cây khóa học thất bại.",
+      "loadTreeChildrenFailed": "Tải node con thất bại.",
+      "createFolderFailed": "Tạo thư mục thất bại.",
+      "createLessonNodeFailed": "Tạo node bài học thất bại.",
+      "renameNodeFailed": "Đổi tên node thất bại.",
+      "moveNodeFailed": "Di chuyển node thất bại.",
+      "reorderNodeFailed": "Sắp xếp node thất bại.",
+      "deleteNodeFailed": "Xóa node thất bại.",
+      "loadLessonFailed": "Tải bài học thất bại.",
+      "loadMappingsFailed": "Tải mapping bài học-câu hỏi thất bại.",
+      "loadQuizzesFailed": "Tải danh sách quiz thất bại.",
+      "loadQuizQuestionsFailed": "Tải câu hỏi quiz thất bại.",
+      "updateLessonFailed": "Cập nhật bài học thất bại.",
+      "markdownContentRequired": "Nội dung markdown là bắt buộc.",
+      "videoUrlRequired": "URL video là bắt buộc.",
+      "quizSelectionRequired": "Vui lòng chọn quiz và câu hỏi.",
+      "attachMappingFailed": "Gắn câu hỏi thất bại.",
+      "deleteMappingFailed": "Xóa mapping thất bại.",
+      "reorderMappingFailed": "Sắp xếp mapping thất bại."
+    }
+  },
   "profile": {
     "settingsTitle": "Hồ sơ cá nhân",
     "settingsSubtitle": "Quản lý thông tin hồ sơ, cài đặt và tài khoản của bạn.",

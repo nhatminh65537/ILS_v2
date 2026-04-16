@@ -1,4 +1,5 @@
 import { LessonType, LessonSource } from '@/types/course.types'
+import type { QuizQuestion } from '@/types/quiz.types'
 
 export interface LearnLessonDetail {
   readonly id: number
@@ -42,6 +43,36 @@ export interface LearnLessonProgress {
   readonly started_at: string | null
   readonly completed_at: string | null
   readonly is_completed: boolean
+}
+
+export interface AdminLearnLessonUpdatePayload {
+  title?: string
+  content_md?: string
+  video_url?: string | null
+  video_duration?: number | null
+  learning_point?: number
+  learning_time?: number | null
+}
+
+export interface AdminLearnLessonQuestionAttachPayload {
+  question_id: number
+  position?: number
+}
+
+export interface AdminLearnLessonQuestionReorderPayload {
+  position: number
+}
+
+export interface AdminLearnQuizOption {
+  id: number
+  title: string
+  status: string
+}
+
+export interface AdminLearnQuizQuestionOption {
+  id: number
+  label: string
+  question: QuizQuestion
 }
 
 export type LessonCompletionSignalType = 'markdown' | 'video' | 'miniquiz'

@@ -13,10 +13,26 @@ export const quizzesHandlers = [
     const limit = Number(url.searchParams.get('limit') ?? '10')
     const offset = Number(url.searchParams.get('offset') ?? '0')
     const status = url.searchParams.get('status')
+    const search = (url.searchParams.get('search') ?? '').trim().toLowerCase()
 
-    const filteredQuizzes = status && status !== 'all'
-      ? quizzesFixture.filter((quiz) => quiz.status === status)
-      : quizzesFixture
+    const filteredQuizzes = quizzesFixture
+      .filter((quiz) => {
+        if (!status || status === 'all') {
+          return true
+        }
+
+        return quiz.status === status
+      })
+      .filter((quiz) => {
+        if (!search) {
+          return true
+        }
+
+        return (
+          quiz.title.toLowerCase().includes(search) ||
+          (quiz.description ?? '').toLowerCase().includes(search)
+        )
+      })
 
     return HttpResponse.json(
       toPaginatedResponse(filteredQuizzes, {

@@ -123,6 +123,55 @@ export interface UpdateCoursePayload {
   estimated_time?: number
 }
 
+export interface AdminLearnCourseListParams {
+  search?: string
+  status?: ContentStatus | 'all'
+  category?: number
+  limit?: number
+  offset?: number
+}
+
+export interface AdminLearnCourseMutationPayload {
+  title: string
+  slug?: string
+  description?: string
+  status: ContentStatus
+  category_id?: number | null
+  tag_ids?: number[]
+  learning_point?: number
+  estimated_time?: number
+}
+
+export interface AdminLearnNodeLessonPayload {
+  title: string
+  lesson_type: LessonType
+  source?: LessonSource
+  content_md?: string | null
+  video_url?: string | null
+  video_duration?: number | null
+  learning_point?: number
+  learning_time?: number | null
+}
+
+export interface AdminLearnNodeCreatePayload {
+  title: string
+  parent_id?: number | null
+  position?: number
+  is_item: boolean
+  lesson?: AdminLearnNodeLessonPayload
+}
+
+export interface AdminLearnNodeUpdatePayload {
+  title?: string
+  parent_id?: number | null
+  position?: number
+}
+
+export interface AdminLearnStatusTogglePayload {
+  slug: string
+  status: ContentStatus
+}
+
 export type CourseListResponse = readonly Course[] | PaginatedResponse<Course>
 export type CourseCategoryListResponse = readonly CourseCategory[] | PaginatedResponse<CourseCategory>
 export type CourseTagListResponse = readonly CourseTag[] | PaginatedResponse<CourseTag>
