@@ -376,6 +376,13 @@ Notes:
 - Role-permission and user-role mapping changes invalidate permission cache for affected users.
 - Frontend RBAC admin pages are implemented at locale routes `/vi/admin/rbac`, `/en/admin/rbac`, `/vi/admin/rbac/roles/{id}`, and `/vi/admin/rbac/users/{id}/roles` using the same backend contracts.
 
+### 3.11 Statistics
+
+| Method | Path | Auth | Status | Notes |
+|---|---|---|---|---|
+| GET | `/api/admin/stats/` | Admin | Stable | Canonical admin overview endpoint for Slice 11. Returns `user_count`, `active_today`, and `solves_week`. |
+| GET | `/api/admin/stats/users/{id}/` | Admin | Stable | Canonical admin user detail endpoint for Slice 11. Returns nested `user`, `points`, `completion`, `activity`, and `sessions` groups for the selected user id. |
+
 ---
 
 ## 4. Planned APIs (Not Implemented Yet)
@@ -466,7 +473,7 @@ Notes:
 
 ### 4.4 Slice 11 — Statistics
 
-- Admin statistics: `/api/admin/stats/*` — see IMPL_PLAN Slice 11
+- Admin statistics endpoints are active — see §3.11.
 
 Note:
 - Quiz WebSocket (`ws://host/ws/quiz/{quiz_id}/`) and CRUD endpoints are active — see §3.6 and §3.6.1.

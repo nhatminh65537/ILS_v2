@@ -6,6 +6,7 @@ from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AdminStatsViewSet,
     AdminNotificationViewSet,
     AdminUserViewSet,
     UserViewSet,
@@ -36,6 +37,7 @@ router.register(r'challenges', ChallengeViewSet, basename='challenge')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
 router.register(r'stats/leaderboard', LeaderboardViewSet, basename='stats-leaderboard')
+router.register(r'admin/stats', AdminStatsViewSet, basename='admin-stats')
 router.register(r'admin/users', AdminUserViewSet, basename='admin-user')
 router.register(r'admin/notifications', AdminNotificationViewSet, basename='admin-notification')
 router.register(r'admin/config', SystemConfigViewSet, basename='admin-config')
@@ -52,6 +54,11 @@ user_role_detail_url = re_path(
     r'^users/(?P<user_id>\d+)/roles/(?P<role_id>\d+)/$',
     UserRoleViewSet.as_view({'delete': 'destroy'}),
     name='user-roles-detail'
+)
+admin_stats_user_detail_url = re_path(
+    r'^admin/stats/users/(?P<user_id>\d+)/$',
+    AdminStatsViewSet.as_view({'get': 'user_detail'}),
+    name='admin-stats-user-detail',
 )
 
 urlpatterns = [
@@ -189,4 +196,5 @@ urlpatterns = [
     # User roles custom routes
     user_roles_url,
     user_role_detail_url,
+    admin_stats_user_detail_url,
 ]

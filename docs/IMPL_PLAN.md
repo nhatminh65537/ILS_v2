@@ -1069,6 +1069,8 @@ GET /api/admin/stats/              → overview: user_count, active_today, solve
 GET /api/admin/stats/users/{id}/   → detailed user stats
 ```
 
+Implemented 2026-04-17 with `backend/api/services/admin_stats_service.py`, `backend/api/serializers/admin_stats.py`, `backend/api/views/admin_stats.py`, and regression coverage in `backend/api/tests/test_admin_stats_api.py`.
+
 ### Task 11.3 — Frontend: Leaderboard
 ```
 app/[locale]/(app)/leaderboard/page.tsx → tab switcher (overall | challenge | quiz | course) + rank table with avatar, score, rank delta badge; own rank highlight

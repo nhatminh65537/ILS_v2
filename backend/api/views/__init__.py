@@ -1,6 +1,7 @@
 """Public API view exports for router wiring."""
 
 from .admin_users import AdminUserViewSet, UserRoleViewSet
+from .admin_stats import AdminStatsViewSet
 from .auth import CustomTokenObtainPairView
 from .challenges import ChallengeViewSet
 from .courses import (
@@ -23,6 +24,7 @@ from .users import UserViewSet
 
 __all__ = [
     'AdminUserViewSet',
+    'AdminStatsViewSet',
     'ChallengeViewSet',
     'CourseViewSet',
     'CustomTokenObtainPairView',

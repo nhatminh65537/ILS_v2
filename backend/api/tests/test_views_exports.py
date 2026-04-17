@@ -9,3 +9,4 @@ def test_views_package_exports_router_viewsets():
     assert hasattr(views, 'QuizViewSet')
     assert hasattr(views, 'NotificationViewSet')
     assert hasattr(views, 'LeaderboardViewSet')
+    assert hasattr(views, 'AdminStatsViewSet')
