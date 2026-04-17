@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-17 (Slice 9 Task 9.1 notification API implemented and validated)
+> Last updated: 2026-04-17 (Slice 9 Task 9.2 auto-trigger signals implemented and validated)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -120,6 +120,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 5 / Task 5.6 (2026-04-15) | Implemented frontend lesson viewer delivery on canonical catalog route `/{locale}/courses/{slug}/lessons/{id}` with dedicated viewer orchestration (`LessonViewerClient`), lesson-type rendering (`markdown`, `video`, `miniquiz`), explicit start/complete actions (`/api/learn/lessons/{id}/progress/start|complete/`), guided completion signals, deterministic prev/next navigation from flattened course tree, localized error/loading states, and MSW lesson endpoint coverage (`/api/learn/lessons/*`); validation gates `lint`, `tsc --noEmit`, `next build` all pass. |
 | Slice 5 / Task 5.7 (2026-04-16) | Implemented frontend admin Learn course editor surface on `/{locale}/admin/learn/*`: course list/create/editor pages, metadata + taxonomy inline CRUD, course tree authoring (folder/lesson node create, rename, move, reorder, delete), and lesson editor tabs (`markdown`, `video`, `miniquiz`, deferred `outline`); mini-quiz now supports quiz-filtered question selection (`/api/quiz/quizzes/` -> `/api/quiz/quizzes/{id}/questions/` -> attach mapping), with i18n parity (`adminLearn.*` in en/vi), MSW contract expansion for learn write endpoints, and frontend validation gates (`lint`, `tsc --noEmit`, `next build`) passing. |
 | Slice 9 / Task 9.1 (2026-04-17) | Notification API implemented: `/api/notifications/` list ordered unread-first, `/api/notifications/{id}/mark-read/`, `/api/notifications/mark-all-read/`, `/api/notifications/unread-count/`, and admin `/api/admin/notifications/broadcast/`; broadcast creates one notification per active user; focused tests (`backend/api/tests/test_notification_api.py`) and RBAC regression (`backend/api/tests/test_rbac_api.py`) pass. |
+| Slice 9 / Task 9.2 (2026-04-17) | Auto-trigger notifications implemented via backend signals and shared helper: course completion now emits `COURSE`, challenge completion emits `CHALLENGE`, quiz completion emits `QUIZ`; `event_key` deduplication added to `notification`; focused signal tests and adjacent regressions pass. |
 
 ---
 
@@ -167,6 +168,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 5 / Task 5.6 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-6-frontend-lesson-viewer.md` |
 | Slice 5 / Task 5.7 (2026-04-16) | `docs/reports/2026-04-16_slice5-task5-7-frontend-course-editor.md` |
 | Slice 9 / Task 9.1 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-1-notification-api.md` |
+| Slice 9 / Task 9.2 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-2-auto-trigger-signals.md` |
 
 ---
 

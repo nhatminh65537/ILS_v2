@@ -5,10 +5,50 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Max, F
 
-from .models import CourseNode, UserLessonProgress, UserProfile, UserQuizAttempt, UserQuizProgress
+from .models import (
+    CourseNode,
+    Notification,
+    UserChallengeProgress,
+    UserLessonProgress,
+    UserProfile,
+    UserQuizAttempt,
+    UserQuizProgress,
+)
 from .services.learn_progress_service import LearnProgressService
+from .services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
+
+
+@receiver(post_save, sender=UserChallengeProgress)
+def handle_challenge_progress_saved(sender, instance, created, **kwargs):
+    """Create challenge completion notification when progress transitions to completed."""
+    if instance.completed_at is None:
+        return
+
+    try:
+        challenge = instance.challenge
+        NotificationService.create_notification(
+            user=instance.user,
+            type=Notification.NotificationType.CHALLENGE,
+            title='Challenge Solved!',
+            message=f'You solved: {challenge.title}',
+            metadata={
+                'resource_type': 'challenge',
+                'resource_id': challenge.id,
+                'resource_title': challenge.title,
+                'points_awarded': int(challenge.challenge_point or 0),
+            },
+            event_key=f'auto_challenge_complete:{instance.user.id}:{challenge.id}',
+        )
+    except Exception as exc:
+        logger.error(
+            'Signal error creating challenge notification for progress %s: %s',
+            instance.id,
+            str(exc),
+            exc_info=True,
+        )
+        raise
 
 
 @receiver(post_save, sender=UserLessonProgress)
@@ -28,10 +68,26 @@ def handle_lesson_progress_saved(sender, instance, created, **kwargs):
             )
             return
 
-        LearnProgressService.recompute_course_progress(
+        _, transitioned_to_completion = LearnProgressService.recompute_course_progress(
             user=instance.user,
             course=node.course,
+            return_transition=True,
         )
+
+        if transitioned_to_completion:
+            NotificationService.create_notification(
+                user=instance.user,
+                type=Notification.NotificationType.COURSE,
+                title='Course Completed!',
+                message=f'You completed: {node.course.title}',
+                metadata={
+                    'resource_type': 'course',
+                    'resource_id': node.course.id,
+                    'resource_title': node.course.title,
+                    'points_awarded': int(node.course.learning_point or 0),
+                },
+                event_key=f'auto_course_complete:{instance.user.id}:{node.course.id}',
+            )
     except Exception as exc:
         logger.error(
             'Signal error updating UserCourseProgress for lesson progress %s: %s',
@@ -142,6 +198,20 @@ def handle_quiz_attempt_finished(sender, instance, created, **kwargs):
             UserProfile.objects.filter(pk=profile.pk).update(
                 quiz_completed=F('quiz_completed') + 1,
                 total_quiz_point=F('total_quiz_point') + quiz_point,
+            )
+
+            NotificationService.create_notification(
+                user=instance.user,
+                type=Notification.NotificationType.QUIZ,
+                title='Quiz Completed!',
+                message=f'You completed: {instance.quiz.title}',
+                metadata={
+                    'resource_type': 'quiz',
+                    'resource_id': instance.quiz.id,
+                    'resource_title': instance.quiz.title,
+                    'points_awarded': int(quiz_point),
+                },
+                event_key=f'auto_quiz_complete:{instance.user.id}:{instance.quiz.id}',
             )
         
         action = "created" if created_progress else "updated"

@@ -1970,6 +1970,13 @@ class Notification(FullAudit):
     )
     title = models.TextField()
     message = models.TextField()
+    event_key = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Stable deduplication key for auto-generated notifications"
+    )
     metadata = models.JSONField(
         null=True,
         blank=True,
@@ -1990,6 +1997,9 @@ class Notification(FullAudit):
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['is_read']),
             models.Index(fields=['is_broadcast']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'event_key'], name='uq_notification_user_event_key'),
         ]
         ordering = ['-created_at']
     

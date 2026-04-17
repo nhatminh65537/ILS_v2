@@ -1,6 +1,6 @@
 from django.utils import timezone
 
-from api.models import Challenge, ChallengeInstance, Notification, UserChallengeProgress, UserChallengeSubmit
+from api.models import Challenge, ChallengeInstance, UserChallengeProgress, UserChallengeSubmit, UserProfile
 
 
 class ChallengeService:
@@ -65,18 +65,10 @@ class ChallengeService:
         progress.completed_at = timezone.now()
         progress.save()
 
-        profile = user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.total_challenge_point += challenge.challenge_point
         profile.save()
         profile.update_leaderboard_rank()
-
-        Notification.objects.create(
-            user=user,
-            type=Notification.NotificationType.CHALLENGE,
-            title='Challenge Solved!',
-            message=f'You solved: {challenge.title}',
-            metadata={'challenge_id': challenge.id},
-        )
 
     @staticmethod
     def get_running_instance(challenge, user):

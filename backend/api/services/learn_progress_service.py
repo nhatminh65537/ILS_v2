@@ -126,7 +126,13 @@ class LearnProgressService:
         return lesson_progress, transitioned
 
     @classmethod
-    def recompute_course_progress(cls, user, course: Course, course_progress: UserCourseProgress | None = None) -> dict:
+    def recompute_course_progress(
+        cls,
+        user,
+        course: Course,
+        course_progress: UserCourseProgress | None = None,
+        return_transition: bool = False,
+    ) -> dict:
         course_progress = course_progress or cls.get_or_create_course_progress(user=user, course=course, actor=None)
         previous_completed_at = course_progress.completed_at
 
@@ -176,7 +182,13 @@ class LearnProgressService:
             new_completed_at=course_progress.completed_at,
         )
 
-        return cls._build_course_progress_payload(course_progress)
+        payload = cls._build_course_progress_payload(course_progress)
+        transitioned_to_completion = previous_completed_at is None and course_progress.completed_at is not None
+
+        if return_transition:
+            return payload, transitioned_to_completion
+
+        return payload
 
     @classmethod
     def recompute_course_progress_if_stale(cls, user, course: Course) -> dict:
