@@ -53,6 +53,11 @@ from .quiz import (
 	QuizTagSerializer,
 	UserQuizProgressSerializer,
 )
+from .leaderboard import (
+	LeaderboardEntrySerializer,
+	LeaderboardResponseSerializer,
+	LeaderboardUserSerializer,
+)
 from .system import (
 	AuditLogSerializer,
 	NotificationBroadcastSerializer,

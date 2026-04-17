@@ -1058,8 +1058,9 @@ Floating slide-in panel in lesson/challenge pages. Mode selector, textarea input
 
 ### Task 11.1 — Leaderboard API
 ```
-GET /api/leaderboard/?type=overall|challenge|quiz|course&page=1
-→ [{rank, user: {id, username, avatar}, score, delta}]
+GET /api/stats/leaderboard/?type=overall|challenge|quiz|course&page=1
+Compatibility alias: GET /api/leaderboard/?type=overall|challenge|quiz|course&page=1
+→ {type, my_rank, total_users, results:[{rank, user:{id, username, display_name, avatar_url, avatar}, score, delta}], entries:[...], total_count}
 ```
 
 ### Task 11.2 — Admin stats API

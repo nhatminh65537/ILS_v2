@@ -334,7 +334,8 @@ Still pending in Slice 9:
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/leaderboard/` | Yes | Partial | Service exists; broader statistics slice still pending. |
+| GET | `/api/stats/leaderboard/` | Yes | Stable | Canonical leaderboard endpoint for Slice 11. Supports `type=overall|challenge|quiz|course`, returns `type`, `my_rank`, `total_users`, and paged `results`. |
+| GET | `/api/leaderboard/` | Yes | Stable | Compatibility alias that returns the same payload as `/api/stats/leaderboard/`. |
 
 ### 3.9 System Config
 

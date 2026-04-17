@@ -287,7 +287,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Leaderboard API | Low | |
+| Leaderboard API | Low | ✅ Completed 2026-04-17: canonical `/api/stats/leaderboard/` plus compatibility alias `/api/leaderboard/` implemented with dense-rank results, `my_rank`, `total_users`, and regression coverage in `backend/api/tests/test_leaderboard_api.py`. |
 | Admin stats API | Low | |
 | Frontend: Leaderboard + admin stats | Low | |
 
