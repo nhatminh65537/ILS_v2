@@ -305,6 +305,11 @@ Task 9.1 update (2026-04-17):
 - User list ordering is deterministic: unread first, then `created_at` descending.
 - Broadcast endpoint creates one `Notification` row per active user (`is_broadcast=true`).
 
+Task 9.2 + 9.3 update (2026-04-17):
+- Auto-trigger signals are active for challenge/course/quiz completion with `event_key` deduplication.
+- WebSocket realtime delivery is active at `/ws/notifications/` using first-message JWT auth.
+- Realtime channel group is `notifications_{user_id}` and receives event payloads from NotificationService.
+
 Active:
 
 | Method | Path | Auth | Status | Notes |
@@ -316,9 +321,13 @@ Active:
 | GET | `/api/notifications/unread-count/` | Yes | Stable | Returns unread badge payload: `{count: N}`. |
 | POST | `/api/admin/notifications/broadcast/` | Yes (Admin) | Stable | Broadcast notification to all active users; response includes `recipient_count`. |
 
+Active WebSocket:
+
+| Protocol | Path | Auth | Status | Notes |
+|---|---|---|---|---|
+| WS | `/ws/notifications/` | First-message JWT (`{"type":"auth","token":"..."}`) | Stable | Subscribes current user to `notifications_{user_id}` and pushes `{"type":"notification","data":{...}}` events for newly-created notifications. |
+
 Still pending in Slice 9:
-- Task 9.2 signal-triggered auto notifications.
-- Task 9.3 WebSocket notification delivery channel.
 - Task 9.4/9.5 frontend inbox, bell, and admin broadcast UI.
 
 ### 3.8 Leaderboard

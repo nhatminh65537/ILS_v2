@@ -28,7 +28,7 @@ def handle_challenge_progress_saved(sender, instance, created, **kwargs):
 
     try:
         challenge = instance.challenge
-        NotificationService.create_notification(
+        _, created_notification = NotificationService.create_notification(
             user=instance.user,
             type=Notification.NotificationType.CHALLENGE,
             title='Challenge Solved!',
@@ -40,7 +40,10 @@ def handle_challenge_progress_saved(sender, instance, created, **kwargs):
                 'points_awarded': int(challenge.challenge_point or 0),
             },
             event_key=f'auto_challenge_complete:{instance.user.id}:{challenge.id}',
+            return_created=True,
         )
+        if not created_notification:
+            logger.debug('Skip duplicate challenge notification for user %s challenge %s', instance.user_id, challenge.id)
     except Exception as exc:
         logger.error(
             'Signal error creating challenge notification for progress %s: %s',
@@ -75,7 +78,7 @@ def handle_lesson_progress_saved(sender, instance, created, **kwargs):
         )
 
         if transitioned_to_completion:
-            NotificationService.create_notification(
+            _, created_notification = NotificationService.create_notification(
                 user=instance.user,
                 type=Notification.NotificationType.COURSE,
                 title='Course Completed!',
@@ -87,7 +90,10 @@ def handle_lesson_progress_saved(sender, instance, created, **kwargs):
                     'points_awarded': int(node.course.learning_point or 0),
                 },
                 event_key=f'auto_course_complete:{instance.user.id}:{node.course.id}',
+                return_created=True,
             )
+            if not created_notification:
+                logger.debug('Skip duplicate course notification for user %s course %s', instance.user_id, node.course_id)
     except Exception as exc:
         logger.error(
             'Signal error updating UserCourseProgress for lesson progress %s: %s',
@@ -200,7 +206,7 @@ def handle_quiz_attempt_finished(sender, instance, created, **kwargs):
                 total_quiz_point=F('total_quiz_point') + quiz_point,
             )
 
-            NotificationService.create_notification(
+            _, created_notification = NotificationService.create_notification(
                 user=instance.user,
                 type=Notification.NotificationType.QUIZ,
                 title='Quiz Completed!',
@@ -212,7 +218,10 @@ def handle_quiz_attempt_finished(sender, instance, created, **kwargs):
                     'points_awarded': int(quiz_point),
                 },
                 event_key=f'auto_quiz_complete:{instance.user.id}:{instance.quiz.id}',
+                return_created=True,
             )
+            if not created_notification:
+                logger.debug('Skip duplicate quiz notification for user %s quiz %s', instance.user_id, instance.quiz_id)
         
         action = "created" if created_progress else "updated"
         logger.info(
