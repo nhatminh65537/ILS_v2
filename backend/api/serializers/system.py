@@ -74,6 +74,21 @@ class NotificationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'read_at']
 
 
+class NotificationBroadcastSerializer(serializers.Serializer):
+    """Admin broadcast payload serializer."""
+
+    type = serializers.ChoiceField(choices=Notification.NotificationType.choices)
+    title = serializers.CharField()
+    message = serializers.CharField()
+    metadata = serializers.JSONField(required=False, allow_null=True)
+
+
+class NotificationUnreadCountSerializer(serializers.Serializer):
+    """Unread counter serializer."""
+
+    count = serializers.IntegerField(min_value=0)
+
+
 class AuditLogSerializer(serializers.ModelSerializer):
     """Audit log serializer"""
 

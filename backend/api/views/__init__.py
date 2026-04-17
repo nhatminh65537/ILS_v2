@@ -14,7 +14,7 @@ from .courses import (
     LessonViewSet,
 )
 from .leaderboard import LeaderboardViewSet
-from .notifications import NotificationViewSet
+from .notifications import AdminNotificationViewSet, NotificationViewSet
 from .permissions import PermissionViewSet
 from .quizzes import QuizNodeViewSet, QuizViewSet
 from .roles import RoleViewSet
@@ -34,6 +34,7 @@ __all__ = [
     'LearnCourseTagViewSet',
     'LearnCourseViewSet',
     'LessonViewSet',
+    'AdminNotificationViewSet',
     'NotificationViewSet',
     'PermissionViewSet',
     'QuizNodeViewSet',

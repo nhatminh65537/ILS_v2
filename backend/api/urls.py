@@ -6,6 +6,7 @@ from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AdminNotificationViewSet,
     AdminUserViewSet,
     UserViewSet,
     CourseViewSet, LessonViewSet,
@@ -35,6 +36,7 @@ router.register(r'challenges', ChallengeViewSet, basename='challenge')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
 router.register(r'admin/users', AdminUserViewSet, basename='admin-user')
+router.register(r'admin/notifications', AdminNotificationViewSet, basename='admin-notification')
 router.register(r'admin/config', SystemConfigViewSet, basename='admin-config')
 router.register(r'admin/permissions', PermissionViewSet, basename='permission')
 router.register(r'admin/roles', RoleViewSet, basename='role')

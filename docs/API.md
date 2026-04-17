@@ -300,21 +300,26 @@ SERVER → {"type": "error", "code": "already_answered", "message": "Question al
 
 ### 3.7 Notifications
 
-Active (runtime routes exist; full Slice 9 signal pipeline + frontend inbox pending):
+Task 9.1 update (2026-04-17):
+- Notification inbox API and admin broadcast API are active.
+- User list ordering is deterministic: unread first, then `created_at` descending.
+- Broadcast endpoint creates one `Notification` row per active user (`is_broadcast=true`).
+
+Active:
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/notifications/` | Yes | Partial | List notifications (unread first); Slice 9 signal pipeline pending. |
-| GET | `/api/notifications/{id}/` | Yes | Partial | Notification detail; Slice 9 signal pipeline pending. |
-| POST | `/api/notifications/{id}/mark-read/` | Yes | Partial | Mark single notification as read; Slice 9 full flow pending. |
+| GET | `/api/notifications/` | Yes | Stable | List current user's notifications (unread first, then newest first). |
+| GET | `/api/notifications/{id}/` | Yes | Stable | Notification detail for current user scope. |
+| POST | `/api/notifications/{id}/mark-read/` | Yes | Stable | Mark one owned notification as read (`404` if not owned). |
+| POST | `/api/notifications/mark-all-read/` | Yes | Stable | Mark all unread notifications of current user as read. |
+| GET | `/api/notifications/unread-count/` | Yes | Stable | Returns unread badge payload: `{count: N}`. |
+| POST | `/api/admin/notifications/broadcast/` | Yes (Admin) | Stable | Broadcast notification to all active users; response includes `recipient_count`. |
 
-Planned for Slice 9 (not yet active):
-
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| POST | `/api/notifications/mark-all-read/` | Yes | Mark all notifications as read for current user. |
-| GET | `/api/notifications/unread-count/` | Yes | Returns `{count: N}` for unread badge. |
-| POST | `/api/admin/notifications/broadcast/` | Admin | Admin broadcast to all users. |
+Still pending in Slice 9:
+- Task 9.2 signal-triggered auto notifications.
+- Task 9.3 WebSocket notification delivery channel.
+- Task 9.4/9.5 frontend inbox, bell, and admin broadcast UI.
 
 ### 3.8 Leaderboard
 
