@@ -2,6 +2,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR
 from api.services.permission_service import PermissionService
 from api.models import UserSession
 from auth_app.constants import (
@@ -26,13 +27,16 @@ class TokenService:
 
     def issue_tokens(self, user) -> dict:
         permissions = self.get_or_refresh_permission_cache(user)
+        admin_surface = self._has_admin_surface_access(user)
         refresh = RefreshToken.for_user(user)
         refresh['permissions'] = permissions
         refresh['pv'] = user.permission_version
+        refresh['admin_surface'] = admin_surface
 
         access = refresh.access_token
         access['permissions'] = permissions
         access['pv'] = user.permission_version
+        access['admin_surface'] = admin_surface
 
         return {
             'access': str(access),
@@ -41,6 +45,12 @@ class TokenService:
 
     def get_or_refresh_permission_cache(self, user) -> str:
         return PermissionService.get_or_refresh_cache(user)
+
+    def _has_admin_surface_access(self, user) -> bool:
+        if getattr(user, 'is_superuser', False):
+            return True
+
+        return user.user_roles.filter(role__name__in=[BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR]).exists()
 
     def refresh_tokens(self, refresh_token: str, device_info: str = '') -> dict:
         refresh_hash = self.session_service.hash_token(refresh_token)

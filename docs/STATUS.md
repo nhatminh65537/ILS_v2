@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-17 (Slice 9 Task 9.3 WebSocket notification delivery implemented and validated)
+> Last updated: 2026-04-19 (Admin surface token-claim guard bugfix completed and documented)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -91,7 +91,8 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 2 / Task 2.4 (2026-04-01) | Frontend admin RBAC UI implemented for locale routes (`/vi/admin/rbac`, `/en/admin/rbac`, `/vi/admin/rbac/roles/{id}`, `/vi/admin/rbac/users/{id}/roles`) with typed RBAC service/hook layer, role CRUD/assignment flows, user-role assignment page, i18n coverage, and permission-aware rendering gates from JWT claims. |
 | Slice 3 / Task 3.1 (2026-03-30) | System Config admin API implemented at `/api/admin/config/*` with grouped list response, key-based detail/update (`lookup_field=key`), PATCH type validation by `value_type`, secret masking (`***`), `is_editable=false` guard (`403`), cache invalidation after update, and pytest coverage (`9 passed`) |
 | Slice 3 / Task 3.2 (2026-04-01) | Frontend System Config admin UI implemented for locale routes (`/vi/admin/config`, `/en/admin/config`) with typed service/hook architecture, category-grouped accordion rendering, value-type aware editors (`bool`, `int`, `string`, `json`, `secret`), secret update confirmation flow, i18n support, and dashboard navigation entry. |
-| Frontend Admin Access Gate (2026-04-01) | Temporarily removed permission-catalog-based redirect gate in `AdminAccessGate` due to partial/paginated permission catalog response causing false-negative admin checks and redirect to `/{locale}/dashboard`; current behavior keeps auth-only gate pending replacement by a stable admin-access mechanism (token claim expansion or dedicated server access flag). |
+| Frontend Admin Access Gate (2026-04-01 → 2026-04-19) | Initial temporary fix removed the unstable permission-catalog gate and kept auth-only guard; current implementation now uses backend-issued JWT `admin_surface` claim gating so member accounts cannot enter admin routes while Admin/Editor users retain stable access without permission-catalog coupling. |
+| Admin surface token guard bugfix (2026-04-19) | Backend `TokenService` now emits `admin_surface` for Admin/Editor role membership; frontend admin routes and `/admin/login` consume that claim to reject non-admin-surface accounts immediately, closing active bugs H3/H7. |
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
 | Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
 | Frontend Surface Split + Admin Auth Entry (2026-04-01) | Implemented route-level user/admin surface separation with dedicated admin login (`/{locale}/admin/login`), removed admin-register flow, added full shell layouts (navbar/sidebar/content/footer) for user/admin protected surfaces, moved admin routes out of user route group, and aligned MSW handlers with backend RBAC/system-config contracts including JWT permission bitmap claims for frontend capability checks. |
@@ -171,6 +172,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.1 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-1-notification-api.md` |
 | Slice 9 / Task 9.2 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-2-auto-trigger-signals.md` |
 | Slice 9 / Task 9.3 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-3-websocket-delivery.md` |
+| Admin surface token guard bugfix (2026-04-19) | `docs/reports/2026-04-19_admin-surface-token-guard.md` |
 
 ---
 

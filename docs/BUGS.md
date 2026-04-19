@@ -11,8 +11,7 @@
 
 | # | File | Description | Fix |
 |---|------|-------------|-----|
-| H3 | `frontend/src/components/layouts/AdminAccessGate.tsx` + admin routes `frontend/app/[locale]/(admin)/admin/(protected)/*` | **Admin route authorization bypass ở frontend:** user đã đăng nhập nhưng không có quyền admin (ví dụ `member3`) vẫn truy cập được `/vi/admin/users` trong phiên test Slice 8 (F-1-5 fail). Hiện guard chỉ kiểm tra authenticated, không kiểm tra role/permission claim. Khi backend chạy với authz bypass hoặc kiểm tra chưa chặt sẽ thành lỗ hổng truy cập bề mặt quản trị. | Bổ sung authorization gate cho admin surface dựa trên claims/permission đã chuẩn hóa (không dùng Django built-in). Giữ route-level deny rõ ràng (redirect admin login hoặc 403) cho non-admin. |
-| H7 | `frontend/app/[locale]/(admin)/admin/users/*` + admin routing guard | **Route admin users không truy cập được ổn định:** browser integration 2026-04-14 cho thấy điều hướng tới `/vi/admin/users` bị trả về `/vi/admin/rbac`, làm checklist Slice 8 Task 8.4 không verify được end-to-end UI. | Kiểm tra route mapping/redirect trong admin shell + middleware/guard; đảm bảo `/admin/users` giữ nguyên URL và render user management page cho admin token hợp lệ. |
+| - | - | No active high bugs currently tracked. | - |
 
 ### Medium — Degrades functionality
 
@@ -63,6 +62,7 @@
 | F23 | 2026-04-14 | `backend/api/serializers/quiz.py`, `backend/api/tests/test_quiz_api.py` | **M10**: Thiếu ràng buộc `quiz_point >= 0` khi tạo/cập nhật quiz. | Thêm `quiz_point = IntegerField(min_value=0)` trong `QuizListSerializer` và thêm regression test tạo quiz điểm âm trả `400`. |
 | F24 | 2026-04-14 | `backend/api/services/quiz_service.py`, `backend/api/tests/test_quiz_api.py` | **M8**: Member vẫn lọc được draft quiz qua query param `status`. | Đổi thứ tự filter visibility: nếu không phải admin/editor thì luôn ép `status=published`, bỏ qua `status` client gửi; thêm regression test `status=draft` vẫn chỉ trả published. |
 | F25 | 2026-04-14 | `backend/api/serializers/user.py`, `backend/api/tests/test_profile_api.py` | **M11**: Settings API chưa validate enum `language`/`theme`. | Thêm validator rõ ràng cho `MeSettingsUpdateSerializer` (`language`: `vi|en`, `theme`: `system|light|dark`) và thêm negative test cho payload `language=fr`, `theme=blue` trả `400`. |
+| F26 | 2026-04-19 | `backend/auth_app/services/token_service.py`, `frontend/src/components/layouts/AdminAccessGate.tsx`, `frontend/src/components/features/auth/AdminLoginForm.tsx`, `frontend/src/lib/rbac-claim.ts` | **H3 + H7**: frontend admin surface only checked authenticated state, allowing member accounts onto admin routes and destabilizing `/admin/users` verification. | Added `admin_surface` JWT claim derived from backend `Admin`/`Editor` role membership, wired the frontend admin guard to that claim, rejected non-admin-surface admin logins immediately, and aligned MSW mock tokens/messages with the same contract. |
 
 ---
 

@@ -7,6 +7,7 @@ import type {
 
 type JwtPayload = {
   permissions?: string
+  admin_surface?: boolean
 }
 
 const decodeBase64Url = (value: string): string => {
@@ -63,6 +64,11 @@ export const decodePermissionBitmap = (bitmapBase64: string): Set<number> => {
 const getGrantedIds = (accessToken: string | null | undefined): Set<number> => {
   const payload = decodeJwtPayload(accessToken)
   return decodePermissionBitmap(payload?.permissions ?? '')
+}
+
+export const hasAdminSurfaceAccess = (accessToken: string | null | undefined): boolean => {
+  const payload = decodeJwtPayload(accessToken)
+  return payload?.admin_surface === true
 }
 
 const resolvePermissionId = (

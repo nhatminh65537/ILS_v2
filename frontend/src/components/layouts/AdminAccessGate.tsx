@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { hasAdminSurfaceAccess } from '@/lib/rbac-claim'
 import { useAuthStore } from '@/stores/auth.store'
 
 type AdminAccessGateProps = {
@@ -63,14 +64,21 @@ const useAuthGuardState = (): { isReady: boolean; isAuthenticated: boolean } => 
 export function AdminAccessGate({ locale, loadingLabel, children }: AdminAccessGateProps) {
   const router = useRouter()
   const { isReady, isAuthenticated } = useAuthGuardState()
+  const accessToken = useAuthStore((state) => state.accessToken)
+  const canAccessAdminSurface = useMemo(() => hasAdminSurfaceAccess(accessToken), [accessToken])
 
   useEffect(() => {
     if (isReady && !isAuthenticated) {
       router.replace(`/${locale}/admin/login`)
+      return
     }
-  }, [isAuthenticated, isReady, locale, router])
 
-  if (!isReady || !isAuthenticated) {
+    if (isReady && isAuthenticated && !canAccessAdminSurface) {
+      router.replace(`/${locale}/dashboard`)
+    }
+  }, [canAccessAdminSurface, isAuthenticated, isReady, locale, router])
+
+  if (!isReady || !isAuthenticated || !canAccessAdminSurface) {
     return <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">{loadingLabel}</div>
   }
 

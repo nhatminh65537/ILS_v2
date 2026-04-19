@@ -94,11 +94,13 @@ export const getPermissionIdsByNames = (names: readonly string[]): number[] =>
 
 export const buildMockAccessToken = (userId: number, permissionIds: readonly number[]): string => {
   const header = encodeBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const adminSurface = permissionIds.length > 0
   const payload = encodeBase64Url(
     JSON.stringify({
       sub: String(userId),
       permissions: encodePermissionBitmap(permissionIds),
       pv: 1,
+      admin_surface: adminSurface,
     })
   )
   return `${header}.${payload}.mock-signature`

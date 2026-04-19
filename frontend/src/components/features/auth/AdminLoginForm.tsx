@@ -3,10 +3,12 @@
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { hasAdminSurfaceAccess } from '@/lib/rbac-claim'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/stores/auth.store'
 
 type AdminLoginFormProps = {
   locale: string
@@ -16,7 +18,8 @@ export function AdminLoginForm({ locale }: AdminLoginFormProps) {
   const t = useTranslations('adminAuth')
   const tRoot = useTranslations()
   const router = useRouter()
-  const { login, isLoading } = useAuth()
+  const { login, logout, isLoading } = useAuth()
+  const accessToken = useAuthStore((state) => state.accessToken)
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -41,6 +44,12 @@ export function AdminLoginForm({ locale }: AdminLoginFormProps) {
 
     if (!result.success) {
       setErrorMessageKey(result.messageKey ?? 'auth.errors.loginFailed')
+      return
+    }
+
+    if (!hasAdminSurfaceAccess(useAuthStore.getState().accessToken ?? accessToken)) {
+      await logout()
+      setErrorMessageKey('adminAuth.errors.accessDenied')
       return
     }
 

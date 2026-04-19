@@ -31,6 +31,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Components
 
+- **admin surface token gate (2026-04-19)**: backend `TokenService` now emits JWT claim `admin_surface` for users with built-in `Admin` or `Editor` roles; frontend admin route guard and admin login consume this claim to deny member accounts before rendering admin pages.
 - **frontend admin Learn editor (Slice 5 Task 5.7)**: Admin surface routes `/{locale}/admin/learn/courses`, `/new`, `/{slug}`, and `/{locale}/admin/learn/lessons/{id}` implemented with course list/create/edit, taxonomy inline CRUD (category/tag dialogs), tree authoring (folder/lesson node create, rename, move, reorder, delete), and lesson tabs (`markdown`, `video`, `miniquiz`, deferred `outline`).
 - **api app**: All domain models and current domain viewsets for users, courses, lessons, challenges, quizzes, notifications, leaderboard, and system config.
 - **frontend lesson viewer (Slice 5 Task 5.6)**: User lesson route `/{locale}/courses/{slug}/lessons/{id}` delivered with `LessonViewerClient`, type-specific renderers (`LessonMarkdownContent`, `LessonVideoContent`, `LessonMiniQuizContent`), sidebars (`LessonCourseTreeSidebar`, `LessonProgressSidebar`), and canonical lesson API service (`lessons.service.ts`).
@@ -49,6 +50,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Status
 
+- Admin surface token-guard bugfix completed on 2026-04-19: frontend admin route gating no longer relies on authenticated-only state; `admin_surface` JWT claim now controls route-level access and closes prior H3/H7 regressions for member access to admin surface and unstable `/admin/users` verification.
 - Slice 5 Task 5.7 completed on 2026-04-16: frontend admin Learn course editor is active with canonical admin routes, typed service/hook orchestration, quiz-filtered mini-quiz mapping flow (`/api/quiz/quizzes/` -> `/api/quiz/quizzes/{id}/questions/` -> `/api/learn/lessons/{id}/questions/`), i18n parity (`adminLearn.*` in en/vi), and MSW write-contract coverage; validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
 - All domain ORM models complete; API layer is partially implemented and tracked in `docs/API.md`
 - Slice 5 Task 5.6 completed on 2026-04-15: frontend lesson viewer is active on `/{locale}/courses/{slug}/lessons/{id}` with explicit start/complete actions (`/api/learn/lessons/{id}/progress/start|complete/`), guided completion signals by lesson type (markdown/video/miniquiz), deterministic prev/next navigation derived from flattened course tree, and lesson API/MSW alignment (`/api/learn/lessons/*`); frontend validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
@@ -89,6 +91,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Patterns
 
+- **Admin surface access pattern**: Use a backend-issued JWT claim such as `admin_surface` for route-level frontend gating of admin shells; do not depend on paginated permission-catalog fetches to decide whether a user can enter the admin surface.
 - **Mini-quiz quiz-filter selector pattern (admin Learn)**: For lesson mini-quiz mapping, always select question in three deterministic steps: filter/load quizzes (`status`, `search`) -> load questions for selected quiz -> attach selected question by `question_id`; avoid global question search endpoint assumptions.
 - **Admin Learn tree mutation refresh pattern**: After node create/move/reorder/delete, refresh tree state deterministically (root + cached branch invalidation) so client ordering/path displays stay consistent with backend canonical node order.
 - **Dot-separated `path`** for all tree structures (e.g., `"1.3"`) — lazy loading via `parent_id` filter is primary; `path` for depth/validation only

@@ -78,6 +78,9 @@
     "passwordPlaceholder": "nhập mật khẩu quản trị",
     "loginButton": "Vào cổng quản trị",
     "loading": "Đang đăng nhập...",
+    "errors": {
+      "accessDenied": "Tài khoản này không có quyền truy cập bề mặt quản trị."
+    },
     "userLoginHint": "Cần chức năng người dùng thông thường?",
     "userLoginLink": "Đi tới đăng nhập người dùng"
   },

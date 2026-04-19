@@ -26,6 +26,15 @@ def _set_config(key: str, value, value_type=SystemConfig.ConfigType.BOOL, is_run
     )
 
 
+def _assign_role(user, role_name: str):
+    role, _ = Role.objects.get_or_create(
+        name=role_name,
+        defaults={'description': f'{role_name} role', 'is_system': True},
+    )
+    UserRole.objects.get_or_create(user=user, role=role)
+    return role
+
+
 @pytest.fixture(autouse=True)
 def clear_login_cache():
     cache.clear()
@@ -97,6 +106,38 @@ class TestAuthApp:
         session = UserSession.objects.filter(user=member_user).latest('id')
         assert session.device_info == 'pytest-device'
         assert session.refresh_token_hash == hashlib.sha256(response.data['refresh'].encode('utf-8')).hexdigest()
+
+    def test_login_member_token_does_not_grant_admin_surface(self, api_client, member_user):
+        response = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': member_user.username,
+                'password': 'MemberPass123!',
+            },
+            format='json',
+        )
+
+        assert response.status_code == 200
+
+        access = AccessToken(response.data['access'])
+        assert access['admin_surface'] is False
+
+    def test_login_editor_token_grants_admin_surface(self, api_client, editor_user):
+        _assign_role(editor_user, 'Editor')
+
+        response = api_client.post(
+            '/api/auth/login/',
+            {
+                'username': editor_user.username,
+                'password': 'EditorPass123!',
+            },
+            format='json',
+        )
+
+        assert response.status_code == 200
+
+        access = AccessToken(response.data['access'])
+        assert access['admin_surface'] is True
 
     def test_login_rate_limit_after_five_failures(self, api_client, member_user):
         for _ in range(5):
@@ -511,6 +552,7 @@ class TestAuthApp:
         assert len(decoded) == 32
         assert 'pv' in access
         assert access['pv'] == member_user.permission_version
+        assert access['admin_surface'] is False
         assert 'permission_version' not in access
 
     def test_token_refresh_rate_limit_after_ten_requests_per_minute(self, api_client, member_user):

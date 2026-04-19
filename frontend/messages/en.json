@@ -78,6 +78,9 @@
     "passwordPlaceholder": "enter admin password",
     "loginButton": "Enter admin portal",
     "loading": "Signing in...",
+    "errors": {
+      "accessDenied": "This account does not have access to the admin surface."
+    },
     "userLoginHint": "Need member features instead?",
     "userLoginLink": "Go to user login"
   },
