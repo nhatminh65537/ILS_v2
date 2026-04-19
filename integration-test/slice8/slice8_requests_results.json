@@ -1,8 +1,8 @@
 {
   "base_url": "http://localhost:8000",
   "total": 75,
-  "passed": 70,
-  "failed": 5,
+  "passed": 73,
+  "failed": 2,
   "results": [
     {
       "case_id": "I-1.1",
@@ -113,7 +113,7 @@
       "title": "Member1 sees only own sessions",
       "status": "PASS",
       "expected": "HTTP 200 with own session ids",
-      "actual": "HTTP 200, count=3",
+      "actual": "HTTP 200, count=12",
       "detail": ""
     },
     {
@@ -135,9 +135,9 @@
     {
       "case_id": "II-1.2",
       "title": "Me profile has expected username",
-      "status": "FAIL",
+      "status": "PASS",
       "expected": "username=member1",
-      "actual": "username=member1_new",
+      "actual": "username=member1",
       "detail": ""
     },
     {
@@ -199,17 +199,17 @@
     {
       "case_id": "II-3.3",
       "title": "PATCH settings invalid language",
-      "status": "FAIL",
+      "status": "PASS",
       "expected": "HTTP 400",
-      "actual": "HTTP 200",
+      "actual": "HTTP 400",
       "detail": ""
     },
     {
       "case_id": "II-3.4",
       "title": "PATCH settings invalid theme",
-      "status": "FAIL",
+      "status": "PASS",
       "expected": "HTTP 400",
-      "actual": "HTTP 200",
+      "actual": "HTTP 400",
       "detail": ""
     },
     {
@@ -247,9 +247,9 @@
     {
       "case_id": "II-4.5",
       "title": "Restore username to member1",
-      "status": "FAIL",
+      "status": "PASS",
       "expected": "HTTP 200 and username restored",
-      "actual": "HTTP 400, username=['A user with that username already exists.']",
+      "actual": "HTTP 200, username=member1",
       "detail": ""
     },
     {
@@ -297,7 +297,7 @@
       "title": "Disabled user public profile behavior",
       "status": "PASS",
       "expected": "HTTP 200 or 404",
-      "actual": "HTTP 200",
+      "actual": "HTTP 404",
       "detail": ""
     },
     {
@@ -311,9 +311,9 @@
     {
       "case_id": "IV-1.2",
       "title": "Member1 has 6 seeded events",
-      "status": "PASS",
+      "status": "FAIL",
       "expected": "6 events",
-      "actual": "count=6",
+      "actual": "count=0",
       "detail": ""
     },
     {
@@ -337,7 +337,7 @@
       "title": "Public activity equals me activity count",
       "status": "PASS",
       "expected": "same event count",
-      "actual": "public=6, me=6",
+      "actual": "public=0, me=0",
       "detail": ""
     },
     {
@@ -383,9 +383,9 @@
     {
       "case_id": "V-1.3",
       "title": "Admin list includes seeded users",
-      "status": "PASS",
+      "status": "FAIL",
       "expected": ">=6 users",
-      "actual": "count=11",
+      "actual": "count=5",
       "detail": ""
     },
     {
@@ -401,7 +401,7 @@
       "title": "Inactive filter returns disableduser",
       "status": "PASS",
       "expected": "all users inactive",
-      "actual": "items=1",
+      "actual": "items=0",
       "detail": ""
     },
     {
@@ -471,9 +471,9 @@
     {
       "case_id": "V-4.4",
       "title": "Admin create duplicate email",
-      "status": "FAIL",
+      "status": "PASS",
       "expected": "HTTP 400",
-      "actual": "HTTP 201",
+      "actual": "HTTP 400",
       "detail": ""
     },
     {
@@ -537,7 +537,7 @@
       "title": "Member1 has at least 1 active session",
       "status": "PASS",
       "expected": "session count >= 1",
-      "actual": "count=4",
+      "actual": "count=14",
       "detail": ""
     },
     {
