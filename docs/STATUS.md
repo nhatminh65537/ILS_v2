@@ -173,6 +173,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.2 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-2-auto-trigger-signals.md` |
 | Slice 9 / Task 9.3 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-3-websocket-delivery.md` |
 | Admin surface token guard bugfix (2026-04-19) | `docs/reports/2026-04-19_admin-surface-token-guard.md` |
+| Slice 5 checklist validation snapshot (2026-04-20) | `docs/reports/2026-04-20_slice5-checklist-validation.md` |
 
 ---
 
