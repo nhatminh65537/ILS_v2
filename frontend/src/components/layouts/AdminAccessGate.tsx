@@ -34,24 +34,44 @@ const safeGetPersistApi = (): PersistApi => {
 }
 
 const useAuthGuardState = (): { isReady: boolean; isAuthenticated: boolean } => {
-  const [isReady, setIsReady] = useState(() => safeGetPersistApi().hasHydrated?.() ?? true)
+  const [isReady, setIsReady] = useState(false)
   const hydrateFromStorage = useAuthStore((state) => state.hydrateFromStorage)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const accessToken = useAuthStore((state) => state.accessToken)
 
   useEffect(() => {
-    if (safeGetPersistApi().hasHydrated?.()) {
-      return
+    const persistApi = safeGetPersistApi()
+    let isActive = true
+
+    const finalizeHydration = () => {
+      if (!isActive) {
+        return
+      }
+
+      hydrateFromStorage()
+      setIsReady(true)
     }
 
-    const unsubscribe = safeGetPersistApi().onFinishHydration?.(() => {
-      setIsReady(true)
-    }) ?? (() => undefined)
+    if (persistApi.hasHydrated?.()) {
+      finalizeHydration()
+      return () => {
+        isActive = false
+      }
+    }
 
     hydrateFromStorage()
 
+    const unsubscribe = persistApi.onFinishHydration?.(() => {
+      finalizeHydration()
+    })
+
+    if (!persistApi.onFinishHydration) {
+      finalizeHydration()
+    }
+
     return () => {
-      unsubscribe()
+      isActive = false
+      unsubscribe?.()
     }
   }, [hydrateFromStorage])
 

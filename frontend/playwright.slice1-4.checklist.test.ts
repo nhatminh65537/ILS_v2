@@ -1,6 +1,9 @@
 import { test, expect, Page } from '@playwright/test'
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4000'
+const ADMIN_PASSWORD = 'admin1234'
+const EDITOR_PASSWORD = 'editor1234'
+const MEMBER_PASSWORD = 'member1234'
 
 async function clearSession(page: Page) {
   await page.goto(`${BASE_URL}/vi/login`)
@@ -39,7 +42,7 @@ test.describe('Slice 1-4 Checklist Coverage', () => {
   })
 
   test('BRW-104: member login navigates away from login and token is set', async ({ page }) => {
-    await loginUser(page, 'member1', 'member1234')
+    await loginUser(page, 'member1', MEMBER_PASSWORD)
 
     await page.waitForURL(/\/(vi|en)\/(dashboard|admin)/, { timeout: 10000 })
     const token = await page.evaluate(() => localStorage.getItem('access_token'))
@@ -54,35 +57,42 @@ test.describe('Slice 1-4 Checklist Coverage', () => {
   })
 
   test('BRW-202: member access to admin RBAC is restricted', async ({ page }) => {
-    await loginUser(page, 'member1', 'member1234')
+    await loginUser(page, 'member1', MEMBER_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/rbac`)
+    await page.waitForLoadState('networkidle')
 
-    const url = page.url()
-    const hasForbiddenHint = await page.locator('text=/không có quyền|forbidden/i').count()
-    const restricted = !url.includes('/vi/admin/rbac') || hasForbiddenHint > 0
+    const restricted = !page.url().includes('/vi/admin/rbac')
     expect(restricted).toBeTruthy()
   })
 
   test('BRW-203: editor RBAC behavior is policy-consistent (page loads or read-only hint)', async ({ page }) => {
-    await loginUser(page, 'editor1', 'editor1234')
+    await loginUser(page, 'editor1', EDITOR_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/rbac`)
+    await page.waitForLoadState('networkidle')
 
-    const loadedRoleContent = await page.locator('text=/vai trò|quyền|role|permission/i').count()
-    const readonlyHint = await page.locator('text=/chỉ xem|read only|read-only/i').count()
+    const loadedRoleContent = await page.getByText(/vai tr[oò]|quy[eề]n|role|permission/i).count()
+    const readonlyHint = await page.getByText(/ch[iỉ] xem|read only|read-only/i).count()
     expect(loadedRoleContent > 0 || readonlyHint > 0).toBeTruthy()
   })
 
   test('BRW-204: create-role action visibility differs between admin and editor', async ({ page, browser }) => {
-    await loginAdmin(page, 'admin', 'admin')
+    await loginAdmin(page, 'admin', ADMIN_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/admin\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/rbac`)
-    const adminCreateRoleVisible = (await page.locator('button:has-text("Tạo vai trò")').count()) > 0
+    await page.waitForLoadState('networkidle')
+    const adminCreateRoleVisible = (await page.getByRole('button', { name: /tạo vai trò/i }).count()) > 0
 
     const editorContext = await browser.newContext()
     const editorPage = await editorContext.newPage()
     await clearSession(editorPage)
-    await loginUser(editorPage, 'editor1', 'editor1234')
+    await loginUser(editorPage, 'editor1', EDITOR_PASSWORD)
+    await editorPage.waitForURL(/\/(vi|en)\/dashboard/, { timeout: 10000 })
     await editorPage.goto(`${BASE_URL}/vi/admin/rbac`)
-    const editorCreateRoleVisible = (await editorPage.locator('button:has-text("Tạo vai trò")').count()) > 0
+    await editorPage.waitForLoadState('networkidle')
+    const editorCreateRoleVisible =
+      (await editorPage.getByRole('button', { name: /tạo vai trò/i }).count()) > 0
 
     await editorContext.close()
 
@@ -90,49 +100,62 @@ test.describe('Slice 1-4 Checklist Coverage', () => {
   })
 
   test('BRW-302: editable config key can be edited and saved', async ({ page }) => {
-    await loginAdmin(page, 'admin', 'admin')
+    await loginAdmin(page, 'admin', ADMIN_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/admin\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/config`)
+    await page.waitForLoadState('networkidle')
 
-    const editableCard = page.locator('article', { hasNotText: 'Không cho sửa' }).filter({ hasText: 'string' }).first()
-    await editableCard.locator('button:has-text("Sửa")').click()
+    const editableCard = page
+      .locator('article')
+      .filter({ hasText: /string/i })
+      .filter({ hasNotText: /không cho sửa/i })
+      .first()
+    await expect(editableCard).toBeVisible()
+    await editableCard.getByRole('button', { name: /sửa/i }).click()
 
     const input = editableCard.locator('input[type="text"]').first()
     await input.fill(`updated-${Date.now()}`)
-    await editableCard.locator('button:has-text("Lưu")').click()
+    await editableCard.getByRole('button', { name: /lưu/i }).click()
 
-    await expect(page.locator('text=Lưu cấu hình thành công.')).toBeVisible({ timeout: 8000 })
+    await expect(page.getByText(/lưu cấu hình thành công/i)).toBeVisible({ timeout: 8000 })
   })
 
   test('BRW-303: read-only config key blocks update action', async ({ page }) => {
-    await loginAdmin(page, 'admin', 'admin')
+    await loginAdmin(page, 'admin', ADMIN_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/admin\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/config`)
+    await page.waitForLoadState('networkidle')
 
-    const readOnlyCard = page.locator('article', { hasText: 'Không cho sửa' }).first()
+    const readOnlyCard = page.locator('article').filter({ hasText: /không cho sửa/i }).first()
     await expect(readOnlyCard).toBeVisible()
-    await expect(readOnlyCard.locator('button:has-text("Sửa")')).toHaveCount(0)
+    await expect(readOnlyCard.getByRole('button', { name: /sửa/i })).toHaveCount(0)
   })
 
   test('BRW-304: secret config value is masked by default', async ({ page }) => {
-    await loginAdmin(page, 'admin', 'admin')
+    await loginAdmin(page, 'admin', ADMIN_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/admin\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/config`)
+    await page.waitForLoadState('networkidle')
 
-    const secretCard = page.locator('article', { hasText: 'secret' }).first()
+    const secretCard = page.locator('article').filter({ hasText: /secret/i }).first()
     await expect(secretCard).toBeVisible()
     await expect(secretCard.locator('pre')).toContainText('***')
   })
 
   test('BRW-305: secret update requires confirmation dialog', async ({ page }) => {
-    await loginAdmin(page, 'admin', 'admin')
+    await loginAdmin(page, 'admin', ADMIN_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/admin\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/config`)
+    await page.waitForLoadState('networkidle')
 
-    const secretCard = page.locator('article', { hasText: 'secret' }).first()
+    const secretCard = page.locator('article').filter({ hasText: /secret/i }).first()
     await expect(secretCard).toBeVisible()
 
-    await secretCard.locator('button:has-text("Sửa")').click()
+    await secretCard.getByRole('button', { name: /sửa/i }).click()
     await secretCard.locator('input[type="text"]').fill(`secret-${Date.now()}`)
-    await secretCard.locator('button:has-text("Lưu")').click()
+    await secretCard.getByRole('button', { name: /lưu/i }).click()
 
-    await expect(page.locator('text=Xác nhận cập nhật giá trị bí mật')).toBeVisible({ timeout: 8000 })
+    await expect(page.getByText(/xác nhận cập nhật giá trị bí mật/i)).toBeVisible({ timeout: 8000 })
   })
 
   test('BRW-401: both /vi/login and /en/login routes render login form', async ({ page }) => {
@@ -144,10 +167,12 @@ test.describe('Slice 1-4 Checklist Coverage', () => {
   })
 
   test('BRW-402: admin navigation shell is visible after login', async ({ page }) => {
-    await loginAdmin(page, 'admin', 'admin')
+    await loginAdmin(page, 'admin', ADMIN_PASSWORD)
+    await page.waitForURL(/\/(vi|en)\/admin\/dashboard/, { timeout: 10000 })
     await page.goto(`${BASE_URL}/vi/admin/rbac`)
+    await page.waitForLoadState('networkidle')
 
-    await expect(page.locator('text=/RBAC|Vai trò|Quyền|Cấu hình/i').first()).toBeVisible()
+    await expect(page.getByText(/RBAC|Vai tr[oò]|Quy[eề]n|Cấu hình/i).first()).toBeVisible()
   })
 
   test('BRW-403: unauthenticated access to admin protected route redirects to admin login', async ({ page }) => {

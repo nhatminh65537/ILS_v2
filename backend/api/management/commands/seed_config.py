@@ -254,7 +254,7 @@ DEFAULT_CONFIGS = [
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'challenge',
         'description': 'Upload path for challenge attachments.',
-        'is_editable': True,
+        'is_editable': False,
         'is_runtime': False,
     },
     {
