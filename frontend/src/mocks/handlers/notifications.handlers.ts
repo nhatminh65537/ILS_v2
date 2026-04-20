@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { notificationsFixture } from '@/mocks/data/fixtures'
+import { adminBroadcastHistoryFixture, notificationsFixture } from '@/mocks/data/fixtures'
 import { notFound, parseNumericId, toPaginatedResponse } from '@/mocks/handlers/shared'
 
 export const notificationsHandlers = [
@@ -77,5 +77,62 @@ export const notificationsHandlers = [
   http.get('*/api/notifications/unread-count/', () => {
     const count = notificationsFixture.filter((item) => !item.is_read).length
     return HttpResponse.json({ count })
+  }),
+
+  http.post('*/api/admin/notifications/broadcast/', async ({ request }) => {
+    const payload = (await request.json()) as {
+      type?: string
+      title?: string
+      message?: string
+      metadata?: Record<string, unknown> | null
+    }
+
+    if (!payload.title?.trim() || !payload.message?.trim() || !payload.type?.trim()) {
+      return HttpResponse.json(
+        { detail: 'Invalid payload' },
+        { status: 400 }
+      )
+    }
+
+    const batchKey = `broadcast:msw-${Date.now()}`
+    const sentAt = new Date().toISOString()
+
+    adminBroadcastHistoryFixture.unshift({
+      broadcast_batch_key: batchKey,
+      type: payload.type,
+      title: payload.title.trim(),
+      message: payload.message.trim(),
+      metadata: payload.metadata ?? null,
+      recipient_count: 10,
+      sent_at: sentAt,
+      sender: {
+        id: 1,
+        username: 'member1',
+        email: 'member1@ils.local',
+      },
+    })
+
+    return HttpResponse.json(
+      {
+        message: 'Broadcast sent',
+        recipient_count: 10,
+        broadcast_batch_key: batchKey,
+      },
+      { status: 201 }
+    )
+  }),
+
+  http.get('*/api/admin/notifications/history/', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    const offset = Number(url.searchParams.get('offset') ?? '0')
+
+    return HttpResponse.json(
+      toPaginatedResponse(adminBroadcastHistoryFixture, {
+        limit,
+        offset,
+        basePath: '/api/admin/notifications/history/',
+      })
+    )
   }),
 ]

@@ -68,6 +68,8 @@ from .leaderboard import (
 	LeaderboardUserSerializer,
 )
 from .system import (
+	AdminNotificationHistorySenderSerializer,
+	AdminNotificationHistorySerializer,
 	AuditLogSerializer,
 	NotificationBroadcastSerializer,
 	NotificationSerializer,
@@ -97,6 +99,8 @@ __all__ = [
 	'AdminStatsSessionSerializer',
 	'AdminStatsUserDetailSerializer',
 	'AdminStatsUserSerializer',
+	'AdminNotificationHistorySenderSerializer',
+	'AdminNotificationHistorySerializer',
 	'ActivityEventSerializer',
 	'AdminRoleSummarySerializer',
 	'AdminUserManagementSerializer',

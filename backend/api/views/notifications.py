@@ -1,5 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -7,6 +8,7 @@ from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import Notification
 from api.serializers import (
+    AdminNotificationHistorySerializer,
     NotificationBroadcastSerializer,
     NotificationSerializer,
     NotificationUnreadCountSerializer,
@@ -48,17 +50,31 @@ class AdminNotificationViewSet(viewsets.GenericViewSet):
 
     permission_classes = [IsAuthenticated, HasJWTPermission]
     serializer_class = NotificationBroadcastSerializer
+    pagination_class = LimitOffsetPagination
+
+    def get_serializer_class(self):
+        if self.action == 'history':
+            return AdminNotificationHistorySerializer
+        return NotificationBroadcastSerializer
 
     @action(detail=False, methods=['post'], url_path='broadcast')
     def broadcast(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        recipient_count = NotificationService.broadcast_notification(payload=serializer.validated_data)
+        result = NotificationService.broadcast_notification(payload=serializer.validated_data, actor=request.user)
         return Response(
             {
                 'message': 'Broadcast sent',
-                'recipient_count': recipient_count,
+                'recipient_count': result['recipient_count'],
+                'broadcast_batch_key': result['broadcast_batch_key'],
             },
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=False, methods=['get'], url_path='history')
+    def history(self, request):
+        history_rows = NotificationService.list_broadcast_history()
+        page = self.paginate_queryset(history_rows)
+        serializer = self.get_serializer(page, many=True)
+        return self.get_paginated_response(serializer.data)

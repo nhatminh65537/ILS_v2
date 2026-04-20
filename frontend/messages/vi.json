@@ -699,6 +699,70 @@
       "reorderFailed": "Sắp xếp lại câu hỏi thất bại."
     }
   },
+  "adminNotifications": {
+    "title": "Broadcast thông báo",
+    "subtitle": "Gửi thông báo thủ công tới toàn bộ người dùng đang hoạt động và theo dõi lịch sử broadcast.",
+    "form": {
+      "title": "Tạo broadcast"
+    },
+    "fields": {
+      "type": "Loại",
+      "title": "Tiêu đề",
+      "message": "Nội dung",
+      "metadata": "Metadata (JSON)",
+      "titlePlaceholder": "tiêu đề broadcast",
+      "messagePlaceholder": "nội dung thông báo",
+      "metadataPlaceholder": "\"key\": \"value\"",
+      "metadataHint": "JSON object tuỳ chọn. Có thể để trống nếu không dùng."
+    },
+    "typeOptions": {
+      "system": "Hệ thống",
+      "achievement": "Thành tích",
+      "course": "Khoá học",
+      "challenge": "Thử thách",
+      "quiz": "Quiz"
+    },
+    "actions": {
+      "send": "Gửi broadcast",
+      "sending": "Đang gửi..."
+    },
+    "confirm": {
+      "title": "Gửi broadcast này?",
+      "description": "Thao tác này sẽ tạo thông báo cho toàn bộ người dùng đang hoạt động.",
+      "cancel": "Hủy",
+      "submit": "Xác nhận gửi"
+    },
+    "result": {
+      "sent": "Đã gửi broadcast thành công tới {recipientCount} người nhận."
+    },
+    "history": {
+      "title": "Lịch sử broadcast",
+      "refresh": "Làm mới",
+      "empty": "Chưa có lịch sử broadcast.",
+      "systemSender": "Hệ thống",
+      "total": "Tổng {total} batch",
+      "page": "Trang {page}",
+      "previous": "Trước",
+      "next": "Tiếp",
+      "columns": {
+        "sentAt": "Thời gian gửi",
+        "title": "Tiêu đề",
+        "type": "Loại",
+        "sender": "Người gửi",
+        "recipients": "Số người nhận",
+        "batch": "Mã batch"
+      }
+    },
+    "errors": {
+      "unauthenticated": "Bạn cần đăng nhập để tiếp tục.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "validationFailed": "Vui lòng kiểm tra các trường bắt buộc và thử lại.",
+      "requiredFields": "Tiêu đề và nội dung là bắt buộc.",
+      "invalidMetadata": "Metadata phải là JSON object hợp lệ.",
+      "submitFailed": "Gửi broadcast thất bại.",
+      "historyLoadFailed": "Tải lịch sử broadcast thất bại."
+    }
+  },
   "adminLearn": {
     "title": "Quản lý Learn",
     "subtitle": "Quản lý khóa học Learn, taxonomy, cây nội dung và nội dung bài học.",

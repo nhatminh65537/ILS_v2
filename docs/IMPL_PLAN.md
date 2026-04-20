@@ -1013,7 +1013,7 @@ app/[locale]/(app)/notifications/page.tsx                    → full inbox list
 
 - Broadcast form: title input, message body (markdown textarea with preview toggle), target = all users (single target for now)
 - Confirm dialog before sending; POST `POST /api/admin/notifications/broadcast/`
-- Broadcast history: list of past manual broadcasts — title, sender, sent_at, recipient count
+- Broadcast history: list of past manual broadcasts via `GET /api/admin/notifications/history/` — title, sender, sent_at, recipient count
 
 ---
 

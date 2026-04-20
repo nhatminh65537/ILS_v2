@@ -106,7 +106,7 @@ Route-level inventory for frontend pages across Slices 1–11.
 | `/vi/admin/rbac/roles/[id]` `/en/admin/rbac/roles/[id]` | Role permission assignment | Yes (Admin) | `[locale]/(admin)/admin/(protected)` | `auth.store` | `rbac.getRolePermissions`, `rbac.assignPermissionToRole`, `rbac.revokePermissionFromRole` | 2 | implemented |
 | `/vi/admin/rbac/users/[id]/roles` `/en/admin/rbac/users/[id]/roles` | User role assignment | Yes (Admin) | `[locale]/(admin)/admin/(protected)` | `auth.store` | `rbac.getUserRoles`, `rbac.assignRoleToUser`, `rbac.revokeRoleFromUser` | 2 | implemented |
 | `/vi/admin/config` `/en/admin/config` | System config | Yes (Admin) | `[locale]/(admin)/admin/(protected)` | `auth.store` + local feature hook | `systemConfig.listSystemConfigs`, `systemConfig.getSystemConfigByKey`, `systemConfig.updateSystemConfigValue` | 3 | implemented |
-| `/vi/admin/notifications` `/en/admin/notifications` | Notification broadcast | Yes (Admin) | `[locale]/(admin)/admin/(protected)` | `notifications.store` | `notifications.broadcast`, `notifications.listBroadcast` | 9 | skeleton |
+| `/vi/admin/notifications` `/en/admin/notifications` | Notification broadcast | Yes (Admin) | `[locale]/(admin)/admin/(protected)` | local feature hook | `notifications.broadcastAdminNotification`, `notifications.listAdminBroadcastHistory` | 9 | implemented |
 | `/vi/admin/statistics` `/en/admin/statistics` | Detailed statistics | Yes (Admin) | `[locale]/(admin)/admin/(protected)` | `ui.store` | `admin.getStats`, `admin.getUserStats` | 11 | skeleton |
 
 > **Admin dashboard content:** summary stat cards (total users, active today, solves this week, content counts), quick-links to each management section. Lightweight — does NOT replace `/admin/statistics`.
@@ -200,7 +200,7 @@ frontend/app/
             │   ├── roles/[id]/page.tsx               ✅ implemented
             │   └── users/[id]/roles/page.tsx         ✅ implemented
             ├── config/page.tsx                       ✅ implemented
-            ├── notifications/page.tsx                🔲 skeleton (Task 9.5)
+            ├── notifications/page.tsx                ✅ implemented (Task 9.5)
             ├── statistics/page.tsx                   🔲 skeleton (Task 11.4)
             ├── learn/
             │   ├── courses/

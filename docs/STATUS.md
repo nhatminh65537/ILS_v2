@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-20 (Slice 7 checklist follow-up documented; reports and memory synchronized)
+> Last updated: 2026-04-20 (Slice 9.5 delivery documented with post-implementation runtime hotfixes)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -126,6 +126,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.2 (2026-04-17) | Auto-trigger notifications implemented via backend signals and shared helper: course completion now emits `COURSE`, challenge completion emits `CHALLENGE`, quiz completion emits `QUIZ`; `event_key` deduplication added to `notification`; focused signal tests and adjacent regressions pass. |
 | Slice 9 / Task 9.3 (2026-04-17) | WebSocket notification delivery implemented at `/ws/notifications/` with first-message JWT auth, timeout/failure close codes, per-user channel group `notifications_{user_id}`, and realtime push wiring from `NotificationService` (including signal-triggered notifications and admin broadcasts); async consumer tests added at `backend/realtime/tests/test_notification_consumer.py` and passing. |
 | Slice 9 / Task 9.4 (2026-04-20) | Frontend notification bell + inbox implemented on user surface: `NotificationBell` integrated into session navbar controls with unread badge and latest-5 dropdown, inbox page delivered at `/{locale}/notifications` with mark single/all read actions, realtime socket hook for `/ws/notifications/`, and frontend contract normalization to hyphenated endpoints (`mark-read`, `mark-all-read`, `unread-count`) plus MSW alignment. Validation gates: `npx tsc --noEmit`, `npm run lint`, `npm run build` passed. |
+| Slice 9 / Task 9.5 (2026-04-20) | Admin notification broadcast page implemented at `/{locale}/admin/notifications` with full create flow and broadcast history table; backend now provides grouped history endpoint `/api/admin/notifications/history/` and broadcast response includes `broadcast_batch_key`; broadcast rows persist `event_key` batch key + `created_by` for sender projection; frontend service/hook/MSW/i18n aligned (`broadcastAdminNotification`, `listAdminBroadcastHistory`); post-implementation hotfixes completed for i18n key scoping, metadata placeholder parse safety, and local DB migration application (`api.0008_notification_event_key`); validation gates passed (`pytest backend/api/tests/test_notification_api.py`, `npm run lint`, `npx tsc --noEmit`, `npm run build`). |
 
 ---
 
@@ -177,6 +178,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.2 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-2-auto-trigger-signals.md` |
 | Slice 9 / Task 9.3 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-3-websocket-delivery.md` |
 | Slice 9 / Task 9.4 (2026-04-20) | `docs/reports/2026-04-20_slice9-task9-4-frontend-notification-bell-inbox.md` |
+| Slice 9 / Task 9.5 (2026-04-20) | `docs/reports/2026-04-20_slice9-task9-5-admin-notification-broadcast-history.md` |
 | Admin surface token guard bugfix (2026-04-19) | `docs/reports/2026-04-19_admin-surface-token-guard.md` |
 | Slice 1-4 browser regression fix pass (2026-04-20) | `docs/reports/2026-04-20_slice1-4-browser-regression-fixes.md` |
 
@@ -290,6 +292,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Auto-trigger via Django signals | Low | ✅ Completed 2026-04-17: challenge/quiz/course completion signals create idempotent notifications using stable `event_key`. |
 | WebSocket notification delivery | Low | ✅ Completed 2026-04-17: `/ws/notifications/` consumer with first-message JWT auth, per-user group subscription, and realtime push from notification service. |
 | Frontend: Notification bell + inbox | Low | ✅ Completed 2026-04-20: user-surface bell + inbox implemented with realtime updates and hyphenated endpoint contract alignment. |
+| Frontend: Admin notification broadcast + history | Low | ✅ Completed 2026-04-20: admin page `/{locale}/admin/notifications` now supports broadcast submit + confirmation + grouped history listing with pagination; backend history endpoint `/api/admin/notifications/history/` added and broadcast response extended with `broadcast_batch_key`; FE services/hooks/MSW/messages updated and validation gates passed. |
 
 ### Slice 11 — Statistics
 

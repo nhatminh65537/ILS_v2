@@ -4,6 +4,10 @@
  */
 
 export enum NotificationType {
+  Achievement = 'achievement',
+  Course = 'course',
+  Challenge = 'challenge',
+  Quiz = 'quiz',
   Manual = 'manual',
   AutoChallengeComplete = 'auto_challenge_complete',
   AutoCourseComplete = 'auto_course_complete',
@@ -40,4 +44,34 @@ export interface NotificationListResponse {
   readonly next: string | null
   readonly previous: string | null
   readonly results: readonly Notification[]
+}
+
+export interface BroadcastNotificationPayload {
+  type: NotificationType
+  title: string
+  message: string
+  metadata?: Record<string, unknown> | null
+}
+
+export interface BroadcastNotificationResponse {
+  readonly message: string
+  readonly recipient_count: number
+  readonly broadcast_batch_key: string
+}
+
+export interface AdminBroadcastSender {
+  readonly id: number
+  readonly username: string
+  readonly email?: string | null
+}
+
+export interface AdminBroadcastHistoryItem {
+  readonly broadcast_batch_key: string
+  readonly type: string
+  readonly title: string
+  readonly message: string
+  readonly metadata?: Record<string, unknown> | null
+  readonly recipient_count: number
+  readonly sent_at: string
+  readonly sender?: AdminBroadcastSender | null
 }

@@ -323,7 +323,8 @@ Active:
 | POST | `/api/notifications/{id}/mark-read/` | Yes | Stable | Mark one owned notification as read (`404` if not owned). |
 | POST | `/api/notifications/mark-all-read/` | Yes | Stable | Mark all unread notifications of current user as read. |
 | GET | `/api/notifications/unread-count/` | Yes | Stable | Returns unread badge payload: `{count: N}`. |
-| POST | `/api/admin/notifications/broadcast/` | Yes (Admin) | Stable | Broadcast notification to all active users; response includes `recipient_count`. |
+| POST | `/api/admin/notifications/broadcast/` | Yes (Admin) | Stable | Broadcast notification to all active users; response includes `recipient_count` and `broadcast_batch_key`. |
+| GET | `/api/admin/notifications/history/` | Yes (Admin) | Stable | Returns paginated grouped manual broadcast batches with sender, sent timestamp, and `recipient_count`. |
 
 Active WebSocket:
 
@@ -332,7 +333,7 @@ Active WebSocket:
 | WS | `/ws/notifications/` | First-message JWT (`{"type":"auth","token":"..."}`) | Stable | Subscribes current user to `notifications_{user_id}` and pushes `{"type":"notification","data":{...}}` events for newly-created notifications. |
 
 Still pending in Slice 9:
-- Task 9.5 admin broadcast UI (`/{locale}/admin/notifications`).
+- None.
 
 ### 3.8 Leaderboard
 

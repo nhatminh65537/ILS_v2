@@ -699,6 +699,70 @@
       "reorderFailed": "Failed to reorder questions."
     }
   },
+  "adminNotifications": {
+    "title": "Notification Broadcast",
+    "subtitle": "Send manual broadcasts to all active users and review broadcast history.",
+    "form": {
+      "title": "Create broadcast"
+    },
+    "fields": {
+      "type": "Type",
+      "title": "Title",
+      "message": "Message",
+      "metadata": "Metadata (JSON)",
+      "titlePlaceholder": "broadcast title",
+      "messagePlaceholder": "message body",
+      "metadataPlaceholder": "\"key\": \"value\"",
+      "metadataHint": "Optional JSON object. Leave empty if not needed."
+    },
+    "typeOptions": {
+      "system": "System",
+      "achievement": "Achievement",
+      "course": "Course",
+      "challenge": "Challenge",
+      "quiz": "Quiz"
+    },
+    "actions": {
+      "send": "Send broadcast",
+      "sending": "Sending..."
+    },
+    "confirm": {
+      "title": "Send this broadcast?",
+      "description": "This action will create a notification for all active users.",
+      "cancel": "Cancel",
+      "submit": "Confirm send"
+    },
+    "result": {
+      "sent": "Broadcast sent successfully to {recipientCount} recipients."
+    },
+    "history": {
+      "title": "Broadcast history",
+      "refresh": "Refresh",
+      "empty": "No broadcast history available.",
+      "systemSender": "System",
+      "total": "Total {total} batches",
+      "page": "Page {page}",
+      "previous": "Previous",
+      "next": "Next",
+      "columns": {
+        "sentAt": "Sent at",
+        "title": "Title",
+        "type": "Type",
+        "sender": "Sender",
+        "recipients": "Recipients",
+        "batch": "Batch key"
+      }
+    },
+    "errors": {
+      "unauthenticated": "Authentication is required.",
+      "forbidden": "You do not have permission for this action.",
+      "validationFailed": "Please review required fields and try again.",
+      "requiredFields": "Title and message are required.",
+      "invalidMetadata": "Metadata must be a valid JSON object.",
+      "submitFailed": "Failed to send broadcast.",
+      "historyLoadFailed": "Failed to load broadcast history."
+    }
+  },
   "adminLearn": {
     "title": "Learn Management",
     "subtitle": "Manage Learn courses, taxonomy, tree structure, and lesson content.",

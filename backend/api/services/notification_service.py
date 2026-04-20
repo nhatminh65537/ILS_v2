@@ -1,7 +1,9 @@
 from django.db import transaction
+from django.db.models import Count, Max
 from django.utils import timezone
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+import uuid
 
 from api.models import Notification, User
 
@@ -91,14 +93,18 @@ class NotificationService:
 
     @staticmethod
     @transaction.atomic
-    def broadcast_notification(*, payload):
+    def broadcast_notification(*, payload, actor):
         """Broadcast a notification to all active users.
 
-        Returns the number of recipient records created.
+        Returns metadata for created recipient records.
         """
+        broadcast_batch_key = f'broadcast:{uuid.uuid4()}'
         active_user_ids = list(User.objects.filter(is_active=True).values_list('id', flat=True))
         if not active_user_ids:
-            return 0
+            return {
+                'recipient_count': 0,
+                'broadcast_batch_key': broadcast_batch_key,
+            }
 
         notifications = [
             Notification(
@@ -107,7 +113,9 @@ class NotificationService:
                 title=payload['title'],
                 message=payload['message'],
                 metadata=payload.get('metadata'),
+                event_key=broadcast_batch_key,
                 is_broadcast=True,
+                created_by_id=actor.id,
             )
             for user_id in active_user_ids
         ]
@@ -125,4 +133,32 @@ class NotificationService:
                 )
             )
 
-        return len(created_notifications)
+        return {
+            'recipient_count': len(created_notifications),
+            'broadcast_batch_key': broadcast_batch_key,
+        }
+
+    @staticmethod
+    def list_broadcast_history():
+        """Return grouped broadcast history rows for admin UI."""
+        return (
+            Notification.objects.filter(
+                is_broadcast=True,
+                event_key__startswith='broadcast:',
+            )
+            .values(
+                'event_key',
+                'type',
+                'title',
+                'message',
+                'metadata',
+                'created_by_id',
+                'created_by__username',
+                'created_by__email',
+            )
+            .annotate(
+                recipient_count=Count('id'),
+                sent_at=Max('created_at'),
+            )
+            .order_by('-sent_at')
+        )

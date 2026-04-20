@@ -152,6 +152,8 @@ class TestNotificationTask91API:
 
         assert response.status_code == 201
         assert response.data['recipient_count'] == 2  # admin_user + active_member
+        assert response.data['broadcast_batch_key'].startswith('broadcast:')
+        batch_key = response.data['broadcast_batch_key']
 
         created = Notification.objects.filter(
             is_broadcast=True,
@@ -162,6 +164,53 @@ class TestNotificationTask91API:
         assert not created.filter(user=inactive_user).exists()
         assert created.filter(user=admin_user).exists()
         assert created.filter(user=active_member).exists()
+        assert created.filter(event_key=batch_key).count() == 2
+        assert created.filter(created_by=admin_user).count() == 2
+
+    def test_admin_broadcast_history_returns_grouped_rows(self, admin_client, admin_user):
+        active_member = admin_user.__class__.objects.create_user(
+            username='notif_history_member',
+            password='StrongPass123!',
+            email='history-member@example.com',
+            is_active=True,
+        )
+
+        first = admin_client.post(
+            '/api/admin/notifications/broadcast/',
+            {
+                'type': Notification.NotificationType.SYSTEM,
+                'title': 'First batch',
+                'message': 'One',
+            },
+            format='json',
+        )
+        second = admin_client.post(
+            '/api/admin/notifications/broadcast/',
+            {
+                'type': Notification.NotificationType.QUIZ,
+                'title': 'Second batch',
+                'message': 'Two',
+            },
+            format='json',
+        )
+
+        assert first.status_code == 201
+        assert second.status_code == 201
+
+        response = admin_client.get('/api/admin/notifications/history/?limit=10&offset=0')
+
+        assert response.status_code == 200
+        assert response.data['count'] == 2
+
+        rows = response.data['results']
+        assert rows[0]['broadcast_batch_key'] == second.data['broadcast_batch_key']
+        assert rows[0]['title'] == 'Second batch'
+        assert rows[0]['recipient_count'] == 2  # admin + active_member
+        assert rows[0]['sender']['id'] == admin_user.id
+        assert rows[0]['sender']['username'] == admin_user.username
+
+        assert rows[1]['broadcast_batch_key'] == first.data['broadcast_batch_key']
+        assert rows[1]['recipient_count'] == 2
 
     def test_admin_broadcast_requires_admin_role(self, editor_client, member_client):
         payload = {
@@ -172,9 +221,13 @@ class TestNotificationTask91API:
 
         editor_response = editor_client.post('/api/admin/notifications/broadcast/', payload, format='json')
         member_response = member_client.post('/api/admin/notifications/broadcast/', payload, format='json')
+        editor_history = editor_client.get('/api/admin/notifications/history/')
+        member_history = member_client.get('/api/admin/notifications/history/')
 
         assert editor_response.status_code == 403
         assert member_response.status_code == 403
+        assert editor_history.status_code == 403
+        assert member_history.status_code == 403
 
     def test_notification_endpoints_require_authentication(self, api_client):
         assert api_client.get('/api/notifications/').status_code == 401
@@ -182,3 +235,4 @@ class TestNotificationTask91API:
         assert api_client.post('/api/notifications/mark-all-read/').status_code == 401
         assert api_client.get('/api/notifications/unread-count/').status_code == 401
         assert api_client.post('/api/admin/notifications/broadcast/', {}, format='json').status_code == 401
+        assert api_client.get('/api/admin/notifications/history/').status_code == 401

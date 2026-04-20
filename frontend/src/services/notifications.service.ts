@@ -5,7 +5,12 @@
 
 import apiClient from '@/lib/axios'
 import type { PaginatedResponse } from '@/types/api'
-import type { Notification } from '@/types/notification.types'
+import type {
+  AdminBroadcastHistoryItem,
+  BroadcastNotificationPayload,
+  BroadcastNotificationResponse,
+  Notification,
+} from '@/types/notification.types'
 
 /**
  * GET /api/notifications/
@@ -53,5 +58,28 @@ export const markAllNotificationsRead = async (): Promise<{ readonly updated_cou
  */
 export const getUnreadNotificationCount = async (): Promise<{ readonly count: number }> => {
   const response = await apiClient.get('/api/notifications/unread-count/')
+  return response.data
+}
+
+/**
+ * POST /api/admin/notifications/broadcast/
+ * Create a manual broadcast for all active users (admin only).
+ */
+export const broadcastAdminNotification = async (
+  payload: BroadcastNotificationPayload
+): Promise<BroadcastNotificationResponse> => {
+  const response = await apiClient.post('/api/admin/notifications/broadcast/', payload)
+  return response.data
+}
+
+/**
+ * GET /api/admin/notifications/history/
+ * List grouped manual broadcast history rows (admin only).
+ */
+export const listAdminBroadcastHistory = async (params?: {
+  limit?: number
+  offset?: number
+}): Promise<PaginatedResponse<AdminBroadcastHistoryItem>> => {
+  const response = await apiClient.get('/api/admin/notifications/history/', { params })
   return response.data
 }

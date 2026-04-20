@@ -83,6 +83,39 @@ class NotificationBroadcastSerializer(serializers.Serializer):
     metadata = serializers.JSONField(required=False, allow_null=True)
 
 
+class AdminNotificationHistorySenderSerializer(serializers.Serializer):
+    """Sender projection for admin broadcast history rows."""
+
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.EmailField(allow_blank=True, allow_null=True)
+
+
+class AdminNotificationHistorySerializer(serializers.Serializer):
+    """Grouped admin broadcast history row serializer."""
+
+    broadcast_batch_key = serializers.CharField(source='event_key')
+    type = serializers.CharField()
+    title = serializers.CharField()
+    message = serializers.CharField()
+    metadata = serializers.JSONField(required=False, allow_null=True)
+    recipient_count = serializers.IntegerField(min_value=0)
+    sent_at = serializers.DateTimeField()
+    sender = serializers.SerializerMethodField()
+
+    def get_sender(self, obj):
+        sender_id = obj.get('created_by_id')
+        if sender_id is None:
+            return None
+
+        payload = {
+            'id': sender_id,
+            'username': obj.get('created_by__username') or '',
+            'email': obj.get('created_by__email'),
+        }
+        return AdminNotificationHistorySenderSerializer(payload).data
+
+
 class NotificationUnreadCountSerializer(serializers.Serializer):
     """Unread counter serializer."""
 

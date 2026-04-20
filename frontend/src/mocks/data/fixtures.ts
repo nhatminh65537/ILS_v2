@@ -2,7 +2,11 @@ import { ChallengeDifficulty, ChallengeSource, InstanceStatus, type Challenge, t
 import { ContentStatus as CourseStatus, LessonSource, LessonType, type Course, type CourseCategory, type CourseNode, type CourseTag, type UserCourseProgress } from '@/types/course.types'
 import { type LearnLessonDetail, type LearnLessonProgress, type LearnLessonQuestionMapping } from '@/types/lesson.types'
 import { type LeaderboardEntry } from '@/types/leaderboard.types'
-import { NotificationType, type Notification } from '@/types/notification.types'
+import {
+  NotificationType,
+  type AdminBroadcastHistoryItem,
+  type Notification,
+} from '@/types/notification.types'
 import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizQuestion, type QuizQuestionOption, type UserQuizProgress } from '@/types/quiz.types'
 import { type ActivityEvent, type AdminUserDto, type AuthSessionListItem, type User, type UserProfile } from '@/types/user.types'
 
@@ -535,6 +539,24 @@ export const notificationsFixture: Notification[] = Array.from({ length: 10 }, (
   read_at: index > 4 ? now : null,
   created_at: now,
 }))
+
+export const adminBroadcastHistoryFixture: AdminBroadcastHistoryItem[] = Array.from(
+  { length: 5 },
+  (_, index) => ({
+    broadcast_batch_key: `broadcast:seed-${index + 1}`,
+    type: index % 2 === 0 ? NotificationType.System : NotificationType.Quiz,
+    title: `Admin broadcast #${index + 1}`,
+    message: `Mock broadcast message ${index + 1}`,
+    metadata: { source: 'msw', index: index + 1 },
+    recipient_count: 10,
+    sent_at: new Date(Date.parse(now) - index * 60_000).toISOString(),
+    sender: {
+      id: 1,
+      username: 'member1',
+      email: 'member1@ils.local',
+    },
+  })
+)
 
 export const activityFixture: ActivityEvent[] = [
   { type: 'lesson_complete', timestamp: '2026-04-09T08:00:00.000Z', item_title: 'Injection Basics', source_id: 2 },
