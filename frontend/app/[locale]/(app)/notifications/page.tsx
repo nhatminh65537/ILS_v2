@@ -1,8 +1,10 @@
-export default function NotificationsPage() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Notifications</h1>
-      <p className="text-muted-foreground">Coming soon.</p>
-    </div>
-  )
+import { NotificationsInboxClient } from '@/components/features/notifications/NotificationsInboxClient'
+
+type NotificationsPageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function NotificationsPage({ params }: NotificationsPageProps) {
+  const { locale } = await params
+  return <NotificationsInboxClient locale={locale} />
 }

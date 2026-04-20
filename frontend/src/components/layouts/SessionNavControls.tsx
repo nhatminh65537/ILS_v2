@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { NotificationBell } from '@/components/features/notifications/NotificationBell'
 import { useAuth } from '@/hooks/useAuth'
 
 type SessionNavControlsProps = {
@@ -55,33 +56,36 @@ export function SessionNavControls({ locale }: SessionNavControlsProps) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button className="px-2" size="sm" variant="ghost">
-          <Avatar size="sm">
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuLabel className="truncate">{user?.username ?? 'user'}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {user?.username && (
+    <div className="flex items-center gap-1">
+      <NotificationBell locale={locale} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="px-2" size="sm" variant="ghost">
+            <Avatar size="sm">
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-44">
+          <DropdownMenuLabel className="truncate">{user?.username ?? 'user'}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {user?.username && (
+            <DropdownMenuItem asChild>
+              <Link href={`/${locale}/profile/${user.username}`}>{tNav('profile')}</Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
-            <Link href={`/${locale}/profile/${user.username}`}>{tNav('profile')}</Link>
+            <Link href={`/${locale}/profile/settings`}>{tNav('settings')}</Link>
           </DropdownMenuItem>
-        )}
-        <DropdownMenuItem asChild>
-          <Link href={`/${locale}/profile/settings`}>{tNav('settings')}</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`/${locale}/profile/sessions`}>{tNav('sessions')}</Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem disabled={isLoading} onSelect={() => void handleLogout()} variant="destructive">
-          {tAuth('logout')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem asChild>
+            <Link href={`/${locale}/profile/sessions`}>{tNav('sessions')}</Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled={isLoading} onSelect={() => void handleLogout()} variant="destructive">
+            {tAuth('logout')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }

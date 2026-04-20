@@ -10,6 +10,8 @@
 
 Hệ thống thông báo hỗ trợ hai loại: **thủ công** (admin tạo và broadcast tới tất cả user) và **tự động** (trigger khi user hoàn thành course/challenge/quiz). Thông báo được deliver realtime qua WebSocket (Django Channels) và persistent trong DB. User có thể đánh dấu đã đọc.
 
+Contract API/WS trong PRD này đã được đồng bộ với runtime hiện tại (Slice 9.1-9.3). Nguồn sự thật route là `docs/API.md` và backend view/consumer.
+
 ---
 
 ## Problem
@@ -45,18 +47,17 @@ Không có cơ chế thông báo. Admin không thể announce sự kiện. User 
 ## Functional Requirements
 
 ### FR-NOTIF-01: Manual Broadcast (Admin)
-- Tạo `notification` với `type=manual`, `is_broadcast=True`.
-- `title`, `body`, `payload` (optional JSONB).
-- `send_at`: null = gửi ngay, datetime = schedule.
-- Khi gửi: tạo `user_notification` record cho TẤT CẢ user active.
-- Gửi realtime qua WebSocket broadcast channel.
+- Admin gọi endpoint broadcast để tạo notification cho TẤT CẢ user active.
+- Payload gồm: `type`, `title`, `message`, `metadata` (optional JSON object).
+- Với mỗi user active, tạo một bản ghi `notification` user-scoped (`is_broadcast=true`).
+- Mỗi bản ghi mới được push realtime tới channel group của user đó.
 
 ### FR-NOTIF-02: Auto Notifications (System)
 - Trigger từ Django signals khi progress được cập nhật:
   - `user_course_progress.completed_at` set → `type=auto_course_complete`
   - `user_challenge_progress.completed_at` set → `type=auto_challenge_complete`
   - `user_quiz_progress.completed_at` set → `type=auto_quiz_complete`
-- Tạo `notification` (per user, không broadcast) + `user_notification`.
+- Tạo `notification` user-scoped (`is_broadcast=false`) cho user tương ứng.
 - Gửi realtime tới WebSocket channel của user đó.
 
 ### FR-NOTIF-03: WebSocket Delivery
@@ -66,19 +67,19 @@ Không có cơ chế thông báo. Admin không thể announce sự kiện. User 
 - Nếu user offline: notification đã lưu trong DB, nhận khi online lại.
 
 ### FR-NOTIF-04: Notification Inbox
-- List `user_notification` của user với pagination.
+- List `notification` của user với pagination.
 - Filter: `is_read=false` (unread only).
 - Unread count: trả về số `is_read=false`.
 - GET notification detail.
 
 ### FR-NOTIF-05: Mark as Read
-- Mark single: PUT `/api/notifications/{id}/read/`.
-- Mark all: PUT `/api/notifications/read-all/`.
+- Mark single: POST `/api/notifications/{id}/mark-read/`.
+- Mark all: POST `/api/notifications/mark-all-read/`.
 - Set `is_read=True`, `read_at=now()`.
 
 ### FR-NOTIF-06: Admin Notification Management
-- List tất cả notifications đã tạo.
-- Cancel scheduled notification (nếu chưa send).
+- MVP runtime hiện tại chỉ triển khai admin broadcast endpoint.
+- Các yêu cầu list lịch sử/cancel schedule được giữ là future scope và không thuộc contract active hiện tại.
 
 ---
 
@@ -86,10 +87,10 @@ Không có cơ chế thông báo. Admin không thể announce sự kiện. User 
 
 | Case | Handling |
 |------|----------|
-| Broadcast tới 100 users đồng thời | Batch insert user_notification; async WS dispatch |
+| Broadcast tới 100 users đồng thời | Batch insert notification records theo user active; async WS dispatch theo user group |
 | User offline khi nhận notification | Lưu DB; delivery khi user connect lại |
 | Auto notification trigger nhiều lần (signal bug) | Idempotent: chỉ tạo 1 notification per event per user |
-| Admin xóa notification đã broadcast | Cascade xóa user_notification (coi như recall) |
+| Admin xóa notification đã broadcast | Out of scope runtime hiện tại (chưa có endpoint cancel/delete) |
 | Send_at trong quá khứ | Gửi ngay lập tức |
 | User bị disable trong lúc broadcast | Bỏ qua user đó |
 
@@ -101,15 +102,14 @@ Không có cơ chế thông báo. Admin không thể announce sự kiện. User 
 
 ```
 # Admin
-GET    /api/notifications/admin/                # List all notifications
-POST   /api/notifications/admin/                # Create notification
-DELETE /api/notifications/admin/{id}/           # Delete/cancel
+POST   /api/admin/notifications/broadcast/      # Broadcast to all active users
 
 # User Inbox
 GET    /api/notifications/                      # My notifications (paginated)
 GET    /api/notifications/unread-count/         # Unread count
-PUT    /api/notifications/{id}/read/            # Mark single as read
-PUT    /api/notifications/read-all/             # Mark all as read
+GET    /api/notifications/{id}/                 # Notification detail
+POST   /api/notifications/{id}/mark-read/       # Mark single as read
+POST   /api/notifications/mark-all-read/        # Mark all as read
 ```
 
 ### WebSocket Endpoint
@@ -125,12 +125,12 @@ ws://{host}/ws/notifications/
   "type": "notification",
   "data": {
     "id": 45,
-    "notification_id": 12,
+    "type": "auto_challenge_complete",
     "title": "Challenge Solved!",
-    "body": "You solved 'Login Bypass' and earned 100 points.",
-    "notification_type": "auto_challenge_complete",
-    "payload": { "challenge_id": 5, "points": 100 },
+    "message": "You solved 'Login Bypass' and earned 100 points.",
+    "metadata": { "challenge_id": 5, "points": 100 },
     "is_read": false,
+    "read_at": null,
     "created_at": "2026-03-09T10:00:00Z"
   }
 }
@@ -139,8 +139,7 @@ ws://{host}/ws/notifications/
 ### Key DB Tables
 
 ```sql
--- notification: id, title, body, payload JSONB, send_at, is_broadcast, notification_type
--- user_notification: id, notification_id, user_id, is_read, read_at
+-- notification: id, user_id, type, title, message, metadata JSON, is_read, read_at, is_broadcast, event_key, created_at
 ```
 
 ### Notification List Response
@@ -148,14 +147,15 @@ ws://{host}/ws/notifications/
 ```json
 {
   "count": 5,
-  "unread": 2,
   "results": [
     {
       "id": 45,
+      "type": "auto_course_complete",
       "title": "Welcome!",
-      "body": "You completed the course.",
-      "notification_type": "auto_course_complete",
+      "message": "You completed the course.",
+      "metadata": { "course_slug": "network-basics" },
       "is_read": false,
+      "read_at": null,
       "created_at": "2026-03-09T08:00:00Z"
     }
   ]
@@ -169,8 +169,8 @@ ws://{host}/ws/notifications/
 ### AC-NOTIF-01: Admin Broadcast
 ```
 Given: 3 active users trong hệ thống
-When: Admin POST /api/notifications/admin/ với is_broadcast=true
-Then: 3 user_notification records được tạo
+When: Admin POST /api/admin/notifications/broadcast/
+Then: 3 notification records user-scoped được tạo (is_broadcast=true)
   And: Tất cả user đang online nhận WS message
 ```
 
@@ -179,15 +179,15 @@ Then: 3 user_notification records được tạo
 Given: alice giải được challenge "web-login-bypass"
 When: user_challenge_progress.completed_at được set
 Then: notification type=auto_challenge_complete được tạo cho alice
-  And: user_notification được tạo với is_read=false
+  And: notification record được tạo với is_read=false
   And: Nếu alice online → nhận WS push ngay
 ```
 
 ### AC-NOTIF-03: Mark as Read
 ```
 Given: alice có 5 unread notifications
-When: PUT /api/notifications/read-all/
-Then: Tất cả 5 user_notification.is_read = true
+When: POST /api/notifications/mark-all-read/
+Then: Tất cả 5 notification.is_read = true
   And: GET /api/notifications/unread-count/ trả về 0
 ```
 

@@ -258,10 +258,25 @@
   },
   "notifications": {
     "title": "Notifications",
+    "subtitle": "Realtime updates and inbox history for your account.",
+    "inboxTitle": "Inbox",
+    "openInbox": "Open notifications inbox",
+    "unreadCount": "Unread: {count}",
     "markRead": "Mark as read",
     "markAllRead": "Mark all as read",
+    "previous": "Previous",
+    "next": "Next",
+    "read": "Read",
     "empty": "No new notifications",
-    "unread": "Unread"
+    "unread": "Unread",
+    "errors": {
+      "loadFailed": "Failed to load notifications.",
+      "unreadCountFailed": "Failed to load unread counter.",
+      "markReadFailed": "Failed to mark notification as read.",
+      "markAllReadFailed": "Failed to mark all notifications as read.",
+      "authRequired": "Realtime notifications require a valid login session.",
+      "realtimeFailed": "Realtime notification channel is temporarily unavailable."
+    }
   },
   "admin": {
     "title": "System Administration",

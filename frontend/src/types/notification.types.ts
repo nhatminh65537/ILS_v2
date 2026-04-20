@@ -1,6 +1,6 @@
 /**
  * Notification domain types
- * Derived from DATA_MODEL.md Notification Domain section
+ * Derived from backend/api/serializers/system.py NotificationSerializer
  */
 
 export enum NotificationType {
@@ -11,38 +11,24 @@ export enum NotificationType {
   System = 'system',
 }
 
-/** Notification template (system template) */
-export interface NotificationTemplate {
-  readonly id: number
-  readonly notification_type: NotificationType
-  readonly title_template: string
-  readonly message_template: string
-  readonly icon?: string
-  readonly created_at: string
-}
-
 /** Notification instance (sent to user) */
 export interface Notification {
   readonly id: number
-  readonly user_id: number
-  readonly notification_type: NotificationType
+  readonly type: NotificationType
   readonly title: string
   readonly message: string
-  readonly link?: string
-  readonly icon?: string
+  readonly metadata?: Record<string, unknown> | null
   readonly is_read: boolean
-  readonly read_at?: string
+  readonly read_at?: string | null
   readonly created_at: string
-  readonly updated_at: string
 }
 
 /** Request/response payloads */
 export interface CreateNotificationPayload {
-  notification_type: NotificationType
+  type: NotificationType
   title: string
   message: string
-  link?: string
-  icon?: string
+  metadata?: Record<string, unknown> | null
 }
 
 export interface MarkReadPayload {
@@ -50,6 +36,8 @@ export interface MarkReadPayload {
 }
 
 export interface NotificationListResponse {
-  readonly unread_count: number
-  readonly notifications: readonly Notification[]
+  readonly count: number
+  readonly next: string | null
+  readonly previous: string | null
+  readonly results: readonly Notification[]
 }

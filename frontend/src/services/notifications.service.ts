@@ -30,19 +30,28 @@ export const getNotificationById = async (id: number): Promise<Notification> => 
 }
 
 /**
- * POST /api/notifications/{id}/mark_read/
+ * POST /api/notifications/{id}/mark-read/
  * Mark single notification as read
  */
-export const markNotificationRead = async (id: number): Promise<Notification> => {
-  const response = await apiClient.post(`/api/notifications/${id}/mark_read/`)
+export const markNotificationRead = async (id: number): Promise<{ readonly message: string }> => {
+  const response = await apiClient.post(`/api/notifications/${id}/mark-read/`)
   return response.data
 }
 
 /**
- * POST /api/notifications/mark_all_read/
+ * POST /api/notifications/mark-all-read/
  * Mark all notifications as read for current user
  */
-export const markAllNotificationsRead = async (): Promise<{ readonly count: number }> => {
-  const response = await apiClient.post('/api/notifications/mark_all_read/')
+export const markAllNotificationsRead = async (): Promise<{ readonly updated_count: number }> => {
+  const response = await apiClient.post('/api/notifications/mark-all-read/')
+  return response.data
+}
+
+/**
+ * GET /api/notifications/unread-count/
+ * Fetch unread counter for current user
+ */
+export const getUnreadNotificationCount = async (): Promise<{ readonly count: number }> => {
+  const response = await apiClient.get('/api/notifications/unread-count/')
   return response.data
 }

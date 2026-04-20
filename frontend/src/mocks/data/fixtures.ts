@@ -520,8 +520,7 @@ export const quizProgressFixture: UserQuizProgress[] = [
 
 export const notificationsFixture: Notification[] = Array.from({ length: 10 }, (_, index) => ({
   id: index + 1,
-  user_id: 1,
-  notification_type:
+  type:
     index % 4 === 0
       ? NotificationType.System
       : index % 3 === 0
@@ -531,12 +530,10 @@ export const notificationsFixture: Notification[] = Array.from({ length: 10 }, (
           : NotificationType.Manual,
   title: `Notification #${index + 1}`,
   message: `This is a realistic mock notification number ${index + 1}.`,
-  link: index % 2 === 0 ? `/vi/notifications/${index + 1}` : undefined,
-  icon: 'bell',
+  metadata: index % 2 === 0 ? { href: `/vi/notifications/${index + 1}` } : null,
   is_read: index > 4,
-  read_at: index > 4 ? now : undefined,
+  read_at: index > 4 ? now : null,
   created_at: now,
-  updated_at: now,
 }))
 
 export const activityFixture: ActivityEvent[] = [

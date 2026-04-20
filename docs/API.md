@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-15
+> Last updated: 2026-04-20
 
 ---
 
@@ -310,6 +310,10 @@ Task 9.2 + 9.3 update (2026-04-17):
 - WebSocket realtime delivery is active at `/ws/notifications/` using first-message JWT auth.
 - Realtime channel group is `notifications_{user_id}` and receives event payloads from NotificationService.
 
+Contract alignment note (2026-04-20):
+- Notification action endpoints use hyphenated paths (`mark-read`, `mark-all-read`, `unread-count`).
+- Frontend contracts and PRD-07 were normalized to this runtime API surface.
+
 Active:
 
 | Method | Path | Auth | Status | Notes |
@@ -328,7 +332,7 @@ Active WebSocket:
 | WS | `/ws/notifications/` | First-message JWT (`{"type":"auth","token":"..."}`) | Stable | Subscribes current user to `notifications_{user_id}` and pushes `{"type":"notification","data":{...}}` events for newly-created notifications. |
 
 Still pending in Slice 9:
-- Task 9.4/9.5 frontend inbox, bell, and admin broadcast UI.
+- Task 9.5 admin broadcast UI (`/{locale}/admin/notifications`).
 
 ### 3.8 Leaderboard
 

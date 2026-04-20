@@ -39,7 +39,7 @@ Route-level inventory for frontend pages across Slices 1–11.
 | Route | Page Name | Auth Required | Layout Group | Primary Store | Primary API Calls | Slice | Status |
 |---|---|---|---|---|---|---|---|
 | `/vi/dashboard` `/en/dashboard` | Dashboard | Yes | `[locale]/(app)` | `auth.store`, `ui.store` | `users.getMyProfile`, `leaderboard.getLeaderboard` (summary) | 4 | implemented |
-| `/vi/notifications` `/en/notifications` | Notification inbox | Yes | `[locale]/(app)` | `notifications.store` | `notifications.listNotifications`, `notifications.markRead`, `notifications.markAllRead` | 9 | skeleton |
+| `/vi/notifications` `/en/notifications` | Notification inbox | Yes | `[locale]/(app)` | `notifications.store` | `notifications.listNotifications`, `notifications.markNotificationRead`, `notifications.markAllNotificationsRead`, `notifications.getUnreadNotificationCount`, WS `/ws/notifications/` | 9 | implemented |
 | `/vi/leaderboard` `/en/leaderboard` | Leaderboard | Yes | `[locale]/(app)` | `ui.store` | `leaderboard.getLeaderboard` | 11 | skeleton |
 
 > **Dashboard content (Slice 11):** quick-stats cards (total points, challenges solved, quizzes completed, courses in progress), mini leaderboard rank, recent activity feed, recommended/incomplete courses.
@@ -164,7 +164,7 @@ frontend/app/
     ├── (app)/                                        # auth (UserAccessGate), navbar/footer, NO nav sidebar
     │   ├── layout.tsx                                # showSidebar=false — navigation via Navbar only
     │   ├── dashboard/page.tsx                        ✅ implemented (content filled Slice 11)
-    │   ├── notifications/page.tsx                    🔲 skeleton (Task 9.4)
+    │   ├── notifications/page.tsx                    ✅ implemented (Task 9.4)
     │   ├── leaderboard/page.tsx                      🔲 skeleton (Task 11.3)
     │   └── profile/
     │       ├── page.tsx                              ✅ implemented (redirect → settings)

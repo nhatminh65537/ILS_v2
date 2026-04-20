@@ -258,10 +258,25 @@
   },
   "notifications": {
     "title": "Thông báo",
+    "subtitle": "Cập nhật realtime và lịch sử thông báo của tài khoản.",
+    "inboxTitle": "Hộp thư thông báo",
+    "openInbox": "Mở hộp thư thông báo",
+    "unreadCount": "Chưa đọc: {count}",
     "markRead": "Đánh dấu đã đọc",
     "markAllRead": "Đánh dấu tất cả đã đọc",
+    "previous": "Trang trước",
+    "next": "Trang sau",
+    "read": "Đã đọc",
     "empty": "Chưa có thông báo mới",
-    "unread": "Chưa đọc"
+    "unread": "Chưa đọc",
+    "errors": {
+      "loadFailed": "Không thể tải danh sách thông báo.",
+      "unreadCountFailed": "Không thể tải số lượng chưa đọc.",
+      "markReadFailed": "Không thể đánh dấu đã đọc.",
+      "markAllReadFailed": "Không thể đánh dấu tất cả đã đọc.",
+      "authRequired": "Kênh thông báo realtime yêu cầu phiên đăng nhập hợp lệ.",
+      "realtimeFailed": "Kênh thông báo realtime đang tạm thời không khả dụng."
+    }
   },
   "admin": {
     "title": "Quản trị hệ thống",

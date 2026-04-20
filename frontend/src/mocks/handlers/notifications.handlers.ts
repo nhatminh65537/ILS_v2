@@ -34,7 +34,7 @@ export const notificationsHandlers = [
     return HttpResponse.json(notification)
   }),
 
-  http.post('*/api/notifications/:id/mark_read/', ({ params }) => {
+  http.post('*/api/notifications/:id/mark-read/', ({ params }) => {
     const id = parseNumericId(String(params.id))
     if (!id) {
       return notFound('Notification not found')
@@ -49,30 +49,33 @@ export const notificationsHandlers = [
       ...notificationsFixture[index],
       is_read: true,
       read_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     }
 
     notificationsFixture[index] = updated
     return HttpResponse.json(updated)
   }),
 
-  http.post('*/api/notifications/mark_all_read/', () => {
+  http.post('*/api/notifications/mark-all-read/', () => {
     const now = new Date().toISOString()
-    let count = 0
+    let updatedCount = 0
 
     for (let index = 0; index < notificationsFixture.length; index += 1) {
       if (!notificationsFixture[index].is_read) {
-        count += 1
+        updatedCount += 1
       }
 
       notificationsFixture[index] = {
         ...notificationsFixture[index],
         is_read: true,
         read_at: now,
-        updated_at: now,
       }
     }
 
+    return HttpResponse.json({ updated_count: updatedCount })
+  }),
+
+  http.get('*/api/notifications/unread-count/', () => {
+    const count = notificationsFixture.filter((item) => !item.is_read).length
     return HttpResponse.json({ count })
   }),
 ]

@@ -125,6 +125,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.1 (2026-04-17) | Notification API implemented: `/api/notifications/` list ordered unread-first, `/api/notifications/{id}/mark-read/`, `/api/notifications/mark-all-read/`, `/api/notifications/unread-count/`, and admin `/api/admin/notifications/broadcast/`; broadcast creates one notification per active user; focused tests (`backend/api/tests/test_notification_api.py`) and RBAC regression (`backend/api/tests/test_rbac_api.py`) pass. |
 | Slice 9 / Task 9.2 (2026-04-17) | Auto-trigger notifications implemented via backend signals and shared helper: course completion now emits `COURSE`, challenge completion emits `CHALLENGE`, quiz completion emits `QUIZ`; `event_key` deduplication added to `notification`; focused signal tests and adjacent regressions pass. |
 | Slice 9 / Task 9.3 (2026-04-17) | WebSocket notification delivery implemented at `/ws/notifications/` with first-message JWT auth, timeout/failure close codes, per-user channel group `notifications_{user_id}`, and realtime push wiring from `NotificationService` (including signal-triggered notifications and admin broadcasts); async consumer tests added at `backend/realtime/tests/test_notification_consumer.py` and passing. |
+| Slice 9 / Task 9.4 (2026-04-20) | Frontend notification bell + inbox implemented on user surface: `NotificationBell` integrated into session navbar controls with unread badge and latest-5 dropdown, inbox page delivered at `/{locale}/notifications` with mark single/all read actions, realtime socket hook for `/ws/notifications/`, and frontend contract normalization to hyphenated endpoints (`mark-read`, `mark-all-read`, `unread-count`) plus MSW alignment. Validation gates: `npx tsc --noEmit`, `npm run lint`, `npm run build` passed. |
 
 ---
 
@@ -175,6 +176,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.1 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-1-notification-api.md` |
 | Slice 9 / Task 9.2 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-2-auto-trigger-signals.md` |
 | Slice 9 / Task 9.3 (2026-04-17) | `docs/reports/2026-04-17_slice9-task9-3-websocket-delivery.md` |
+| Slice 9 / Task 9.4 (2026-04-20) | `docs/reports/2026-04-20_slice9-task9-4-frontend-notification-bell-inbox.md` |
 | Admin surface token guard bugfix (2026-04-19) | `docs/reports/2026-04-19_admin-surface-token-guard.md` |
 | Slice 1-4 browser regression fix pass (2026-04-20) | `docs/reports/2026-04-20_slice1-4-browser-regression-fixes.md` |
 
@@ -287,7 +289,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Notification API | Low | ✅ Completed 2026-04-17: `/api/notifications/`, `/api/notifications/{id}/mark-read/`, `/api/notifications/mark-all-read/`, `/api/notifications/unread-count/`, `/api/admin/notifications/broadcast/` implemented with focused backend tests and RBAC regression pass. |
 | Auto-trigger via Django signals | Low | ✅ Completed 2026-04-17: challenge/quiz/course completion signals create idempotent notifications using stable `event_key`. |
 | WebSocket notification delivery | Low | ✅ Completed 2026-04-17: `/ws/notifications/` consumer with first-message JWT auth, per-user group subscription, and realtime push from notification service. |
-| Frontend: Notification bell + inbox | Low | |
+| Frontend: Notification bell + inbox | Low | ✅ Completed 2026-04-20: user-surface bell + inbox implemented with realtime updates and hyphenated endpoint contract alignment. |
 
 ### Slice 11 — Statistics
 
