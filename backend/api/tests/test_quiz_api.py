@@ -193,6 +193,10 @@ def test_member_can_get_and_update_own_quiz_config(member_client, member_user, p
 
     get_response = member_client.get(f'/api/quiz/quizzes/{published_quiz.id}/config/')
     assert get_response.status_code == 200
+    assert get_response.data['total_questions'] is None
+    assert get_response.data['time_limit_sec'] is None
+    assert get_response.data['random_question'] is False
+    assert get_response.data['random_option'] is False
 
     put_response = member_client.put(
         f'/api/quiz/quizzes/{published_quiz.id}/config/',

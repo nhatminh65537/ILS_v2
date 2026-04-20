@@ -2,6 +2,8 @@ import { chromium } from '@playwright/test'
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4000'
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000'
+const ADMIN_PASSWORD = 'admin1234'
+const MEMBER_PASSWORD = 'member1234'
 
 async function clearSession(page) {
   await page.goto(`${BASE_URL}/vi/login`)
@@ -10,8 +12,7 @@ async function clearSession(page) {
 
 async function seedAuth(page, { admin = false } = {}) {
   const username = admin ? 'admin' : 'member1'
-  const password = admin ? 'admin' : 'member1234'
-  const loginPassword = admin ? 'admin' : 'member1234'
+  const loginPassword = admin ? ADMIN_PASSWORD : MEMBER_PASSWORD
   const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

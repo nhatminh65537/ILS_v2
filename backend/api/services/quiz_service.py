@@ -33,7 +33,20 @@ class QuizService:
 
     @staticmethod
     def get_or_create_user_config(quiz, user):
-        return QuizConfig.objects.get_or_create(quiz=quiz, user=user)
+        return QuizConfig.objects.get_or_create(
+            quiz=quiz,
+            user=user,
+            defaults={
+                'total_questions': None,
+                'time_limit_sec': None,
+                'random_question': False,
+                'random_option': False,
+                'allow_review': True,
+                'allow_retry': True,
+                'max_attempt': None,
+                'is_active': True,
+            },
+        )
 
     @staticmethod
     def build_default_progress_payload(quiz_id, user_id):

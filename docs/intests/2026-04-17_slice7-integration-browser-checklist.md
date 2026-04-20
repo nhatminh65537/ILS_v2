@@ -2,7 +2,7 @@
 
 > Scope: Quiz user/admin surfaces + protocol checks
 > Environment: local DEV only
-> Last updated: 2026-04-17
+> Last updated: 2026-04-20
 
 ---
 
@@ -139,6 +139,28 @@ Expected result:
 	- `frontend/test-results/playwright.slice7.checklis-78d2c-itle-stats-and-session-link/error-context.md`
 	- `frontend/test-results/playwright.slice7.checklis-a1abe-connection-error-for-member/error-context.md`
 	- `frontend/test-results/playwright.slice7.checklis-eb2b4-and-exposes-draft-row-state/error-context.md`
+
+---
+
+## 6.2 Follow-up Fixes (2026-04-20)
+
+- Updated `frontend/playwright.slice7.checklist.test.ts` so user-surface cases authenticate `member1` before opening protected quiz routes, wait for post-login navigation deterministically, and use the seeded admin password `admin1234` instead of stale `admin`.
+- Updated `frontend/scripts/slice7-diagnostics.mjs` to seed auth with the canonical Slice 7 fixture credentials (`admin/admin1234`, `member1/member1234`) so diagnostics no longer report false negatives caused by invalid login data.
+- Updated `frontend/src/hooks/useQuizSession.ts` to prefer `NEXT_PUBLIC_WS_URL` as the authoritative WebSocket root, with fallback to `NEXT_PUBLIC_API_URL` only when the WS env var is absent.
+- Updated `frontend/src/hooks/useQuizSession.ts` to map close codes `4001/4008` to auth failure and `4002/4003/4004/4011` to session errors instead of collapsing all closes into a generic connection failure.
+- Updated `backend/api/services/quiz_service.py` and `backend/realtime/consumers/quiz_consumer.py` so newly created quiz configs default to `random_question=false` and `random_option=false`, matching the Slice 7 checklist contract.
+- Updated `backend/realtime/consumers/quiz_consumer.py` so empty published quizzes finish immediately with `total_score=0` and `max_score=0` instead of returning `no_questions`, matching case IX-7 in the integration checklist.
+- Added regression coverage:
+	- `backend/api/tests/test_quiz_api.py` now asserts the expected default config values.
+	- `backend/realtime/tests/test_quiz_consumer.py` now asserts the empty-quiz immediate-finish behavior.
+- Validation executed after the fixes:
+	- `.venv\Scripts\python.exe -m pytest backend/api/tests/test_quiz_api.py -q`
+	- `.venv\Scripts\python.exe -m pytest backend/realtime/tests/test_quiz_consumer.py -q`
+	- `npm run lint -- src/hooks/useQuizSession.ts playwright.slice7.checklist.test.ts scripts/slice7-diagnostics.mjs`
+- Current checklist state after this follow-up:
+	- Historical FAIL/BLOCKED entries in the matrix above remain as evidence of the 2026-04-19 run.
+	- The underlying code and local diagnostics for several root-cause issues are fixed.
+	- Full browser retest of BRW-701..724 has **not** been re-executed yet in this session, so no case is upgraded to PASS here.
 
 ---
 

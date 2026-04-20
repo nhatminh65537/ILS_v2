@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-20 (Slice 1-4 browser regressions fixed; checklist and reports synchronized)
+> Last updated: 2026-04-20 (Slice 7 checklist follow-up documented; reports and memory synchronized)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -94,6 +94,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Frontend Admin Access Gate (2026-04-01 → 2026-04-19) | Initial temporary fix removed the unstable permission-catalog gate and kept auth-only guard; current implementation now uses backend-issued JWT `admin_surface` claim gating so member accounts cannot enter admin routes while Admin/Editor users retain stable access without permission-catalog coupling. |
 | Admin surface token guard bugfix (2026-04-19) | Backend `TokenService` now emits `admin_surface` for Admin/Editor role membership; frontend admin routes and `/admin/login` consume that claim to reject non-admin-surface accounts immediately, closing active bugs H3/H7. |
 | Slice 1-4 browser regression fix pass (2026-04-20) | Real-backend Playwright validation is now stable under `npm run build` + `npm run start`; admin route hydration no longer bounces valid admin/editor users away from protected admin pages; canonical config seed now includes deterministic non-editable key coverage (`challenge.upload_path`), and combined Slice 1-4 browser coverage passed (`22/22`). |
+| Slice 7 checklist follow-up (2026-04-20) | Fixed false-negative Slice 7 browser artifacts (protected-route tests now log in before opening `/quizzes*`; diagnostics use seeded `admin1234`), aligned default quiz config to checklist contract (`random_question=false`, `random_option=false`), made empty published quizzes finish immediately with `0/0` over WebSocket, and updated frontend WS hookup to prefer `NEXT_PUBLIC_WS_URL` plus close-code-aware error mapping. Regression coverage: `backend/api/tests/test_quiz_api.py`, `backend/realtime/tests/test_quiz_consumer.py`, and targeted frontend lint all pass. |
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
 | Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
 | Frontend Surface Split + Admin Auth Entry (2026-04-01) | Implemented route-level user/admin surface separation with dedicated admin login (`/{locale}/admin/login`), removed admin-register flow, added full shell layouts (navbar/sidebar/content/footer) for user/admin protected surfaces, moved admin routes out of user route group, and aligned MSW handlers with backend RBAC/system-config contracts including JWT permission bitmap claims for frontend capability checks. |
@@ -161,6 +162,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 7 / Task 7.7 (2026-04-13) | `docs/reports/2026-04-13_slice7-task7-7-frontend-quiz-editor.md` |
 | Bugfix pass H2/M2/M4/M5/L3 (2026-04-14) | `docs/reports/2026-04-14_bugfix-h2-m2-m4-m5-l3.md` |
 | Slice 7 integration validation (2026-04-14) | `docs/reports/2026-04-14_slice7-integration-validation.md` |
+| Slice 7 checklist follow-up (2026-04-20) | `docs/reports/2026-04-20_slice7-checklist-followup.md` |
 | Slice 8 integration validation (2026-04-14) | `docs/reports/2026-04-14_slice8-integration-validation.md` |
 | Backend refactor closure (2026-04-14) | `docs/reports/2026-04-14_backend-refactor-closure.md` |
 | Slice 5 / Task 5.1 (2026-04-15) | `docs/reports/2026-04-15_slice5-task5-1-learn-crud-api.md` |

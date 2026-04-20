@@ -31,6 +31,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Components
 
+- **slice 7 checklist follow-up (2026-04-20)**: Slice 7 quiz follow-up fixed false-negative browser artifacts in `frontend/playwright.slice7.checklist.test.ts` and `frontend/scripts/slice7-diagnostics.mjs`, aligned default quiz-config creation to `random_question=false` / `random_option=false`, made empty published quizzes finish immediately with `0/0` over WebSocket, and updated `frontend/src/hooks/useQuizSession.ts` to prefer `NEXT_PUBLIC_WS_URL` with close-code-aware error mapping.
 - **admin surface token gate (2026-04-19)**: backend `TokenService` now emits JWT claim `admin_surface` for users with built-in `Admin` or `Editor` roles; frontend admin route guard and admin login consume this claim to deny member accounts before rendering admin pages.
 - **slice 1-4 browser regression pass (2026-04-20)**: real-backend Playwright validation for auth/admin/config flows is stable only when the frontend is executed with `npm run build` + `npm run start`; `next dev` was too unstable for deterministic browser verification in this repo.
 - **frontend admin Learn editor (Slice 5 Task 5.7)**: Admin surface routes `/{locale}/admin/learn/courses`, `/new`, `/{slug}`, and `/{locale}/admin/learn/lessons/{id}` implemented with course list/create/edit, taxonomy inline CRUD (category/tag dialogs), tree authoring (folder/lesson node create, rename, move, reorder, delete), and lesson tabs (`markdown`, `video`, `miniquiz`, deferred `outline`).
@@ -51,6 +52,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Status
 
+- Slice 7 checklist follow-up completed on 2026-04-20: code and local diagnostics are aligned for protected quiz-route auth setup, canonical Slice 7 credentials, empty-quiz WS finish behavior, default quiz-config flags, and WS env/error handling; a full browser rerun of BRW-701..724 is still pending before checklist cases can be upgraded to PASS.
 - Slice 1-4 browser regressions closed on 2026-04-20: combined real-backend Playwright coverage now passes `22/22` after fixing admin-route hydration timing, updating stale browser credentials/selectors, and restoring deterministic non-editable config seed coverage via `challenge.upload_path`.
 - Admin surface token-guard bugfix completed on 2026-04-19: frontend admin route gating no longer relies on authenticated-only state; `admin_surface` JWT claim now controls route-level access and closes prior H3/H7 regressions for member access to admin surface and unstable `/admin/users` verification.
 - Slice 5 Task 5.7 completed on 2026-04-16: frontend admin Learn course editor is active with canonical admin routes, typed service/hook orchestration, quiz-filtered mini-quiz mapping flow (`/api/quiz/quizzes/` -> `/api/quiz/quizzes/{id}/questions/` -> `/api/learn/lessons/{id}/questions/`), i18n parity (`adminLearn.*` in en/vi), and MSW write-contract coverage; validation gates (`lint`, `tsc --noEmit`, `next build`) pass.
@@ -93,6 +95,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Patterns
 
+- **Checklist follow-up documentation pattern**: When a browser checklist run produced historical FAIL/BLOCKED rows but the underlying code is fixed later without a fresh end-to-end rerun, keep the historical matrix intact, append a dated follow-up section listing code fixes and validations, and mark the overall state as "retest pending" instead of upgrading cases to PASS prematurely.
 - **Admin surface access pattern**: Use a backend-issued JWT claim such as `admin_surface` for route-level frontend gating of admin shells; do not depend on paginated permission-catalog fetches to decide whether a user can enter the admin surface.
 - **Stable Playwright runtime pattern**: For real-backend browser validation in this repo, prefer `npm run build` + `npm run start` over `next dev`; the production server avoids the detached-frame / aborted-navigation instability seen in direct Playwright runs against the dev server.
 - **System-config read-only acceptance pattern**: Keep at least one canonical seeded config with `is_editable=false` so Slice 3 acceptance and browser regression coverage can verify the read-only badge and hidden edit action against deterministic backend data.

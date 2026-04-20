@@ -8,8 +8,6 @@ import type {
   WsFinishEvent,
 } from '@/types/quiz.types'
 
-// ─── Session state machine ─────────────────────────────────────────────────
-
 export type SessionStatus = 'idle' | 'connecting' | 'authenticating' | 'active' | 'finished' | 'error'
 export type QuestionPhase = 'questioning' | 'answered'
 
@@ -83,8 +81,6 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
   }
 }
 
-// ─── Hook ──────────────────────────────────────────────────────────────────
-
 interface UseQuizSessionReturn extends SessionState {
   sendAnswer: (answerData: { option_id?: number; option_ids?: number[]; text?: string }) => void
   sendNext: () => void
@@ -96,7 +92,6 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
   const wsRef = useRef<WebSocket | null>(null)
   const stateRef = useRef(state)
 
-  // Keep stateRef in sync outside render (avoids stale closures in callbacks)
   useEffect(() => {
     stateRef.current = state
   })
@@ -112,15 +107,14 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
     wsRef.current = null
   }, [])
 
-  // WebSocket lifecycle
   useEffect(() => {
-    // Local status mirror — updated synchronously so onclose always sees the real phase
-    // (avoids the post-render delay of stateRef.current when dispatching from event handlers)
     let wsStatus: SessionStatus = 'idle'
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-    const wsBase = apiUrl.replace(/^http/, 'ws')
-    const wsUrl = `${wsBase}/ws/quiz/${quizId}/`
+    const configuredWsRoot = process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, '')
+    const fallbackApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+    const fallbackWsRoot = `${fallbackApiUrl.replace(/^http/, 'ws')}/ws`
+    const wsRoot = configuredWsRoot || fallbackWsRoot
+    const wsUrl = `${wsRoot}/quiz/${quizId}/`
 
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
@@ -149,7 +143,6 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
         case 'auth_ok':
           wsStatus = 'active'
           dispatch({ type: 'AUTH_OK' })
-          // Auto-send start action
           ws.send(JSON.stringify({ action: 'start' }))
           break
 
@@ -179,7 +172,7 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
 
         case 'error':
           wsStatus = 'error'
-          dispatch({ type: 'ERROR', message: (msg.message as string) ?? 'Session error' })
+          dispatch({ type: 'ERROR', message: (msg.message as string) ?? 'sessionError' })
           break
 
         default:
@@ -192,13 +185,23 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
       dispatch({ type: 'ERROR', message: 'connectionFailed' })
     }
 
-    ws.onclose = () => {
-      // Already in terminal state — nothing to do
-      if (wsStatus === 'finished' || wsStatus === 'error') return
-      // Any close during connecting/auth = server rejected or network failed
-      // (backend closes cleanly with 4001 on bad token — wasClean=true — would
-      //  have been silently swallowed before; now we always surface it as error)
+    ws.onclose = (event: CloseEvent) => {
+      if (wsStatus === 'finished' || wsStatus === 'error') {
+        return
+      }
+
       wsStatus = 'error'
+
+      if (event.code === 4001 || event.code === 4008) {
+        dispatch({ type: 'ERROR', message: 'authFailed' })
+        return
+      }
+
+      if (event.code === 4002 || event.code === 4003 || event.code === 4004 || event.code === 4011) {
+        dispatch({ type: 'ERROR', message: 'sessionError' })
+        return
+      }
+
       dispatch({ type: 'ERROR', message: 'connectionFailed' })
     }
 
@@ -212,7 +215,6 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
     }
   }, [quizId])
 
-  // Elapsed timer — runs while session is active
   useEffect(() => {
     if (state.status !== 'active') return
     const id = setInterval(() => dispatch({ type: 'TICK' }), 1000)

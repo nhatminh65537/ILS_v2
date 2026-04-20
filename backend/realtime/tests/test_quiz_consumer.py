@@ -109,6 +109,37 @@ async def test_start_attempt():
     await communicator.disconnect()
 
 
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_start_empty_quiz_finishes_immediately():
+    """Empty published quiz should finish immediately with 0/0 instead of error."""
+    user = await _create_user('carol', 'carol@example.com')
+    quiz = await _create_quiz('Empty Quiz')
+
+    tokens = await database_sync_to_async(RefreshToken.for_user)(user)
+    access_token = str(tokens.access_token)
+
+    communicator = WebsocketCommunicator(
+        _get_consumer_asgi(),
+        f"/ws/quiz/{quiz.id}/",
+    )
+
+    connected, _ = await communicator.connect()
+    assert connected
+
+    await communicator.send_json_to({"type": "auth", "token": access_token})
+    auth_resp = await communicator.receive_json_from()
+    assert auth_resp['type'] == 'auth_ok'
+
+    await communicator.send_json_to({"action": "start"})
+    finish_resp = await communicator.receive_json_from()
+    assert finish_resp['type'] == 'finish'
+    assert finish_resp['total_score'] == 0
+    assert finish_resp['max_score'] == 0
+
+    await communicator.disconnect()
+
+
 def _get_consumer_asgi():
     """Get ASGI application for consumer."""
     from realtime.consumers import QuizConsumer

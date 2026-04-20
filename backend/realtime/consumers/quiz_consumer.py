@@ -13,6 +13,7 @@ Decision: Q-INFRA-05 Option B (first-message auth pattern)
 
 import asyncio
 import logging
+import random
 from typing import Optional, Dict, Any
 
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -227,7 +228,7 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             # TASK-008: Get first question
             questions = await self._get_attempt_questions(attempt)
             if not questions:
-                await self._send_error('no_questions', 'Quiz has no questions')
+                await self._handle_finish(attempt)
                 return
             
             # Send first question
@@ -316,7 +317,7 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             # Get all questions for this attempt
             questions = await self._get_attempt_questions(attempt)
             if not questions:
-                await self._send_error('no_questions', 'Quiz has no questions')
+                await self._handle_finish(attempt)
                 return
             
             # Get answered question IDs
@@ -464,8 +465,8 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             defaults={
                 'total_questions': None,
                 'time_limit_sec': None,
-                'random_question': True,
-                'random_option': True,
+                'random_question': False,
+                'random_option': False,
                 'allow_review': True,
                 'allow_retry': True,
                 'max_attempt': None,
@@ -502,19 +503,20 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def _get_attempt_questions(self, attempt: UserQuizAttempt):
         """Get questions for this attempt (TASK-008 + TASK-010)."""
-        quiz = attempt.quiz
-        
-        # Get all published questions for this quiz
-        questions = list(QuizQuestion.objects.filter(
-            quiz=quiz,
-            status='published',
-        ))
-        
-        # Apply total_questions limit if configured
+        questions = list(
+            QuizQuestion.objects.filter(
+                quiz=attempt.quiz,
+                status='published',
+            ).order_by('position', 'id')
+        )
+
+        if attempt.config.get('random_question'):
+            random.shuffle(questions)
+
         total_limit = attempt.config.get('total_questions', 0)
         if total_limit > 0 and len(questions) > total_limit:
             questions = questions[:total_limit]
-        
+
         return questions
 
     @database_sync_to_async
@@ -522,9 +524,12 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
         """Fetch question options for choice-based questions."""
         if question.question_type not in ['single_choice', 'multi_choice']:
             return []
-        return list(
-            question.options.all().values('id', 'content', 'position')
-        )
+        options = list(question.options.all().order_by('position', 'id').values('id', 'content', 'position'))
+        if self.attempt_id:
+            attempt = UserQuizAttempt.objects.filter(id=self.attempt_id).first()
+            if attempt and attempt.config.get('random_option'):
+                random.shuffle(options)
+        return options
 
     @database_sync_to_async
     def _get_answered_question_ids(self, attempt: UserQuizAttempt):
