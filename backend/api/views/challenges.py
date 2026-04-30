@@ -1,90 +1,170 @@
+from django.db import IntegrityError
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from auth_app.permissions import add_role_granted
+from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.models import Challenge
+from api.models import Challenge, ChallengeCategory, ChallengeTag
 from api.serializers import (
+    ChallengeCategorySerializer,
     ChallengeDetailSerializer,
-    ChallengeFlagSubmitSerializer,
-    ChallengeInstanceSerializer,
     ChallengeListSerializer,
+    ChallengeTagSerializer,
+    ChallengeWriteSerializer,
 )
 from api.services.challenge_service import ChallengeService
 
 
 @add_role_granted('Admin', 'Editor', 'Member')
-class ChallengeViewSet(viewsets.ModelViewSet):
-    """Challenge management viewset."""
+class LearnChallengeViewSet(viewsets.ModelViewSet):
+    """Canonical namespaced challenge CRUD API under /api/challenge/challenges/."""
+
+    queryset = Challenge.objects.all().select_related('category').prefetch_related('tag_mappings__tag')
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+    lookup_field = 'slug'
+    lookup_url_kwarg = 'slug'
 
     def get_queryset(self):
-        queryset = Challenge.objects.all()
-        return ChallengeService.filter_visible_challenges(queryset, self.request.user, self.request.query_params)
+        queryset = super().get_queryset()
+        return ChallengeService.filter_visible_learn_challenges(
+            queryset, self.request.user, self.request.query_params
+        )
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return ChallengeDetailSerializer
+        if self.action in {'create', 'update', 'partial_update'}:
+            return ChallengeWriteSerializer
         return ChallengeListSerializer
 
-    @action(detail=True, methods=['post'])
-    def submit_flag(self, request, pk=None):
-        challenge = self.get_object()
-        serializer = ChallengeFlagSubmitSerializer(data=request.data)
-
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        submitted_flag = serializer.validated_data['flag']
-
-        try:
-            instance_flag_hash = ChallengeService.resolve_instance_flag_hash(challenge, request.user)
-        except LookupError as exc:
-            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-
-        challenge_flag = ChallengeService.get_primary_flag(challenge)
-        if not challenge_flag:
-            return Response(
-                {'error': 'No flag configured for this challenge'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        is_correct = challenge_flag.validate_submission(submitted_flag, instance_flag_hash)
-
-        ChallengeService.record_submission(request.user, challenge, submitted_flag, is_correct)
-
-        if is_correct:
-            ChallengeService.handle_correct_submission(request.user, challenge)
-
+    def _build_slug_conflict_response(self, slug):
+        suggestions = ChallengeService.build_slug_suggestions(slug)
         return Response(
             {
-                'correct': is_correct,
-                'message': 'Correct! Challenge solved!' if is_correct else 'Incorrect flag',
-            }
+                'detail': 'Slug already exists.',
+                'slug': slug,
+                'suggestions': suggestions,
+            },
+            status=status.HTTP_409_CONFLICT,
         )
 
-    @action(detail=True, methods=['post'])
-    def create_instance(self, request, pk=None):
-        challenge = self.get_object()
+    @staticmethod
+    def _normalize_slug(payload):
+        raw = payload.get('slug')
+        if raw is None:
+            return None
+        return str(raw).strip().lower()
 
-        if not challenge.instance_required:
+    @add_role_granted('Admin', 'Editor')
+    def create(self, request, *args, **kwargs):
+        requested_slug = self._normalize_slug(request.data)
+        if requested_slug and Challenge.objects.filter(slug=requested_slug).exists():
+            return self._build_slug_conflict_response(requested_slug)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            challenge = serializer.save()
+        except IntegrityError:
+            fallback_slug = requested_slug or serializer.validated_data.get('slug')
+            if fallback_slug and Challenge.objects.filter(slug=fallback_slug).exists():
+                return self._build_slug_conflict_response(fallback_slug)
+            raise ValidationError({'detail': 'Invalid payload.'})
+
+        detail_serializer = ChallengeDetailSerializer(challenge, context={'request': request})
+        return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
+
+    @add_role_granted('Admin', 'Editor')
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        requested_slug = self._normalize_slug(request.data)
+        if requested_slug and requested_slug != instance.slug:
             return Response(
-                {'error': 'This challenge does not require an instance'},
+                {'detail': 'Slug is immutable after creation.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        existing = ChallengeService.get_running_instance(challenge, request.user)
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        challenge = serializer.save()
 
-        if existing:
-            serializer = ChallengeInstanceSerializer(existing)
-            return Response(serializer.data)
+        detail_serializer = ChallengeDetailSerializer(challenge, context={'request': request})
+        return Response(detail_serializer.data)
 
-        instance = ChallengeService.create_instance(challenge, request.user)
+    @add_role_granted('Admin', 'Editor')
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
-        try:
-            ChallengeService.start_instance(instance)
-        except RuntimeError as exc:
-            return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    @add_role_granted('Admin', 'Editor')
+    def destroy(self, request, *args, **kwargs):
+        challenge = self.get_object()
+        mode = request.query_params.get('mode', 'archive')
+        normalized_mode = (mode or 'archive').strip().lower()
 
-        serializer = ChallengeInstanceSerializer(instance)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if normalized_mode not in {'archive', 'purge'}:
+            return Response(
+                {'detail': "mode must be 'archive' or 'purge'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if normalized_mode == 'purge':
+            challenge.delete()
+        else:
+            challenge.status = Challenge.Status.ARCHIVED
+            challenge.save(update_fields=['status', 'updated_at'])
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@add_role_granted('Admin', 'Editor', 'Member')
+class LearnChallengeCategoryViewSet(viewsets.ModelViewSet):
+    """Canonical namespaced category CRUD API under /api/challenge/categories/."""
+
+    queryset = ChallengeCategory.objects.all().order_by('name')
+    serializer_class = ChallengeCategorySerializer
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    @add_role_granted('Admin', 'Editor')
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+
+@add_role_granted('Admin', 'Editor', 'Member')
+class LearnChallengeTagViewSet(viewsets.ModelViewSet):
+    """Canonical namespaced tag CRUD API under /api/challenge/tags/."""
+
+    queryset = ChallengeTag.objects.all().order_by('name')
+    serializer_class = ChallengeTagSerializer
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    @add_role_granted('Admin', 'Editor')
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @add_role_granted('Admin', 'Editor')
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)

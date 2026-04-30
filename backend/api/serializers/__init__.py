@@ -24,6 +24,7 @@ from .challenge import (
 	ChallengeInstanceSerializer,
 	ChallengeListSerializer,
 	ChallengeTagSerializer,
+	ChallengeWriteSerializer,
 	UserChallengeProgressSerializer,
 )
 from .course import (
@@ -111,6 +112,7 @@ __all__ = [
 	'ChallengeInstanceSerializer',
 	'ChallengeListSerializer',
 	'ChallengeTagSerializer',
+	'ChallengeWriteSerializer',
 	'CourseCategorySerializer',
 	'CourseDetailSerializer',
 	'CourseListSerializer',

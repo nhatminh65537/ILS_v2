@@ -3,7 +3,11 @@
 from .admin_users import AdminUserViewSet, UserRoleViewSet
 from .admin_stats import AdminStatsViewSet
 from .auth import CustomTokenObtainPairView
-from .challenges import ChallengeViewSet
+from .challenges import (
+    LearnChallengeViewSet,
+    LearnChallengeCategoryViewSet,
+    LearnChallengeTagViewSet,
+)
 from .courses import (
     CourseViewSet,
     LearnCourseCategoryViewSet,
@@ -25,7 +29,9 @@ from .users import UserViewSet
 __all__ = [
     'AdminUserViewSet',
     'AdminStatsViewSet',
-    'ChallengeViewSet',
+    'LearnChallengeViewSet',
+    'LearnChallengeCategoryViewSet',
+    'LearnChallengeTagViewSet',
     'CourseViewSet',
     'CustomTokenObtainPairView',
     'LeaderboardViewSet',

@@ -1,10 +1,22 @@
+import re
+
 from rest_framework import serializers
 
 from api.models import Challenge, ChallengeCategory, ChallengeInstance, ChallengeTag, UserChallengeProgress
+from api.services.challenge_service import ChallengeService
 
 
 class ChallengeCategorySerializer(serializers.ModelSerializer):
     """Challenge category serializer"""
+
+    def validate_name(self, value):
+        normalized = value.strip()
+        queryset = ChallengeCategory.objects.filter(name__iexact=normalized)
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+        if queryset.exists():
+            raise serializers.ValidationError('Category name already exists.')
+        return normalized
 
     class Meta:
         model = ChallengeCategory
@@ -13,6 +25,15 @@ class ChallengeCategorySerializer(serializers.ModelSerializer):
 
 class ChallengeTagSerializer(serializers.ModelSerializer):
     """Challenge tag serializer"""
+
+    def validate_name(self, value):
+        normalized = value.strip()
+        queryset = ChallengeTag.objects.filter(name__iexact=normalized)
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+        if queryset.exists():
+            raise serializers.ValidationError('Tag name already exists.')
+        return normalized
 
     class Meta:
         model = ChallengeTag
@@ -29,6 +50,7 @@ class ChallengeListSerializer(serializers.ModelSerializer):
         model = Challenge
         fields = [
             'id',
+            'slug',
             'title',
             'description',
             'status',
@@ -43,7 +65,10 @@ class ChallengeListSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def get_tags(self, obj):
-        return ChallengeTagSerializer([tm.tag for tm in obj.tag_mappings.select_related('tag').all()], many=True).data
+        return ChallengeTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True,
+        ).data
 
 
 class ChallengeDetailSerializer(serializers.ModelSerializer):
@@ -56,6 +81,7 @@ class ChallengeDetailSerializer(serializers.ModelSerializer):
         model = Challenge
         fields = [
             'id',
+            'slug',
             'title',
             'description',
             'status',
@@ -73,7 +99,111 @@ class ChallengeDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_tags(self, obj):
-        return ChallengeTagSerializer([tm.tag for tm in obj.tag_mappings.select_related('tag').all()], many=True).data
+        return ChallengeTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True,
+        ).data
+
+
+class ChallengeWriteSerializer(serializers.ModelSerializer):
+    """Write serializer for canonical /api/challenge/challenges/ endpoints."""
+
+    category_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
+    tag_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+        write_only=True,
+    )
+    category = ChallengeCategorySerializer(read_only=True)
+    tags = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Challenge
+        fields = [
+            'id',
+            'slug',
+            'title',
+            'description',
+            'status',
+            'difficulty',
+            'category_id',
+            'category',
+            'tag_ids',
+            'tags',
+            'source',
+            'storage_path',
+            'gitlab_path',
+            'challenge_point',
+            'instance_required',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'category', 'tags']
+
+    def get_tags(self, obj):
+        return ChallengeTagSerializer(
+            [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
+            many=True,
+        ).data
+
+    def validate_slug(self, value):
+        normalized = (value or '').strip().lower()
+        if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', normalized):
+            raise serializers.ValidationError(
+                'Slug must contain only lowercase letters, numbers, and hyphens.'
+            )
+        return normalized
+
+    def validate_category_id(self, value):
+        if value is None:
+            return value
+        if not ChallengeCategory.objects.filter(id=value).exists():
+            raise serializers.ValidationError('Invalid category_id.')
+        return value
+
+    def validate_tag_ids(self, value):
+        tag_ids = sorted(set(value or []))
+        if not tag_ids:
+            return tag_ids
+        found_ids = set(ChallengeTag.objects.filter(id__in=tag_ids).values_list('id', flat=True))
+        missing = [tid for tid in tag_ids if tid not in found_ids]
+        if missing:
+            raise serializers.ValidationError(f'Invalid tag_ids: {missing}')
+        return tag_ids
+
+    def validate(self, attrs):
+        if self.instance and 'slug' in attrs and attrs['slug'] != self.instance.slug:
+            raise serializers.ValidationError({'slug': 'Slug is immutable after creation.'})
+        return attrs
+
+    def create(self, validated_data):
+        category_id = validated_data.pop('category_id', None)
+        tag_ids = validated_data.pop('tag_ids', [])
+
+        if category_id is not None:
+            validated_data['category'] = ChallengeCategory.objects.get(id=category_id)
+
+        challenge = Challenge.objects.create(**validated_data)
+        ChallengeService.upsert_challenge_tags(challenge, tag_ids)
+        return challenge
+
+    def update(self, instance, validated_data):
+        category_id = validated_data.pop('category_id', serializers.empty)
+        tag_ids = validated_data.pop('tag_ids', serializers.empty)
+
+        if category_id is not serializers.empty:
+            instance.category = (
+                ChallengeCategory.objects.get(id=category_id) if category_id else None
+            )
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+
+        if tag_ids is not serializers.empty:
+            ChallengeService.upsert_challenge_tags(instance, tag_ids)
+
+        return instance
 
 
 class ChallengeFlagSubmitSerializer(serializers.Serializer):

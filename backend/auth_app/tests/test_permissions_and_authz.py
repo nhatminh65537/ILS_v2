@@ -15,7 +15,7 @@ class TestPermissionDiscovery:
 
         assert Permission.objects.filter(name='api.course.list', is_active=True).exists()
         assert Permission.objects.filter(name='api.course.tree', is_active=True).exists()
-        assert Permission.objects.filter(name='api.challenge.submit_flag', is_active=True).exists()
+        assert Permission.objects.filter(name='api.learn_challenge.list', is_active=True).exists()
         assert Permission.objects.filter(name='api.system_config.update', is_active=True).exists()
 
     def test_discovery_is_idempotent(self):

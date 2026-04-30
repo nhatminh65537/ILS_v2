@@ -1,24 +1,38 @@
 from django.utils import timezone
 
-from api.models import Challenge, ChallengeInstance, UserChallengeProgress, UserChallengeSubmit, UserProfile
+from api.models import (
+    Challenge,
+    ChallengeInstance,
+    ChallengeTagMap,
+    UserChallengeProgress,
+    UserChallengeSubmit,
+    UserProfile,
+)
 
 
 class ChallengeService:
     """Domain operations for challenge flows."""
 
     @staticmethod
-    def filter_visible_challenges(queryset, user, query_params):
+    def is_editor_or_admin(user):
+        if user.is_superuser:
+            return True
+        return user.user_roles.filter(role__name__in=['Admin', 'Editor']).exists()
+
+    @classmethod
+    def filter_visible_learn_challenges(cls, queryset, user, query_params):
         status_param = query_params.get('status')
-        if status_param:
-            queryset = queryset.filter(status=status_param)
-        elif not user.is_staff:
+
+        if not cls.is_editor_or_admin(user):
             queryset = queryset.filter(status=Challenge.Status.PUBLISHED)
+        elif status_param:
+            queryset = queryset.filter(status=status_param)
 
         difficulty = query_params.get('difficulty')
         if difficulty:
             queryset = queryset.filter(difficulty=difficulty)
 
-        category = query_params.get('category')
+        category = query_params.get('category') or query_params.get('category_id')
         if category:
             queryset = queryset.filter(category_id=category)
 
@@ -26,7 +40,54 @@ class ChallengeService:
         if search:
             queryset = queryset.filter(title__icontains=search)
 
-        return queryset.select_related('category')
+        return queryset.select_related('category').prefetch_related('tag_mappings__tag').order_by('id')
+
+    @classmethod
+    def filter_visible_challenges(cls, queryset, user, query_params):
+        return cls.filter_visible_learn_challenges(queryset, user, query_params)
+
+    @staticmethod
+    def build_slug_suggestions(base_slug, limit=5):
+        normalized = (base_slug or '').strip().lower().strip('-')
+        if not normalized:
+            normalized = 'challenge'
+
+        existing = set(
+            Challenge.objects.filter(slug__startswith=normalized).values_list('slug', flat=True)
+        )
+
+        suggestions = []
+        if normalized not in existing:
+            suggestions.append(normalized)
+
+        index = 2
+        while len(suggestions) < limit:
+            candidate = f'{normalized}-{index}'
+            if candidate not in existing:
+                suggestions.append(candidate)
+            index += 1
+
+        return suggestions
+
+    @staticmethod
+    def upsert_challenge_tags(challenge, tag_ids):
+        tag_ids = sorted(set(tag_ids or []))
+
+        existing_mappings = {
+            mapping.tag_id: mapping
+            for mapping in ChallengeTagMap.objects.filter(challenge=challenge)
+        }
+
+        keep_ids = set(tag_ids)
+        stale_ids = [tag_id for tag_id in existing_mappings if tag_id not in keep_ids]
+        if stale_ids:
+            ChallengeTagMap.objects.filter(challenge=challenge, tag_id__in=stale_ids).delete()
+
+        missing_ids = [tag_id for tag_id in tag_ids if tag_id not in existing_mappings]
+        if missing_ids:
+            ChallengeTagMap.objects.bulk_create(
+                [ChallengeTagMap(challenge=challenge, tag_id=tag_id) for tag_id in missing_ids]
+            )
 
     @staticmethod
     def resolve_instance_flag_hash(challenge, user):

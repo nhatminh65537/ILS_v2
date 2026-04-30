@@ -17,7 +17,9 @@ from .views import (
     LearnCourseNodeViewSet,
     LearnCourseTagViewSet,
     LearnCourseViewSet,
-    ChallengeViewSet,
+    LearnChallengeViewSet,
+    LearnChallengeCategoryViewSet,
+    LearnChallengeTagViewSet,
     QuizNodeViewSet,
     QuizViewSet,
     NotificationViewSet,
@@ -33,7 +35,6 @@ router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'courses', CourseViewSet, basename='course')
 router.register(r'lessons', LessonViewSet, basename='lesson')
-router.register(r'challenges', ChallengeViewSet, basename='challenge')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
 router.register(r'stats/leaderboard', LeaderboardViewSet, basename='stats-leaderboard')
@@ -192,6 +193,37 @@ urlpatterns = [
         r'^quiz/nodes/(?P<pk>\d+)/move/$',
         QuizNodeViewSet.as_view({'post': 'move'}),
         name='quiz-node-move',
+    ),
+    # Canonical namespaced challenge routes (Slice 6 / Task 6.1)
+    re_path(
+        r'^challenge/challenges/$',
+        LearnChallengeViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='challenge-list',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/$',
+        LearnChallengeViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='challenge-detail',
+    ),
+    re_path(
+        r'^challenge/categories/$',
+        LearnChallengeCategoryViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='challenge-category-list',
+    ),
+    re_path(
+        r'^challenge/categories/(?P<pk>\d+)/$',
+        LearnChallengeCategoryViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='challenge-category-detail',
+    ),
+    re_path(
+        r'^challenge/tags/$',
+        LearnChallengeTagViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='challenge-tag-list',
+    ),
+    re_path(
+        r'^challenge/tags/(?P<pk>\d+)/$',
+        LearnChallengeTagViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='challenge-tag-detail',
     ),
     # User roles custom routes
     user_roles_url,

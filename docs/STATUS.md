@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-04-20 (Slice 9.5 delivery documented with post-implementation runtime hotfixes)
+> Last updated: 2026-04-30 (Slice 6.1 Task 6.1 delivery documented)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
@@ -254,7 +254,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| 6.1 Challenge + Category + Tag CRUD API + URL namespace migration | Medium | Remove flat router entry; wire `/api/challenge/*` explicitly |
+| 6.1 Challenge + Category + Tag CRUD API + URL namespace migration | Medium | ✅ Completed 2026-04-30: Canonical viewsets + slug-based lookup + tag upsert + slug conflict 409 + archive/purge destroy |
 | 6.2 ChallengeNode tree API (children, move, cycle-safe) | Medium | Reference: QuizNodeViewSet.move pattern |
 | 6.3 ChallengeFlag CRUD | Medium | flag_value hidden from Member; STATIC hashed / REGEX plaintext |
 | 6.4 Flag submission + progress (Static, Regex, Instance) | Medium | Rewrite flag_service from scratch; server-side only |
