@@ -7,6 +7,10 @@ class AdminStatsOverviewSerializer(serializers.Serializer):
     user_count = serializers.IntegerField(min_value=0)
     active_today = serializers.IntegerField(min_value=0)
     solves_week = serializers.IntegerField(min_value=0)
+    registrations_week = serializers.IntegerField(min_value=0)
+    courses_published = serializers.IntegerField(min_value=0)
+    challenges_published = serializers.IntegerField(min_value=0)
+    quizzes_published = serializers.IntegerField(min_value=0)
 
 
 class AdminStatsUserSerializer(serializers.Serializer):

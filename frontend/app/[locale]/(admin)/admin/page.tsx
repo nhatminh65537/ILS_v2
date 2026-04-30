@@ -6,5 +6,5 @@ type AdminEntryPageProps = {
 
 export default async function AdminEntryPage({ params }: AdminEntryPageProps) {
   const { locale } = await params
-  redirect(`/${locale}/admin/login`)
+  redirect(`/${locale}/admin/dashboard`)
 }

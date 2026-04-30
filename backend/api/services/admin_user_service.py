@@ -53,6 +53,10 @@ class AdminUserService:
         if date_joined_to is not None:
             queryset = queryset.filter(date_joined__lte=date_joined_to)
 
+        search = query_params.get('search')
+        if search:
+            queryset = queryset.filter(username__icontains=search)
+
         return queryset
 
     @staticmethod

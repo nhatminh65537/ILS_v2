@@ -1,8 +1,10 @@
-export default function AdminStatisticsPage() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Statistics</h1>
-      <p className="text-muted-foreground">Coming soon.</p>
-    </div>
-  )
+import { AdminStatsPageClient } from '@/components/features/admin-stats/AdminStatsPageClient'
+
+type AdminStatisticsPageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function AdminStatisticsPage({ params }: AdminStatisticsPageProps) {
+  const { locale } = await params
+  return <AdminStatsPageClient locale={locale} />
 }

@@ -32,6 +32,13 @@ export const adminUsersHandlers = [
       filtered = filtered.filter((u) => new Date(u.date_joined).getTime() <= to)
     }
 
+    const searchParam = url.searchParams.get('search')
+    if (searchParam) {
+      filtered = filtered.filter((u) =>
+        u.username.toLowerCase().includes(searchParam.toLowerCase())
+      )
+    }
+
     return HttpResponse.json(
       toPaginatedResponse(filtered, { limit, offset, basePath: '/api/admin/users/' })
     )

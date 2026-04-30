@@ -232,6 +232,7 @@ export interface AdminUserListParams {
   is_active?: boolean
   date_joined_from?: string
   date_joined_to?: string
+  search?: string
   limit?: number
   offset?: number
 }

@@ -9,6 +9,7 @@ import {
 } from '@/types/notification.types'
 import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizQuestion, type QuizQuestionOption, type UserQuizProgress } from '@/types/quiz.types'
 import { type ActivityEvent, type AdminUserDto, type AuthSessionListItem, type User, type UserProfile } from '@/types/user.types'
+import type { AdminStatsOverviewDto, AdminStatsUserDetailDto } from '@/types/admin-stats.types'
 
 const now = '2026-03-31T09:00:00.000Z'
 
@@ -679,3 +680,57 @@ export const leaderboardFixture: LeaderboardFixtureRow[] = Array.from({ length: 
     total_points: totalPoints,
   }
 })
+
+export const adminStatsOverviewFixture: AdminStatsOverviewDto = {
+  user_count: 42,
+  active_today: 7,
+  solves_week: 18,
+  registrations_week: 3,
+  courses_published: 5,
+  challenges_published: 12,
+  quizzes_published: 8,
+}
+
+export const adminStatsUserDetailFixture: AdminStatsUserDetailDto = {
+  user: {
+    id: 1,
+    username: 'member1',
+    email: 'member1@ils.local',
+    is_active: true,
+    date_joined: '2026-01-10T08:00:00.000Z',
+    last_login: '2026-04-29T10:00:00.000Z',
+    display_name: 'Core Admin',
+    avatar_url: null,
+    last_active_at: now,
+  },
+  points: { learning: 350, challenge: 420, quiz: 180, total: 950 },
+  completion: {
+    courses_started: 7,
+    courses_completed: 6,
+    lessons_started: 42,
+    lessons_completed: 38,
+    challenges_completed: 11,
+    challenge_submits: 25,
+    challenge_correct_submits: 11,
+    quizzes_completed: 8,
+    quiz_attempts: 14,
+    quiz_best_score: 95,
+  },
+  activity: {
+    last_active_at: now,
+    last_course_started_at: '2026-04-20T08:00:00.000Z',
+    last_course_completed_at: '2026-04-25T10:00:00.000Z',
+    last_lesson_started_at: '2026-04-28T09:00:00.000Z',
+    last_lesson_completed_at: '2026-04-28T10:30:00.000Z',
+    last_challenge_completed_at: '2026-04-22T14:00:00.000Z',
+    last_quiz_attempted_at: '2026-04-27T16:00:00.000Z',
+    last_quiz_completed_at: '2026-04-27T16:30:00.000Z',
+  },
+  sessions: {
+    total: 3,
+    active: 1,
+    revoked: 2,
+    latest_last_used_at: now,
+    latest_expires_at: '2026-05-30T08:00:00.000Z',
+  },
+}

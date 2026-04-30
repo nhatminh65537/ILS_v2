@@ -144,6 +144,10 @@ class TestAdminStatsAPI:
             'user_count': 5,
             'active_today': 2,
             'solves_week': 2,
+            'registrations_week': 5,  # all 5 test users created with date_joined=now()
+            'courses_published': 0,
+            'challenges_published': 1,
+            'quizzes_published': 1,
         }
 
     def test_overview_includes_exact_24_hour_boundary(self, admin_client, admin_stats_fixture, rbac_seed):
@@ -175,6 +179,14 @@ class TestAdminStatsAPI:
         response = admin_client.get('/api/admin/stats/users/999999/')
 
         assert response.status_code == 404
+
+    def test_overview_includes_new_fields(self, admin_client, admin_stats_fixture, rbac_seed):
+        response = admin_client.get('/api/admin/stats/')
+
+        assert response.status_code == 200
+        for field in ('registrations_week', 'courses_published', 'challenges_published', 'quizzes_published'):
+            assert field in response.data
+            assert response.data[field] >= 0
 
     def test_non_admin_is_rejected(self, member_client, admin_stats_fixture, rbac_seed):
         response = member_client.get('/api/admin/stats/')

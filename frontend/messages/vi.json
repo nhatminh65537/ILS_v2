@@ -1102,5 +1102,91 @@
       "usernameConflict": "Tên đăng nhập đã tồn tại.",
       "emailConflict": "Email đã được sử dụng."
     }
+  },
+  "adminStats": {
+    "title": "Thống kê",
+    "subtitle": "Thống kê toàn nền tảng và tra cứu chi tiết từng người dùng.",
+    "overview": {
+      "title": "Tổng quan nền tảng",
+      "userCount": "Tổng người dùng",
+      "activeToday": "Hoạt động hôm nay",
+      "solvesWeek": "Giải trong tuần",
+      "registrationsWeek": "Người dùng mới tuần này",
+      "coursesPublished": "Khóa học đã xuất bản",
+      "challengesPublished": "Challenge đã xuất bản",
+      "quizzesPublished": "Quiz đã xuất bản"
+    },
+    "search": {
+      "label": "Tra cứu người dùng",
+      "placeholder": "Nhập tên đăng nhập",
+      "button": "Tìm kiếm",
+      "searching": "Đang tìm..."
+    },
+    "userDetail": {
+      "title": "Chi tiết người dùng",
+      "points": {
+        "title": "Điểm số",
+        "learning": "Học tập",
+        "challenge": "Challenge",
+        "quiz": "Quiz",
+        "total": "Tổng cộng"
+      },
+      "completion": {
+        "title": "Hoàn thành",
+        "coursesStarted": "Khóa học đã bắt đầu",
+        "coursesCompleted": "Khóa học đã hoàn thành",
+        "lessonsStarted": "Bài học đã bắt đầu",
+        "lessonsCompleted": "Bài học đã hoàn thành",
+        "challengesCompleted": "Challenge đã hoàn thành",
+        "challengeSubmits": "Lần nộp challenge",
+        "challengeCorrectSubmits": "Nộp đúng",
+        "quizzesCompleted": "Quiz đã hoàn thành",
+        "quizAttempts": "Lần làm quiz",
+        "quizBestScore": "Điểm quiz cao nhất"
+      },
+      "activity": {
+        "title": "Hoạt động",
+        "lastActive": "Lần hoạt động cuối",
+        "lastCourseStarted": "Bắt đầu khóa học lần cuối",
+        "lastCourseCompleted": "Hoàn thành khóa học lần cuối",
+        "lastLessonStarted": "Bắt đầu bài học lần cuối",
+        "lastLessonCompleted": "Hoàn thành bài học lần cuối",
+        "lastChallengeCompleted": "Hoàn thành challenge lần cuối",
+        "lastQuizAttempted": "Làm quiz lần cuối",
+        "lastQuizCompleted": "Hoàn thành quiz lần cuối"
+      },
+      "sessions": {
+        "title": "Phiên đăng nhập",
+        "total": "Tổng phiên",
+        "active": "Phiên đang hoạt động",
+        "revoked": "Phiên đã thu hồi",
+        "latestLastUsed": "Dùng lần cuối",
+        "latestExpires": "Hết hạn"
+      },
+      "never": "Chưa có"
+    },
+    "errors": {
+      "loadFailed": "Không thể tải thống kê.",
+      "userNotFound": "Không tìm thấy người dùng với tên đăng nhập này."
+    }
+  },
+  "adminDashboard": {
+    "title": "Trang quản trị",
+    "subtitle": "Tổng quan sức khỏe nền tảng.",
+    "overview": {
+      "title": "Tổng quan nền tảng"
+    },
+    "quickLinks": {
+      "title": "Truy cập nhanh",
+      "learn": "Học tập",
+      "challenges": "Challenge",
+      "quizzes": "Quiz",
+      "users": "Người dùng",
+      "notifications": "Thông báo",
+      "config": "Cấu hình"
+    },
+    "errors": {
+      "loadFailed": "Không thể tải dữ liệu trang chủ."
+    }
   }
 }

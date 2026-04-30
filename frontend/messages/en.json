@@ -1102,5 +1102,91 @@
       "usernameConflict": "Username already taken.",
       "emailConflict": "Email already in use."
     }
+  },
+  "adminStats": {
+    "title": "Statistics",
+    "subtitle": "Platform-wide statistics and per-user detail lookup.",
+    "overview": {
+      "title": "Platform Overview",
+      "userCount": "Total users",
+      "activeToday": "Active today",
+      "solvesWeek": "Solves this week",
+      "registrationsWeek": "New users this week",
+      "coursesPublished": "Courses published",
+      "challengesPublished": "Challenges published",
+      "quizzesPublished": "Quizzes published"
+    },
+    "search": {
+      "label": "User lookup",
+      "placeholder": "Enter exact username",
+      "button": "Search",
+      "searching": "Searching..."
+    },
+    "userDetail": {
+      "title": "User detail",
+      "points": {
+        "title": "Points",
+        "learning": "Learning",
+        "challenge": "Challenge",
+        "quiz": "Quiz",
+        "total": "Total"
+      },
+      "completion": {
+        "title": "Completion",
+        "coursesStarted": "Courses started",
+        "coursesCompleted": "Courses completed",
+        "lessonsStarted": "Lessons started",
+        "lessonsCompleted": "Lessons completed",
+        "challengesCompleted": "Challenges completed",
+        "challengeSubmits": "Challenge submits",
+        "challengeCorrectSubmits": "Correct submits",
+        "quizzesCompleted": "Quizzes completed",
+        "quizAttempts": "Quiz attempts",
+        "quizBestScore": "Best quiz score"
+      },
+      "activity": {
+        "title": "Activity",
+        "lastActive": "Last active",
+        "lastCourseStarted": "Last course started",
+        "lastCourseCompleted": "Last course completed",
+        "lastLessonStarted": "Last lesson started",
+        "lastLessonCompleted": "Last lesson completed",
+        "lastChallengeCompleted": "Last challenge completed",
+        "lastQuizAttempted": "Last quiz attempted",
+        "lastQuizCompleted": "Last quiz completed"
+      },
+      "sessions": {
+        "title": "Sessions",
+        "total": "Total sessions",
+        "active": "Active sessions",
+        "revoked": "Revoked sessions",
+        "latestLastUsed": "Last used",
+        "latestExpires": "Expires"
+      },
+      "never": "Never"
+    },
+    "errors": {
+      "loadFailed": "Failed to load statistics.",
+      "userNotFound": "No user found with that username."
+    }
+  },
+  "adminDashboard": {
+    "title": "Admin Dashboard",
+    "subtitle": "Platform health at a glance.",
+    "overview": {
+      "title": "Platform Overview"
+    },
+    "quickLinks": {
+      "title": "Quick links",
+      "learn": "Learn",
+      "challenges": "Challenges",
+      "quizzes": "Quizzes",
+      "users": "Users",
+      "notifications": "Notifications",
+      "config": "Configuration"
+    },
+    "errors": {
+      "loadFailed": "Failed to load dashboard data."
+    }
   }
 }

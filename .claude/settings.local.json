@@ -35,7 +35,8 @@
       "Bash(dir \"D:\\\\PBL5\\\\ILS_v2\\\\intests\")",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
-      "Bash(python -m pytest --ignore=realtime/tests.py --tb=short -q)"
+      "Bash(python -m pytest --ignore=realtime/tests.py --tb=short -q)",
+      "Bash(../.venv/Scripts/python.exe -m pytest api/tests/test_admin_stats_api.py -v)"
     ]
   }
 }

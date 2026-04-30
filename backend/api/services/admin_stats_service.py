@@ -7,6 +7,9 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from api.models import (
+    Challenge,
+    Course,
+    Quiz,
     User,
     UserChallengeProgress,
     UserChallengeSubmit,
@@ -46,10 +49,23 @@ class AdminStatsService:
             + UserQuizProgress.objects.filter(completed_at__gte=solve_window).count()
         )
 
+        registrations_week = User.objects.filter(
+            is_active=True,
+            date_joined__gte=solve_window,
+        ).count()
+
+        courses_published = Course.objects.filter(status=Course.Status.PUBLISHED).count()
+        challenges_published = Challenge.objects.filter(status=Challenge.Status.PUBLISHED).count()
+        quizzes_published = Quiz.objects.filter(status=Quiz.Status.PUBLISHED).count()
+
         return {
             'user_count': user_count,
             'active_today': active_today,
             'solves_week': solves_week,
+            'registrations_week': registrations_week,
+            'courses_published': courses_published,
+            'challenges_published': challenges_published,
+            'quizzes_published': quizzes_published,
         }
 
     @staticmethod
