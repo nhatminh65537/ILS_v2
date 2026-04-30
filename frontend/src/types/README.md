@@ -9,7 +9,7 @@ Files:
 - `challenge.types.ts` — Challenge, Flags, Progress, submissions, instances
 - `quiz.types.ts` — Quiz, Questions, Attempts, Answers, progress
 - `notification.types.ts` — Notifications and payloads
-- `leaderboard.types.ts` — Leaderboard entries and filters
+- `leaderboard.types.ts` — Leaderboard entries and canonical statistics response types
 - `admin.types.ts` — SystemConfig and settings types
 
 **Rule**: Never use `any` type. All TypeScript strict mode enabled.

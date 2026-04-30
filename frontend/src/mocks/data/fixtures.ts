@@ -644,18 +644,38 @@ export const adminUsersFixture: AdminUserDto[] = Array.from({ length: 10 }, (_, 
   }
 })
 
-export const leaderboardFixture: LeaderboardEntry[] = Array.from({ length: 10 }, (_, index) => ({
-  id: index + 1,
-  user_id: index + 1,
-  username: usersFixture[index]?.username ?? `user${index + 1}`,
-  display_name: `Player ${index + 1}`,
-  avatar_url: `https://images.example.com/avatar-${index + 1}.png`,
-  rank: index + 1,
-  total_learning_point: 300 - index * 12,
-  total_challenge_point: 260 - index * 10,
-  total_quiz_point: 180 - index * 8,
-  total_points: 740 - index * 30,
-  courses_completed: 9 - Math.min(index, 8),
-  challenges_completed: 12 - Math.min(index, 10),
-  quizzes_completed: 7 - Math.min(index, 6),
-}))
+type LeaderboardFixtureRow = LeaderboardEntry & {
+  readonly total_learning_point: number
+  readonly total_challenge_point: number
+  readonly total_quiz_point: number
+  readonly total_points: number
+}
+
+export const leaderboardFixture: LeaderboardFixtureRow[] = Array.from({ length: 10 }, (_, index) => {
+  const user = usersFixture[index] ?? {
+    id: index + 1,
+    username: `user${index + 1}`,
+  }
+
+  const totalLearningPoint = 300 - index * 12
+  const totalChallengePoint = 260 - index * 10
+  const totalQuizPoint = 180 - index * 8
+  const totalPoints = totalLearningPoint + totalChallengePoint + totalQuizPoint
+
+  return {
+    rank: index + 1,
+    user: {
+      id: user.id,
+      username: user.username,
+      display_name: `Player ${index + 1}`,
+      avatar_url: `https://images.example.com/avatar-${index + 1}.png`,
+      avatar: `https://images.example.com/avatar-${index + 1}.png`,
+    },
+    score: totalPoints,
+    delta: index === 0 ? 0 : 30,
+    total_learning_point: totalLearningPoint,
+    total_challenge_point: totalChallengePoint,
+    total_quiz_point: totalQuizPoint,
+    total_points: totalPoints,
+  }
+})

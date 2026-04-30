@@ -1,33 +1,41 @@
 /**
  * Leaderboard domain types
- * Derived from DATA_MODEL.md Leaderboard Domain section
+ * Derived from backend leaderboard serializer contract.
  */
+
+export type LeaderboardType = 'overall' | 'challenge' | 'quiz' | 'course'
+
+export interface LeaderboardUser {
+  readonly id: number
+  readonly username: string
+  readonly display_name: string | null
+  readonly avatar_url: string | null
+  readonly avatar: string | null
+}
 
 /** Leaderboard entry (ranks users by points) */
 export interface LeaderboardEntry {
-  readonly id: number
-  readonly user_id: number
-  readonly username: string
-  readonly display_name?: string
-  readonly avatar_url?: string
   readonly rank: number
-  readonly total_learning_point: number
-  readonly total_challenge_point: number
-  readonly total_quiz_point: number
-  readonly total_points: number // sum of above three
-  readonly courses_completed: number
-  readonly challenges_completed: number
-  readonly quizzes_completed: number
+  readonly user: LeaderboardUser
+  readonly score: number
+  readonly delta: number
 }
 
-/** Request/response payloads */
-export interface LeaderboardFilters {
-  limit?: number
-  offset?: number
-  sort_by?: 'total' | 'learning' | 'challenge' | 'quiz'
+/** Request payloads */
+export interface LeaderboardRequestParams {
+  readonly type: LeaderboardType
+  readonly page?: number
+  readonly limit?: number
+  readonly offset?: number
 }
 
 export interface LeaderboardResponse {
+  readonly type: LeaderboardType
+  readonly my_rank: number | null
+  readonly total_users: number
   readonly total_count: number
-  readonly entries: readonly LeaderboardEntry[]
+  readonly page: number
+  readonly page_size: number
+  readonly results: readonly LeaderboardEntry[]
+  readonly entries?: readonly LeaderboardEntry[]
 }

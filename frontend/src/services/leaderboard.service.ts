@@ -4,13 +4,15 @@
  */
 
 import apiClient from '@/lib/axios'
-import type { LeaderboardResponse, LeaderboardFilters } from '@/types/leaderboard.types'
+import type { LeaderboardRequestParams, LeaderboardResponse } from '@/types/leaderboard.types'
 
 /**
- * GET /api/leaderboard/
- * Get leaderboard with optional filtering and sorting
+ * GET /api/stats/leaderboard/
+ * Get leaderboard with canonical Slice 11 statistics contract.
  */
-export const getLeaderboard = async (params?: LeaderboardFilters): Promise<LeaderboardResponse> => {
-  const response = await apiClient.get('/api/leaderboard/', { params })
+export const getLeaderboard = async (
+  params: LeaderboardRequestParams
+): Promise<LeaderboardResponse> => {
+  const response = await apiClient.get('/api/stats/leaderboard/', { params })
   return response.data
 }

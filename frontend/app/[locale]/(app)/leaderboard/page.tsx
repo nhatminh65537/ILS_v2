@@ -1,8 +1,13 @@
-export default function LeaderboardPage() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Leaderboard</h1>
-      <p className="text-muted-foreground">Coming soon.</p>
-    </div>
-  )
+import { getTranslations } from 'next-intl/server'
+import { LeaderboardPageClient } from '@/components/features/leaderboard/LeaderboardPageClient'
+
+type LeaderboardPageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function LeaderboardPage({ params }: LeaderboardPageProps) {
+  const { locale } = await params
+  await getTranslations('leaderboard')
+
+  return <LeaderboardPageClient locale={locale} />
 }

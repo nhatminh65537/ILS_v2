@@ -23,6 +23,39 @@
     "settings": "Cài đặt",
     "sessions": "Phiên đăng nhập"
   },
+  "leaderboard": {
+    "title": "Bảng xếp hạng",
+    "subtitle": "So sánh tiến độ theo điểm tổng, thử thách, quiz và học tập.",
+    "tabs": {
+      "overall": "Tổng quan",
+      "challenge": "Thử thách",
+      "quiz": "Quiz",
+      "course": "Học tập"
+    },
+    "myRank": "Thứ hạng của bạn",
+    "totalUsers": "Tổng người dùng",
+    "currentUser": "Bạn",
+    "columns": {
+      "rank": "Hạng",
+      "user": "Người dùng",
+      "score": "Điểm",
+      "delta": "Khoảng cách"
+    },
+    "states": {
+      "loading": "Đang tải bảng xếp hạng...",
+      "empty": "Chưa có dữ liệu bảng xếp hạng.",
+      "myRankUnavailable": "Chưa xác định được thứ hạng của bạn."
+    },
+    "pagination": {
+      "pageInfo": "Trang {page} / {totalPages}",
+      "totalInfo": "{totalCount} người dùng",
+      "previous": "Trang trước",
+      "next": "Trang sau"
+    },
+    "errors": {
+      "loadFailed": "Không tải được bảng xếp hạng."
+    }
+  },
   "home": {
     "headline": "Nền tảng học an toàn thông tin có cấu trúc cho đội nhóm nhỏ",
     "description": "Khởi động nhanh với lộ trình Learn, Challenge và Quiz. Slice 4 đã sẵn sàng để phát triển tính năng song song với backend.",

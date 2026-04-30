@@ -165,7 +165,7 @@ frontend/app/
     │   ├── layout.tsx                                # showSidebar=false — navigation via Navbar only
     │   ├── dashboard/page.tsx                        ✅ implemented (content filled Slice 11)
     │   ├── notifications/page.tsx                    ✅ implemented (Task 9.4)
-    │   ├── leaderboard/page.tsx                      🔲 skeleton (Task 11.3)
+    │   ├── leaderboard/page.tsx                      ✅ implemented (Task 11.3)
     │   └── profile/
     │       ├── page.tsx                              ✅ implemented (redirect → settings)
     │       ├── [username]/page.tsx                   ✅ implemented (Task 8.3)

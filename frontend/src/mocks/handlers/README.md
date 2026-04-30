@@ -13,6 +13,6 @@ Files:
 - `challenges.handlers.ts` — All /api/challenges/* handlers
 - `quizzes.handlers.ts` — All /api/quizzes/* handlers
 - `notifications.handlers.ts` — All /api/notifications/* handlers
-- `leaderboard.handlers.ts` — GET /api/leaderboard/ handler
+- `leaderboard.handlers.ts` — GET /api/stats/leaderboard/ handler
 
 **Rule**: Return realistic data with UUIDs, ISO timestamps, and correct schema matching API.md.

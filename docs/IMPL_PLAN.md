@@ -1076,6 +1076,8 @@ Implemented 2026-04-17 with `backend/api/services/admin_stats_service.py`, `back
 app/[locale]/(app)/leaderboard/page.tsx → tab switcher (overall | challenge | quiz | course) + rank table with avatar, score, rank delta badge; own rank highlight
 ```
 
+Implemented 2026-04-30 with canonical `/api/stats/leaderboard/` frontend contract, user-surface leaderboard page client, and MSW parity.
+
 ### Task 11.4 — Frontend: Admin detailed statistics
 ```
 app/[locale]/(admin)/admin/(protected)/statistics/page.tsx

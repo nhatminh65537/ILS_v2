@@ -10,6 +10,6 @@ Files:
 - `challenges.service.ts` — Challenge CRUD, flag submission, instances, progress
 - `quizzes.service.ts` — Quiz CRUD, attempts, Q&A submission, progress
 - `notifications.service.ts` — Notification listing, reading, marking
-- `leaderboard.service.ts` — Leaderboard queries
+- `leaderboard.service.ts` — Leaderboard queries (`/api/stats/leaderboard/` canonical)
 
 **Rule**: Never call axios directly in components. Always use service functions. Errors handled via axios interceptor.

@@ -23,6 +23,39 @@
     "settings": "Settings",
     "sessions": "Sessions"
   },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "subtitle": "Compare progress across overall, challenge, quiz, and learning points.",
+    "tabs": {
+      "overall": "Overall",
+      "challenge": "Challenge",
+      "quiz": "Quiz",
+      "course": "Learning"
+    },
+    "myRank": "Your rank",
+    "totalUsers": "Total users",
+    "currentUser": "You",
+    "columns": {
+      "rank": "Rank",
+      "user": "User",
+      "score": "Score",
+      "delta": "Gap"
+    },
+    "states": {
+      "loading": "Loading leaderboard...",
+      "empty": "No leaderboard data is available yet.",
+      "myRankUnavailable": "Your rank is not available yet."
+    },
+    "pagination": {
+      "pageInfo": "Page {page} of {totalPages}",
+      "totalInfo": "{totalCount} users",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "errors": {
+      "loadFailed": "Failed to load leaderboard."
+    }
+  },
   "home": {
     "headline": "A structured cybersecurity learning platform for small teams",
     "description": "Start quickly with Learn, Challenge, and Quiz tracks. Slice 4 is ready for parallel frontend/backend feature delivery.",
