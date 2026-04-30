@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from api.models import Challenge, ChallengeCategory, ChallengeInstance, ChallengeTag, UserChallengeProgress
+from api.models import Challenge, ChallengeCategory, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress
 from api.services.challenge_service import ChallengeService
 
 
@@ -38,6 +38,69 @@ class ChallengeTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChallengeTag
         fields = ['id', 'name', 'description']
+
+
+class ChallengeNodeSerializer(serializers.ModelSerializer):
+    """Challenge node serializer for tree CRUD endpoints."""
+
+    has_children = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ChallengeNode
+        fields = ['id', 'parent', 'is_item', 'title', 'position', 'path', 'challenge', 'has_children']
+        read_only_fields = ['id', 'path', 'has_children']
+
+    def validate(self, attrs):
+        instance = getattr(self, 'instance', None)
+        parent = attrs.get('parent', instance.parent if instance else None)
+        is_item = attrs.get('is_item', instance.is_item if instance else False)
+        challenge = attrs.get('challenge', instance.challenge if instance else None)
+
+        if parent and instance and parent.id == instance.id:
+            raise serializers.ValidationError({'parent': 'Node cannot be parent of itself.'})
+
+        if parent and parent.is_item:
+            raise serializers.ValidationError({'parent': 'Item nodes cannot have children.'})
+
+        if is_item and challenge is None:
+            raise serializers.ValidationError({'challenge': 'Challenge is required when is_item=true.'})
+
+        if not is_item and challenge is not None:
+            raise serializers.ValidationError({'challenge': 'Challenge must be null when is_item=false.'})
+
+        if is_item and instance and instance.children.exists():
+            raise serializers.ValidationError({'is_item': 'Item nodes cannot have children.'})
+
+        if challenge is not None:
+            queryset = ChallengeNode.objects.filter(challenge=challenge)
+            if instance:
+                queryset = queryset.exclude(id=instance.id)
+            if queryset.exists():
+                raise serializers.ValidationError({'challenge': 'Challenge is already linked to a node.'})
+
+        return attrs
+
+    def create(self, validated_data):
+        node = super().create(validated_data)
+        node.rebuild_path()
+        return node
+
+    def update(self, instance, validated_data):
+        new_parent = validated_data.pop('parent', instance.parent)
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+
+        if new_parent != instance.parent:
+            instance.move_to(new_parent)
+        else:
+            instance.rebuild_path()
+
+        return instance
+
+    def get_has_children(self, obj):
+        return obj.children.exists()
 
 
 class ChallengeListSerializer(serializers.ModelSerializer):

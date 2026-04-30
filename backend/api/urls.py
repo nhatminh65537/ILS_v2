@@ -20,6 +20,7 @@ from .views import (
     LearnChallengeViewSet,
     LearnChallengeCategoryViewSet,
     LearnChallengeTagViewSet,
+    ChallengeNodeViewSet,
     QuizNodeViewSet,
     QuizViewSet,
     NotificationViewSet,
@@ -224,6 +225,26 @@ urlpatterns = [
         r'^challenge/tags/(?P<pk>\d+)/$',
         LearnChallengeTagViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
         name='challenge-tag-detail',
+    ),
+    re_path(
+        r'^challenge/nodes/$',
+        ChallengeNodeViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='challenge-node-list',
+    ),
+    re_path(
+        r'^challenge/nodes/(?P<pk>\d+)/$',
+        ChallengeNodeViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='challenge-node-detail',
+    ),
+    re_path(
+        r'^challenge/nodes/(?P<pk>\d+)/children/$',
+        ChallengeNodeViewSet.as_view({'get': 'children'}),
+        name='challenge-node-children',
+    ),
+    re_path(
+        r'^challenge/nodes/(?P<pk>\d+)/move/$',
+        ChallengeNodeViewSet.as_view({'post': 'move'}),
+        name='challenge-node-move',
     ),
     # User roles custom routes
     user_roles_url,

@@ -31,6 +31,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Components
 
+- **challenge node tree API (Slice 6 Task 6.2, 2026-04-30)**: Namespaced `/api/challenge/nodes/*` CRUD + lazy `children` endpoint, cycle-safe `move`, and serializer invariants (`is_item` vs `challenge` linkage, item nodes cannot be parents). Integration tests added in `backend/api/tests/test_challenge_node_api.py`.
 - **frontend leaderboard page (Slice 11 Task 11.3, 2026-04-30)**: User surface route `/{locale}/leaderboard` is now implemented as a Next.js server entry plus client leaderboard view, consuming canonical `/api/stats/leaderboard/` with tab switcher (`overall`, `challenge`, `quiz`, `course`), my-rank summary, current-user row highlight, pagination, and MSW parity; navigation link was intentionally kept out of Task 11.3 scope.
 - **admin notification broadcast + history console (Slice 9 Task 9.5, 2026-04-20)**: Admin surface route `/{locale}/admin/notifications` now supports manual broadcast creation and grouped history listing; backend adds `GET /api/admin/notifications/history/` and extends `POST /api/admin/notifications/broadcast/` with `broadcast_batch_key`, persisting batch identity via `notification.event_key` (`broadcast:{uuid}`) and sender via `created_by`.
 - **frontend notifications bell + inbox (Slice 9 Task 9.4, 2026-04-20)**: User surface now includes `NotificationBell` in session navbar controls with unread badge + latest-5 dropdown, dedicated inbox route `/{locale}/notifications` via `NotificationsInboxClient`, and reusable hooks `useNotifications` + `useNotificationSocket` wired to `/ws/notifications/` first-message JWT auth.
@@ -55,6 +56,7 @@ Target: one instance per organization, no horizontal scale needed.
 
 ## Status
 
+- Slice 6 Task 6.2 completed on 2026-04-30: ChallengeNode tree API is active under `/api/challenge/nodes/*` with lazy children, cycle-safe move, and admin/editor write gates; integration tests pass (`pytest backend/api/tests/test_challenge_node_api.py`).
 - Slice 11 Task 11.3 completed on 2026-04-30: frontend leaderboard page is active at `/{locale}/leaderboard` with canonical `/api/stats/leaderboard/` contract, tab switcher, my-rank summary, row highlight, pagination, and MSW alignment; leaderboard navigation entry remains intentionally out of scope.
 - Slice 9 Task 9.5 completed on 2026-04-20: expanded full-stack delivery is active with admin broadcast submit UI + broadcast history table, backend grouped history API (`/api/admin/notifications/history/`), and extended broadcast response (`recipient_count`, `broadcast_batch_key`); validation passed (`pytest backend/api/tests/test_notification_api.py`, `npm run lint`, `npx tsc --noEmit`, `npm run build`).
 - Slice 9 Task 9.4 completed on 2026-04-20: frontend notification inbox route is implemented, realtime bell/inbox updates are active with socket auth flow, and frontend notification contracts are normalized to hyphenated API endpoints (`mark-read`, `mark-all-read`, `unread-count`) with MSW parity; validation gates (`tsc --noEmit`, `lint`, `build`) pass.

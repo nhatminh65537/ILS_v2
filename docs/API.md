@@ -1,7 +1,7 @@
 # API.md — ILS v2 API Reference
 
 > Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-20
+> Last updated: 2026-04-30
 
 ---
 
@@ -195,19 +195,50 @@ Historical/runtime note:
 
 ### 3.5 Challenges
 
-Historical/runtime note:
-- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
-- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
+Task 6.1 update (2026-04-30):
+- Canonical namespaced routes are active under `/api/challenge/*`.
+- Member visibility is restricted to `published` challenges.
+
+Task 6.2 update (2026-04-30):
+- ChallengeNode tree endpoints are active under `/api/challenge/nodes/*` with lazy children loading and cycle-safe move.
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/challenges/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
-| POST | `/api/challenges/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
-| GET | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
-| PUT/PATCH | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
-| DELETE | `/api/challenges/{id}/` | Yes | Partial | Runtime route exists; full Slice 6 business rules are pending. |
-| POST | `/api/challenges/{id}/submit-flag/` | Yes | Partial | Runtime route exists; full Slice 6 verification/workflow contract is pending. |
-| POST | `/api/challenges/{id}/create-instance/` | Yes | Partial | Depends on instance deployment backend/runtime readiness. |
+| GET | `/api/challenge/challenges/` | Yes | Partial | List challenges (member sees published only; editor/admin can filter by status). |
+| POST | `/api/challenge/challenges/` | Yes | Partial | Create challenge (admin/editor only). |
+| GET | `/api/challenge/challenges/{slug}/` | Yes | Partial | Challenge detail (slug lookup). |
+| PUT/PATCH | `/api/challenge/challenges/{slug}/` | Yes | Partial | Update challenge (admin/editor only). |
+| DELETE | `/api/challenge/challenges/{slug}/` | Yes | Partial | Archive by default; purge when `?mode=purge` (admin/editor only). |
+| GET | `/api/challenge/categories/` | Yes | Partial | Category list. |
+| POST | `/api/challenge/categories/` | Yes | Partial | Category create (admin/editor only). |
+| GET | `/api/challenge/categories/{id}/` | Yes | Partial | Category detail. |
+| PUT/PATCH | `/api/challenge/categories/{id}/` | Yes | Partial | Category update (admin/editor only). |
+| DELETE | `/api/challenge/categories/{id}/` | Yes | Partial | Category delete (admin/editor only). |
+| GET | `/api/challenge/tags/` | Yes | Partial | Tag list. |
+| POST | `/api/challenge/tags/` | Yes | Partial | Tag create (admin/editor only). |
+| GET | `/api/challenge/tags/{id}/` | Yes | Partial | Tag detail. |
+| PUT/PATCH | `/api/challenge/tags/{id}/` | Yes | Partial | Tag update (admin/editor only). |
+| DELETE | `/api/challenge/tags/{id}/` | Yes | Partial | Tag delete (admin/editor only). |
+| GET | `/api/challenge/nodes/` | Yes | Partial | Root nodes only. |
+| POST | `/api/challenge/nodes/` | Yes | Partial | Create node (admin/editor only). |
+| GET | `/api/challenge/nodes/{id}/` | Yes | Partial | Node detail. |
+| PUT/PATCH | `/api/challenge/nodes/{id}/` | Yes | Partial | Update node (admin/editor only). |
+| DELETE | `/api/challenge/nodes/{id}/` | Yes | Partial | Delete node (admin/editor only). |
+| GET | `/api/challenge/nodes/{id}/children/` | Yes | Partial | Direct children only (lazy load). |
+| POST | `/api/challenge/nodes/{id}/move/` | Yes | Partial | Move node (admin/editor only); updates descendant paths. |
+
+Legacy/runtime note:
+- Legacy flat routes remain active but are not the canonical contract for Slice 6.
+
+| Method | Path | Auth | Status | Notes |
+|---|---|---|---|---|
+| GET | `/api/challenges/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
+| POST | `/api/challenges/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
+| GET | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
+| PUT/PATCH | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
+| DELETE | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
+| POST | `/api/challenges/{id}/submit-flag/` | Yes | Partial | Legacy flat route; full verification pending. |
+| POST | `/api/challenges/{id}/create-instance/` | Yes | Partial | Legacy flat route; depends on instance backend readiness. |
 
 ### 3.6 Quizzes
 
