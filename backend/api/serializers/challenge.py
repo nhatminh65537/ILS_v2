@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress
+from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
 from api.services.challenge_service import ChallengeService
 
 
@@ -364,3 +364,29 @@ class UserChallengeProgressSerializer(serializers.ModelSerializer):
         model = UserChallengeProgress
         fields = ['id', 'user', 'challenge', 'challenge_title', 'completed_at', 'is_completed']
         read_only_fields = ['id', 'is_completed']
+
+
+class UserChallengeProgressDetailSerializer(serializers.Serializer):
+    """Per-challenge progress for the requesting user: solved status + attempt count."""
+
+    is_solved = serializers.SerializerMethodField()
+    attempt_count = serializers.SerializerMethodField()
+    completed_at = serializers.SerializerMethodField()
+
+    def __init__(self, challenge, user, **kwargs):
+        super().__init__(challenge, **kwargs)
+        self._challenge = challenge
+        self._user = user
+        self._progress = UserChallengeProgress.objects.filter(user=user, challenge=challenge).first()
+        self._attempt_count = UserChallengeSubmit.objects.filter(user=user, challenge=challenge).count()
+
+    def get_is_solved(self, obj):
+        return self._progress is not None and self._progress.completed_at is not None
+
+    def get_attempt_count(self, obj):
+        return self._attempt_count
+
+    def get_completed_at(self, obj):
+        if self._progress and self._progress.completed_at:
+            return self._progress.completed_at.isoformat()
+        return None

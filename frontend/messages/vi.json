@@ -215,10 +215,59 @@
   "challenges": {
     "title": "Thử thách CTF",
     "description": "Luyện tập theo độ khó, nộp flag và theo dõi điểm tích lũy.",
-    "submitFlag": "Nộp flag",
-    "createInstance": "Tạo instance",
-    "difficulty": "Độ khó",
-    "points": "Điểm thử thách"
+    "catalog": {
+      "title": "Thử thách",
+      "empty": "Không tìm thấy thử thách nào."
+    },
+    "detail": {
+      "backToCatalog": "Quay lại danh sách",
+      "descriptionTitle": "Mô tả thử thách",
+      "noDescription": "Chưa có mô tả.",
+      "progressTitle": "Tiến độ của bạn",
+      "infoTitle": "Thông tin",
+      "submitTitle": "Nộp flag",
+      "flagLabel": "Flag",
+      "flagPlaceholder": "ILS{...}",
+      "submit": "Nộp",
+      "submitting": "Đang nộp...",
+      "correct": "Đúng rồi! Bạn đã giải xong thử thách.",
+      "incorrect": "Flag không đúng, hãy thử lại."
+    },
+    "labels": {
+      "solved": "Đã giải",
+      "notSolved": "Chưa giải",
+      "attemptCount": "{count} lần thử",
+      "points": "Điểm",
+      "type": "Loại",
+      "instanceBased": "Instance"
+    },
+    "difficulty": {
+      "easy": "Dễ",
+      "medium": "Trung bình",
+      "hard": "Khó",
+      "insane": "Cực khó"
+    },
+    "filter": {
+      "title": "Bộ lọc",
+      "reset": "Đặt lại",
+      "search": "Tìm kiếm",
+      "searchPlaceholder": "Tìm kiếm thử thách...",
+      "difficulty": "Độ khó",
+      "category": "Danh mục",
+      "tags": "Thẻ"
+    },
+    "instance": {
+      "title": "Instance",
+      "running": "Đang chạy",
+      "stopped": "Đã dừng",
+      "noInstance": "Chưa có instance.",
+      "start": "Khởi động",
+      "stop": "Dừng",
+      "restart": "Khởi động lại"
+    },
+    "errors": {
+      "detailLoadFailed": "Không thể tải thông tin thử thách."
+    }
   },
   "quizzes": {
     "title": "Bài quiz",

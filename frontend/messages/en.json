@@ -215,10 +215,59 @@
   "challenges": {
     "title": "CTF Challenges",
     "description": "Practice by difficulty, submit flags, and track earned points.",
-    "submitFlag": "Submit flag",
-    "createInstance": "Create instance",
-    "difficulty": "Difficulty",
-    "points": "Challenge points"
+    "catalog": {
+      "title": "Challenges",
+      "empty": "No challenges found."
+    },
+    "detail": {
+      "backToCatalog": "Back to challenges",
+      "descriptionTitle": "Challenge Description",
+      "noDescription": "No description provided.",
+      "progressTitle": "Your Progress",
+      "infoTitle": "Info",
+      "submitTitle": "Submit Flag",
+      "flagLabel": "Flag",
+      "flagPlaceholder": "ILS{...}",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "correct": "Correct! You solved this challenge.",
+      "incorrect": "Incorrect flag, please try again."
+    },
+    "labels": {
+      "solved": "Solved",
+      "notSolved": "Not solved yet",
+      "attemptCount": "{count} attempt(s)",
+      "points": "Points",
+      "type": "Type",
+      "instanceBased": "Instance"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "insane": "Insane"
+    },
+    "filter": {
+      "title": "Filters",
+      "reset": "Reset",
+      "search": "Search",
+      "searchPlaceholder": "Search challenges...",
+      "difficulty": "Difficulty",
+      "category": "Category",
+      "tags": "Tags"
+    },
+    "instance": {
+      "title": "Instance",
+      "running": "Running",
+      "stopped": "Stopped",
+      "noInstance": "No instance running.",
+      "start": "Start Instance",
+      "stop": "Stop Instance",
+      "restart": "Restart Instance"
+    },
+    "errors": {
+      "detailLoadFailed": "Failed to load challenge details."
+    }
   },
   "quizzes": {
     "title": "Quizzes",

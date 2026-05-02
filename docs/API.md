@@ -482,10 +482,11 @@ All routes under `/api/challenge/*` are planned. None are active in current rout
 | PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Update flag. |
 | DELETE | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Delete flag. |
 
-**Flag submission + progress:** `Stable` (Task 6.4)
+**Flag submission + progress:** `Stable` (Task 6.4 + 6.6)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | POST | `/api/challenge/challenges/{slug}/submit/` | Member+ | Payload: `{flag: string}`. Response: `{correct: bool}`. Server-side check; `flag_value` never returned. On first solve: updates progress, increments `challenge_completed`, triggers notification. |
+| GET | `/api/challenge/challenges/{slug}/progress/` | Member+ | Per-challenge progress for current user: `{is_solved: bool, attempt_count: int, completed_at: datetime\|null}`. Added in Task 6.6 for detail page progress card. |
 | GET | `/api/challenge/progress/` | Yes | Aggregate for current user: `{solved_count, total_attempts}`. |
 
 **Instance management (Wave 1: MockDeploymentBackend):** `Stable` (Task 6.5)

@@ -40,12 +40,15 @@ export interface ChallengeTag {
 /** Core challenge entity */
 export interface Challenge {
   readonly id: number
-  readonly slug: string // URL-friendly unique identifier
+  readonly slug: string
   readonly title: string
   readonly description?: string
   readonly status: 'draft' | 'published' | 'archived'
   readonly difficulty?: ChallengeDifficulty
-  readonly category_id?: number
+  /** FK integer from list endpoint */
+  readonly category?: number | ChallengeCategory | null
+  /** Convenience string from list serializer */
+  readonly category_name?: string
   readonly source: ChallengeSource
   readonly storage_path: string
   readonly gitlab_path?: string
@@ -103,9 +106,9 @@ export interface ChallengeInstance {
   readonly id: number
   readonly user_id: number
   readonly challenge_id: number
-  readonly challenge_flag_id: number // which flag template
+  readonly challenge_flag_id: number
   readonly status: InstanceStatus
-  readonly deployment_info?: Record<string, unknown>
+  readonly instance_info?: Record<string, unknown>
   readonly expires_at?: string
   readonly created_at: string
   readonly updated_at: string
@@ -147,9 +150,15 @@ export interface CreateInstancePayload {
   challenge_id: number
 }
 
-export interface ChallengeProgressResponse {
-  readonly challenge_id: number
-  readonly solved: boolean
+/** Per-challenge progress for current user (Task 6.6 endpoint) */
+export interface ChallengeProgressDetailResponse {
+  readonly is_solved: boolean
   readonly attempt_count: number
-  readonly first_solved_at?: string
+  readonly completed_at: string | null
+}
+
+/** Global aggregate progress for current user */
+export interface GlobalChallengeProgressResponse {
+  readonly solved_count: number
+  readonly total_attempts: number
 }

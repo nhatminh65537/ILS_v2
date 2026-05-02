@@ -400,11 +400,11 @@ export const learnLessonQuestionsFixture: Record<number, LearnLessonQuestionMapp
 export const learnLessonProgressFixture: Record<number, LearnLessonProgress> = {}
 
 export const challengesFixture: Challenge[] = [
-  { id: 1, slug: 'xss-lab', title: 'XSS Lab', description: 'Find and exploit reflected XSS', status: 'published', difficulty: ChallengeDifficulty.Easy, category_id: 1, source: ChallengeSource.Manual, storage_path: '/challenges/xss-lab', challenge_point: 100, instance_required: false, created_at: now, updated_at: now },
-  { id: 2, slug: 'sqli-lab', title: 'SQLi Lab', description: 'Bypass authentication', status: 'published', difficulty: ChallengeDifficulty.Medium, category_id: 1, source: ChallengeSource.Manual, storage_path: '/challenges/sqli-lab', challenge_point: 150, instance_required: false, created_at: now, updated_at: now },
-  { id: 3, slug: 'jwt-pwn', title: 'JWT Pwn', description: 'Break JWT verification', status: 'published', difficulty: ChallengeDifficulty.Hard, category_id: 5, source: ChallengeSource.Manual, storage_path: '/challenges/jwt-pwn', challenge_point: 220, instance_required: true, created_at: now, updated_at: now },
-  { id: 4, slug: 'packet-dive', title: 'Packet Dive', description: 'Analyze packet captures', status: 'draft', difficulty: ChallengeDifficulty.Medium, category_id: 2, source: ChallengeSource.GitLab, storage_path: '/challenges/packet-dive', gitlab_path: 'group/packet-dive', challenge_point: 140, instance_required: false, created_at: now, updated_at: now },
-  { id: 5, slug: 'forensic-room', title: 'Forensic Room', description: 'Recover hidden evidence', status: 'published', difficulty: ChallengeDifficulty.Hard, category_id: 4, source: ChallengeSource.Manual, storage_path: '/challenges/forensic-room', challenge_point: 200, instance_required: true, created_at: now, updated_at: now },
+  { id: 1, slug: 'xss-lab', title: 'XSS Lab', description: 'Find and exploit reflected XSS', status: 'published', difficulty: ChallengeDifficulty.Easy, category: 1, category_name: 'Web', source: ChallengeSource.Manual, storage_path: '/challenges/xss-lab', challenge_point: 100, instance_required: false, created_at: now, updated_at: now },
+  { id: 2, slug: 'sqli-lab', title: 'SQLi Lab', description: 'Bypass authentication', status: 'published', difficulty: ChallengeDifficulty.Medium, category: 1, category_name: 'Web', source: ChallengeSource.Manual, storage_path: '/challenges/sqli-lab', challenge_point: 150, instance_required: false, created_at: now, updated_at: now },
+  { id: 3, slug: 'jwt-pwn', title: 'JWT Pwn', description: 'Break JWT verification', status: 'published', difficulty: ChallengeDifficulty.Hard, category: 5, category_name: 'Crypto', source: ChallengeSource.Manual, storage_path: '/challenges/jwt-pwn', challenge_point: 220, instance_required: true, created_at: now, updated_at: now },
+  { id: 4, slug: 'packet-dive', title: 'Packet Dive', description: 'Analyze packet captures', status: 'draft', difficulty: ChallengeDifficulty.Medium, category: 2, category_name: 'Forensics', source: ChallengeSource.GitLab, storage_path: '/challenges/packet-dive', gitlab_path: 'group/packet-dive', challenge_point: 140, instance_required: false, created_at: now, updated_at: now },
+  { id: 5, slug: 'forensic-room', title: 'Forensic Room', description: 'Recover hidden evidence', status: 'published', difficulty: ChallengeDifficulty.Hard, category: 4, category_name: 'Forensics', source: ChallengeSource.Manual, storage_path: '/challenges/forensic-room', challenge_point: 200, instance_required: true, created_at: now, updated_at: now },
 ]
 
 export const challengeNodesFixture: ChallengeNode[] = [
@@ -438,7 +438,7 @@ export const challengeInstancesFixture: ChallengeInstance[] = [
     challenge_id: 3,
     challenge_flag_id: 3,
     status: InstanceStatus.Running,
-    deployment_info: {
+    instance_info: {
       endpoint: 'https://instance-1.ils.local',
       token: 'instance-token-redacted',
     },

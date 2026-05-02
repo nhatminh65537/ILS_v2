@@ -19,6 +19,7 @@ from api.serializers import (
     ChallengeListSerializer,
     ChallengeTagSerializer,
     ChallengeWriteSerializer,
+    UserChallengeProgressDetailSerializer,
 )
 from api.services.challenge_service import ChallengeService
 
@@ -232,6 +233,12 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         if instance is None:
             return Response({'status': 'none'})
         return Response(ChallengeInstanceSerializer(instance, context={'request': request}).data)
+
+    @add_role_granted('Admin', 'Editor', 'Member')
+    def challenge_progress(self, request, slug=None):
+        challenge = self.get_object()
+        serializer = UserChallengeProgressDetailSerializer(challenge, request.user)
+        return Response(serializer.data)
 
 
 @add_role_granted('Admin', 'Editor')

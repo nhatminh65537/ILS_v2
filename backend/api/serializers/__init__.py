@@ -29,6 +29,7 @@ from .challenge import (
 	ChallengeTagSerializer,
 	ChallengeWriteSerializer,
 	UserChallengeProgressSerializer,
+	UserChallengeProgressDetailSerializer,
 )
 from .course import (
 	CourseCategorySerializer,
@@ -164,6 +165,7 @@ __all__ = [
 	'RoleSerializer',
 	'SystemConfigSerializer',
 	'UserAuthProviderSerializer',
+	'UserChallengeProgressDetailSerializer',
 	'UserChallengeProgressSerializer',
 	'UserCourseProgressSerializer',
 	'UserCreateSerializer',

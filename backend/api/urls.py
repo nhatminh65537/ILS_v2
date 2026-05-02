@@ -260,11 +260,16 @@ urlpatterns = [
         ChallengeNodeViewSet.as_view({'post': 'move'}),
         name='challenge-node-move',
     ),
-    # Challenge flag submission + progress (Slice 6 / Task 6.4)
+    # Challenge flag submission + per-challenge progress (Slice 6 / Task 6.4 + 6.6)
     re_path(
         r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/submit/$',
         LearnChallengeViewSet.as_view({'post': 'submit'}),
         name='challenge-submit',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/progress/$',
+        LearnChallengeViewSet.as_view({'get': 'challenge_progress'}),
+        name='challenge-challenge-progress',
     ),
     re_path(
         r'^challenge/progress/$',
