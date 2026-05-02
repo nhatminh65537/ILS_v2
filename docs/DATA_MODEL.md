@@ -342,7 +342,7 @@ Flag definition. A challenge may have multiple flags (e.g., OSINT multi-flag).
 |-------|------|-------------|
 | `id` | BIGSERIAL | PK |
 | `challenge_id` | BIGINT | NOT NULL, FK → challenge(id) CASCADE |
-| `flag_value` | TEXT | NOT NULL — the flag template or static value |
+| `flag_value` | TEXT | NOT NULL — plaintext flag value or regex pattern; never returned to client |
 | `is_case_sensitive` | BOOLEAN | NOT NULL, DEFAULT TRUE |
 | `is_regex` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | `random_tail_length` | INTEGER | NOT NULL, DEFAULT 0 — > 0 for instance-specific flags |
@@ -364,7 +364,7 @@ Per-user challenge instance (for deployable challenges).
 | `challenge_id` | BIGINT | NOT NULL, FK → challenge(id) |
 | `user_id` | BIGINT | NOT NULL, FK → user(id) |
 | `instance_info` | JSONB | nullable — connection info returned by deploy system |
-| `flag_value` | TEXT | nullable — actual flag for this instance (if random) |
+| `flag_value` | TEXT | nullable — plaintext instance-specific flag, generated at deploy time when `random_tail_length > 0` |
 | `challenge_flag_id` | BIGINT | nullable, FK → challenge_flag(id) — which flag template used |
 | `status` | instance_status | NOT NULL, DEFAULT 'running' |
 | `terminated_at` | TIMESTAMPTZ | nullable |

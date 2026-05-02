@@ -256,9 +256,9 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 |------|----------|-------|
 | 6.1 Challenge + Category + Tag CRUD API + URL namespace migration | Medium | ✅ Completed 2026-04-30: Canonical viewsets + slug-based lookup + tag upsert + slug conflict 409 + archive/purge destroy |
 | 6.2 ChallengeNode tree API (children, move, cycle-safe) | Medium | ✅ Completed 2026-04-30: `/api/challenge/nodes/*` CRUD with lazy children, cycle-safe move, item/parent invariants, and integration tests in `backend/api/tests/test_challenge_node_api.py`. |
-| 6.3 ChallengeFlag CRUD | Medium | ✅ Completed 2026-05-02: `ChallengeFlagSerializer`/`ChallengeFlagWriteSerializer`; HMAC-SHA256 for static flags, plaintext for regex; `flag_value` omitted for non-Admin/Editor; 14 integration tests in `backend/api/tests/test_challenge_flag_api.py`. |
-| 6.4 Flag submission + progress (Static, Regex, Instance) | Medium | Rewrite flag_service from scratch; server-side only |
-| 6.5 Instance API stubs (MockDeploymentBackend) | Medium | Wave 2: swap to SocketDeploymentBackend when external system ready |
+| 6.3 ChallengeFlag CRUD | Medium | ✅ Completed 2026-05-02: `ChallengeFlagSerializer`/`ChallengeFlagWriteSerializer`; plaintext storage for all flag types (static + regex); `flag_value` omitted for non-Admin/Editor; 14 integration tests in `backend/api/tests/test_challenge_flag_api.py`. |
+| 6.4 Flag submission + progress (Static, Regex, Instance) | Medium | ✅ Completed 2026-05-02: `POST /api/challenge/challenges/{slug}/submit/` (server-side only, returns `{correct: bool}`); `GET /api/challenge/progress/` (`{solved_count, total_attempts}`); idempotent progress update with `challenge_completed` counter + notification on first solve. |
+| 6.5 Instance API stubs (MockDeploymentBackend) | Medium | ✅ Completed 2026-05-02: `start`/`stop`/`status` endpoints (user); admin `list` + `kill`; `MockDeploymentBackend` in `instance_service.py`; instance flag generated as plaintext at deploy time. Wave 2: swap to `SocketDeploymentBackend` when external system ready. |
 | 6.6 Frontend: Challenge browser + detail + flag submit | Low | (catalog) layout; instance panel if instance_required |
 | 6.7 Frontend: Challenge editor (admin/editor) | Low | Tabs: Metadata, Tree, Flags; no GitLab tab yet |
 | 6.8 GitLab sync (separate delivery) | Low | Not a blocker for 6.1–6.7; self-contained integration |

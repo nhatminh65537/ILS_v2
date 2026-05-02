@@ -1,9 +1,4 @@
-import hashlib
-import hmac
-
 import pytest
-from django.conf import settings
-from rest_framework.test import APIClient
 
 from api.models import Challenge, ChallengeCategory, ChallengeFlag, Role, UserRole
 
@@ -13,12 +8,6 @@ pytestmark = pytest.mark.integration
 def _assign_role(user, role_name):
     role, _ = Role.objects.get_or_create(name=role_name, defaults={'is_system': True})
     UserRole.objects.get_or_create(user=user, role=role)
-
-
-def _expected_hmac(value, is_case_sensitive=True):
-    raw = value if is_case_sensitive else value.lower()
-    key = settings.SECRET_KEY.encode('utf-8')
-    return hmac.new(key, raw.encode('utf-8'), hashlib.sha256).hexdigest()
 
 
 def _flags_url(slug):
@@ -51,10 +40,10 @@ def challenge(db, category):
 
 
 # ---------------------------------------------------------------------------
-# Static flag HMAC storage
+# Static flag plaintext storage
 # ---------------------------------------------------------------------------
 
-def test_editor_create_static_flag_stores_hmac(editor_client, editor_user, challenge):
+def test_editor_create_static_flag_stores_plaintext(editor_client, editor_user, challenge):
     _assign_role(editor_user, 'Editor')
 
     resp = editor_client.post(
@@ -65,11 +54,10 @@ def test_editor_create_static_flag_stores_hmac(editor_client, editor_user, chall
 
     assert resp.status_code == 201
     flag = ChallengeFlag.objects.get(challenge=challenge)
-    assert flag.flag_value == _expected_hmac('FLAG{secret}', is_case_sensitive=True)
-    assert flag.flag_value != 'FLAG{secret}'
+    assert flag.flag_value == 'FLAG{secret}'
 
 
-def test_static_flag_case_insensitive_lowercases_before_hashing(editor_client, editor_user, challenge):
+def test_static_flag_case_insensitive_stored_as_original(editor_client, editor_user, challenge):
     _assign_role(editor_user, 'Editor')
 
     resp = editor_client.post(
@@ -80,7 +68,8 @@ def test_static_flag_case_insensitive_lowercases_before_hashing(editor_client, e
 
     assert resp.status_code == 201
     flag = ChallengeFlag.objects.get(challenge=challenge)
-    assert flag.flag_value == _expected_hmac('FLAG{Secret}', is_case_sensitive=False)
+    # Stored as-is; case folding happens at comparison time, not storage time
+    assert flag.flag_value == 'FLAG{Secret}'
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +155,7 @@ def test_member_cannot_create_flag(member_client, member_user, challenge):
 def test_member_cannot_update_flag(member_client, member_user, challenge):
     _assign_role(member_user, 'Member')
     flag = ChallengeFlag.objects.create(
-        challenge=challenge, flag_value='hash', is_regex=False, random_tail_length=0
+        challenge=challenge, flag_value='FLAG{original}', is_regex=False, random_tail_length=0
     )
 
     resp = member_client.put(
@@ -180,7 +169,7 @@ def test_member_cannot_update_flag(member_client, member_user, challenge):
 def test_member_cannot_delete_flag(member_client, member_user, challenge):
     _assign_role(member_user, 'Member')
     flag = ChallengeFlag.objects.create(
-        challenge=challenge, flag_value='hash', is_regex=False, random_tail_length=0
+        challenge=challenge, flag_value='FLAG{original}', is_regex=False, random_tail_length=0
     )
 
     assert member_client.delete(_flag_detail_url(challenge.slug, flag.id)).status_code == 403
@@ -193,7 +182,7 @@ def test_member_cannot_delete_flag(member_client, member_user, challenge):
 def test_flag_value_visible_to_editor(editor_client, editor_user, challenge):
     _assign_role(editor_user, 'Editor')
     ChallengeFlag.objects.create(
-        challenge=challenge, flag_value='somehash', is_regex=False, random_tail_length=0
+        challenge=challenge, flag_value='FLAG{visible}', is_regex=False, random_tail_length=0
     )
 
     resp = editor_client.get(_flags_url(challenge.slug))
@@ -201,17 +190,18 @@ def test_flag_value_visible_to_editor(editor_client, editor_user, challenge):
     assert resp.status_code == 200
     assert len(resp.data) == 1
     assert 'flag_value' in resp.data[0]
+    assert resp.data[0]['flag_value'] == 'FLAG{visible}'
 
 
 # ---------------------------------------------------------------------------
-# Update (PUT/PATCH) re-normalizes flag_value when provided
+# Update (PUT/PATCH) stores new flag_value as plaintext
 # ---------------------------------------------------------------------------
 
 def test_editor_can_update_flag(editor_client, editor_user, challenge):
     _assign_role(editor_user, 'Editor')
     flag = ChallengeFlag.objects.create(
         challenge=challenge,
-        flag_value=_expected_hmac('FLAG{old}'),
+        flag_value='FLAG{old}',
         is_regex=False,
         random_tail_length=0,
     )
@@ -224,13 +214,13 @@ def test_editor_can_update_flag(editor_client, editor_user, challenge):
 
     assert resp.status_code == 200
     flag.refresh_from_db()
-    assert flag.flag_value == _expected_hmac('FLAG{new}', is_case_sensitive=True)
+    assert flag.flag_value == 'FLAG{new}'
 
 
 def test_editor_can_delete_flag(editor_client, editor_user, challenge):
     _assign_role(editor_user, 'Editor')
     flag = ChallengeFlag.objects.create(
-        challenge=challenge, flag_value='hash', is_regex=False, random_tail_length=0
+        challenge=challenge, flag_value='FLAG{delete-me}', is_regex=False, random_tail_length=0
     )
 
     resp = editor_client.delete(_flag_detail_url(challenge.slug, flag.id))
@@ -250,7 +240,7 @@ def test_flag_detail_wrong_challenge_returns_404(editor_client, editor_user, cha
         storage_path='challenges/other',
     )
     flag = ChallengeFlag.objects.create(
-        challenge=other, flag_value='hash', is_regex=False, random_tail_length=0
+        challenge=other, flag_value='FLAG{other}', is_regex=False, random_tail_length=0
     )
 
     resp = editor_client.put(

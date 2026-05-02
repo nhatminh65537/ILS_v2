@@ -21,6 +21,9 @@ from .views import (
     LearnChallengeCategoryViewSet,
     LearnChallengeTagViewSet,
     ChallengeNodeViewSet,
+    ChallengeInstanceAdminView,
+    ChallengeInstanceKillView,
+    ChallengeProgressView,
     QuizNodeViewSet,
     QuizViewSet,
     NotificationViewSet,
@@ -256,6 +259,43 @@ urlpatterns = [
         r'^challenge/nodes/(?P<pk>\d+)/move/$',
         ChallengeNodeViewSet.as_view({'post': 'move'}),
         name='challenge-node-move',
+    ),
+    # Challenge flag submission + progress (Slice 6 / Task 6.4)
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/submit/$',
+        LearnChallengeViewSet.as_view({'post': 'submit'}),
+        name='challenge-submit',
+    ),
+    re_path(
+        r'^challenge/progress/$',
+        ChallengeProgressView.as_view(),
+        name='challenge-progress',
+    ),
+    # Challenge instance endpoints (Slice 6 / Task 6.5)
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/instance/start/$',
+        LearnChallengeViewSet.as_view({'post': 'instance_start'}),
+        name='challenge-instance-start',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/instance/stop/$',
+        LearnChallengeViewSet.as_view({'post': 'instance_stop'}),
+        name='challenge-instance-stop',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/instance/status/$',
+        LearnChallengeViewSet.as_view({'get': 'instance_status'}),
+        name='challenge-instance-status',
+    ),
+    re_path(
+        r'^challenge/instances/$',
+        ChallengeInstanceAdminView.as_view(),
+        name='challenge-instance-admin-list',
+    ),
+    re_path(
+        r'^challenge/instances/(?P<pk>\d+)/kill/$',
+        ChallengeInstanceKillView.as_view(),
+        name='challenge-instance-kill',
     ),
     # User roles custom routes
     user_roles_url,

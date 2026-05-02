@@ -128,8 +128,21 @@ class ChallengeService:
 
         profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.total_challenge_point += challenge.challenge_point
+        profile.challenge_completed += 1
         profile.save()
         profile.update_leaderboard_rank()
+
+        from api.models import Notification
+        event_key = f'challenge_complete_{user.id}_{challenge.id}'
+        Notification.objects.get_or_create(
+            event_key=event_key,
+            defaults={
+                'user': user,
+                'type': Notification.NotificationType.CHALLENGE,
+                'title': 'Challenge Completed',
+                'message': f'You completed "{challenge.title}"!',
+            },
+        )
 
     @staticmethod
     def get_running_instance(challenge, user):

@@ -4,15 +4,18 @@ from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeTag
+from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeInstance, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
 from api.serializers import (
     ChallengeCategorySerializer,
     ChallengeDetailSerializer,
     ChallengeFlagSerializer,
+    ChallengeFlagSubmitSerializer,
     ChallengeFlagWriteSerializer,
+    ChallengeInstanceSerializer,
     ChallengeListSerializer,
     ChallengeTagSerializer,
     ChallengeWriteSerializer,
@@ -154,6 +157,130 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         flag = serializer.save()
         return Response(ChallengeFlagSerializer(flag, context={'request': request}).data)
+
+    @add_role_granted('Admin', 'Editor', 'Member')
+    def submit(self, request, slug=None):
+        challenge = self.get_object()
+        serializer = ChallengeFlagSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        submitted = serializer.validated_data['flag']
+
+        instance_flag = None
+        if challenge.instance_required:
+            running = ChallengeService.get_running_instance(challenge, request.user)
+            if running is None:
+                return Response(
+                    {'detail': 'No running instance. Start an instance first.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            instance_flag = running.flag_value
+
+        is_correct = any(
+            flag.validate_submission(submitted, instance_flag)
+            for flag in challenge.flags.all()
+        )
+
+        ChallengeService.record_submission(request.user, challenge, submitted, is_correct)
+        if is_correct:
+            ChallengeService.handle_correct_submission(request.user, challenge)
+
+        return Response({'correct': is_correct})
+
+    @add_role_granted('Admin', 'Editor', 'Member')
+    def instance_start(self, request, slug=None):
+        challenge = self.get_object()
+        if not challenge.instance_required:
+            return Response(
+                {'detail': 'This challenge does not require an instance.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        existing = ChallengeService.get_running_instance(challenge, request.user)
+        if existing:
+            return Response(ChallengeInstanceSerializer(existing, context={'request': request}).data)
+
+        instance = ChallengeService.create_instance(challenge, request.user)
+        try:
+            instance.start()
+        except Exception as exc:
+            instance.delete()
+            return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(
+            ChallengeInstanceSerializer(instance, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @add_role_granted('Admin', 'Editor', 'Member')
+    def instance_stop(self, request, slug=None):
+        challenge = self.get_object()
+        running = ChallengeService.get_running_instance(challenge, request.user)
+        if running is None:
+            return Response({'detail': 'No running instance found.'}, status=status.HTTP_404_NOT_FOUND)
+        running.stop()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @add_role_granted('Admin', 'Editor', 'Member')
+    def instance_status(self, request, slug=None):
+        challenge = self.get_object()
+        instance = (
+            ChallengeInstance.objects
+            .filter(user=request.user, challenge=challenge)
+            .order_by('-created_at')
+            .first()
+        )
+        if instance is None:
+            return Response({'status': 'none'})
+        return Response(ChallengeInstanceSerializer(instance, context={'request': request}).data)
+
+
+@add_role_granted('Admin', 'Editor')
+class ChallengeInstanceAdminView(APIView):
+    """Admin view for listing all instances and force-killing them."""
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    def get(self, request):
+        qs = ChallengeInstance.objects.select_related('challenge', 'user').all()
+        challenge_id = request.query_params.get('challenge')
+        user_id = request.query_params.get('user')
+        instance_status = request.query_params.get('status')
+        if challenge_id:
+            qs = qs.filter(challenge_id=challenge_id)
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+        if instance_status:
+            qs = qs.filter(status=instance_status)
+        serializer = ChallengeInstanceSerializer(qs.order_by('-created_at'), many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+@add_role_granted('Admin')
+class ChallengeInstanceKillView(APIView):
+    """Admin-only force-kill for a specific instance."""
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    def post(self, request, pk=None):
+        instance = get_object_or_404(ChallengeInstance, pk=pk)
+        if instance.status == ChallengeInstance.InstanceStatus.TERMINATED:
+            return Response({'detail': 'Instance already terminated.'}, status=status.HTTP_400_BAD_REQUEST)
+        instance.terminate()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@add_role_granted('Admin', 'Editor', 'Member')
+class ChallengeProgressView(APIView):
+    """Aggregate challenge progress for the requesting user."""
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    def get(self, request):
+        solved_count = UserChallengeProgress.objects.filter(
+            user=request.user, completed_at__isnull=False
+        ).count()
+        total_attempts = UserChallengeSubmit.objects.filter(user=request.user).count()
+        return Response({'solved_count': solved_count, 'total_attempts': total_attempts})
 
 
 @add_role_granted('Admin', 'Editor', 'Member')

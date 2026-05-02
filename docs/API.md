@@ -478,24 +478,24 @@ All routes under `/api/challenge/*` are planned. None are active in current rout
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | List flags. `flag_value` omitted for non-Admin/Editor. |
-| POST | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | Create flag. `is_regex=true` stores plaintext; `is_regex=false` stores HMAC-SHA256 (lowercased first when `is_case_sensitive=false`). |
-| PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Update flag. Providing `flag_value` re-applies normalization. |
+| POST | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | Create flag. `flag_value` stored as plaintext (static or regex). |
+| PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Update flag. |
 | DELETE | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Delete flag. |
 
-**Flag submission + progress:**
+**Flag submission + progress:** `Stable` (Task 6.4)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/api/challenge/challenges/{slug}/submit/` | Member+ | Payload: `{flag: string}`. Response: `{correct: bool}`. Server-side check only; flag values never returned. |
-| GET | `/api/challenge/progress/` | Yes | Aggregate progress for current user: `{solved_count, total_attempts}`. |
+| POST | `/api/challenge/challenges/{slug}/submit/` | Member+ | Payload: `{flag: string}`. Response: `{correct: bool}`. Server-side check; `flag_value` never returned. On first solve: updates progress, increments `challenge_completed`, triggers notification. |
+| GET | `/api/challenge/progress/` | Yes | Aggregate for current user: `{solved_count, total_attempts}`. |
 
-**Instance management (Wave 1: MockDeploymentBackend):**
+**Instance management (Wave 1: MockDeploymentBackend):** `Stable` (Task 6.5)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/api/challenge/challenges/{slug}/instance/start/` | Member+ | Start instance. Returns `ChallengeInstance` with `instance_info`. Idempotent if running instance exists. |
-| POST | `/api/challenge/challenges/{slug}/instance/stop/` | Member+ | Stop running instance for current user. |
-| GET | `/api/challenge/challenges/{slug}/instance/status/` | Member+ | Get current user's instance status for this challenge. |
-| GET | `/api/challenge/instances/` | Admin/Editor | Admin view: list all instances with filters (challenge, user, status). |
-| POST | `/api/challenge/instances/{id}/kill/` | Admin | Force-kill any instance. |
+| POST | `/api/challenge/challenges/{slug}/instance/start/` | Member+ | Start instance. Returns `ChallengeInstance`. Idempotent if running instance exists. `400` if challenge is not `instance_required`. |
+| POST | `/api/challenge/challenges/{slug}/instance/stop/` | Member+ | Stop running instance. `404` if no running instance. |
+| GET | `/api/challenge/challenges/{slug}/instance/status/` | Member+ | Returns latest instance for user, or `{status: "none"}`. |
+| GET | `/api/challenge/instances/` | Admin/Editor | List all instances; filterable by `challenge`, `user`, `status`. |
+| POST | `/api/challenge/instances/{id}/kill/` | Admin | Force-terminate any instance. |
 
 **GitLab sync (Task 6.8 — separate delivery):**
 | Method | Path | Auth | Notes |

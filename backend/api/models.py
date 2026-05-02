@@ -4,8 +4,6 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import F
-import hashlib
-import hmac
 import re
 
 # ABSTRACT BASE MODELS 
@@ -427,7 +425,7 @@ class ChallengeInstance(FullAudit):
     flag_value = models.TextField(
         blank=True,
         null=True,
-        help_text="Hashed flag value cho instance này (nếu random)"
+        help_text="Plaintext instance-specific flag (set on deploy if random_tail_length > 0)"
     )
     
     status = models.CharField(
@@ -470,44 +468,36 @@ class ChallengeInstance(FullAudit):
     def __str__(self):
         return f"{self.user.username} - {self.challenge.title} ({self.status})"
     
-    # Domain methods - OOP: Lifecycle management with proper encapsulation
     def start(self):
-        """Start the instance (domain logic + infrastructure call)"""
         if self.status == self.InstanceStatus.TERMINATED:
             raise ValueError("Cannot start terminated instance")
-        
-        from .services.instance_service import InstanceService
-        result = InstanceService.start_instance(self)
-        
+
+        from .services.instance_service import get_deployment_backend
+        instance_info = get_deployment_backend().deploy(self)
+
         self.status = self.InstanceStatus.RUNNING
-        self.instance_info = result
-        self.save()
-        
+        self.instance_info = instance_info
+        self.save(update_fields=['status', 'instance_info', 'updated_at'])
         self.log("Instance started")
-        return result
-    
+
     def stop(self):
-        """Stop the instance"""
         if self.status == self.InstanceStatus.TERMINATED:
             raise ValueError("Cannot stop terminated instance")
-        
-        from .services.instance_service import InstanceService
-        InstanceService.stop_instance(self)
-        
+
+        from .services.instance_service import get_deployment_backend
+        get_deployment_backend().stop(self)
+
         self.status = self.InstanceStatus.STOPPED
-        self.save()
-        
+        self.save(update_fields=['status', 'updated_at'])
         self.log("Instance stopped")
-    
+
     def terminate(self):
-        """Terminate the instance (cannot be restarted)"""
-        from .services.instance_service import InstanceService
-        InstanceService.terminate_instance(self)
-        
+        from .services.instance_service import get_deployment_backend
+        get_deployment_backend().terminate(self)
+
         self.status = self.InstanceStatus.TERMINATED
         self.terminated_at = timezone.now()
-        self.save()
-        
+        self.save(update_fields=['status', 'terminated_at', 'updated_at'])
         self.log("Instance terminated")
     
     def log(self, message):
@@ -552,7 +542,7 @@ class ChallengeFlag(FullAudit):
         related_name='flags',
         db_column='challenge_id'
     )
-    flag_value = models.TextField(help_text="Hashed flag value for security")
+    flag_value = models.TextField(help_text="Plaintext flag value or regex pattern; never returned to client")
     is_case_sensitive = models.BooleanField(default=True)
     is_regex = models.BooleanField(default=False)
     random_tail_length = models.IntegerField(
@@ -569,28 +559,9 @@ class ChallengeFlag(FullAudit):
     def __str__(self):
         return f"Flag for {self.challenge.title}"
     
-    # Domain methods - OOP: Polymorphic flag validation (Strategy pattern)
     def validate_submission(self, submitted_value, instance_flag=None):
-        """
-        Validate submitted flag using appropriate strategy
-        Per OOP feedback: Encapsulate validation logic, use polymorphism
-        """
         from .services.flag_validation_service import FlagValidationService
-        return FlagValidationService.validate(
-            self, 
-            submitted_value, 
-            instance_flag
-        )
-    
-    def hash_flag(self, plain_flag):
-        """Hash flag value for secure storage"""
-        salt = settings.SECRET_KEY.encode()
-        return hmac.new(salt, plain_flag.encode(), hashlib.sha256).hexdigest()
-    
-    def set_flag(self, plain_flag):
-        """Set flag with automatic hashing"""
-        self.flag_value = self.hash_flag(plain_flag)
-        self.save()
+        return FlagValidationService.validate(self, submitted_value, instance_flag)
 
 
 class UserChallengeProgress(FullAudit):

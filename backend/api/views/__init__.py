@@ -7,6 +7,9 @@ from .challenges import (
     LearnChallengeViewSet,
     LearnChallengeCategoryViewSet,
     LearnChallengeTagViewSet,
+    ChallengeInstanceAdminView,
+    ChallengeInstanceKillView,
+    ChallengeProgressView,
 )
 from .challenge_nodes import ChallengeNodeViewSet
 from .courses import (
@@ -33,6 +36,9 @@ __all__ = [
     'LearnChallengeViewSet',
     'LearnChallengeCategoryViewSet',
     'LearnChallengeTagViewSet',
+    'ChallengeInstanceAdminView',
+    'ChallengeInstanceKillView',
+    'ChallengeProgressView',
     'ChallengeNodeViewSet',
     'CourseViewSet',
     'CustomTokenObtainPairView',
