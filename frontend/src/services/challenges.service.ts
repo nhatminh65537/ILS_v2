@@ -1,15 +1,25 @@
 import apiClient from '@/lib/axios'
 import type { PaginatedResponse } from '@/types/api'
 import type {
+  AdminChallengeInstanceDto,
+  AdminChallengeNodeCreatePayload,
+  AdminChallengeNodeMovePayload,
+  AdminChallengeNodeUpdatePayload,
   Challenge,
+  ChallengeCategory,
+  ChallengeCategoryMutationPayload,
   ChallengeFlag,
-  CreateChallengePayload,
-  UpdateChallengePayload,
-  SubmitFlagPayload,
-  FlagSubmissionResponse,
+  ChallengeFlagMutationPayload,
   ChallengeInstance,
+  ChallengeNode,
   ChallengeProgressDetailResponse,
+  ChallengeTag,
+  ChallengeTagMutationPayload,
+  CreateChallengePayload,
+  FlagSubmissionResponse,
   GlobalChallengeProgressResponse,
+  SubmitFlagPayload,
+  UpdateChallengePayload,
 } from '@/types/challenge.types'
 
 export const listChallenges = async (params?: {
@@ -76,4 +86,108 @@ export const stopInstance = async (slug: string): Promise<void> => {
 export const getInstanceStatus = async (slug: string): Promise<ChallengeInstance | { status: 'none' }> => {
   const response = await apiClient.get(`/api/challenge/challenges/${slug}/instance/status/`)
   return response.data
+}
+
+// ── Admin: Category CRUD ──────────────────────────────────────────────────────
+
+export const listChallengeCategories = async (): Promise<ChallengeCategory[]> => {
+  const response = await apiClient.get('/api/challenge/categories/')
+  return response.data?.results ?? response.data
+}
+
+export const createChallengeCategory = async (payload: ChallengeCategoryMutationPayload): Promise<ChallengeCategory> => {
+  const response = await apiClient.post('/api/challenge/categories/', payload)
+  return response.data
+}
+
+export const updateChallengeCategory = async (id: number, payload: ChallengeCategoryMutationPayload): Promise<ChallengeCategory> => {
+  const response = await apiClient.patch(`/api/challenge/categories/${id}/`, payload)
+  return response.data
+}
+
+export const deleteChallengeCategory = async (id: number): Promise<void> => {
+  await apiClient.delete(`/api/challenge/categories/${id}/`)
+}
+
+// ── Admin: Tag CRUD ───────────────────────────────────────────────────────────
+
+export const listChallengeTags = async (): Promise<ChallengeTag[]> => {
+  const response = await apiClient.get('/api/challenge/tags/')
+  return response.data?.results ?? response.data
+}
+
+export const createChallengeTag = async (payload: ChallengeTagMutationPayload): Promise<ChallengeTag> => {
+  const response = await apiClient.post('/api/challenge/tags/', payload)
+  return response.data
+}
+
+export const updateChallengeTag = async (id: number, payload: ChallengeTagMutationPayload): Promise<ChallengeTag> => {
+  const response = await apiClient.patch(`/api/challenge/tags/${id}/`, payload)
+  return response.data
+}
+
+export const deleteChallengeTag = async (id: number): Promise<void> => {
+  await apiClient.delete(`/api/challenge/tags/${id}/`)
+}
+
+// ── Admin: Node (tree) CRUD ───────────────────────────────────────────────────
+
+export const listChallengeRootNodes = async (): Promise<ChallengeNode[]> => {
+  const response = await apiClient.get('/api/challenge/nodes/')
+  return response.data?.results ?? response.data
+}
+
+export const listChallengeNodeChildren = async (nodeId: number): Promise<ChallengeNode[]> => {
+  const response = await apiClient.get(`/api/challenge/nodes/${nodeId}/children/`)
+  return response.data?.results ?? response.data
+}
+
+export const createChallengeNode = async (payload: AdminChallengeNodeCreatePayload): Promise<ChallengeNode> => {
+  const response = await apiClient.post('/api/challenge/nodes/', payload)
+  return response.data
+}
+
+export const updateChallengeNode = async (id: number, payload: AdminChallengeNodeUpdatePayload): Promise<ChallengeNode> => {
+  const response = await apiClient.patch(`/api/challenge/nodes/${id}/`, payload)
+  return response.data
+}
+
+export const deleteChallengeNode = async (id: number): Promise<void> => {
+  await apiClient.delete(`/api/challenge/nodes/${id}/`)
+}
+
+export const moveChallengeNode = async (id: number, payload: AdminChallengeNodeMovePayload): Promise<ChallengeNode> => {
+  const response = await apiClient.post(`/api/challenge/nodes/${id}/move/`, payload)
+  return response.data
+}
+
+// ── Admin: Flag CRUD ──────────────────────────────────────────────────────────
+
+export const createChallengeFlag = async (slug: string, payload: ChallengeFlagMutationPayload): Promise<ChallengeFlag> => {
+  const response = await apiClient.post(`/api/challenge/challenges/${slug}/flags/`, payload)
+  return response.data
+}
+
+export const updateChallengeFlag = async (slug: string, flagId: number, payload: ChallengeFlagMutationPayload): Promise<ChallengeFlag> => {
+  const response = await apiClient.patch(`/api/challenge/challenges/${slug}/flags/${flagId}/`, payload)
+  return response.data
+}
+
+export const deleteChallengeFlag = async (slug: string, flagId: number): Promise<void> => {
+  await apiClient.delete(`/api/challenge/challenges/${slug}/flags/${flagId}/`)
+}
+
+// ── Admin: Instance management ────────────────────────────────────────────────
+
+export const listAdminChallengeInstances = async (params?: {
+  challenge_slug?: string
+  user_id?: number
+  status?: string
+}): Promise<PaginatedResponse<AdminChallengeInstanceDto>> => {
+  const response = await apiClient.get('/api/challenge/instances/', { params })
+  return response.data
+}
+
+export const killChallengeInstance = async (instanceId: number): Promise<void> => {
+  await apiClient.post(`/api/challenge/instances/${instanceId}/kill/`)
 }

@@ -1049,6 +1049,229 @@
       "reorderMappingFailed": "Sắp xếp mapping thất bại."
     }
   },
+  "adminChallenges": {
+    "title": "Quản lý Challenge",
+    "subtitle": "Quản lý thử thách CTF, flag, danh mục, thẻ và cây nút.",
+    "create": {
+      "title": "Tạo challenge",
+      "subtitle": "Tạo challenge mới và tiếp tục trong chế độ chỉnh sửa.",
+      "formTitle": "Thông tin challenge"
+    },
+    "editor": {
+      "title": "Chỉnh sửa challenge",
+      "subtitle": "Cập nhật metadata, quản lý cây nút và cấu hình flag.",
+      "loadingTitle": "Đang tải challenge..."
+    },
+    "navigation": {
+      "backToList": "Quay lại danh sách challenge",
+      "backToEditor": "Quay lại trình chỉnh sửa"
+    },
+    "form": {
+      "titleLabel": "Tiêu đề",
+      "titlePlaceholder": "tiêu đề challenge",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "ten-challenge",
+      "slugImmutableHint": "Slug không thể thay đổi sau khi tạo.",
+      "descriptionLabel": "Mô tả",
+      "descriptionPlaceholder": "mô tả ngắn về challenge",
+      "statusLabel": "Trạng thái",
+      "difficultyLabel": "Độ khó",
+      "difficultyNone": "Không xác định",
+      "categoryLabel": "Danh mục",
+      "categoryNone": "Không có danh mục",
+      "challengePointLabel": "Điểm thưởng",
+      "instanceRequiredLabel": "Yêu cầu instance",
+      "tagsLabel": "Thẻ"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "published": "Đã xuất bản",
+      "archived": "Đã lưu trữ",
+      "saving": "Đang lưu...",
+      "saved": "Lưu thành công.",
+      "loading": "Đang tải...",
+      "loadingTree": "Đang tải cây..."
+    },
+    "difficulty": {
+      "easy": "Dễ",
+      "medium": "Trung bình",
+      "hard": "Khó",
+      "insane": "Cực khó"
+    },
+    "toolbar": {
+      "searchPlaceholder": "Tìm theo tiêu đề hoặc slug",
+      "statusAll": "Tất cả trạng thái"
+    },
+    "list": {
+      "title": "Danh sách challenge"
+    },
+    "taxonomy": {
+      "manageCategories": "Quản lý danh mục",
+      "manageTags": "Quản lý thẻ",
+      "namePlaceholder": "tên",
+      "descriptionPlaceholder": "mô tả"
+    },
+    "category": {
+      "title": "Quản lý danh mục",
+      "description": "Tạo, cập nhật hoặc xóa danh mục challenge."
+    },
+    "tag": {
+      "title": "Quản lý thẻ",
+      "description": "Tạo, cập nhật hoặc xóa thẻ challenge."
+    },
+    "actions": {
+      "createChallenge": "Tạo challenge",
+      "addFlag": "Thêm flag",
+      "refresh": "Làm mới",
+      "create": "Tạo",
+      "save": "Lưu",
+      "close": "Đóng",
+      "delete": "Xóa",
+      "edit": "Sửa",
+      "cancel": "Hủy",
+      "moveUp": "Lên",
+      "moveDown": "Xuống",
+      "move": "Di chuyển",
+      "rename": "Đổi tên"
+    },
+    "columns": {
+      "title": "Tiêu đề",
+      "slug": "Slug",
+      "category": "Danh mục",
+      "difficulty": "Độ khó",
+      "status": "Trạng thái",
+      "updatedAt": "Cập nhật",
+      "actions": "Hành động"
+    },
+    "pagination": {
+      "total": "Tổng {total} challenge",
+      "page": "Trang {page}",
+      "previous": "Trước",
+      "next": "Sau"
+    },
+    "confirm": {
+      "deleteChallenge": "Xóa challenge \"{title}\"?"
+    },
+    "tabs": {
+      "metadata": "Metadata",
+      "tree": "Cây nút",
+      "flags": "Flag"
+    },
+    "tree": {
+      "createFolderTitle": "Tạo thư mục",
+      "folderTitlePlaceholder": "tên thư mục",
+      "createChallengeNodeTitle": "Tạo nút challenge",
+      "challengeNodeTitlePlaceholder": "tên nút",
+      "challengeIdPlaceholder": "ID challenge (tùy chọn)",
+      "parentLabel": "Nút cha",
+      "parentRoot": "Gốc",
+      "positionPlaceholder": "vị trí",
+      "createFolder": "Tạo thư mục",
+      "createChallengeNode": "Tạo nút challenge",
+      "treeTitle": "Cây challenge",
+      "renamePrompt": "Đổi tên nút",
+      "movePrompt": "Di chuyển nút đến id cha (để trống = gốc)",
+      "deleteConfirm": "Xóa nút này và cây con?",
+      "pathLabel": "đường dẫn: {path}",
+      "badgeChallenge": "Challenge",
+      "badgeFolder": "Thư mục",
+      "loadingChildren": "Đang tải...",
+      "emptyFolder": "Thư mục trống"
+    },
+    "flags": {
+      "title": "Quản lý flag",
+      "subtitle": "Quản lý flag cho challenge: {slug}",
+      "listTitle": "Danh sách flag",
+      "addFlag": "Thêm flag",
+      "editFlag": "Sửa flag",
+      "deleteConfirm": "Xóa flag này?",
+      "yes": "Có",
+      "no": "Không",
+      "columns": {
+        "flagValue": "Giá trị flag",
+        "flagType": "Loại",
+        "isRegex": "Regex",
+        "isCaseSensitive": "Phân biệt hoa thường",
+        "randomTailLength": "Độ dài đuôi ngẫu nhiên"
+      },
+      "types": {
+        "static": "Tĩnh",
+        "regex": "Regex",
+        "instance": "Instance"
+      },
+      "form": {
+        "flagValue": "Giá trị flag",
+        "flagValuePlaceholder": "CTF{...}",
+        "flagType": "Loại flag",
+        "isRegex": "Là mẫu regex",
+        "isCaseSensitive": "Phân biệt hoa thường",
+        "randomTailLength": "Độ dài đuôi ngẫu nhiên"
+      }
+    },
+    "instances": {
+      "title": "Quản lý instance",
+      "subtitle": "Theo dõi và quản lý các instance challenge đang chạy.",
+      "listTitle": "Danh sách instance",
+      "kill": "Dừng",
+      "killConfirm": "Dừng instance của người dùng {user}?",
+      "filters": {
+        "user": "Lọc theo username",
+        "challenge": "Lọc theo challenge"
+      },
+      "columns": {
+        "user": "Người dùng",
+        "challenge": "Challenge",
+        "status": "Trạng thái",
+        "startedAt": "Bắt đầu"
+      },
+      "status": {
+        "running": "Đang chạy",
+        "stopped": "Đã dừng",
+        "terminated": "Đã kết thúc"
+      }
+    },
+    "empty": {
+      "noChallenges": "Không tìm thấy challenge.",
+      "noChallenge": "Challenge không tồn tại.",
+      "noFlags": "Chưa có flag nào.",
+      "noNodes": "Chưa có nút nào.",
+      "noCategories": "Chưa có danh mục nào.",
+      "noTags": "Chưa có thẻ nào.",
+      "noInstances": "Không tìm thấy instance."
+    },
+    "errors": {
+      "unauthenticated": "Yêu cầu xác thực.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "notFound": "Không tìm thấy tài nguyên.",
+      "validation": "Vui lòng kiểm tra lại các trường bắt buộc.",
+      "slugConflict": "Slug challenge đã tồn tại.",
+      "loadListFailed": "Tải danh sách challenge thất bại.",
+      "loadDetailFailed": "Tải chi tiết challenge thất bại.",
+      "loadTaxonomyFailed": "Tải danh mục/thẻ thất bại.",
+      "createFailed": "Tạo challenge thất bại.",
+      "updateFailed": "Cập nhật challenge thất bại.",
+      "deleteFailed": "Xóa challenge thất bại.",
+      "createCategoryFailed": "Tạo danh mục thất bại.",
+      "updateCategoryFailed": "Cập nhật danh mục thất bại.",
+      "deleteCategoryFailed": "Xóa danh mục thất bại.",
+      "createTagFailed": "Tạo thẻ thất bại.",
+      "updateTagFailed": "Cập nhật thẻ thất bại.",
+      "deleteTagFailed": "Xóa thẻ thất bại.",
+      "loadTreeFailed": "Tải cây challenge thất bại.",
+      "loadTreeChildrenFailed": "Tải nút con thất bại.",
+      "createFolderFailed": "Tạo thư mục thất bại.",
+      "createNodeFailed": "Tạo nút challenge thất bại.",
+      "renameNodeFailed": "Đổi tên nút thất bại.",
+      "moveNodeFailed": "Di chuyển nút thất bại.",
+      "reorderNodeFailed": "Sắp xếp lại nút thất bại.",
+      "deleteNodeFailed": "Xóa nút thất bại.",
+      "loadFlagsFailed": "Tải flag thất bại.",
+      "createFlagFailed": "Tạo flag thất bại.",
+      "updateFlagFailed": "Cập nhật flag thất bại.",
+      "deleteFlagFailed": "Xóa flag thất bại.",
+      "loadInstancesFailed": "Tải instance thất bại."
+    }
+  },
   "profile": {
     "settingsTitle": "Hồ sơ cá nhân",
     "settingsSubtitle": "Quản lý thông tin hồ sơ, cài đặt và tài khoản của bạn.",

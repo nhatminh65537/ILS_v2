@@ -62,11 +62,14 @@ export interface Challenge {
 /** Challenge tree node */
 export interface ChallengeNode {
   readonly id: number
-  readonly challenge_id: number
-  readonly parent_id?: number
+  /** null = folder; set = challenge item node */
+  readonly challenge_id: number | null
+  readonly parent_id?: number | null
   readonly path: string // dot-separated: "1.2"
   readonly position: number
   readonly title: string
+  /** true when challenge_id is set (item node); false = folder */
+  readonly is_item: boolean
   readonly children?: readonly ChallengeNode[]
 }
 
@@ -76,6 +79,9 @@ export interface ChallengeFlag {
   readonly challenge_id: number
   readonly flag_value: string // NOT returned in GET for Members
   readonly flag_type: 'static' | 'regex' | 'instance'
+  readonly is_regex: boolean
+  readonly is_case_sensitive: boolean
+  readonly random_tail_length: number
   readonly created_at: string
 }
 
@@ -121,7 +127,8 @@ export interface CreateChallengePayload {
   description?: string
   status: 'draft' | 'published'
   difficulty?: ChallengeDifficulty
-  category_id?: number
+  category_id?: number | null
+  tag_ids?: number[]
   source: ChallengeSource
   challenge_point?: number
   instance_required?: boolean
@@ -132,7 +139,8 @@ export interface UpdateChallengePayload {
   description?: string
   status?: 'draft' | 'published' | 'archived'
   difficulty?: ChallengeDifficulty
-  category_id?: number
+  category_id?: number | null
+  tag_ids?: number[]
   challenge_point?: number
   instance_required?: boolean
 }
@@ -161,4 +169,57 @@ export interface ChallengeProgressDetailResponse {
 export interface GlobalChallengeProgressResponse {
   readonly solved_count: number
   readonly total_attempts: number
+}
+
+// ── Admin payload types ───────────────────────────────────────────────────────
+
+export interface ChallengeCategoryMutationPayload {
+  name: string
+  description?: string
+}
+
+export interface ChallengeTagMutationPayload {
+  name: string
+  description?: string
+}
+
+export interface ChallengeFlagMutationPayload {
+  flag_value: string
+  flag_type?: 'static' | 'regex' | 'instance'
+  is_regex?: boolean
+  is_case_sensitive?: boolean
+  random_tail_length?: number
+}
+
+export interface AdminChallengeNodeCreatePayload {
+  title: string
+  parent_id: number | null
+  position?: number
+  is_item: boolean
+  challenge_id?: number | null
+}
+
+export interface AdminChallengeNodeUpdatePayload {
+  title?: string
+  parent_id?: number | null
+  position?: number
+}
+
+export interface AdminChallengeNodeMovePayload {
+  parent_id: number | null
+}
+
+/** Admin-facing instance with user/challenge display names */
+export interface AdminChallengeInstanceDto {
+  readonly id: number
+  readonly user_id: number
+  readonly user_username: string
+  readonly challenge_id: number
+  readonly challenge_slug: string
+  readonly challenge_title: string
+  readonly status: InstanceStatus
+  readonly instance_info?: Record<string, unknown>
+  readonly expires_at?: string
+  readonly created_at: string
+  readonly updated_at: string
 }

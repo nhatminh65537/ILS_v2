@@ -1049,6 +1049,229 @@
       "reorderMappingFailed": "Failed to reorder mappings."
     }
   },
+  "adminChallenges": {
+    "title": "Challenge Management",
+    "subtitle": "Manage CTF challenges, flags, taxonomy, and node tree.",
+    "create": {
+      "title": "Create challenge",
+      "subtitle": "Create a new challenge and continue in editor mode.",
+      "formTitle": "Challenge metadata"
+    },
+    "editor": {
+      "title": "Edit challenge",
+      "subtitle": "Update metadata, manage tree structure, and flag configuration.",
+      "loadingTitle": "Loading challenge..."
+    },
+    "navigation": {
+      "backToList": "Back to challenge list",
+      "backToEditor": "Back to editor"
+    },
+    "form": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "challenge title",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "challenge-slug",
+      "slugImmutableHint": "Slug is fixed after creation.",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "brief summary for this challenge",
+      "statusLabel": "Status",
+      "difficultyLabel": "Difficulty",
+      "difficultyNone": "No difficulty",
+      "categoryLabel": "Category",
+      "categoryNone": "No category",
+      "challengePointLabel": "Challenge points",
+      "instanceRequiredLabel": "Instance required",
+      "tagsLabel": "Tags"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived",
+      "saving": "Saving...",
+      "saved": "Saved successfully.",
+      "loading": "Loading...",
+      "loadingTree": "Loading tree..."
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "insane": "Insane"
+    },
+    "toolbar": {
+      "searchPlaceholder": "Search by title or slug",
+      "statusAll": "All statuses"
+    },
+    "list": {
+      "title": "Challenge list"
+    },
+    "taxonomy": {
+      "manageCategories": "Manage categories",
+      "manageTags": "Manage tags",
+      "namePlaceholder": "name",
+      "descriptionPlaceholder": "description"
+    },
+    "category": {
+      "title": "Category manager",
+      "description": "Create, update, or remove challenge categories."
+    },
+    "tag": {
+      "title": "Tag manager",
+      "description": "Create, update, or remove challenge tags."
+    },
+    "actions": {
+      "createChallenge": "Create challenge",
+      "addFlag": "Add flag",
+      "refresh": "Refresh",
+      "create": "Create",
+      "save": "Save",
+      "close": "Close",
+      "delete": "Delete",
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "moveUp": "Up",
+      "moveDown": "Down",
+      "move": "Move",
+      "rename": "Rename"
+    },
+    "columns": {
+      "title": "Title",
+      "slug": "Slug",
+      "category": "Category",
+      "difficulty": "Difficulty",
+      "status": "Status",
+      "updatedAt": "Updated",
+      "actions": "Actions"
+    },
+    "pagination": {
+      "total": "Total {total} challenges",
+      "page": "Page {page}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "confirm": {
+      "deleteChallenge": "Delete challenge \"{title}\"?"
+    },
+    "tabs": {
+      "metadata": "Metadata",
+      "tree": "Tree",
+      "flags": "Flags"
+    },
+    "tree": {
+      "createFolderTitle": "Create folder",
+      "folderTitlePlaceholder": "folder title",
+      "createChallengeNodeTitle": "Create challenge node",
+      "challengeNodeTitlePlaceholder": "node title",
+      "challengeIdPlaceholder": "challenge ID (optional)",
+      "parentLabel": "Parent",
+      "parentRoot": "Root",
+      "positionPlaceholder": "position",
+      "createFolder": "Create folder",
+      "createChallengeNode": "Create challenge node",
+      "treeTitle": "Challenge tree",
+      "renamePrompt": "Rename node",
+      "movePrompt": "Move node to parent id (blank for root)",
+      "deleteConfirm": "Delete this node and its subtree?",
+      "pathLabel": "path: {path}",
+      "badgeChallenge": "Challenge",
+      "badgeFolder": "Folder",
+      "loadingChildren": "Loading children...",
+      "emptyFolder": "Empty folder"
+    },
+    "flags": {
+      "title": "Flag management",
+      "subtitle": "Managing flags for challenge: {slug}",
+      "listTitle": "Flag list",
+      "addFlag": "Add flag",
+      "editFlag": "Edit flag",
+      "deleteConfirm": "Delete this flag?",
+      "yes": "Yes",
+      "no": "No",
+      "columns": {
+        "flagValue": "Flag value",
+        "flagType": "Type",
+        "isRegex": "Regex",
+        "isCaseSensitive": "Case sensitive",
+        "randomTailLength": "Tail length"
+      },
+      "types": {
+        "static": "Static",
+        "regex": "Regex",
+        "instance": "Instance"
+      },
+      "form": {
+        "flagValue": "Flag value",
+        "flagValuePlaceholder": "CTF{...}",
+        "flagType": "Flag type",
+        "isRegex": "Is regex pattern",
+        "isCaseSensitive": "Case sensitive",
+        "randomTailLength": "Random tail length"
+      }
+    },
+    "instances": {
+      "title": "Instance management",
+      "subtitle": "Monitor and manage active challenge instances.",
+      "listTitle": "Instance list",
+      "kill": "Kill",
+      "killConfirm": "Kill instance for user {user}?",
+      "filters": {
+        "user": "Filter by username",
+        "challenge": "Filter by challenge"
+      },
+      "columns": {
+        "user": "User",
+        "challenge": "Challenge",
+        "status": "Status",
+        "startedAt": "Started"
+      },
+      "status": {
+        "running": "Running",
+        "stopped": "Stopped",
+        "terminated": "Terminated"
+      }
+    },
+    "empty": {
+      "noChallenges": "No challenges found.",
+      "noChallenge": "Challenge not found.",
+      "noFlags": "No flags configured.",
+      "noNodes": "No nodes yet.",
+      "noCategories": "No categories yet.",
+      "noTags": "No tags yet.",
+      "noInstances": "No instances found."
+    },
+    "errors": {
+      "unauthenticated": "Authentication is required.",
+      "forbidden": "You do not have permission for this action.",
+      "notFound": "Requested resource was not found.",
+      "validation": "Please review required fields and try again.",
+      "slugConflict": "Challenge slug already exists.",
+      "loadListFailed": "Failed to load challenge list.",
+      "loadDetailFailed": "Failed to load challenge detail.",
+      "loadTaxonomyFailed": "Failed to load categories/tags.",
+      "createFailed": "Failed to create challenge.",
+      "updateFailed": "Failed to update challenge.",
+      "deleteFailed": "Failed to delete challenge.",
+      "createCategoryFailed": "Failed to create category.",
+      "updateCategoryFailed": "Failed to update category.",
+      "deleteCategoryFailed": "Failed to delete category.",
+      "createTagFailed": "Failed to create tag.",
+      "updateTagFailed": "Failed to update tag.",
+      "deleteTagFailed": "Failed to delete tag.",
+      "loadTreeFailed": "Failed to load challenge tree.",
+      "loadTreeChildrenFailed": "Failed to load node children.",
+      "createFolderFailed": "Failed to create folder.",
+      "createNodeFailed": "Failed to create challenge node.",
+      "renameNodeFailed": "Failed to rename node.",
+      "moveNodeFailed": "Failed to move node.",
+      "reorderNodeFailed": "Failed to reorder node.",
+      "deleteNodeFailed": "Failed to delete node.",
+      "loadFlagsFailed": "Failed to load flags.",
+      "createFlagFailed": "Failed to create flag.",
+      "updateFlagFailed": "Failed to update flag.",
+      "deleteFlagFailed": "Failed to delete flag.",
+      "loadInstancesFailed": "Failed to load instances."
+    }
+  },
   "profile": {
     "settingsTitle": "Profile",
     "settingsSubtitle": "Manage your profile information, settings, and account.",

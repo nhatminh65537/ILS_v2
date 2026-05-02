@@ -1,4 +1,4 @@
-import { ChallengeDifficulty, ChallengeSource, InstanceStatus, type Challenge, type ChallengeFlag, type ChallengeNode, type ChallengeSubmission, type UserChallengeProgress, type ChallengeInstance } from '@/types/challenge.types'
+import { ChallengeDifficulty, ChallengeSource, InstanceStatus, type Challenge, type ChallengeCategory, type ChallengeFlag, type ChallengeNode, type ChallengeSubmission, type ChallengeTag, type UserChallengeProgress, type ChallengeInstance } from '@/types/challenge.types'
 import { ContentStatus as CourseStatus, LessonSource, LessonType, type Course, type CourseCategory, type CourseNode, type CourseTag, type UserCourseProgress } from '@/types/course.types'
 import { type LearnLessonDetail, type LearnLessonProgress, type LearnLessonQuestionMapping } from '@/types/lesson.types'
 import { type LeaderboardEntry } from '@/types/leaderboard.types'
@@ -399,6 +399,22 @@ export const learnLessonQuestionsFixture: Record<number, LearnLessonQuestionMapp
 
 export const learnLessonProgressFixture: Record<number, LearnLessonProgress> = {}
 
+export const challengeCategoriesFixture: ChallengeCategory[] = [
+  { id: 1, name: 'Web', description: 'Web security challenges', created_at: now, updated_at: now },
+  { id: 2, name: 'Forensics', description: 'Digital forensics challenges', created_at: now, updated_at: now },
+  { id: 3, name: 'Pwn', description: 'Binary exploitation challenges', created_at: now, updated_at: now },
+  { id: 4, name: 'Crypto', description: 'Cryptography challenges', created_at: now, updated_at: now },
+  { id: 5, name: 'Misc', description: 'Miscellaneous challenges', created_at: now, updated_at: now },
+]
+
+export const challengeTagsFixture: ChallengeTag[] = [
+  { id: 1, name: 'XSS', description: 'Cross-site scripting' },
+  { id: 2, name: 'SQLi', description: 'SQL injection' },
+  { id: 3, name: 'JWT', description: 'JSON Web Tokens' },
+  { id: 4, name: 'PCAP', description: 'Packet capture analysis' },
+  { id: 5, name: 'Regex', description: 'Regular expression' },
+]
+
 export const challengesFixture: Challenge[] = [
   { id: 1, slug: 'xss-lab', title: 'XSS Lab', description: 'Find and exploit reflected XSS', status: 'published', difficulty: ChallengeDifficulty.Easy, category: 1, category_name: 'Web', source: ChallengeSource.Manual, storage_path: '/challenges/xss-lab', challenge_point: 100, instance_required: false, created_at: now, updated_at: now },
   { id: 2, slug: 'sqli-lab', title: 'SQLi Lab', description: 'Bypass authentication', status: 'published', difficulty: ChallengeDifficulty.Medium, category: 1, category_name: 'Web', source: ChallengeSource.Manual, storage_path: '/challenges/sqli-lab', challenge_point: 150, instance_required: false, created_at: now, updated_at: now },
@@ -408,17 +424,17 @@ export const challengesFixture: Challenge[] = [
 ]
 
 export const challengeNodesFixture: ChallengeNode[] = [
-  { id: 1, challenge_id: 1, path: '1', position: 1, title: 'Web Fundamentals' },
-  { id: 2, challenge_id: 1, parent_id: 1, path: '1.1', position: 1, title: 'XSS Starter' },
-  { id: 3, challenge_id: 3, path: '2', position: 2, title: 'Token Security' },
-  { id: 4, challenge_id: 3, parent_id: 3, path: '2.1', position: 1, title: 'JWT Misconfig' },
-  { id: 5, challenge_id: 5, path: '3', position: 3, title: 'Forensic Tracks' },
+  { id: 1, challenge_id: null, path: '1', position: 1, title: 'Web Fundamentals', is_item: false },
+  { id: 2, challenge_id: 1, parent_id: 1, path: '1.1', position: 1, title: 'XSS Lab', is_item: true },
+  { id: 3, challenge_id: null, path: '2', position: 2, title: 'Token Security', is_item: false },
+  { id: 4, challenge_id: 3, parent_id: 3, path: '2.1', position: 1, title: 'JWT Pwn', is_item: true },
+  { id: 5, challenge_id: null, path: '3', position: 3, title: 'Forensics', is_item: false },
 ]
 
 export const challengeFlagsFixture: ChallengeFlag[] = [
-  { id: 1, challenge_id: 1, flag_value: 'ILS{xss_is_fun}', flag_type: 'static', created_at: now },
-  { id: 2, challenge_id: 2, flag_value: 'ILS{sqli_master}', flag_type: 'static', created_at: now },
-  { id: 3, challenge_id: 3, flag_value: '^ILS\\{jwt_[a-z0-9_]+\\}$', flag_type: 'regex', created_at: now },
+  { id: 1, challenge_id: 1, flag_value: 'ILS{xss_is_fun}', flag_type: 'static', is_regex: false, is_case_sensitive: true, random_tail_length: 0, created_at: now },
+  { id: 2, challenge_id: 2, flag_value: 'ILS{sqli_master}', flag_type: 'static', is_regex: false, is_case_sensitive: true, random_tail_length: 0, created_at: now },
+  { id: 3, challenge_id: 3, flag_value: '^ILS\\{jwt_[a-z0-9_]+\\}$', flag_type: 'regex', is_regex: true, is_case_sensitive: false, random_tail_length: 0, created_at: now },
 ]
 
 export const challengeProgressFixture: UserChallengeProgress[] = [
