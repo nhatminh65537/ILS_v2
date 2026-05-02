@@ -474,12 +474,12 @@ All routes under `/api/challenge/*` are planned. None are active in current rout
 | GET | `/api/challenge/nodes/{id}/children/` | Yes | Lazy-load direct children. |
 | POST | `/api/challenge/nodes/{id}/move/` | Admin/Editor | Move node to new parent. Payload: `{parent_id}` (null = root). Cycle-safe. |
 
-**Flags:**
+**Flags:** `Partial` (Task 6.3 — implemented; flag submission in Task 6.4)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | List flags. `flag_value` never returned to Member. |
-| POST | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | Create flag. `is_regex=true` stores plaintext pattern; `is_regex=false` stores HMAC hash. |
-| PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Update flag. |
+| GET | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | List flags. `flag_value` omitted for non-Admin/Editor. |
+| POST | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | Create flag. `is_regex=true` stores plaintext; `is_regex=false` stores HMAC-SHA256 (lowercased first when `is_case_sensitive=false`). |
+| PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Update flag. Providing `flag_value` re-applies normalization. |
 | DELETE | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Delete flag. |
 
 **Flag submission + progress:**

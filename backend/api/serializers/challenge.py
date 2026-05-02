@@ -1,8 +1,11 @@
+import hashlib
+import hmac
 import re
 
+from django.conf import settings
 from rest_framework import serializers
 
-from api.models import Challenge, ChallengeCategory, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress
+from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress
 from api.services.challenge_service import ChallengeService
 
 
@@ -266,6 +269,82 @@ class ChallengeWriteSerializer(serializers.ModelSerializer):
         if tag_ids is not serializers.empty:
             ChallengeService.upsert_challenge_tags(instance, tag_ids)
 
+        return instance
+
+
+class ChallengeFlagSerializer(serializers.ModelSerializer):
+    """Read serializer for ChallengeFlag. Omits flag_value for non-Admin/Editor users."""
+
+    class Meta:
+        model = ChallengeFlag
+        fields = ['id', 'challenge', 'flag_value', 'is_regex', 'is_case_sensitive', 'random_tail_length', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'challenge', 'created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if request is None or not ChallengeService.is_editor_or_admin(request.user):
+            data.pop('flag_value', None)
+        return data
+
+
+class ChallengeFlagWriteSerializer(serializers.ModelSerializer):
+    """Write serializer for ChallengeFlag with secure storage normalization."""
+
+    class Meta:
+        model = ChallengeFlag
+        fields = ['flag_value', 'is_regex', 'is_case_sensitive', 'random_tail_length']
+
+    def validate_flag_value(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError('Flag value cannot be empty.')
+        return value
+
+    def validate_random_tail_length(self, value):
+        if value < 0:
+            raise serializers.ValidationError('random_tail_length must be >= 0.')
+        return value
+
+    def validate(self, attrs):
+        is_regex = attrs.get('is_regex', getattr(self.instance, 'is_regex', False))
+        flag_value = attrs.get('flag_value', '')
+        if is_regex and flag_value:
+            try:
+                re.compile(flag_value)
+            except re.error as exc:
+                raise serializers.ValidationError({'flag_value': f'Invalid regex pattern: {exc}'})
+        return attrs
+
+    @staticmethod
+    def _hmac_flag(value, is_case_sensitive):
+        raw = value if is_case_sensitive else value.lower()
+        key = settings.SECRET_KEY.encode('utf-8')
+        return hmac.new(key, raw.encode('utf-8'), hashlib.sha256).hexdigest()
+
+    def _normalize_flag_value(self, flag_value, is_regex, is_case_sensitive):
+        if is_regex:
+            return flag_value
+        return self._hmac_flag(flag_value, is_case_sensitive)
+
+    def create(self, validated_data):
+        flag_value = validated_data.pop('flag_value')
+        is_regex = validated_data.get('is_regex', False)
+        is_case_sensitive = validated_data.get('is_case_sensitive', True)
+        validated_data['flag_value'] = self._normalize_flag_value(flag_value, is_regex, is_case_sensitive)
+        return ChallengeFlag.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        flag_value = validated_data.pop('flag_value', None)
+        is_regex = validated_data.get('is_regex', instance.is_regex)
+        is_case_sensitive = validated_data.get('is_case_sensitive', instance.is_case_sensitive)
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+
+        if flag_value is not None:
+            instance.flag_value = self._normalize_flag_value(flag_value, is_regex, is_case_sensitive)
+
+        instance.save()
         return instance
 
 

@@ -226,6 +226,17 @@ urlpatterns = [
         LearnChallengeTagViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
         name='challenge-tag-detail',
     ),
+    # Challenge flag routes (Slice 6 / Task 6.3)
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/flags/$',
+        LearnChallengeViewSet.as_view({'get': 'flags', 'post': 'flags'}),
+        name='challenge-flag-list',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/flags/(?P<flag_id>\d+)/$',
+        LearnChallengeViewSet.as_view({'put': 'flag_detail', 'patch': 'flag_detail', 'delete': 'flag_detail'}),
+        name='challenge-flag-detail',
+    ),
     re_path(
         r'^challenge/nodes/$',
         ChallengeNodeViewSet.as_view({'get': 'list', 'post': 'create'}),

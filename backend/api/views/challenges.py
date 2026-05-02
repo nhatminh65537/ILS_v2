@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -6,10 +7,12 @@ from rest_framework.response import Response
 
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.models import Challenge, ChallengeCategory, ChallengeTag
+from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeTag
 from api.serializers import (
     ChallengeCategorySerializer,
     ChallengeDetailSerializer,
+    ChallengeFlagSerializer,
+    ChallengeFlagWriteSerializer,
     ChallengeListSerializer,
     ChallengeTagSerializer,
     ChallengeWriteSerializer,
@@ -118,6 +121,39 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
             challenge.save(update_fields=['status', 'updated_at'])
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @add_role_granted('Admin', 'Editor')
+    def flags(self, request, slug=None):
+        challenge = self.get_object()
+        if request.method == 'GET':
+            qs = challenge.flags.all().order_by('id')
+            serializer = ChallengeFlagSerializer(qs, many=True, context={'request': request})
+            return Response(serializer.data)
+
+        serializer = ChallengeFlagWriteSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        flag = serializer.save(challenge=challenge)
+        return Response(
+            ChallengeFlagSerializer(flag, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @add_role_granted('Admin', 'Editor')
+    def flag_detail(self, request, slug=None, flag_id=None):
+        challenge = self.get_object()
+        flag = get_object_or_404(ChallengeFlag, id=flag_id, challenge=challenge)
+
+        if request.method == 'DELETE':
+            flag.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        partial = request.method == 'PATCH'
+        serializer = ChallengeFlagWriteSerializer(
+            flag, data=request.data, partial=partial, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        flag = serializer.save()
+        return Response(ChallengeFlagSerializer(flag, context={'request': request}).data)
 
 
 @add_role_granted('Admin', 'Editor', 'Member')
