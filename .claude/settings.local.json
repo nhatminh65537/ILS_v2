@@ -36,7 +36,17 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "Bash(python -m pytest --ignore=realtime/tests.py --tb=short -q)",
-      "Bash(../.venv/Scripts/python.exe -m pytest api/tests/test_admin_stats_api.py -v)"
+      "Bash(../.venv/Scripts/python.exe -m pytest api/tests/test_admin_stats_api.py -v)",
+      "Bash(python -m pytest api/tests/test_challenge_api.py -v --tb=short)",
+      "Bash(python -m pytest api/tests/test_challenge_flag_api.py -v --tb=short)",
+      "Bash(.venv/Scripts/python -m pytest backend/api/tests/test_challenge_flag_api.py -v --tb=short)",
+      "Bash(python -c \"from api.serializers import UserChallengeProgressDetailSerializer; print\\('OK:', UserChallengeProgressDetailSerializer\\)\")",
+      "Bash(../.venv/Scripts/python -c \"from api.serializers import UserChallengeProgressDetailSerializer; print\\('OK:', UserChallengeProgressDetailSerializer\\)\")",
+      "Bash(../.venv/Scripts/python manage.py check --tag models)",
+      "Bash(git -C D:/PBL5/ILS_v2 status)",
+      "Bash(python3 -m json.tool)",
+      "Bash(dir /b \"D:\\\\PBL5\\\\ILS_v2\\\\frontend\\\\src\\\\app\\\\[locale]\")",
+      "Bash(git -C \"D:/PBL5/ILS_v2\" log --oneline -8)"
     ]
   }
 }
