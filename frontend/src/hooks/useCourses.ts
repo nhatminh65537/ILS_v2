@@ -36,6 +36,7 @@ export function useCourses() {
   const lessonError = useCoursesStore((s) => s.lessonError)
   const isStarted = useCoursesStore((s) => s.isStarted)
   const isCompleted = useCoursesStore((s) => s.isCompleted)
+  const completedLessonIds = useCoursesStore((s) => s.completedLessonIds)
 
   const setCourses = useCoursesStore((s) => s.setCourses)
   const setSelectedCourse = useCoursesStore((s) => s.setSelectedCourse)
@@ -56,6 +57,7 @@ export function useCourses() {
   const setLessonError = useCoursesStore((s) => s.setLessonError)
   const setStarted = useCoursesStore((s) => s.setStarted)
   const setCompleted = useCoursesStore((s) => s.setCompleted)
+  const markLessonCompleted = useCoursesStore((s) => s.markLessonCompleted)
   const resetLessonState = useCoursesStore((s) => s.resetLessonState)
   const reset = useCoursesStore((s) => s.reset)
 
@@ -234,6 +236,7 @@ export function useCourses() {
         const progress = await completeLearnLessonProgress(lessonId)
         setLessonProgress(progress)
         setCompleted(Boolean(progress.is_completed))
+        markLessonCompleted(lessonId)
         return true
       } catch {
         setLessonError('courses.lessonViewer.errors.completeFailed')
@@ -242,7 +245,7 @@ export function useCourses() {
         setLessonProgressSubmitting(false)
       }
     },
-    [setCompleted, setLessonError, setLessonProgress, setLessonProgressSubmitting]
+    [setCompleted, setLessonError, setLessonProgress, setLessonProgressSubmitting, markLessonCompleted]
   )
 
   const expandNode = useCallback(
@@ -286,6 +289,7 @@ export function useCourses() {
     lessonError,
     isStarted,
     isCompleted,
+    completedLessonIds,
     loadCourses,
     loadCourseDetail,
     loadCourseProgress,

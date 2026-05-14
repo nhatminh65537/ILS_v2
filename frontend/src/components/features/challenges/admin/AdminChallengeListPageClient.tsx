@@ -139,7 +139,7 @@ export function AdminChallengeListPageClient({ locale }: AdminChallengeListPageC
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, idx) => <Skeleton key={idx} className="h-10 w-full" />)}
             </div>
-          ) : listState.data.length === 0 ? (
+          ) : !listState.data || listState.data.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('empty.noChallenges')}</p>
           ) : (
             <Table>
@@ -197,7 +197,7 @@ export function AdminChallengeListPageClient({ locale }: AdminChallengeListPageC
             </Table>
           )}
 
-          {!listState.isLoading && listState.data.length > 0 ? (
+          {!listState.isLoading && listState.data && listState.data.length > 0 ? (
             <div className="flex items-center justify-between pt-2">
               <span className="text-sm text-muted-foreground">{t('pagination.total', { total: paginationState.count })}</span>
               <div className="flex items-center gap-2">

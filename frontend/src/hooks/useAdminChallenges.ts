@@ -79,7 +79,7 @@ export const useAdminChallenges = () => {
     try {
       const result = await listChallenges(merged)
       const page = merged.offset ? Math.floor((merged.offset as number) / PAGE_SIZE) + 1 : 1
-      setListState({ data: result.items, isLoading: false, errorMessageKey: null })
+      setListState({ data: result.results as Challenge[], isLoading: false, errorMessageKey: null })
       setPaginationState({
         count: result.count,
         page,

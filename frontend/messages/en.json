@@ -60,7 +60,9 @@
     "headline": "A structured cybersecurity learning platform for small teams",
     "description": "Start quickly with Learn, Challenge, and Quiz tracks. Slice 4 is ready for parallel frontend/backend feature delivery.",
     "loginCta": "Go to login",
-    "registerCta": "Create account"
+    "registerCta": "Create account",
+    "dashboardCta": "Go to dashboard",
+    "coursesCta": "Browse courses"
   },
   "auth": {
     "loginTitle": "Login",
@@ -227,7 +229,7 @@
       "infoTitle": "Info",
       "submitTitle": "Submit Flag",
       "flagLabel": "Flag",
-      "flagPlaceholder": "ILS{...}",
+      "flagPlaceholder": "ILS'{...}'",
       "submit": "Submit",
       "submitting": "Submitting...",
       "correct": "Correct! You solved this challenge.",
@@ -1201,7 +1203,7 @@
       },
       "form": {
         "flagValue": "Flag value",
-        "flagValuePlaceholder": "CTF{...}",
+        "flagValuePlaceholder": "CTF'{...}'",
         "flagType": "Flag type",
         "isRegex": "Is regex pattern",
         "isCaseSensitive": "Case sensitive",

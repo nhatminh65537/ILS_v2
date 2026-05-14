@@ -51,7 +51,7 @@ export function LessonViewerClient({ locale, slug, lessonId }: LessonViewerClien
   const [signal, setSignal] = useState<LessonCompletionSignal>(deriveMarkdownSignal(0))
 
   useEffect(() => {
-    resetLessonState()
+    resetLessonState(lessonId)
 
     const run = async () => {
       await Promise.all([
@@ -100,10 +100,17 @@ export function LessonViewerClient({ locale, slug, lessonId }: LessonViewerClien
   )
 
   const handleStart = async () => {
+    if (isStarted || isCompleted) {
+      return
+    }
     await startLesson(lessonId)
   }
 
   const handleComplete = async () => {
+    if (isCompleted) {
+      return
+    }
+
     if (!isStarted) {
       const started = await startLesson(lessonId)
       if (!started) {

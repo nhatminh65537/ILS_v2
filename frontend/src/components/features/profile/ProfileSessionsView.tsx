@@ -149,7 +149,7 @@ export function ProfileSessionsView({ locale }: ProfileSessionsViewProps) {
 
                   return (
                     <TableRow key={session.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="max-w-[180px] truncate font-medium" title={session.device_info?.trim() || t('sessions.fallback.unknownDevice')}>
                         {session.device_info?.trim() || t('sessions.fallback.unknownDevice')}
                       </TableCell>
                       <TableCell>

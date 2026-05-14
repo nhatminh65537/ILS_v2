@@ -60,7 +60,9 @@
     "headline": "Nền tảng học an toàn thông tin có cấu trúc cho đội nhóm nhỏ",
     "description": "Khởi động nhanh với lộ trình Learn, Challenge và Quiz. Slice 4 đã sẵn sàng để phát triển tính năng song song với backend.",
     "loginCta": "Vào trang đăng nhập",
-    "registerCta": "Tạo tài khoản mới"
+    "registerCta": "Tạo tài khoản mới",
+    "dashboardCta": "Vào bảng điều khiển",
+    "coursesCta": "Xem khóa học"
   },
   "auth": {
     "loginTitle": "Đăng nhập",
@@ -227,7 +229,7 @@
       "infoTitle": "Thông tin",
       "submitTitle": "Nộp flag",
       "flagLabel": "Flag",
-      "flagPlaceholder": "ILS{...}",
+      "flagPlaceholder": "ILS'{...}'",
       "submit": "Nộp",
       "submitting": "Đang nộp...",
       "correct": "Đúng rồi! Bạn đã giải xong thử thách.",
@@ -1201,7 +1203,7 @@
       },
       "form": {
         "flagValue": "Giá trị flag",
-        "flagValuePlaceholder": "CTF{...}",
+        "flagValuePlaceholder": "CTF'{...}'",
         "flagType": "Loại flag",
         "isRegex": "Là mẫu regex",
         "isCaseSensitive": "Phân biệt hoa thường",

@@ -26,6 +26,7 @@ interface CoursesState {
   lessonError: string | null
   isStarted: boolean
   isCompleted: boolean
+  completedLessonIds: Set<number>
   setCourses: (courses: Course[]) => void
   setSelectedCourse: (course: Course | null) => void
   setCourseProgress: (progress: UserCourseProgress | null) => void
@@ -46,7 +47,8 @@ interface CoursesState {
   setLessonError: (error: string | null) => void
   setStarted: (started: boolean) => void
   setCompleted: (completed: boolean) => void
-  resetLessonState: () => void
+  markLessonCompleted: (lessonId: number) => void
+  resetLessonState: (currentLessonId?: number) => void
   reset: () => void
 }
 
@@ -70,6 +72,7 @@ const initialState = {
   lessonError: null as string | null,
   isStarted: false,
   isCompleted: false,
+  completedLessonIds: new Set<number>(),
 }
 
 const initialLessonState = {
@@ -117,10 +120,22 @@ export const useCoursesStore = create<CoursesState>()((set) => ({
   setActiveLesson: (activeLesson) => set({ activeLesson }),
   setLessonQuestions: (lessonQuestions) => set({ lessonQuestions }),
   setLessonProgress: (lessonProgress) =>
-    set({
-      lessonProgress,
-      isStarted: lessonProgress?.started_at != null,
-      isCompleted: Boolean(lessonProgress?.is_completed),
+    set((state) => {
+      const lessonId = lessonProgress?.lesson
+      const isCompletedNow = Boolean(lessonProgress?.is_completed)
+
+      // Track completed lesson IDs persistently (within session)
+      const nextCompletedIds = new Set(state.completedLessonIds)
+      if (lessonId != null && isCompletedNow) {
+        nextCompletedIds.add(lessonId)
+      }
+
+      return {
+        lessonProgress,
+        isStarted: lessonProgress?.started_at != null,
+        isCompleted: isCompletedNow,
+        completedLessonIds: nextCompletedIds,
+      }
     }),
   setLessonLoading: (isLessonLoading) => set({ isLessonLoading }),
   setLessonQuestionsLoading: (isLessonQuestionsLoading) => set({ isLessonQuestionsLoading }),
@@ -128,9 +143,21 @@ export const useCoursesStore = create<CoursesState>()((set) => ({
   setLessonError: (lessonError) => set({ lessonError }),
   setStarted: (isStarted) => set({ isStarted }),
   setCompleted: (isCompleted) => set({ isCompleted }),
-  resetLessonState: () =>
-    set({
-      ...initialLessonState,
+  markLessonCompleted: (lessonId: number) =>
+    set((state) => {
+      const next = new Set(state.completedLessonIds)
+      next.add(lessonId)
+      return { completedLessonIds: next }
+    }),
+  resetLessonState: (currentLessonId?: number) =>
+    set((state) => {
+      const wasCompleted =
+        currentLessonId != null && state.completedLessonIds.has(currentLessonId)
+      return {
+        ...initialLessonState,
+        isStarted: wasCompleted,
+        isCompleted: wasCompleted,
+      }
     }),
   reset: () => set(initialState),
 }))

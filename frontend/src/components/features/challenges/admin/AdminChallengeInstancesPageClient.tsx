@@ -57,7 +57,7 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
       if (userFilter.trim()) params.user = userFilter.trim()
       if (challengeFilter.trim()) params.challenge = challengeFilter.trim()
       const result = await listAdminChallengeInstances(params)
-      setPageState({ data: result.items, isLoading: false, error: null })
+      setPageState({ data: result.results as AdminChallengeInstanceDto[], isLoading: false, error: null })
     } catch {
       setPageState((s) => ({ ...s, isLoading: false, error: t('errors.loadInstancesFailed') }))
     }
