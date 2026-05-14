@@ -42,6 +42,7 @@ pip install -r requirements.txt
 cd backend
 python manage.py migrate
 python manage.py seed_config        # seed default system_config rows
+python manage.py seed_roles         # bootstrap built-in roles (Admin/Editor/Member)
 python manage.py runserver          # http://localhost:8000
 ```
 
@@ -65,20 +66,31 @@ npm run dev                          # http://localhost:4000
 
 ```
 ILS_v2/
-├── backend/          # Django project
-│   ├── api/          # All domain ORM models
-│   ├── ai/           # AI assistant feature
-│   ├── realtime/     # Django Channels WebSocket
-│   └── backend/      # Django config (settings, urls, asgi)
-├── frontend/         # Next.js app (App Router)
+├── backend/                # Django project
+│   ├── api/                # All domain ORM models + views/serializers/services
+│   ├── auth_app/           # Auth endpoints (login/register/refresh/SSO/sessions)
+│   ├── ai/                 # ⚠️ DEFERRED — AI assistant scaffold (NOT in INSTALLED_APPS)
+│   ├── realtime/           # Django Channels WebSocket (Quiz consumer)
+│   └── backend/            # Django config (settings, urls, asgi)
+├── frontend/               # Next.js app (App Router, locale-first)
 ├── design/
 │   └── database/vx/dbv3.sql   # ⚠️ Legacy schema (DATA_MODEL.md is authoritative)
 └── docs/
-    ├── ARCHITECTURE.md         # System design + data flows
-    ├── DATA_MODEL.md           # Entity reference
-    ├── CONFIG.md               # Runtime config catalog
-    ├── IMPL_PLAN.md            # Vertical slice implementation plan
-    └── prd/                    # 10 feature PRDs
+    ├── CLAUDE.md → see root  # AI agent quick-reference (lives at repo root)
+    ├── ARCHITECTURE.md       # System design + data flows + what NOT to do
+    ├── DATA_MODEL.md         # Authoritative entity/schema reference
+    ├── DECISIONS.md          # Open + resolved design decisions (read before any slice)
+    ├── REQUIREMENTS.md       # Genesis doc — basic ideas/scope
+    ├── CONFIG.md             # Runtime config catalog (system_config keys)
+    ├── API.md                # API reference + route migration / legacy mapping (§6)
+    ├── FRONTEND.md           # FE setup, conventions, page inventory (consolidated)
+    ├── IMPL_PLAN.md          # Vertical slice implementation plan (Slices 0–11)
+    ├── STATUS.md             # Per-slice implementation status
+    ├── BUGS.md               # Active bugs + recent fix history
+    ├── prd/                  # 10 feature PRDs
+    ├── normalization/        # Doc normalization workflow + LEDGER (rename/move history)
+    ├── reports/              # Per-session implementation reports
+    └── intests/              # Browser/integration test checklists
 ```
 
 ---
@@ -87,15 +99,17 @@ ILS_v2/
 
 | Document | Read when... |
 |----------|-------------|
-| `AGENT.md` | Starting any dev work — full quick-reference |
-| `docs/ARCHITECTURE.md` | Before implementing new features — understand design decisions and **what NOT to do** |
+| `CLAUDE.md` | Starting any dev work — full quick-reference for AI agents and humans |
+| `DEV_WORKFLOW.md` | Onboarding as a developer — pick task → plan → code → commit checklist |
+| `docs/STATUS.md` | Checking what's done vs pending vs deferred |
+| `docs/DECISIONS.md` | Before starting any slice — verify no `OPEN` blocker for the area |
+| `docs/ARCHITECTURE.md` | Before implementing new features — design decisions and **what NOT to do** |
 | `docs/DATA_MODEL.md` | Before touching DB models or serializers |
 | `docs/CONFIG.md` | Before using `system_config` keys |
+| `docs/API.md` | Before adding/changing endpoints — maturity tags + route migration table |
+| `docs/FRONTEND.md` | Before touching frontend — setup, conventions, page inventory |
 | `docs/IMPL_PLAN.md` | Before starting a new slice — dependency order and task breakdown |
-| `docs/FE_SETUP.md` | Frontend environment/setup commands and MSW/i18n behavior |
-| `docs/FE_CONVENTIONS.md` | Frontend service/store/type conventions and API contract rules |
-| `docs/FE_PAGE_INVENTORY.md` | Route inventory, implemented vs planned pages by slice |
-| `design/database/vx/dbv3.sql` | ⚠️ **Legacy schema** — historical reference; `docs/DATA_MODEL.md` is authoritative |
+| `design/database/vx/dbv3.sql` | ⚠️ **Legacy schema** — historical reference only; `docs/DATA_MODEL.md` is authoritative |
 
 ---
 
@@ -148,8 +162,15 @@ Copy `.env.example` to `.env` in the repo root and fill in the required values.
 
 ## Implementation Status
 
-See `AGENT.md` → Implementation Status section for a full list of done/not-done features.
+See `docs/STATUS.md` for the canonical, per-slice implementation status.
 
-**Current state:** Slice 0 foundations, Slice 1 auth core (register/login/logout/refresh/SSO), Slice 2 backend RBAC core, Slice 3 backend system-config API, and Slice 4 frontend foundation are completed. Remaining work is mainly feature slices (5+), pending frontend admin pages, and deferred auth/session extras.
+**Current state (May 2026):** Slices 0–9 và 11 đã ship (foundation, auth, RBAC, system config, FE foundation, Learn, Challenge, Quiz, User profile, Notifications, Statistics). Backend + frontend đầy đủ cho cả user surface và admin surface.
 
-**Next:** Continue with Slice 5+ feature delivery and remaining frontend/admin tasks tracked in `docs/STATUS.md` and `docs/IMPL_PLAN.md`.
+**Pending (low priority):**
+- Slice 5.8 — Outline sync API + tab
+- Slice 6.8 — GitLab challenge sync (separate delivery)
+
+**Deferred:**
+- Slice 10 — AI Assistant (scaffold tồn tại trong `backend/ai/` nhưng KHÔNG bật trong `INSTALLED_APPS`; không activate khi chưa có thoả thuận rõ ràng).
+
+**Next:** Bug fixes, performance tuning, hai pending sub-slice ở trên. Theo dõi chi tiết trong `docs/STATUS.md` và `docs/IMPL_PLAN.md`.

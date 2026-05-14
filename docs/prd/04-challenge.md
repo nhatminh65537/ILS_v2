@@ -97,6 +97,17 @@ Chưa có API hay giao diện nào cho challenge. Editor không thể tạo/qu�
 - Instance tự expire khi quá `expires_at` (background task).
 - Admin: list all instances, kill instance (set `status=terminated`).
 
+#### FR-CHAL-06.1: Deployment Strategy (Pluggable Backend)
+
+Per `docs/REQUIREMENTS.md §2.4`, deploy mechanism phải pluggable — có thể đổi từ raw socket sang HTTP / gRPC mà không sửa code calling site.
+
+- **Interface:** Protocol `InstanceDeploymentBackend` (xem `backend/api/services/instance_service.py:12–65`) định nghĩa các method `deploy()`, `stop()`, `terminate()`.
+- **Provider selection:** chọn backend qua `system_config[challenge.deploy.provider]`. Code call site chỉ phụ thuộc Protocol, không phụ thuộc concrete class.
+- **Backends hiện có:**
+  - `MockDeploymentBackend` (Wave 1) — dùng cho dev/test, trả về fake instance.
+  - `SocketDeploymentBackend` (Wave 2, placeholder) — kết nối raw socket tới deploy service ngoài.
+- **Tương lai:** thêm `HttpDeploymentBackend` / `GrpcDeploymentBackend` chỉ cần implement Protocol và đăng ký key trong `system_config`. Không sửa view/service layer.
+
 ### FR-CHAL-07: Instance Logging
 - Mỗi event quan trọng (start, stop, terminate, error) được log vào `challenge_instance_log`.
 

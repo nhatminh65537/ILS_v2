@@ -31,74 +31,35 @@
 
 ---
 
-## Fixed Bugs
+## Recently Fixed Bugs (last 10)
 
-> Bugs resolved in previous sessions. Kept for history.
+> Older fixes archived — see "Fixed (Archived)" below + git log for full history.
 
 | # | Fixed | File | Description | How Fixed |
 |---|-------|------|-------------|-----------|
-| F1 | 2026-03-09 | `ai/serializers.py` | Typo `"lern_assistant"` in ChoiceField | Corrected to `"learn_assistant"`; now uses `AImode` constants |
-| F2 | 2026-03-09 | `ai/models.py` | Field named `node` stored AI mode value — wrong semantics. `__str__` referenced `self.mode` which didn't exist. | Renamed field `node` → `mode`; `__str__` now resolves correctly |
-| F3 | 2026-03-09 | `ai/services/context_loader.py` | `lesson.content` doesn't exist on the `Lesson` model | Changed to `lesson.content_md or ""` |
-| F4 | 2026-03-09 | `ai/permissons.py` | Filename typo ("permissons"). Used Django's built-in `has_perm()` which violates architecture rules (ARCHITECTURE.md §7) | Renamed to `permissions.py`; rewrote to check JWT claims |
-| F5 | 2026-03-09 | `ai/url.py` | Non-standard filename (missing 's') inconsistent with Django convention | Renamed to `urls.py` |
-| F6 | 2026-03-09 | `backend/backend/urls.py` | AI URLs not wired into root URLconf | Added `include('ai.urls')` (now commented — AI is deferred) |
-| F7 | 2026-03-09 | `backend/backend/settings.py` | `realtime`, `rest_framework`, `corsheaders` missing from `INSTALLED_APPS` | Added all three |
-| F8 | 2026-04-01 | `frontend/src/components/layouts/AdminAccessGate.tsx` | Admin route guard could redirect valid admin users to `/{locale}/dashboard` when permission catalog did not include full permission set. | Removed temporary permission-catalog gate and kept auth-only guard until a replacement access mechanism is implemented. |
-| F9 | 2026-04-01 | `frontend/src/services/rbac.service.ts`, `frontend/src/hooks/useRbac.ts` | RBAC permission list could arrive as a paginated object, causing `permissionsState.data.filter` to throw at runtime. | Normalized RBAC list responses to arrays in the service and added a defensive array guard in the hook. |
-| F10 | 2026-04-14 | `frontend/src/mocks/handlers/quizzes.handlers.ts` | Admin quiz status filter did not affect list rows in MSW (`Draft`/`Published`/`Archived` always returned all rows). | Added `status` query parsing and status-aware filtering before pagination in the quiz list handler. |
-| F11 | 2026-04-14 | `frontend/src/components/features/quizzes/QuizFinishScreen.tsx`, `frontend/app/[locale]/(catalog)/quizzes/[id]/session/page.tsx` | Try Again could keep UI in finished state because same-route navigation did not force deterministic remount. | Added restart nonce query (`?restart=<timestamp>`) and keyed session client remount to guarantee fresh WS lifecycle. |
-| F12 | 2026-04-14 | `frontend/messages/vi.json`, `frontend/messages/en.json` | Session revoke dialog rendered literal `{device}` instead of interpolated device name. | Removed ICU-escaping single quotes around `{device}` placeholders in both locales. |
-| F13 | 2026-04-14 | `frontend/src/components/features/profile/AccountForm.tsx` | Account save button stayed enabled when no field changes were made. | Added normalized `hasChanges` computation and disabled submit when unchanged (`disabled={saving || !hasChanges}`). |
-| F14 | 2026-04-14 | `frontend/messages/vi.json`, `frontend/messages/en.json` | Quiz delete confirmation rendered title placeholder text instead of interpolated quiz title. | Removed ICU-escaping single quotes around `{title}` placeholders in both locales. |
-| F15 | 2026-04-14 | `api/admin_views.py` → `api/views/system_config.py` | **H1**: `SystemConfigViewSet` dùng `IsAdminUser` (Django built-in, kiểm tra `is_staff`) thay vì RBAC. Toàn bộ admin viewsets thiếu unified permission enforcement. | Xóa `admin_views.py` + `mixins/rbac_action_permission.py`; chuyển toàn bộ admin viewsets vào `api/views/`; tất cả viewsets dùng `permission_classes = [IsAuthenticated, HasJWTPermission]` — không còn `IsAdminUser`, không còn `action_permission_map`. |
-| F16 | 2026-04-14 | `api/views/quizzes.py` (`QuizActionPermission`) | **H5**: `QuizNodeViewSet` dùng `QuizActionPermission` (custom class check DB roles) thay vì RBAC bitmap → editor và member bị block sai. | Xóa `QuizActionPermission`; `QuizNodeViewSet` và `QuizViewSet` đều dùng `HasJWTPermission` với `@add_role_granted` per-method; RBAC bitmap check đúng vai trò. |
-| F17 | 2026-04-14 | `api/mixins/rbac_action_permission.py` + tất cả ViewSets | **M1**: `action_permission_map` hardcode permission string (ví dụ `'api.role.list'`) — không đồng bộ tự động với scanner. | Thêm `derive_permission_key()` shared utility vào `auth_app/permissions.py`; `HasJWTPermission` tự suy key từ `view.__class__` + `view.action`; xóa toàn bộ `action_permission_map`. |
-| F18 | 2026-04-14 | `backend/api/urls.py`, `backend/api/views/quizzes.py`, `backend/api/tests/test_quiz_api.py` | **H4**: Quiz progress endpoint bị 404 do thiếu route wiring dù handler đã có sẵn. | Bổ sung route `GET /api/quiz/quizzes/{id}/progress/` và thêm regression tests cho case có/không có progress record. |
-| F19 | 2026-04-14 | `backend/api/serializers/user.py` | **H6**: Admin create/update user chưa chặn trùng `email`/`username` theo unique không phân biệt hoa thường. | Thêm `validate_username` + `validate_email` cho `AdminUserManagementSerializer` dùng check `iexact` loại trừ bản ghi hiện tại. |
-| F20 | 2026-04-14 | `frontend/app/[locale]/(public)/profile/[username]/page.tsx`, `frontend/src/components/features/profile/PublicProfileView.tsx`, `frontend/src/mocks/handlers/users.handlers.ts` | **H8 + M6**: Public profile route bị redirect bởi authenticated shell; MSW profile handler không trả 404 cho username không tồn tại. | Chuyển public profile sang public route group (không qua `UserAccessGate`), thêm not-found dialog UX, và sửa MSW trả 404 đúng contract cho username không tồn tại. |
-| F21 | 2026-04-14 | `frontend/src/components/features/profile/AccountForm.tsx`, `frontend/src/components/features/profile/ProfileSettingsView.tsx`, `frontend/src/lib/axios.ts`, `frontend/src/mocks/handlers/users.handlers.ts` | **M7**: UX/account update xử lý kém khi đổi username (thiếu confirm + thiếu force re-login); MSW không check unique conflict; lỗi field-level bị nuốt thành generic. | Thêm dialog xác nhận trước khi đổi username; nếu confirm thì save + force logout/login lại; đồng bộ auth user state khi chỉ đổi email; giữ nguyên payload lỗi field-level trong axios interceptor; thêm unique conflict check trong MSW account patch handler. |
-| F22 | 2026-04-14 | `backend/api/serializers/quiz.py`, `backend/api/tests/test_quiz_api.py` | **M9**: Quiz detail thiếu `category` trong response payload. | Thêm `category = QuizCategorySerializer(read_only=True)` vào `QuizDetailSerializer` và thêm regression test xác nhận field `category` xuất hiện đúng dữ liệu. |
-| F23 | 2026-04-14 | `backend/api/serializers/quiz.py`, `backend/api/tests/test_quiz_api.py` | **M10**: Thiếu ràng buộc `quiz_point >= 0` khi tạo/cập nhật quiz. | Thêm `quiz_point = IntegerField(min_value=0)` trong `QuizListSerializer` và thêm regression test tạo quiz điểm âm trả `400`. |
-| F24 | 2026-04-14 | `backend/api/services/quiz_service.py`, `backend/api/tests/test_quiz_api.py` | **M8**: Member vẫn lọc được draft quiz qua query param `status`. | Đổi thứ tự filter visibility: nếu không phải admin/editor thì luôn ép `status=published`, bỏ qua `status` client gửi; thêm regression test `status=draft` vẫn chỉ trả published. |
-| F25 | 2026-04-14 | `backend/api/serializers/user.py`, `backend/api/tests/test_profile_api.py` | **M11**: Settings API chưa validate enum `language`/`theme`. | Thêm validator rõ ràng cho `MeSettingsUpdateSerializer` (`language`: `vi|en`, `theme`: `system|light|dark`) và thêm negative test cho payload `language=fr`, `theme=blue` trả `400`. |
 | F26 | 2026-04-19 | `backend/auth_app/services/token_service.py`, `frontend/src/components/layouts/AdminAccessGate.tsx`, `frontend/src/components/features/auth/AdminLoginForm.tsx`, `frontend/src/lib/rbac-claim.ts` | **H3 + H7**: frontend admin surface only checked authenticated state, allowing member accounts onto admin routes and destabilizing `/admin/users` verification. | Added `admin_surface` JWT claim derived from backend `Admin`/`Editor` role membership, wired the frontend admin guard to that claim, rejected non-admin-surface admin logins immediately, and aligned MSW mock tokens/messages with the same contract. |
 | F27 | 2026-04-20 | `frontend/playwright.slice7.checklist.test.ts`, `frontend/scripts/slice7-diagnostics.mjs` | Slice 7 browser checklist helpers produced false negatives by opening protected quiz routes without logging in first and by using stale admin password `admin` instead of seeded `admin1234`. | Updated the checklist Playwright helpers to authenticate before protected user-route checks, wait for login redirects deterministically, and switched both checklist and diagnostics scripts to canonical seeded credentials (`admin1234`, `member1234`). |
 | F28 | 2026-04-20 | `backend/api/services/quiz_service.py`, `backend/realtime/consumers/quiz_consumer.py`, `frontend/src/hooks/useQuizSession.ts` | Slice 7 runtime mismatches: default quiz config randomized questions/options despite checklist contract, empty quizzes errored instead of finishing `0/0`, and frontend WS client ignored `NEXT_PUBLIC_WS_URL` while collapsing protocol close codes into generic connection errors. | Changed quiz-config defaults to `random_question=false` / `random_option=false`, made empty published quizzes finish immediately over WS, updated `useQuizSession` to prefer `NEXT_PUBLIC_WS_URL`, and mapped auth/session-specific close codes to deterministic client error states. Regression tests added for config defaults and empty-quiz finish behavior. |
 | F29 | 2026-04-20 | `frontend/src/hooks/useAdminNotifications.ts`, `frontend/src/components/features/notifications/AdminNotificationBroadcastClient.tsx` | Task 9.5 admin notifications rendered raw duplicated i18n keys (`adminNotifications.adminNotifications.errors.submitFailed`, `...historyLoadFailed`) because hook/component emitted fully-qualified keys while `useTranslations('adminNotifications')` already scoped namespace. | Changed admin notification error keys to relative namespace paths (`errors.*`) for both submit and history flows; UI now resolves localized messages correctly. |
 | F30 | 2026-04-20 | `frontend/messages/en.json`, `frontend/messages/vi.json` | Admin notifications metadata placeholder triggered next-intl runtime parse error `INVALID_MESSAGE: MALFORMED_ARGUMENT` due to ICU-like braces in translation value (`{"key":"value"}`). | Replaced placeholder with non-ICU literal (`"key": "value"`) in both locales to avoid argument parsing. |
 | F31 | 2026-04-20 | `backend/db.sqlite3`, `backend/api/migrations/0008_notification_event_key.py` | Admin broadcast endpoint returned `500` (`OperationalError: table notification has no column named event_key`) on local runtime because migration `api.0008_notification_event_key` existed but was not applied to active SQLite database. | Applied `../.venv/Scripts/python.exe manage.py migrate api`; verified `showmigrations` now marks `0008_notification_event_key` as applied. |
+| F32 | 2026-05-04 | `frontend/app/[locale]/page.tsx` | Homepage always showed login/register CTA buttons regardless of authentication state (server component couldn't check auth). | Extracted CTA into client component `HomeCTA.tsx` using `useAuth()` hook; shows dashboard/courses links when authenticated. |
+| F33 | 2026-05-04 | `frontend/messages/en.json`, `frontend/messages/vi.json` | `flagPlaceholder` (`ILS{...}`) and `flagValuePlaceholder` (`CTF{...}`) triggered `INVALID_MESSAGE: MALFORMED_ARGUMENT` next-intl parse error because unescaped braces `{...}` were interpreted as ICU message arguments. | Escaped braces with ICU single-quote literals: `ILS'{...}'` and `CTF'{...}'`. |
+| F34 | 2026-05-04 | `frontend/src/hooks/useAdminChallenges.ts`, `frontend/src/components/features/challenges/admin/AdminChallengeInstancesPageClient.tsx` | `result.items` accessed on `PaginatedResponse<T>` which uses `results` field (DRF convention); `items` was `undefined`, causing `data` to be `undefined` and crashing on `.length` access. | Changed to `result.results` with proper type casting; added defensive null guard in `AdminChallengeListPageClient.tsx`. |
+| F35 | 2026-05-04 | `frontend/src/stores/courses.store.ts`, `frontend/src/components/features/courses/LessonViewerClient.tsx` | Lesson complete button didn't stay disabled after re-visiting a completed lesson because `resetLessonState()` cleared `isCompleted` with no way to restore (no GET progress endpoint). | Added `completedLessonIds: Set<number>` to store; `resetLessonState(currentLessonId?)` preserves completion for known IDs; added early-return guards in `handleStart`/`handleComplete`. |
 
 ---
 
-## Doc–Code Inconsistencies (awaiting human decision)
+## Fixed (Archived)
 
-> These are **not runtime bugs** — they are mismatches between `docs/DATA_MODEL.md` (authoritative) and `backend/api/models.py` (implementation). Per conflict rules: DATA_MODEL.md wins. Human must decide whether to implement the missing fields in models.py or explicitly defer/remove from DATA_MODEL.md.
-
-| # | Location | DATA_MODEL.md says | models.py has | Decision needed |
-|---|----------|--------------------|---------------|-----------------|
-| D-DOC-01 | `course` table | `structure_version` INTEGER NOT NULL DEFAULT 1 | **Field missing** | Add to models.py (+ migration) or mark deferred in DATA_MODEL.md |
-| D-DOC-02 | `lesson` table | `status` content_status NOT NULL DEFAULT 'draft' | **Field missing** | Add to models.py (+ migration) or mark deferred in DATA_MODEL.md |
-| D-DOC-03 | `lesson` table | `video_duration` **not documented** | `video_duration` IntegerField nullable exists | Add to DATA_MODEL.md |
+> **F1–F25 (2026-03-09 → 2026-04-14):** 25 bugs đóng trong các batch backend refactor + frontend MSW/i18n + RBAC unification + AI app cleanup. Bao gồm: typos `ai/` package (F1–F6), settings INSTALLED_APPS (F7), admin gate / RBAC normalization (F8–F9), MSW/quiz handlers (F10–F11, F22–F24), i18n ICU placeholders (F12, F14), permission unification removing `IsAdminUser` + `action_permission_map` (F15–F17), quiz progress endpoint wiring (F18), admin user uniqueness (F19), public profile route + 404 contract (F20), account update UX (F21), settings enum validation (F25).
+>
+> **Để tra cứu chi tiết:** `git log -- docs/BUGS.md` (commits trước 2026-04-19) hoặc `docs/reports/2026-04-14_*.md` (3 reports gồm bugfix batch H4/H6/H8/M6/M7/M9/M10, H2/M2/M4/M5/L3, refactor closure).
 
 ---
 
 ## Tracking Notes
 
-- **Discovery session:** 2026-03-09 — full project review
-- **Architecture violations to guard against:** See `docs/ARCHITECTURE.md` §7 "What NOT To Do"
-- **IMPL_PLAN conflicts (not bugs, but inconsistencies to fix):**
-  - ~~`IMPL_PLAN.md` Task 0.3 uses `auth.native_enabled` → should be `auth.local_login_enabled` (per `CONFIG.md`)~~ ✅ Fixed 2026-03-12
-  - ~~`IMPL_PLAN.md` Task 0.3 uses `ai.daily_limit` → should be `ai.rate_limit_per_hour` (per `CONFIG.md`)~~ ✅ Already correct in current code
-  - ~~`IMPL_PLAN.md` Task 0.3 uses `is_secret=BooleanField` pattern → should use `value_type='secret'` (per `DATA_MODEL.md`)~~ ✅ Fixed 2026-03-12
-  - ~~`ARCHITECTURE.md` §6 diagram lists `auth` app → should be `auth_app`~~ ✅ Already correct in current code
-  - `prd/01-authentication.md` FR-AUTH-10 used `auth.native_enabled` → updated to `auth.local_login_enabled` ✅ Fixed 2026-03-12
-  - `prd/10-system-config.md` FR-CFG-05 used outdated key names → updated to match `CONFIG.md` ✅ Fixed 2026-03-12
-  - `prd/01-authentication.md` edge case table used `native_enabled` → `local_login_enabled` ✅ Fixed 2026-03-12
-  - `prd/04-challenge.md` edge case table used `deploy_enabled` → `deploy.enabled` ✅ Fixed 2026-03-12
-  - `prd/09-ai-assistant.md` used `ollama` provider → updated to `anthropic` (per `CONFIG.md`) ✅ Fixed 2026-03-12
-  - `prd/09-ai-assistant.md` missing `ai.enabled` key → added ✅ Fixed 2026-03-12
-  - `prd/10-system-config.md` missing `auth.email.use_tls`, `auth.email.username`, `auth.email.sender_name` → added ✅ Fixed 2026-03-12
-  - `docs/DATA_MODEL.md` header claimed `dbv3.sql` as source of truth → corrected to self-authoritative ✅ Fixed 2026-03-12
-  - `IMPL_PLAN.md` seed_config missing `auth.registration_enabled` → added ✅ Fixed 2026-03-12
-  - `docs/DATA_MODEL.md` vs `backend/api/models.py` — 3 field inconsistencies found 2026-04-14 (see D-DOC-01, D-DOC-02, D-DOC-03 below — awaiting human decision)
+- **Discovery session:** 2026-03-09 — full project review identified F1–F7 architecture/typo issues.
+- **Architecture violations to guard against:** See `docs/ARCHITECTURE.md` §7 "What NOT To Do".
+- **Doc-code inconsistencies:** Resolved during normalization Session 2 (2026-05-04). Lesson `status`, `video_duration`, course `structure_version` are now in sync between `docs/DATA_MODEL.md` and `backend/api/models.py`. See `docs/normalization/02-tier2-drift.md` items D-02-01 / D-02-02 / D-02-03.

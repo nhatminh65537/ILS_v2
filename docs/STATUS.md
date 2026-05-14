@@ -1,65 +1,13 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-05-02 (Slice 6.7 Frontend Challenge admin editor delivered)
+> Last updated: 2026-05-04 (Frontend bugfix batch — 5 reported + 3 related bugs fixed)
 
-Release docs gate for upcoming slices:
-- `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.
-
----
-
-## ✅ CRITICAL BLOCK — RESOLVED (2026-03-24)
-
-Four critical questions from Slice 1 planning were resolved and no longer block Tasks 1.1–1.5.
-
-| Question | Blocks | Status |
-|----------|--------|--------|
-| [Q-SLICE1-01](DECISIONS.md#q-slice1-01-member-role-seeding) — Member role seeding | Slice 0 (Task 0.3), Slice 1 (Task 1.1) | **RESOLVED** (Option A) |
-| [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — Frontend src/ layout | Slice 1 (Task 1.5), Slice 4–11 | **RESOLVED** (Option A) |
-| [Q-AUTH-04](DECISIONS.md#q-auth-04-jwt-token-expiry-and-refresh-strategy) — Token expiry + refresh window | Slice 1 (Tasks 1.2, 1.5) | **RESOLVED** (Option A) |
-| [Q-AUTH-05](DECISIONS.md#q-auth-05-first-login-admin-ceremony) — Admin first-login credentials | Slice 0 (new Task 0.4), Slice 1 | **RESOLVED** (Option C) |
+Slice 5–8 release gate was closed when those slices shipped (Slice 5: 2026-04-15/16, Slice 6: 2026-04-30 → 2026-05-02, Slice 7: 2026-04-01 → 2026-04-13, Slice 8: 2026-04-02 → 2026-04-13). Historical pre-implementation checklist preserved at `docs/reports/2026-04-01_slice5-8-docs-consistency-freeze.md`.
 
 ---
 
-## ⚠️ Pre-Implementation Gate (Resolved 2026-03-23)
-
-**Slice 0 and Slice 1 foundation questions — now RESOLVED.** Full details in **`docs/DECISIONS.md`**.
-
-| Question | Blocks | Status |
-|----------|--------|--------|
-| [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention | All API slices | **RESOLVED** |
-| [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for new users | Slice 1–2 | **RESOLVED** |
-| [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) — First admin creation | Slice 0 | **RESOLVED** |
-| [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend | Slice 1 | **RESOLVED** |
-| [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email for password reset | Slice 1 | **RESOLVED** |
-| [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Token storage | Slice 1, 4 | **RESOLVED** |
-| [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — SSO-only lockout fallback | Slice 1 | **RESOLVED** |
-
----
-
-## 📋 Future Blockers (Resolve Before Task Implementation)
-
-| Question | Blocks | Status |
-|----------|--------|--------|
-| [Q-AUTH-06](DECISIONS.md#q-auth-06-sso-account-linking-strategy) — SSO account linking strategy | Slice 1 (Task 1.3) | **RESOLVED** (Option A) |
-| [Q-AUTH-07](DECISIONS.md#q-auth-07-device-logout-granularity) — Device logout granularity | Slice 1 (Task 1.4 deferred) | **RESOLVED** (Option A) |
-| [Q-INFRA-09](DECISIONS.md#q-infra-09-cors-and-domain-configuration) — CORS + domain configuration | Slice 1 (Task 1.5) | **RESOLVED** (Option A) |
-| [Q-ARCH-01](DECISIONS.md#q-arch-01-max-permissions-bitmap-capacity) — Max permissions bitmap size | Slice 2+ | **RESOLVED** (Option B) |
-| [Q-CONFIG-01](DECISIONS.md#q-config-01-default-systemconfig-auth-values) — Default system config seed values | Slice 0 (Task 0.3), Slice 1 | **OPEN** |
-| [Q-INFRA-07](DECISIONS.md#q-infra-07-i18n-language-strategy) — i18n strategy | Slice 4 | **RESOLVED** (Option C) |
-| [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library | Slice 4+ | **RESOLVED** (Option A) |
-| [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node atomicity | Slice 5 | **RESOLVED** |
-| [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source | Slice 5 | **RESOLVED** |
-| [Q-LEARN-03](DECISIONS.md#q-learn-03-course-progress-on-structure-change) — Course progress on structure change | Slice 5 | **RESOLVED** |
-| [Q-LEARN-04](DECISIONS.md#q-learn-04-course-delete-strategy) — Course delete strategy | Slice 5 | **RESOLVED** |
-| [Q-LEARN-05](DECISIONS.md#q-learn-05-slug-conflict-resolution) — Slug conflict resolution | Slice 5 | **RESOLVED** |
-| [Q-LEARN-06](DECISIONS.md#q-learn-06-outline-url-frontend-exposure) — Outline exposure and backend mediation | Slice 5 | **RESOLVED** |
-| [Q-LEARN-07](DECISIONS.md#q-learn-07-tag-creation-permissions) — Tag creation permissions | Slice 5 | **RESOLVED** |
-| [Q-LEARN-08](DECISIONS.md#q-learn-08-lesson-completion-trigger) — Lesson completion trigger | Slice 5 | **RESOLVED** |
-| [Q-LEARN-09](DECISIONS.md#q-learn-09-lesson-start-trigger) — Lesson start trigger | Slice 5 | **RESOLVED** |
-| [Q-LEARN-10](DECISIONS.md#q-learn-10-outline-sync-failure-handling) — Outline sync failure handling | Slice 5 | **RESOLVED** |
-| [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances in MVP | Slice 6 | **RESOLVED** (Option C) |
-| [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth | Slice 7 | **RESOLVED** |
+> **Decision history** for foundation and feature slices (all RESOLVED) is collapsed at the bottom of this file under "📜 Historical Decision Gates" so the live tracker stays scannable. Canonical decision log: `docs/DECISIONS.md`.
 
 ---
 
@@ -96,7 +44,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 1-4 browser regression fix pass (2026-04-20) | Real-backend Playwright validation is now stable under `npm run build` + `npm run start`; admin route hydration no longer bounces valid admin/editor users away from protected admin pages; canonical config seed now includes deterministic non-editable key coverage (`challenge.upload_path`), and combined Slice 1-4 browser coverage passed (`22/22`). |
 | Slice 7 checklist follow-up (2026-04-20) | Fixed false-negative Slice 7 browser artifacts (protected-route tests now log in before opening `/quizzes*`; diagnostics use seeded `admin1234`), aligned default quiz config to checklist contract (`random_question=false`, `random_option=false`), made empty published quizzes finish immediately with `0/0` over WebSocket, and updated frontend WS hookup to prefer `NEXT_PUBLIC_WS_URL` plus close-code-aware error mapping. Regression coverage: `backend/api/tests/test_quiz_api.py`, `backend/realtime/tests/test_quiz_consumer.py`, and targeted frontend lint all pass. |
 | Backend Refactor Phase 1-4 (2026-04-01) | Refactored auth session lifecycle into `SessionService`, centralized auth/rbac constants, removed cross-service private calls in SSO, standardized RBAC action permission checks via mixin, extracted admin config/RBAC viewsets to `api/admin_views.py`, split the API monolith into `api/views/` domain modules (`users`, `courses`, `challenges`, `quizzes`, `notifications`, `leaderboard`), preserved route contract, and verified with focused pytest suites + `manage.py check`. |
-| Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`) |
+| Slice 4 / Frontend Foundation (2026-03-31) | Foundation scaffold implemented: typed domain contracts and service layer (Tasks 1–2), Zustand stores + hooks, MSW fixtures/handlers/provider, next-intl locale routing (`vi` default, `en` secondary), shadcn base components, env flags for MSW, and frontend onboarding docs (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md` — later merged into `docs/FRONTEND.md` by doc normalization 2026-05-14) |
 | Frontend Surface Split + Admin Auth Entry (2026-04-01) | Implemented route-level user/admin surface separation with dedicated admin login (`/{locale}/admin/login`), removed admin-register flow, added full shell layouts (navbar/sidebar/content/footer) for user/admin protected surfaces, moved admin routes out of user route group, and aligned MSW handlers with backend RBAC/system-config contracts including JWT permission bitmap claims for frontend capability checks. |
 | Slice 7 / Task 7.1 (2026-04-01) | Quiz backend API completed: canonical namespaced routes `/api/quiz/quizzes/*`, nested question CRUD, per-user quiz config endpoint, deterministic serializer validation for `single_choice`/`multi_choice`/`fill_blank`, and focused pytest suite (`backend/api/tests/test_quiz_api.py`) passing (`6 passed`). |
 | Slice 7 / Task 7.2 (2026-04-01) | QuizNode tree API completed: `/api/quiz/nodes/*` CRUD with folder-only MVP, one-way quiz FK, cycle-safe move, lazy children, and integration tests passing. |
@@ -127,6 +75,19 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.3 (2026-04-17) | WebSocket notification delivery implemented at `/ws/notifications/` with first-message JWT auth, timeout/failure close codes, per-user channel group `notifications_{user_id}`, and realtime push wiring from `NotificationService` (including signal-triggered notifications and admin broadcasts); async consumer tests added at `backend/realtime/tests/test_notification_consumer.py` and passing. |
 | Slice 9 / Task 9.4 (2026-04-20) | Frontend notification bell + inbox implemented on user surface: `NotificationBell` integrated into session navbar controls with unread badge and latest-5 dropdown, inbox page delivered at `/{locale}/notifications` with mark single/all read actions, realtime socket hook for `/ws/notifications/`, and frontend contract normalization to hyphenated endpoints (`mark-read`, `mark-all-read`, `unread-count`) plus MSW alignment. Validation gates: `npx tsc --noEmit`, `npm run lint`, `npm run build` passed. |
 | Slice 9 / Task 9.5 (2026-04-20) | Admin notification broadcast page implemented at `/{locale}/admin/notifications` with full create flow and broadcast history table; backend now provides grouped history endpoint `/api/admin/notifications/history/` and broadcast response includes `broadcast_batch_key`; broadcast rows persist `event_key` batch key + `created_by` for sender projection; frontend service/hook/MSW/i18n aligned (`broadcastAdminNotification`, `listAdminBroadcastHistory`); post-implementation hotfixes completed for i18n key scoping, metadata placeholder parse safety, and local DB migration application (`api.0008_notification_event_key`); validation gates passed (`pytest backend/api/tests/test_notification_api.py`, `npm run lint`, `npx tsc --noEmit`, `npm run build`). |
+| Slice 11 / Task 11.1 (2026-04-17) | Canonical `/api/stats/leaderboard/` plus compatibility alias `/api/leaderboard/` implemented with dense-rank result rows, `my_rank`, `total_users`, deterministic pagination (page size 10), and regression coverage in `backend/api/tests/test_leaderboard_api.py`. |
+| Slice 11 / Task 11.2 (2026-04-17) | Admin stats API implemented: `/api/admin/stats/` overview and `/api/admin/stats/users/{id}/` per-user detail with dedicated `admin_stats_service.py`, serializers, and regression coverage in `backend/api/tests/test_admin_stats_api.py`. |
+| Slice 11 / Task 11.3 (2026-04-30) | Frontend leaderboard implemented at `/{locale}/leaderboard` with tab switcher (overall / challenge / quiz / course), my-rank summary card, highlight row, deterministic pagination, and MSW alignment to canonical `/api/stats/leaderboard/` contract. |
+| Slice 11 / Task 11.4 (2026-04-30) | Frontend admin detailed statistics page implemented at `/{locale}/admin/statistics` with user activity breakdown, content solve rates, weekly trend charts, and per-user lookup; backed by canonical `/api/admin/stats/` + `/api/admin/stats/users/{id}/` contracts. |
+| Slice 11 / Task 11.5 (2026-04-30) | Frontend admin dashboard home implemented at `/{locale}/admin/dashboard` with summary stat cards, quick-link tiles, and recent activity feed using lightweight `/api/admin/stats/` overview; admin entry redirect `/{locale}/admin` now points here. |
+| Slice 6 / Task 6.1 (2026-04-30) | Challenge + Category + Tag CRUD API implemented at `/api/challenge/*` with slug-based lookup, tag upsert flow, slug conflict 409 suggestions, hybrid archive/purge destroy path, and legacy `/api/challenges/*` flat routing removed from DRF router. |
+| Slice 6 / Task 6.2 (2026-04-30) | ChallengeNode tree API delivered at `/api/challenge/nodes/*` with lazy children, cycle-safe move (`path__startswith` guard), item/parent invariants, and integration tests in `backend/api/tests/test_challenge_node_api.py`. |
+| Slice 6 / Task 6.3 (2026-05-02) | ChallengeFlag CRUD implemented with `ChallengeFlagSerializer` + `ChallengeFlagWriteSerializer`; plaintext storage for all flag types (static + regex); `flag_value` omitted for non-Admin/Editor responses; 14 integration tests in `backend/api/tests/test_challenge_flag_api.py`. |
+| Slice 6 / Task 6.4 (2026-05-02) | Flag submission + progress shipped: `POST /api/challenge/challenges/{slug}/submit/` (server-side only validation, returns `{correct: bool}`); `GET /api/challenge/progress/` aggregates `{solved_count, total_attempts}`; idempotent first-solve update bumps `challenge_completed` counter and emits notification. |
+| Slice 6 / Task 6.5 (2026-05-02) | Instance API stubs delivered: user `start`/`stop`/`status` endpoints, admin `list` + `kill`; `MockDeploymentBackend` wired in `instance_service.py`; instance flag generated as plaintext at deploy time. Wave 2 (`SocketDeploymentBackend`) intentionally deferred until external system available. |
+| Slice 6 / Task 6.6 (2026-05-02) | Frontend challenge browser + detail delivered on canonical paths: `ChallengeCatalogClient` (filter + grid) and `ChallengeDetailClient` (description, flag submit form, instance panel, progress card); MSW handlers rewritten to canonical URLs; new backend endpoint `GET /api/challenge/challenges/{slug}/progress/`; i18n parity (vi/en). |
+| Slice 6 / Task 6.7 (2026-05-02) | Frontend challenge editor implemented on admin surface: list/create/editor (Metadata + Tree + Flags tabs) plus flag manager and instance manager; `useAdminChallenges` / `useAdminChallengeTree` / `useAdminChallengeFlags` hooks; MSW `adminChallengesHandlers`; `adminChallenges.*` i18n (vi/en). GitLab Sync tab intentionally deferred to Task 6.8. |
+| Frontend bugfix batch (2026-05-04) | Five reported + three related frontend bugs fixed across MSW, ICU interpolation, account settings, and quiz retry flows; lint and build gates pass. |
 
 ---
 
@@ -181,6 +142,27 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 9 / Task 9.5 (2026-04-20) | `docs/reports/2026-04-20_slice9-task9-5-admin-notification-broadcast-history.md` |
 | Admin surface token guard bugfix (2026-04-19) | `docs/reports/2026-04-19_admin-surface-token-guard.md` |
 | Slice 1-4 browser regression fix pass (2026-04-20) | `docs/reports/2026-04-20_slice1-4-browser-regression-fixes.md` |
+| Slice 5-8 docs consistency freeze (2026-04-01) | `docs/reports/2026-04-01_slice5-8-docs-consistency-freeze.md` |
+| FE-BE integration fixes (2026-04-01) | `docs/reports/2026-04-01_fe-be-integration-fixes.md` |
+| FE layout canonicalization (2026-04-15) | `docs/reports/2026-04-15_fe-layout-canonicalization.md` |
+| Slice 7 quiz UI MSW retest (2026-04-14) | `docs/reports/2026-04-14_slice7-quiz-ui-retest-msw.md` |
+| Slice 8 profile/users UI test (2026-04-14) | `docs/reports/2026-04-14_slice8-profile-users-ui-test-report.md` |
+| Bugfix pass H4/H6/H8/M6/M7/M9/M10 (2026-04-14) | `docs/reports/2026-04-14_bugfix-h4-h6-h8-m6-m7-m9-m10.md` |
+| Slice 11 / Task 11.1 (2026-04-17) | `docs/reports/2026-04-17_slice11-task11-1-leaderboard-api.md` |
+| Slice 11 / Task 11.2 (2026-04-17) | `docs/reports/2026-04-17_slice11-task11-2-admin-stats-api.md` |
+| Slice 11 / Task 11.3 (2026-04-30) | `docs/reports/2026-04-30_leaderboard-task11-3.md` |
+| Slice 11 / Task 11.4 (2026-04-30) | `docs/reports/2026-04-30_slice11-task-11.4-statistics.md` |
+| Slice 11 / Task 11.5 (2026-04-30) | `docs/reports/2026-04-30_slice11-task-11.5-dashboard.md` |
+| Slice 6 / Task 6.1 (2026-04-30) | `docs/reports/2026-04-30_slice6-task6-1-challenge-crud-api.md` |
+| Slice 6 / Task 6.2 (2026-04-30) | `docs/reports/2026-04-30_slice6-task6-2-challenge-node-api.md` |
+| Slice 6 / Task 6.3 (2026-05-02) | `docs/reports/2026-05-02_slice6-task6-3-challenge-flag-crud.md` |
+| Slice 6 / Task 6.4 (2026-05-02) | `docs/reports/2026-05-02_slice6-task6-4-flag-submission-progress.md` |
+| Slice 6 / Task 6.5 (2026-05-02) | `docs/reports/2026-05-02_slice6-task6-5-instance-api-stubs.md` |
+| Slice 6 / Task 6.6 (2026-05-02) | `docs/reports/2026-05-02_slice6-task6.6-challenge-frontend.md` |
+| Slice 6 / Task 6.7 (2026-05-02) | `docs/reports/2026-05-02_slice6-challenge-admin-editor.md` |
+| Frontend bugfix batch (2026-05-04) | `docs/reports/2026-05-04_frontend-bugfix-batch.md` |
+
+> Note: newer session reports beyond this snapshot are listed under `docs/reports/` (filename prefix `YYYY-MM-DD_`). This table is appended per session; live tracker may lag by 1–2 sessions.
 
 ---
 
@@ -193,7 +175,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 ## API Documentation Baseline
 
 - Canonical API reference is now `docs/API.md`.
-- Legacy-to-target endpoint migration source is `docs/API_ROUTE_MAPPING.md`.
+- Legacy-to-target endpoint migration source is `docs/API.md` §6 (Route Migration / Legacy). Previously `docs/API_ROUTE_MAPPING.md`, merged into API.md §6 by Session 3 of doc normalization (2026-05-14).
 - Active endpoint inventory in `docs/API.md` only includes APIs aligned with current implementation progress.
 - Planned and deferred APIs are tracked in separate sections in `docs/API.md` and are not considered active.
 - AI endpoints remain deferred and are excluded from active API scope while `api/ai` routing stays disabled in root URL config.
@@ -245,7 +227,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Frontend: Course catalog + tree | Low | ✅ Completed 2026-04-15: implemented `/{locale}/courses` catalog and `/{locale}/courses/{slug}` detail with sticky filter panel, typed namespaced Learn services, `useCourses` + `courses.store` state orchestration, lazy tree children loading, progress card, i18n parity (`en`/`vi`), and MSW handlers aligned to `/api/learn/*`; validation gates (`lint`, `tsc --noEmit`, `next build`) pass. |
 | Frontend: Lesson viewer (md/video/miniquiz) | Low | ✅ Completed 2026-04-15: implemented `/{locale}/courses/{slug}/lessons/{id}` with lesson-type renderer (`markdown`/`video`/`miniquiz`), explicit start/complete progress actions, deterministic prev/next navigation derived from full course tree, and i18n parity + MSW handlers for `/api/learn/lessons/*`; validation gates (`lint`, `tsc --noEmit`, `next build`) pass. |
 | Frontend: Course editor (admin/editor surface) | Low | ✅ Completed 2026-04-16: implemented admin Learn routes `/{locale}/admin/learn/courses`, `/new`, `/{slug}`, `/{locale}/admin/learn/lessons/{id}` with course CRUD/status/taxonomy inline management, tree authoring operations, lesson markdown/video/miniquiz editing, quiz-filtered question selection, i18n parity, and MSW write-flow coverage. |
-| Outline sync API + tab (deferrable) | Low | Sync blocking MVP; no Celery needed |
+| Outline sync API + tab | Low | 📋 Pending; sync blocking MVP; no Celery needed |
 
 ### Slice 6 — Challenge (CTF)
 
@@ -261,7 +243,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | 6.5 Instance API stubs (MockDeploymentBackend) | Medium | ✅ Completed 2026-05-02: `start`/`stop`/`status` endpoints (user); admin `list` + `kill`; `MockDeploymentBackend` in `instance_service.py`; instance flag generated as plaintext at deploy time. Wave 2: swap to `SocketDeploymentBackend` when external system ready. |
 | 6.6 Frontend: Challenge browser + detail + flag submit | Low | ✅ Completed 2026-05-02: `ChallengeCatalogClient` (filter+grid) + `ChallengeDetailClient` (description, flag submit form, instance panel, progress card); service migrated to canonical paths; MSW handlers rewritten to canonical URLs + new instance/progress endpoints; new backend endpoint `GET /api/challenge/challenges/{slug}/progress/`; i18n vi+en. |
 | 6.7 Frontend: Challenge editor (admin/editor) | Low | ✅ Completed 2026-05-02: admin challenge list/create/editor (Metadata+Tree+Flags tabs) + flag manager + instance manager; `useAdminChallenges` / `useAdminChallengeTree` / `useAdminChallengeFlags` hooks; MSW `adminChallengesHandlers`; `adminChallenges.*` i18n (vi+en). GitLab tab deferred to 6.8. |
-| 6.8 GitLab sync (separate delivery) | Low | Not a blocker for 6.1–6.7; self-contained integration |
+| 6.8 GitLab sync (separate delivery) | Low | 📋 Pending; not a blocker for 6.1–6.7; self-contained integration |
 
 ### Slice 7 — Quiz
 
@@ -301,7 +283,14 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 | Leaderboard API | Low | ✅ Completed 2026-04-17: canonical `/api/stats/leaderboard/` plus compatibility alias `/api/leaderboard/` implemented with dense-rank results, `my_rank`, `total_users`, and regression coverage in `backend/api/tests/test_leaderboard_api.py`. |
 | Admin stats API | Low | ✅ Completed 2026-04-17: canonical `/api/admin/stats/` overview plus `/api/admin/stats/users/{id}/` detail endpoint implemented with dedicated service and serializer layer, plus regression coverage in `backend/api/tests/test_admin_stats_api.py`. |
 | Frontend: Leaderboard | Low | ✅ Completed 2026-04-30: user-surface leaderboard page is active at `/{locale}/leaderboard` with canonical `/api/stats/leaderboard/` contract, tab switcher, my-rank summary, highlight row, pagination, and MSW alignment. |
-| Frontend: Admin detailed statistics | Low | |
+| Frontend: Admin detailed statistics | Low | ✅ Completed 2026-04-30: `/{locale}/admin/statistics` page with user activity breakdown, content solve rates, weekly trends, and per-user lookup; aligned to canonical `/api/admin/stats/` + `/api/admin/stats/users/{id}/` contracts. |
+| Frontend: Admin dashboard home | Low | ✅ Completed 2026-04-30: `/{locale}/admin/dashboard` with summary stat cards, quick-link tiles, and recent activity feed using lightweight `/api/admin/stats/` overview. Admin entry redirect `/admin` now points here. |
+
+---
+
+## Doc Normalization Follow-ups
+
+- [ ] **Audit dead system_config keys** — Grep all 42 seeded keys in `seed_config.py` against `get_config()` / `SystemConfig.objects.get()` calls in backend code. Document keys with no readers in a follow-up issue. Discovered during Session 2 normalization (D-02-15).
 
 ---
 
@@ -342,3 +331,54 @@ Slice 0 (Foundation: User model + migrations + seed_config)
 ```
 
 Full task breakdown with per-task file lists: see `docs/IMPL_PLAN.md`.
+
+---
+
+## 📜 Historical Decision Gates (all RESOLVED)
+
+> Slice-prerequisite decision tables preserved for traceability. Every entry below is RESOLVED; canonical detail is in `docs/DECISIONS.md`.
+
+### Slice 1 critical block (resolved 2026-03-24)
+
+| Question | Blocks | Status |
+|----------|--------|--------|
+| [Q-SLICE1-01](DECISIONS.md#q-slice1-01-member-role-seeding) — Member role seeding | Slice 0 (Task 0.3), Slice 1 (Task 1.1) | **RESOLVED** (Option A) |
+| [Q-INFRA-01](DECISIONS.md#q-infra-01-frontend-source-directory) — Frontend src/ layout | Slice 1 (Task 1.5), Slice 4–11 | **RESOLVED** (Option A) |
+| [Q-AUTH-04](DECISIONS.md#q-auth-04-jwt-token-expiry-and-refresh-strategy) — Token expiry + refresh window | Slice 1 (Tasks 1.2, 1.5) | **RESOLVED** (Option A) |
+| [Q-AUTH-05](DECISIONS.md#q-auth-05-first-login-admin-ceremony) — Admin first-login credentials | Slice 0 (new Task 0.4), Slice 1 | **RESOLVED** (Option C) |
+
+### Slice 0–1 pre-implementation gate (resolved 2026-03-23)
+
+| Question | Blocks | Status |
+|----------|--------|--------|
+| [Q-INFRA-02](DECISIONS.md#q-infra-02-api-url-prefix-convention) — URL prefix convention | All API slices | **RESOLVED** |
+| [Q-AUTH-01](DECISIONS.md#q-auth-01-default-role-for-new-users) — Default role for new users | Slice 1–2 | **RESOLVED** |
+| [Q-AUTH-02](DECISIONS.md#q-auth-02-first-admin-creation-mechanism) — First admin creation | Slice 0 | **RESOLVED** |
+| [Q-INFRA-04](DECISIONS.md#q-infra-04-cache-backend-for-rate-limiting) — Cache backend | Slice 1 | **RESOLVED** |
+| [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) — Email for password reset | Slice 1 | **RESOLVED** |
+| [Q-INFRA-06](DECISIONS.md#q-infra-06-client-side-token-storage) — Token storage | Slice 1, 4 | **RESOLVED** |
+| [Q-AUTH-03](DECISIONS.md#q-auth-03-sso-only-lockout-fallback) — SSO-only lockout fallback | Slice 1 | **RESOLVED** |
+
+### Slice 1–11 feature decisions (all RESOLVED)
+
+| Question | Blocks | Status |
+|----------|--------|--------|
+| [Q-AUTH-06](DECISIONS.md#q-auth-06-sso-account-linking-strategy) — SSO account linking strategy | Slice 1 (Task 1.3) | **RESOLVED** (Option A) |
+| [Q-AUTH-07](DECISIONS.md#q-auth-07-device-logout-granularity) — Device logout granularity | Slice 1 (Task 1.4 deferred) | **RESOLVED** (Option A) |
+| [Q-INFRA-09](DECISIONS.md#q-infra-09-cors-and-domain-configuration) — CORS + domain configuration | Slice 1 (Task 1.5) | **RESOLVED** (Option A) |
+| [Q-ARCH-01](DECISIONS.md#q-arch-01-max-permissions-bitmap-capacity) — Max permissions bitmap size | Slice 2+ | **RESOLVED** (Option B) |
+| [Q-CONFIG-01](DECISIONS.md#q-config-01-default-systemconfig-auth-values) — Default system config seed values | Slice 0 (Task 0.3), Slice 1 | **RESOLVED** (Option A — canonical 42 keys in `seed_config.py:81-88`) |
+| [Q-INFRA-07](DECISIONS.md#q-infra-07-i18n-language-strategy) — i18n strategy | Slice 4 | **RESOLVED** (Option C) |
+| [Q-INFRA-08](DECISIONS.md#q-infra-08-frontend-ui-component-library) — UI component library | Slice 4+ | **RESOLVED** (Option A) |
+| [Q-LEARN-01](DECISIONS.md#q-learn-01-lesson-node-creation-atomicity) — Lesson node atomicity | Slice 5 | **RESOLVED** |
+| [Q-LEARN-02](DECISIONS.md#q-learn-02-mini-quiz-question-source) — Mini-quiz question source | Slice 5 | **RESOLVED** |
+| [Q-LEARN-03](DECISIONS.md#q-learn-03-course-progress-on-structure-change) — Course progress on structure change | Slice 5 | **RESOLVED** |
+| [Q-LEARN-04](DECISIONS.md#q-learn-04-course-delete-strategy) — Course delete strategy | Slice 5 | **RESOLVED** |
+| [Q-LEARN-05](DECISIONS.md#q-learn-05-slug-conflict-resolution) — Slug conflict resolution | Slice 5 | **RESOLVED** |
+| [Q-LEARN-06](DECISIONS.md#q-learn-06-outline-url-frontend-exposure) — Outline exposure and backend mediation | Slice 5 | **RESOLVED** |
+| [Q-LEARN-07](DECISIONS.md#q-learn-07-tag-creation-permissions) — Tag creation permissions | Slice 5 | **RESOLVED** |
+| [Q-LEARN-08](DECISIONS.md#q-learn-08-lesson-completion-trigger) — Lesson completion trigger | Slice 5 | **RESOLVED** |
+| [Q-LEARN-09](DECISIONS.md#q-learn-09-lesson-start-trigger) — Lesson start trigger | Slice 5 | **RESOLVED** |
+| [Q-LEARN-10](DECISIONS.md#q-learn-10-outline-sync-failure-handling) — Outline sync failure handling | Slice 5 | **RESOLVED** |
+| [Q-CHALL-01](DECISIONS.md#q-chall-01-challenge-instance-scope) — Challenge instances in MVP | Slice 6 | **RESOLVED** (Option C) |
+| [Q-INFRA-05](DECISIONS.md#q-infra-05-websocket-jwt-auth-method) — WebSocket JWT auth | Slice 7 | **RESOLVED** |

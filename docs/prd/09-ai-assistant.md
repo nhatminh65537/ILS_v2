@@ -1,8 +1,10 @@
 # PRD-09: AI Assistant
 
 **Feature:** AI Assistant — Trợ lý học tập thông minh
-**Status:** Scaffolded (needs real LLM integration)
+**Status:** Deferred
 **Priority:** Medium
+
+> ⚠️ **DEFERRED** — Tính năng này không nằm trong scope hiện tại. **Không triển khai khi chưa có phê duyệt rõ ràng.** Xem `docs/STATUS.md` → Deferred Features.
 
 ---
 

@@ -611,7 +611,7 @@ interface TreeProps {
 
 > **Decision prerequisites:** all Slice 5 decisions are resolved in `docs/DECISIONS.md` (2026-04-01).
 
-### Task 5.1 — Course + Category CRUD API
+### Task 5.1 — Course + Category CRUD API ✅ COMPLETED (2026-04-15)
 **Files:** `backend/api/views/courses.py`, `backend/api/serializers/course.py`, `backend/api/urls.py`
 
 **Endpoints:**
@@ -630,7 +630,7 @@ DELETE /api/learn/tags/{id}/
 
 **Course list response includes:** `user_progress: {completed, total}` if authenticated.
 
-### Task 5.2 — CourseNode tree API
+### Task 5.2 — CourseNode tree API ✅ COMPLETED (2026-04-15)
 **Files:** `backend/api/views/courses.py`
 
 **Endpoints:**
@@ -646,7 +646,7 @@ DELETE /api/learn/courses/{slug}/nodes/{node_id}/    → delete node + subtree
 **Atomicity:** lesson item node creation is one-step atomic (create lesson + node in one transaction).
 **`course.structure_version`** must be incremented on any node create/update/delete to invalidate lazy progress caches (see Task 5.4).
 
-### Task 5.3 — Lesson CRUD
+### Task 5.3 — Lesson CRUD ✅ COMPLETED (2026-04-15)
 **Endpoints:**
 ```
 GET/PUT  /api/learn/lessons/{id}/
@@ -656,7 +656,7 @@ GET/PUT/DELETE /api/learn/lesson-questions/{id}/
 
 > Outline sync is extracted to Task 5.8 (deferrable).
 
-### Task 5.4 — User progress tracking
+### Task 5.4 — User progress tracking ✅ COMPLETED (2026-04-15)
 **Endpoints:**
 ```
 POST /api/learn/lessons/{id}/progress/start/     → explicit start (idempotent)
@@ -666,20 +666,20 @@ GET  /api/learn/courses/{slug}/progress/         → {lesson_count, completed, p
 **Signal chain:** `UserLessonProgress.completed_at` set → update `UserCourseProgress` → update `UserProfile`.
 **Recompute strategy:** versioned lazy recompute per (user, course) when `course.structure_version` changes.
 
-### Task 5.5 — Frontend: Course catalog + tree
+### Task 5.5 — Frontend: Course catalog + tree ✅ COMPLETED (2026-04-15)
 ```
 app/[locale]/(catalog)/courses/page.tsx             → course catalog (cards grid, filter sidebar)
 app/[locale]/(catalog)/courses/[slug]/page.tsx      → course detail with Tree component (lazy expand)
 ```
 
-### Task 5.6 — Frontend: Lesson viewer
+### Task 5.6 — Frontend: Lesson viewer ✅ COMPLETED (2026-04-15)
 **File:** `app/[locale]/(catalog)/courses/[slug]/lessons/[id]/page.tsx`
 - Markdown: `react-markdown` + `rehype-highlight`
 - Video: `<video>` or iframe
 - Miniquiz: inline question cards + answer reveal
 - Left sidebar: course tree; right sidebar: progress + next/prev navigation
 
-### Task 5.7 — Frontend: Course editor (admin/editor surface)
+### Task 5.7 — Frontend: Course editor (admin/editor surface) ✅ COMPLETED (2026-04-16)
 
 **Files:**
 ```
@@ -707,7 +707,7 @@ app/[locale]/(admin)/admin/(protected)/learn/
 
 > Outline sync tab is part of Task 5.8 (deferrable).
 
-### Task 5.8 — Outline Sync (deferrable)
+### Task 5.8 — Outline Sync 📋 PENDING (low priority)
 
 **Prerequisite:** Task 5.3 completed. `outline.enabled=true` in system_config.
 
@@ -737,7 +737,7 @@ POST /api/learn/lessons/{id}/sync-outline/      → synchronous blocking sync fr
 >
 > ⚠️ Existing code in `backend/api/views/challenges.py`, `backend/api/services/challenge_service.py`, and `backend/api/services/flag_validation_service.py` are inaccurate stubs — **rewrite from scratch** for all tasks below.
 
-### Task 6.1 — Challenge + Category + Tag CRUD API
+### Task 6.1 — Challenge + Category + Tag CRUD API ✅ COMPLETED (2026-04-30)
 **Files:** `backend/api/views/challenges.py`, `backend/api/serializers/challenge.py`, `backend/api/urls.py`
 
 - Challenge CRUD with slug-based lookup; status filter (Members see `published` only; Admin/Editor see all statuses)
@@ -746,7 +746,7 @@ POST /api/learn/lessons/{id}/sync-outline/      → synchronous blocking sync fr
 - Migrate URL routing: remove legacy flat `/api/challenges/*` from DRF router; wire namespaced `/api/challenge/*` routes explicitly (same explicit pattern as Quiz in `urls.py`)
 - Endpoint contracts: `docs/API.md §4.3`
 
-### Task 6.2 — ChallengeNode tree API
+### Task 6.2 — ChallengeNode tree API ✅ COMPLETED (2026-04-30)
 **Files:** `backend/api/views/challenge_nodes.py` (new file), `backend/api/serializers/challenge.py`
 
 - Node CRUD: create folder/item node, update `title`/`position`, delete
@@ -755,7 +755,7 @@ POST /api/learn/lessons/{id}/sync-outline/      → synchronous blocking sync fr
 - Reference implementation: `QuizNodeViewSet.move` in `backend/api/views/quizzes.py`
 - Endpoint contracts: `docs/API.md §4.3`
 
-### Task 6.3 — ChallengeFlag CRUD
+### Task 6.3 — ChallengeFlag CRUD ✅ COMPLETED (2026-05-02)
 **Files:** `backend/api/views/challenges.py`, `backend/api/serializers/challenge.py`
 
 - Flags nested under challenge resource: add / edit / delete
@@ -764,7 +764,7 @@ POST /api/learn/lessons/{id}/sync-outline/      → synchronous blocking sync fr
 - Fields: `is_regex`, `is_case_sensitive`, `random_tail_length`; multiple flags per challenge supported (OSINT multi-flag use-case)
 - Endpoint contracts: `docs/API.md §4.3`
 
-### Task 6.4 — Flag submission + progress
+### Task 6.4 — Flag submission + progress ✅ COMPLETED (2026-05-02)
 **File:** `backend/api/services/flag_service.py` (rewrite; discard existing stub)
 
 Server-side only flag checking — three modes:
@@ -778,7 +778,7 @@ Progress endpoint: aggregate `UserChallengeProgress` + `UserChallengeSubmit` for
 
 Endpoint contracts: `docs/API.md §4.3`
 
-### Task 6.5 — Instance API stubs (Wave 1: MockDeploymentBackend)
+### Task 6.5 — Instance API stubs (Wave 1: MockDeploymentBackend) ✅ COMPLETED (2026-05-02)
 **Files:** `backend/api/views/challenges.py`, `backend/api/services/instance_service.py` (rewrite; discard existing stub)
 
 - Define `InstanceDeploymentBackend` Protocol per [R-ARCH-12](DECISIONS.md#r-arch-12-instance-deployment--strategy-pattern)
@@ -787,7 +787,7 @@ Endpoint contracts: `docs/API.md §4.3`
 - ⚠️ **Wave 2:** Swap `MockDeploymentBackend` → `SocketDeploymentBackend` when external system is ready; no API contract or frontend change required
 - Endpoint contracts: `docs/API.md §4.3`
 
-### Task 6.6 — Frontend: Challenge browser + detail
+### Task 6.6 — Frontend: Challenge browser + detail ✅ COMPLETED (2026-05-02)
 **Route group:** `app/[locale]/(catalog)/challenges/` — uses `(catalog)` layout with `showSidebar=false`
 
 ```
@@ -799,9 +799,9 @@ Endpoint contracts: `docs/API.md §4.3`
 - Progress card: solved badge, attempt count
 - Flag submit form: `<input>` + submit; result feedback badge (correct/incorrect); throttle on retry
 - Instance panel: rendered only if `instance_required=true`; start/stop instance; show connection info (mock in Wave 1)
-- MSW handlers for all challenge endpoints; follow `(catalog)` layout pattern from `docs/FE_CONVENTIONS.md`
+- MSW handlers for all challenge endpoints; follow `(catalog)` layout pattern from `docs/FRONTEND.md` §2 — Catalog Route Group Pattern
 
-### Task 6.7 — Frontend: Challenge editor (admin/editor surface)
+### Task 6.7 — Frontend: Challenge editor (admin/editor surface) ✅ COMPLETED (2026-05-02)
 
 ```
 app/[locale]/(admin)/admin/(protected)/challenges/
@@ -818,7 +818,7 @@ app/[locale]/(admin)/admin/(protected)/challenges/
 - ⚠️ GitLab Sync tab deferred to Task 6.8; do not scaffold in this task
 - MSW handlers for all admin challenge endpoints
 
-### Task 6.8 — GitLab sync *(separate delivery — not a blocker for Tasks 6.1–6.7)*
+### Task 6.8 — GitLab sync *(separate delivery — not a blocker for Tasks 6.1–6.7)* 📋 PENDING
 **Files:** `backend/api/views/challenges.py`, `backend/api/services/gitlab_service.py` (new)
 
 - `POST /api/challenge/challenges/{slug}/sync-gitlab/` — Admin/Editor only
@@ -851,10 +851,10 @@ GET/PUT /api/quiz/quizzes/{id}/config/
 - Added deterministic question validation for `single_choice` / `multi_choice` / `fill_blank` in serializer layer.
 - Added focused backend tests in `backend/api/tests/test_quiz_api.py` (6 passing).
 
-### Task 7.2 — QuizNode tree API
+### Task 7.2 — QuizNode tree API ✅ COMPLETED (2026-04-01)
 Same pattern as Course/Challenge nodes. **No circular FK** — `quiz_node.quiz_id → quiz` only (one-way).
 
-### Task 7.3 — Django Channels WebSocket consumer
+### Task 7.3 — Django Channels WebSocket consumer ✅ COMPLETED (2026-04-01)
 
 **Files:** `backend/realtime/consumers/quiz_consumer.py`, `backend/realtime/routing.py`
 
@@ -873,7 +873,7 @@ class QuizConsumer(AsyncWebsocketConsumer):
 
 **ASGI routing** added to `backend/backend/asgi.py`.
 
-### Task 7.4 — Quiz progress tracking
+### Task 7.4 — Quiz progress tracking ✅ COMPLETED (2026-04-01)
 **Signal:** `UserQuizAttempt` finished → update `UserQuizProgress` (best_score, attempt_count).
 
 ### Task 7.5 — Frontend: Quiz browser ✅ (2026-04-10)
@@ -895,14 +895,14 @@ Catalog pages render their own two-column layout (sticky filter panel left, cont
 
 **Type alignment:** all quiz types rewritten to match backend serializers (`time_limit_sec`, `quiz_point`, `total_questions`; removed `pass_score_percent`, `is_shuffled`; `QuizConfig` fully rewritten).
 
-**Catalog layout pattern:** see `docs/FE_CONVENTIONS.md` — Catalog Route Group Pattern section.
+**Catalog layout pattern:** see `docs/FRONTEND.md` §2 — Catalog Route Group Pattern section.
 
-### Task 7.6 — Frontend: WebSocket quiz session
+### Task 7.6 — Frontend: WebSocket quiz session ✅ COMPLETED (2026-04-10)
 - WS connect on mount, then send first auth message with JWT token
 - Display question + options; submit answer; show result + explanation
 - Finish screen: score, correct%, time elapsed
 
-### Task 7.7 — Frontend: Quiz editor (admin/editor surface)
+### Task 7.7 — Frontend: Quiz editor (admin/editor surface) ✅ COMPLETED (2026-04-13)
 
 **Files:**
 ```
@@ -935,7 +935,7 @@ app/[locale]/(admin)/admin/(protected)/quizzes/
 
 ## Slice 8 — User Profile
 
-### Task 8.1 — User profile API
+### Task 8.1 — User profile API ✅ COMPLETED (2026-04-02)
 ```
 GET/PATCH /api/users/me/profile/       → own profile + stats
 PATCH     /api/users/me/settings/      → language/theme/timezone
@@ -945,7 +945,7 @@ GET       /api/users/{username}/profile/   → public profile
 GET       /api/users/{username}/activity/  → public last 30 events
 ```
 
-### Task 8.2 — Admin user management API
+### Task 8.2 — Admin user management API ✅ COMPLETED (2026-04-02)
 ```
 GET       /api/admin/users/         → list with filters (is_active, date_joined_from, date_joined_to)
 POST      /api/admin/users/         → create user (optional password, default Member role)
@@ -953,7 +953,7 @@ GET       /api/admin/users/{id}/    → user detail with profile and assigned ro
 PUT/PATCH /api/admin/users/{id}/    → update is_active, roles; disable revokes all sessions
 ```
 
-### Task 8.3 — Frontend: Profile page
+### Task 8.3 — Frontend: Profile page ✅ COMPLETED (2026-04-10)
 
 **Files:**
 ```
@@ -964,13 +964,13 @@ app/[locale]/(app)/profile/
 
 > Note: route uses `[username]` (string slug), not `[id]` (numeric) — consistent with `GET /api/users/{username}/profile/` endpoint.
 
-### Task 8.4 — Frontend: Admin user management
+### Task 8.4 — Frontend: Admin user management ✅ COMPLETED (2026-04-10)
 ```
 app/[locale]/(admin)/admin/(protected)/users/page.tsx
 → user table: username, email, roles, is_active, date_joined; search + filter; activate/deactivate toggle; link to user role assignment (/admin/rbac/users/[id]/roles)
 ```
 
-### Task 8.5 — Frontend: Session management page
+### Task 8.5 — Frontend: Session management page ✅ COMPLETED (2026-04-13)
 
 **File:** `app/[locale]/(app)/profile/sessions/page.tsx`
 
@@ -982,7 +982,7 @@ app/[locale]/(admin)/admin/(protected)/users/page.tsx
 
 ## Slice 9 — Notifications
 
-### Task 9.1 — Notification API
+### Task 9.1 — Notification API ✅ COMPLETED (2026-04-17)
 ```
 GET  /api/notifications/                     → list (unread first)
 POST /api/notifications/{id}/mark-read/      → mark single notification as read
@@ -991,23 +991,23 @@ GET  /api/notifications/unread-count/        → {count: N}
 POST /api/admin/notifications/broadcast/     → admin broadcast to all users
 ```
 
-### Task 9.2 — Auto-trigger via signals
+### Task 9.2 — Auto-trigger via signals ✅ COMPLETED (2026-04-17)
 **File:** `backend/api/signals.py`
 
 Django signals on `UserChallengeProgress`, `UserQuizAttempt`, `UserLessonProgress` → call `create_notification(user, type, data)`.
 
-### Task 9.3 — WebSocket notification delivery
+### Task 9.3 — WebSocket notification delivery ✅ COMPLETED (2026-04-17)
 **File:** `backend/realtime/consumers/notification_consumer.py`
 
 Channel group per user: `notifications_{user.id}`. Push new notifications real-time.
 
-### Task 9.4 — Frontend: Notification bell + inbox
+### Task 9.4 — Frontend: Notification bell + inbox ✅ COMPLETED (2026-04-20)
 ```
 src/components/features/notifications/NotificationBell.tsx   → in user header; unread count badge; WS subscription; dropdown preview (latest 5)
 app/[locale]/(app)/notifications/page.tsx                    → full inbox list (unread first), mark individual read, mark all read
 ```
 
-### Task 9.5 — Frontend: Admin notification broadcast
+### Task 9.5 — Frontend: Admin notification broadcast ✅ COMPLETED (2026-04-20)
 
 **File:** `app/[locale]/(admin)/admin/(protected)/notifications/page.tsx`
 
@@ -1056,14 +1056,14 @@ Floating slide-in panel in lesson/challenge pages. Mode selector, textarea input
 
 ## Slice 11 — Statistics
 
-### Task 11.1 — Leaderboard API
+### Task 11.1 — Leaderboard API ✅ COMPLETED (2026-04-17)
 ```
 GET /api/stats/leaderboard/?type=overall|challenge|quiz|course&page=1
 Compatibility alias: GET /api/leaderboard/?type=overall|challenge|quiz|course&page=1
 → {type, my_rank, total_users, results:[{rank, user:{id, username, display_name, avatar_url, avatar}, score, delta}], entries:[...], total_count}
 ```
 
-### Task 11.2 — Admin stats API
+### Task 11.2 — Admin stats API ✅ COMPLETED (2026-04-17)
 ```
 GET /api/admin/stats/              → overview: user_count, active_today, solves_week
 GET /api/admin/stats/users/{id}/   → detailed user stats
@@ -1071,20 +1071,20 @@ GET /api/admin/stats/users/{id}/   → detailed user stats
 
 Implemented 2026-04-17 with `backend/api/services/admin_stats_service.py`, `backend/api/serializers/admin_stats.py`, `backend/api/views/admin_stats.py`, and regression coverage in `backend/api/tests/test_admin_stats_api.py`.
 
-### Task 11.3 — Frontend: Leaderboard
+### Task 11.3 — Frontend: Leaderboard ✅ COMPLETED (2026-04-30)
 ```
 app/[locale]/(app)/leaderboard/page.tsx → tab switcher (overall | challenge | quiz | course) + rank table with avatar, score, rank delta badge; own rank highlight
 ```
 
 Implemented 2026-04-30 with canonical `/api/stats/leaderboard/` frontend contract, user-surface leaderboard page client, and MSW parity.
 
-### Task 11.4 — Frontend: Admin detailed statistics
+### Task 11.4 — Frontend: Admin detailed statistics ✅ COMPLETED (2026-04-30)
 ```
 app/[locale]/(admin)/admin/(protected)/statistics/page.tsx
 → detailed view: user activity breakdown, content solve rates, weekly trend charts; user detail lookup by username (shows per-user stats)
 ```
 
-### Task 11.5 — Frontend: Admin dashboard home
+### Task 11.5 — Frontend: Admin dashboard home ✅ COMPLETED (2026-04-30)
 
 **File:** `app/[locale]/(admin)/admin/(protected)/dashboard/page.tsx`
 

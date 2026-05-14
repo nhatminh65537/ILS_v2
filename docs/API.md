@@ -1,34 +1,33 @@
 # API.md — ILS v2 API Reference
 
-> Canonical API reference for the current implementation progress.
-> Last updated: 2026-04-30
+> Canonical API reference. Documents the current runtime API surface.
+> Last updated: 2026-05-14
 
 ---
 
 ## 1. Scope and Source of Truth
 
-This document includes only API endpoints that match current project progress.
+This document lists API endpoints that match current project progress.
 
 Inclusion rules:
 - Include endpoints currently exposed by active backend routing.
 - Mark endpoints as `Stable` or `Partial` based on implementation maturity.
-- Keep a separate `Planned` section for slice contracts not implemented yet.
-- Keep a separate `Deferred` section for explicitly postponed features.
+- Keep a separate `Planned` section (§4) for slice contracts not implemented yet.
+- Keep a separate `Deferred` section (§5) for explicitly postponed features.
 
 Exclusion rules:
-- Exclude old/legacy API patterns not aligned with current slice progress.
-- Exclude unimplemented contracts from active endpoint tables.
+- Exclude old/legacy API patterns not aligned with current progress.
 - Exclude AI endpoints from active APIs while AI slice remains deferred.
 
 Primary references:
-- Runtime routing: `backend/backend/urls.py`, `backend/api/urls.py`, `backend/auth_app/urls.py`
-- Endpoint behavior: `backend/api/views.py`, `backend/auth_app/views.py`
+- Runtime routing: `backend/backend/urls.py`, `backend/api/urls.py`, `backend/auth_app/urls.py`, `backend/realtime/routing.py`
+- Endpoint behavior: `backend/api/views/*.py`, `backend/auth_app/views.py`
 - Project progress gate: `docs/STATUS.md`, `docs/IMPL_PLAN.md`
 
 Compatibility note:
-- Section 3 lists currently active runtime routes. Legacy flat routes (e.g., `/api/quizzes/*`) have been removed and return 404.
-- Learn namespaced routes (`/api/learn/courses/*`, `/api/learn/categories/*`, `/api/learn/tags/*`) are now active for Slice 5 Task 5.1.
-- Target feature contracts for remaining upcoming slices continue to follow namespaced routes (`/api/challenge/*`, `/api/quiz/*`) and are tracked in Section 4 + `docs/IMPL_PLAN.md`.
+- §3 lists currently active runtime routes. Legacy flat routes (`/api/quizzes/*`) have been removed and return 404.
+- Legacy flat routes for Learn (`/api/courses/*`, `/api/lessons/*`) and Challenge (`/api/challenges/*`) remain active for compatibility — see §6 Route Migration for full mapping.
+- All new client work must use canonical namespaced paths (`/api/learn/*`, `/api/challenge/*`, `/api/quiz/*`).
 
 ---
 
@@ -36,27 +35,26 @@ Compatibility note:
 
 - Base prefix: `/api/`
 - Default auth: `Bearer <access_token>`
-- Default DRF permission: authenticated users (`IsAuthenticated`) unless endpoint overrides it
-- Default pagination: page size `20`
-- JSON only responses by default
+- Default DRF permission: authenticated users (`IsAuthenticated`) unless endpoint overrides it.
+- Default pagination: page size `20` (`backend/backend/settings.py` `REST_FRAMEWORK.PAGE_SIZE`).
+- JSON only responses by default.
 
 ### Auth behavior in current code
 
 - Active auth endpoints are served by `auth_app` under `/api/auth/*`.
-- Current JWT access lifetime in code: `15 minutes`
-- Current JWT refresh lifetime in code: `7 days`
-- Token refresh endpoint for auth_app flow is active with session hash validation, token rotation, and per-user refresh rate limit (10 requests/minute).
+- Current JWT access lifetime: `15 minutes` (`SIMPLE_JWT.ACCESS_TOKEN_LIFETIME`).
+- Current JWT refresh lifetime: `7 days` (`SIMPLE_JWT.REFRESH_TOKEN_LIFETIME`).
+- Token refresh endpoint validates session hash, rotates token, and enforces per-user refresh rate limit (10 requests/minute).
 - Active access-token permission claims: `permissions` (base64 bitmap, 32 bytes decoded) and `pv` (per-user permission version).
 
 ### Authorization bootstrap behavior in current code
 
 - Permission records are auto-discovered at startup from decorated class-based endpoints.
-- Permission name format is lowercase: `{app_label}.{resource_name}.{handler_method_name}`.
-- `resource_name` is derived from class name by removing `ViewSet`/`View`/`APIView`/`GenericViewSet` then normalizing to snake_case.
+- Permission name format: `{app_label}.{resource_name}.{handler_method_name}` (lowercase).
+- `resource_name` derived from class name by removing `ViewSet`/`View`/`APIView`/`GenericViewSet`, normalized to snake_case.
 - `handler_method_name` is the Python route handler name (`list`, `retrieve`, `tree`, `submit_flag`, `get`, `post`, ...).
-- Built-in role mappings are synchronized from `@add_role_granted(...)` metadata.
-- Slice 2 Phase 1 contract: role mapping uses explicit handler decorators, with precedence `handler-level` > `class-level`.
-- For default mixin handlers needing specific roles, use explicit method override + `super()` call and attach `@add_role_granted(...)` on that handler.
+- Built-in role mappings synchronized from `@add_role_granted(...)` metadata.
+- Role mapping uses explicit handler decorators with precedence `handler-level` > `class-level`.
 
 ---
 
@@ -72,27 +70,25 @@ Legend:
 |---|---|---|---|---|
 | POST | `/api/auth/register/` | No | Stable | Creates user + profile, auto-assigns Member role, returns access/refresh tokens. |
 | POST | `/api/auth/login/` | No | Stable | Local login with cache-based rate limit and session creation. |
-| POST | `/api/auth/token/refresh/` | No | Stable | Validates refresh hash in `user_session`, rotates refresh token/session, and enforces per-user refresh rate limit (10/min). |
+| POST | `/api/auth/token/refresh/` | No | Stable | Validates refresh hash in `user_session`, rotates refresh token/session, enforces per-user refresh rate limit (10/min). |
 | POST | `/api/auth/logout/` | Yes | Stable | Revokes current session by refresh token hash. |
 | POST | `/api/auth/logout-all/` | Yes | Stable | Revokes all active sessions for authenticated user. |
-| POST | `/api/auth/password/change/` | Yes | Stable | Verifies `current_password`, enforces password policy from `auth.password.*` config, updates password hash, and revokes all active user sessions. |
+| POST | `/api/auth/password/change/` | Yes | Stable | Verifies `current_password`, enforces password policy from `auth.password.*` config, updates password hash, revokes all active user sessions. |
 | GET | `/api/auth/sessions/` | Yes | Stable | Lists active sessions for authenticated user only; excludes `refresh_token_hash`. |
-| DELETE | `/api/auth/sessions/{id}/` | Yes | Stable | Revokes one owned active session; returns `204` on success, `404` if not found or not owned. |
-| GET | `/api/auth/sso/redirect/` | No | Stable | Builds OIDC authorization URL from system config and returns HTTP redirect to Authentik. |
-| GET | `/api/auth/sso/callback/` | No | Stable | Validates OIDC state/nonce, exchanges auth code, links/creates user, and returns access/refresh tokens. |
-| POST | `/api/auth/identity/link/` | Yes | Stable | Links authenticated user to an external identity (`provider`, `external_id`) with conflict protection and idempotent retry behavior. |
+| DELETE | `/api/auth/sessions/{id}/` | Yes | Stable | Revokes one owned active session; `204` on success, `404` if not found or not owned. |
+| GET | `/api/auth/sso/redirect/` | No | Stable | Builds OIDC authorization URL from system config and returns HTTP redirect to Authentik. Used as browser navigation target, not JSON API. |
+| GET | `/api/auth/sso/callback/` | No | Stable | Validates OIDC state/nonce, exchanges auth code, links/creates user, returns access/refresh tokens. |
+| POST | `/api/auth/identity/link/` | Yes | Stable | Links authenticated user to an external identity (`provider`, `external_id`); response shape `{detail, provider, external_id, created}`. |
 
-Contract notes for frontend integration (completed slices):
-- `GET /api/auth/sso/redirect/` should be used as browser navigation target (redirect response), not as JSON API read.
+Contract notes:
 - Auth success payload user object for register/login/sso-callback is minimal: `{id, username, email}`.
-- `POST /api/auth/identity/link/` response shape is `{detail, provider, external_id, created}`.
 
 ### 3.2 Users
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/users/` | Yes | Stable | List users. |
-| POST | `/api/users/` | No | Stable | Create user via `UserCreateSerializer`; profile is auto-created. |
+| POST | `/api/users/` | **No** | ⚠️ **TEMP** | **INSECURE — temporary test endpoint with `AllowAny`. Not intended for client registration; use `/api/auth/register/`. Permission gate is scheduled (see follow-up task).** |
 | GET | `/api/users/{id}/` | Yes | Stable | User detail. |
 | PUT/PATCH | `/api/users/{id}/` | Yes | Stable | Update user. |
 | DELETE | `/api/users/{id}/` | Yes | Stable | Delete user. |
@@ -104,107 +100,75 @@ Contract notes for frontend integration (completed slices):
 | GET | `/api/users/me/activity/` | Yes | Stable | Current user activity feed (latest 30 events). |
 | GET | `/api/users/{username}/profile/` | No | Stable | Public profile for a user by username. |
 | GET | `/api/users/{username}/activity/` | No | Stable | Public activity feed for a user by username. |
-| GET | `/api/admin/users/` | Yes (Admin) | Stable | Admin list users with filters: `is_active`, `date_joined_from`, `date_joined_to`. |
+| GET | `/api/admin/users/` | Yes (Admin) | Stable | Admin list users with filters: `is_active`, `date_joined_from`, `date_joined_to` (accepts `YYYY-MM-DD` or ISO datetime). |
 | POST | `/api/admin/users/` | Yes (Admin) | Stable | Admin create user; password is optional; `UserProfile` is auto-created; defaults to `Member` role if `role_ids` is omitted. |
 | GET | `/api/admin/users/{id}/` | Yes (Admin) | Stable | Admin user detail with profile and assigned roles. |
-| PUT/PATCH | `/api/admin/users/{id}/` | Yes (Admin) | Stable | Admin update user account fields and role assignments; disabling user revokes all active sessions immediately. |
+| PUT/PATCH | `/api/admin/users/{id}/` | Yes (Admin) | Stable | Admin update; response includes user, profile, and role context; disabling user revokes all active sessions immediately. |
 
-Task 8.2 update (2026-04-02):
-- Admin user management API is active under `/api/admin/users/*` via dedicated admin viewset.
-- Update responses include user, profile, and role context for direct frontend state refresh.
-- Date filters accept `YYYY-MM-DD` or ISO datetime values.
-
-### 3.3 Courses
-
-Historical/runtime note:
-- Namespaced Learn routes are active for Task 5.1.
-- Legacy-flat routes remain active for compatibility and are considered transitional.
-
-Task 5.1 update (2026-04-15):
-- Canonical namespaced Learn CRUD endpoints are active under `/api/learn/courses/*`, `/api/learn/categories/*`, and `/api/learn/tags/*`.
-- Course detail uses slug identifier (`/api/learn/courses/{slug}/`).
-- Course list includes `user_progress` object (`completed`, `total`) for authenticated users.
-- Legacy routes (`/api/courses/*`) are intentionally kept active during migration.
-
-Task 5.2 update (2026-04-15):
-- Canonical namespaced Learn course node tree endpoints are active under `/api/learn/courses/{slug}/nodes/*`.
-- Tree responses are lazy-loaded (no recursive embedding); clients rely on `has_children` and call `children/`.
-- Folder/item node create is supported; item create performs atomic `Lesson + CourseNode` creation in one request.
-- `system_config[learn.max_tree_depth]` is enforced on create and move.
-- Node mutations bump `course.structure_version`.
-
-Task 5.4 update (2026-04-15):
-- Canonical namespaced Learn progress endpoints are active under `/api/learn/lessons/{id}/progress/*` and `/api/learn/courses/{slug}/progress/`.
-- Progress start and completion endpoints are idempotent.
-- Course progress now uses versioned lazy recompute (`last_computed_version` vs `course.structure_version`) and denormalized cache fields on `user_course_progress`.
-- Lesson completion updates `user_course_progress` via Django signal and increments profile course counters/points only on first completion transition.
+### 3.3 Courses (Learn)
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/learn/courses/` | Yes | Partial | Canonical namespaced list endpoint; supports `category`, `status`, `search`; member visibility enforced to published-only. |
-| POST | `/api/learn/courses/` | Yes | Partial | Canonical namespaced create endpoint; editor/admin only; slug conflict returns `409` with suggestions. |
-| GET | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced detail endpoint with slug lookup. |
-| PUT | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin only. |
-| DELETE | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical namespaced delete endpoint; default archive, optional admin-only purge (`?mode=purge`). |
-| GET | `/api/learn/courses/{slug}/progress/` | Yes | Partial | Canonical namespaced course progress endpoint; response `{lesson_count, completed, percent}`; versioned lazy recompute when structure version changes. |
+| GET | `/api/learn/courses/` | Yes | Partial | Canonical list; supports `category`, `status`, `search`; member visibility enforced to published-only. Includes `user_progress` object (`completed`, `total`) for authenticated users. |
+| POST | `/api/learn/courses/` | Yes | Partial | Canonical create; editor/admin only; slug conflict returns `409` with suggestions. |
+| GET | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical detail with slug lookup. |
+| PUT | `/api/learn/courses/{slug}/` | Yes | Partial | Canonical update; editor/admin only. |
+| DELETE | `/api/learn/courses/{slug}/` | Yes | Partial | Default archive, optional admin-only purge (`?mode=purge`). |
+| GET | `/api/learn/courses/{slug}/progress/` | Yes | Partial | Response `{lesson_count, completed, percent}`; versioned lazy recompute when `course.structure_version` changes. |
 | GET | `/api/learn/courses/{slug}/nodes/` | Yes | Partial | Root-level course nodes (`parent=null`); lazy tree payload with `has_children`. |
 | GET | `/api/learn/courses/{slug}/nodes/{id}/children/` | Yes | Partial | Lazy-load children for a folder node. |
-| POST | `/api/learn/courses/{slug}/nodes/` | Yes | Partial | Create folder or lesson item node; editor/admin only; item create performs atomic lesson creation; max depth enforced. |
-| PUT | `/api/learn/courses/{slug}/nodes/{id}/` | Yes | Partial | Rename/reorder/move node; editor/admin only; move updates descendant paths via `bulk_update`; bumps structure_version. |
-| DELETE | `/api/learn/courses/{slug}/nodes/{id}/` | Yes | Partial | Delete node + subtree; editor/admin only; deletes attached lessons to avoid orphans; bumps structure_version. |
-| GET | `/api/learn/categories/` | Yes | Partial | Canonical category list endpoint. |
-| POST | `/api/learn/categories/` | Yes | Partial | Canonical category create endpoint; admin only. |
-| GET | `/api/learn/categories/{id}/` | Yes | Partial | Canonical category detail endpoint. |
-| PUT | `/api/learn/categories/{id}/` | Yes | Partial | Canonical category update endpoint; admin only. |
-| DELETE | `/api/learn/categories/{id}/` | Yes | Partial | Canonical category delete endpoint; admin only. |
-| GET | `/api/learn/tags/` | Yes | Partial | Canonical tag list endpoint. |
-| POST | `/api/learn/tags/` | Yes | Partial | Canonical tag create endpoint; permission-gated (admin/editor in current implementation). |
-| GET | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag detail endpoint. |
-| PUT | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag update endpoint; permission-gated (admin/editor in current implementation). |
-| DELETE | `/api/learn/tags/{id}/` | Yes | Partial | Canonical tag delete endpoint; permission-gated (admin/editor in current implementation). |
-| GET | `/api/learn/lessons/{id}/` | Yes | Partial | Canonical lesson detail endpoint; member visibility restricted to lessons whose owning course is `published`. |
-| PUT | `/api/learn/lessons/{id}/` | Yes | Partial | Canonical lesson update endpoint; editor/admin only. |
-| POST | `/api/learn/lessons/{id}/progress/start/` | Yes | Partial | Canonical explicit lesson-start endpoint; idempotent upsert of `user_lesson_progress.started_at`. |
-| POST | `/api/learn/lessons/{id}/progress/complete/` | Yes | Partial | Canonical lesson-complete endpoint; idempotent completion; triggers course/profile aggregate updates via signal chain. |
+| POST | `/api/learn/courses/{slug}/nodes/` | Yes | Partial | Create folder or lesson item node; item create performs atomic `Lesson + CourseNode` creation; `system_config[learn.max_tree_depth]` enforced. |
+| PUT | `/api/learn/courses/{slug}/nodes/{id}/` | Yes | Partial | Rename/reorder/move node; editor/admin only; move updates descendant paths via `bulk_update`; bumps `course.structure_version`. |
+| DELETE | `/api/learn/courses/{slug}/nodes/{id}/` | Yes | Partial | Delete node + subtree; deletes attached lessons to avoid orphans. |
+| GET | `/api/learn/categories/` | Yes | Partial | Category list. |
+| POST | `/api/learn/categories/` | Yes | Partial | Create; admin only. |
+| GET | `/api/learn/categories/{id}/` | Yes | Partial | Category detail. |
+| PUT | `/api/learn/categories/{id}/` | Yes | Partial | Update; admin only. |
+| DELETE | `/api/learn/categories/{id}/` | Yes | Partial | Delete; admin only. |
+| GET | `/api/learn/tags/` | Yes | Partial | Tag list. |
+| POST | `/api/learn/tags/` | Yes | Partial | Create; permission-gated (admin/editor). |
+| GET | `/api/learn/tags/{id}/` | Yes | Partial | Tag detail. |
+| PUT | `/api/learn/tags/{id}/` | Yes | Partial | Update; permission-gated (admin/editor). |
+| DELETE | `/api/learn/tags/{id}/` | Yes | Partial | Delete; permission-gated (admin/editor). |
+| GET | `/api/learn/lessons/{id}/` | Yes | Partial | Member visibility restricted to lessons whose owning course is `published`. |
+| PUT | `/api/learn/lessons/{id}/` | Yes | Partial | Editor/admin only. |
+| POST | `/api/learn/lessons/{id}/progress/start/` | Yes | Partial | Idempotent upsert of `user_lesson_progress.started_at`. |
+| POST | `/api/learn/lessons/{id}/progress/complete/` | Yes | Partial | Idempotent completion; triggers course/profile aggregate updates via signal chain. |
 | GET | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Mini-quiz lesson question mapping list; requires `lesson_type=miniquiz` (otherwise 400). |
-| POST | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Attach existing `QuizQuestion` to a mini-quiz lesson; editor/admin only; returns mapping; duplicate attach returns 409. |
-| GET | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Mini-quiz lesson-question mapping detail; member visibility restricted to published courses. |
+| POST | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Attach existing `QuizQuestion`; editor/admin only; duplicate attach returns 409. |
+| GET | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Mini-quiz mapping detail; member visibility restricted to published courses. |
 | PUT | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Update mapping position; editor/admin only. |
 | DELETE | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Delete mapping; editor/admin only. |
-| GET | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
-| POST | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
-| GET | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
-| PUT/PATCH | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
-| DELETE | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route retained during Slice 5 migration. |
-| GET | `/api/courses/{id}/tree/` | Yes | Partial | Runtime route exists; tree integrity rules for full Slice 5 scope are pending. |
-| GET | `/api/courses/{id}/progress/` | Yes | Partial | Legacy-flat compatibility route retained; progress now uses the same versioned recompute pipeline as namespaced Learn progress endpoint. |
-| POST | `/api/courses/{id}/enroll/` | Yes | Partial | Runtime route exists; full Slice 5 enrollment/progress contract is pending. |
 
-### 3.4 Lessons
-
-Historical/runtime note:
-- Routes in this subsection are active in current runtime but are considered legacy-flat paths for future slices.
-- For all new implementation work, use namespaced target routes from `docs/API_ROUTE_MAPPING.md`.
+Legacy flat routes (retained during migration — see §6 Route Migration):
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/lessons/` | Yes | Stable | Read-only list endpoint. |
+| GET | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route. |
+| POST | `/api/courses/` | Yes | Partial | Legacy-flat compatibility route. |
+| GET | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route. |
+| PUT/PATCH | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route. |
+| DELETE | `/api/courses/{id}/` | Yes | Partial | Legacy-flat compatibility route. |
+| GET | `/api/courses/{id}/tree/` | Yes | Partial | Tree integrity rules for full Slice 5 scope are pending. |
+| GET | `/api/courses/{id}/progress/` | Yes | Partial | Uses the same versioned recompute pipeline as namespaced endpoint. |
+| POST | `/api/courses/{id}/enroll/` | Yes | Partial | Full enrollment/progress contract pending. |
+
+### 3.4 Lessons (legacy flat)
+
+Routes in this subsection are legacy-flat paths kept for compatibility — see §6 for migration targets.
+
+| Method | Path | Auth | Status | Notes |
+|---|---|---|---|---|
+| GET | `/api/lessons/` | Yes | Stable | Read-only list endpoint (no canonical namespaced list available — see §6.1). |
 | GET | `/api/lessons/{id}/` | Yes | Stable | Read-only detail endpoint. |
-| POST | `/api/lessons/{id}/complete/` | Yes | Partial | Legacy-flat compatibility route retained; delegates to unified lesson completion pipeline. |
+| POST | `/api/lessons/{id}/complete/` | Yes | Partial | Delegates to unified lesson completion pipeline. |
 | GET | `/api/lessons/{id}/render/` | Yes | Partial | Depends on lesson rendering implementation details. |
 
 ### 3.5 Challenges
 
-Task 6.1 update (2026-04-30):
-- Canonical namespaced routes are active under `/api/challenge/*`.
-- Member visibility is restricted to `published` challenges.
-
-Task 6.2 update (2026-04-30):
-- ChallengeNode tree endpoints are active under `/api/challenge/nodes/*` with lazy children loading and cycle-safe move.
-
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/challenge/challenges/` | Yes | Partial | List challenges (member sees published only; editor/admin can filter by status). |
+| GET | `/api/challenge/challenges/` | Yes | Partial | List challenges (members see published only; editor/admin can filter by `status`, `difficulty`, `category`, `search`). |
 | POST | `/api/challenge/challenges/` | Yes | Partial | Create challenge (admin/editor only). |
 | GET | `/api/challenge/challenges/{slug}/` | Yes | Partial | Challenge detail (slug lookup). |
 | PUT/PATCH | `/api/challenge/challenges/{slug}/` | Yes | Partial | Update challenge (admin/editor only). |
@@ -225,70 +189,68 @@ Task 6.2 update (2026-04-30):
 | PUT/PATCH | `/api/challenge/nodes/{id}/` | Yes | Partial | Update node (admin/editor only). |
 | DELETE | `/api/challenge/nodes/{id}/` | Yes | Partial | Delete node (admin/editor only). |
 | GET | `/api/challenge/nodes/{id}/children/` | Yes | Partial | Direct children only (lazy load). |
-| POST | `/api/challenge/nodes/{id}/move/` | Yes | Partial | Move node (admin/editor only); updates descendant paths. |
+| POST | `/api/challenge/nodes/{id}/move/` | Yes | Partial | Move node (admin/editor only); cycle-safe; updates descendant paths. |
+| GET | `/api/challenge/challenges/{slug}/flags/` | Yes (Admin/Editor) | Stable | List flags. `flag_value` omitted for non-Admin/Editor. |
+| POST | `/api/challenge/challenges/{slug}/flags/` | Yes (Admin/Editor) | Stable | Create flag (static or regex). |
+| PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Yes (Admin/Editor) | Stable | Update flag. |
+| DELETE | `/api/challenge/challenges/{slug}/flags/{id}/` | Yes (Admin/Editor) | Stable | Delete flag. |
+| POST | `/api/challenge/challenges/{slug}/submit/` | Yes | Stable | Payload `{flag}`; response `{correct}`. Server-side check; `flag_value` never returned. On first solve: updates progress, increments counters, triggers notification. |
+| GET | `/api/challenge/challenges/{slug}/progress/` | Yes | Stable | Per-challenge progress for current user: `{is_solved, attempt_count, completed_at}`. |
+| GET | `/api/challenge/progress/` | Yes | Stable | Aggregate for current user: `{solved_count, total_attempts}`. |
+| POST | `/api/challenge/challenges/{slug}/instance/start/` | Yes | Stable | Start instance. Idempotent if running instance exists. `400` if challenge is not `instance_required`. |
+| POST | `/api/challenge/challenges/{slug}/instance/stop/` | Yes | Stable | Stop running instance. `404` if no running instance. |
+| GET | `/api/challenge/challenges/{slug}/instance/status/` | Yes | Stable | Returns latest instance for user, or `{status: "none"}`. |
+| GET | `/api/challenge/instances/` | Yes (Admin/Editor) | Stable | List instances; filterable by `challenge`, `user`, `status`. |
+| POST | `/api/challenge/instances/{id}/kill/` | Yes (Admin) | Stable | Force-terminate any instance. |
 
-Legacy/runtime note:
-- Legacy flat routes remain active but are not the canonical contract for Slice 6.
+Notes:
+- `flag_value` is role-gated at serializer level — Member responses never include the field.
+- Instance routes use `MockDeploymentBackend` (Wave 1); `instance_info` contains mock connection data until Wave 2 wires `SocketDeploymentBackend`.
+
+Legacy flat routes (kept for compatibility — see §6):
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/challenges/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
-| POST | `/api/challenges/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
-| GET | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
-| PUT/PATCH | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
-| DELETE | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route; Slice 6 rules incomplete. |
-| POST | `/api/challenges/{id}/submit-flag/` | Yes | Partial | Legacy flat route; full verification pending. |
-| POST | `/api/challenges/{id}/create-instance/` | Yes | Partial | Legacy flat route; depends on instance backend readiness. |
+| GET | `/api/challenges/` | Yes | Partial | Legacy flat route. |
+| POST | `/api/challenges/` | Yes | Partial | Legacy flat route. |
+| GET | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route. |
+| PUT/PATCH | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route. |
+| DELETE | `/api/challenges/{id}/` | Yes | Partial | Legacy flat route. |
+| POST | `/api/challenges/{id}/submit-flag/` | Yes | Partial | Legacy; canonical: `/api/challenge/challenges/{slug}/submit/`. |
+| POST | `/api/challenges/{id}/create-instance/` | Yes | Partial | Legacy; canonical: `/api/challenge/challenges/{slug}/instance/start/`. |
 
 ### 3.6 Quizzes
 
-Task 7.1 update (2026-04-01):
-- Canonical namespaced routes for quiz CRUD/question/config are now active under `/api/quiz/quizzes/*`.
-- Legacy flat routes (`/api/quizzes/*`) have been removed; `GET /api/quizzes/` returns 404.
-- Session lifecycle (start/answer/finish) is handled exclusively via WebSocket — see §3.6.1.
-
-Task 7.2 update (2026-04-01):
-- QuizNode tree CRUD endpoints are active under `/api/quiz/nodes/*`.
-- MVP behavior is folder-only (`is_item=false` enforced); tree operations use dot-separated `path` invariants from `BaseNode`.
-
-Integration note (2026-04-14):
-- `GET /api/quiz/quizzes/{id}/progress/` is now wired and returns per-user aggregate progress (`best_score`, `attempt_count`, attempt timestamps), with deterministic zero/default payload when no progress exists.
-
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced list endpoint for Slice 7 Task 7.1; members see published quizzes only. |
-| POST | `/api/quiz/quizzes/` | Yes | Partial | Canonical namespaced create endpoint; editor/admin role required. |
-| GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced detail endpoint. |
-| PUT/PATCH | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced update endpoint; editor/admin role required. |
-| DELETE | `/api/quiz/quizzes/{id}/` | Yes | Partial | Canonical namespaced delete endpoint; editor/admin role required. |
-| GET | `/api/quiz/quizzes/{id}/progress/` | Yes | Partial | Canonical namespaced per-user progress endpoint; returns zero/default aggregate when user has no attempts. |
-| GET | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question management list endpoint; editor/admin only. |
-| POST | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Canonical namespaced question create endpoint; supports single/multi/fill_blank validation. |
-| GET | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question detail endpoint; editor/admin only. |
-| PUT | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question update endpoint; editor/admin only. |
-| DELETE | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Canonical namespaced question delete endpoint; syncs `quiz.total_questions`. |
-| GET | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config retrieval endpoint. |
-| PUT | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Canonical namespaced per-user config upsert endpoint. |
-| GET | `/api/quiz/nodes/` | Yes | Partial | QuizNode root list (`parent IS NULL`) for quiz tree browsing. |
-| POST | `/api/quiz/nodes/` | Yes | Partial | QuizNode create endpoint; editor/admin only; MVP folder-only validation. |
-| GET | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode detail endpoint. |
-| PUT/PATCH | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode update endpoint; supports rename/reorder/move via `parent`; editor/admin only. |
-| DELETE | `/api/quiz/nodes/{id}/` | Yes | Partial | QuizNode delete endpoint; subtree deletion via cascade. |
-| GET | `/api/quiz/nodes/{id}/children/` | Yes | Partial | QuizNode lazy children list endpoint. |
-| POST | `/api/quiz/nodes/{id}/move/` | Yes | Partial | Explicit move endpoint (`parent_id`), cycle-safe validation. |
+| GET | `/api/quiz/quizzes/` | Yes | Partial | List; members see published quizzes only. |
+| POST | `/api/quiz/quizzes/` | Yes | Partial | Create; editor/admin role required. |
+| GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Detail. |
+| PUT/PATCH | `/api/quiz/quizzes/{id}/` | Yes | Partial | Update; editor/admin role required. |
+| DELETE | `/api/quiz/quizzes/{id}/` | Yes | Partial | Delete; editor/admin role required. |
+| GET | `/api/quiz/quizzes/{id}/progress/` | Yes | Partial | Per-user aggregate (`best_score`, `attempt_count`, attempt timestamps); deterministic zero/default payload when no progress exists. |
+| GET | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Question management list; editor/admin only. |
+| POST | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Question create; supports single/multi/fill_blank validation. |
+| GET | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question detail; editor/admin only. |
+| PUT | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question update; editor/admin only. |
+| DELETE | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question delete; syncs `quiz.total_questions`. |
+| GET | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Per-user config retrieval. |
+| PUT | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Per-user config upsert. |
+| GET | `/api/quiz/nodes/` | Yes | Partial | Root list (`parent IS NULL`); MVP folder-only validation (`is_item=false` enforced). |
+| POST | `/api/quiz/nodes/` | Yes | Partial | Create; editor/admin only; MVP folder-only validation. |
+| GET | `/api/quiz/nodes/{id}/` | Yes | Partial | Node detail. |
+| PUT/PATCH | `/api/quiz/nodes/{id}/` | Yes | Partial | Rename/reorder/move via `parent`; editor/admin only. |
+| DELETE | `/api/quiz/nodes/{id}/` | Yes | Partial | Subtree deletion via cascade. |
+| GET | `/api/quiz/nodes/{id}/children/` | Yes | Partial | Lazy children list. |
+| POST | `/api/quiz/nodes/{id}/move/` | Yes | Partial | Explicit move endpoint (`parent_id`); cycle-safe validation. |
+
+Session lifecycle (start/answer/finish) is handled exclusively via WebSocket — see §3.6.1.
 
 ### 3.6.1 Quiz WebSocket (Real-time Practice Sessions)
 
-Task 7.3 update (2026-04-01):
-- WebSocket consumer for real-time quiz practice sessions fully implemented.
-- Protocol: First-message JWT authentication (Q-INFRA-05 Option B); no JWT in URL query string.
-- Endpoint: `ws://host/ws/quiz/{quiz_id}/`
-- Auth flow: Connect without token → send `{type: "auth", token: "<access_jwt>"}` within 5-second timeout.
-- Action protocol: `{"action": "start"|"answer"|"next"}` after authentication.
-
 | Endpoint | Protocol | Auth | Status | Notes |
 |---|---|---|---|---|
-| `GET ws://host/ws/quiz/{quiz_id}/` | WebSocket | JWT first-message | Stable | Real-time quiz session; first-message auth pattern. |
+| `ws://host/ws/quiz/{quiz_id}/` | WebSocket | First-message JWT | Stable | Real-time quiz session. Connect without token in URL, then send `{"type":"auth","token":"<access_jwt>"}` within 5-second timeout. |
 
 **First-message auth flow:**
 ```json
@@ -331,21 +293,7 @@ SERVER → {"type": "error", "code": "already_answered", "message": "Question al
 
 ### 3.7 Notifications
 
-Task 9.1 update (2026-04-17):
-- Notification inbox API and admin broadcast API are active.
-- User list ordering is deterministic: unread first, then `created_at` descending.
-- Broadcast endpoint creates one `Notification` row per active user (`is_broadcast=true`).
-
-Task 9.2 + 9.3 update (2026-04-17):
-- Auto-trigger signals are active for challenge/course/quiz completion with `event_key` deduplication.
-- WebSocket realtime delivery is active at `/ws/notifications/` using first-message JWT auth.
-- Realtime channel group is `notifications_{user_id}` and receives event payloads from NotificationService.
-
-Contract alignment note (2026-04-20):
-- Notification action endpoints use hyphenated paths (`mark-read`, `mark-all-read`, `unread-count`).
-- Frontend contracts and PRD-07 were normalized to this runtime API surface.
-
-Active:
+Notification action endpoints use hyphenated paths (`mark-read`, `mark-all-read`, `unread-count`).
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
@@ -353,168 +301,93 @@ Active:
 | GET | `/api/notifications/{id}/` | Yes | Stable | Notification detail for current user scope. |
 | POST | `/api/notifications/{id}/mark-read/` | Yes | Stable | Mark one owned notification as read (`404` if not owned). |
 | POST | `/api/notifications/mark-all-read/` | Yes | Stable | Mark all unread notifications of current user as read. |
-| GET | `/api/notifications/unread-count/` | Yes | Stable | Returns unread badge payload: `{count: N}`. |
-| POST | `/api/admin/notifications/broadcast/` | Yes (Admin) | Stable | Broadcast notification to all active users; response includes `recipient_count` and `broadcast_batch_key`. |
-| GET | `/api/admin/notifications/history/` | Yes (Admin) | Stable | Returns paginated grouped manual broadcast batches with sender, sent timestamp, and `recipient_count`. |
+| GET | `/api/notifications/unread-count/` | Yes | Stable | Returns unread badge payload `{count: N}`. |
+| POST | `/api/admin/notifications/broadcast/` | Yes (Admin) | Stable | Broadcast to all active users; response includes `recipient_count` and `broadcast_batch_key`; creates one `Notification` row per active user (`is_broadcast=true`). |
+| GET | `/api/admin/notifications/history/` | Yes (Admin) | Stable | Paginated grouped manual broadcast batches with sender, sent timestamp, and `recipient_count`. |
 
-Active WebSocket:
+Auto-trigger signals are active for challenge/course/quiz completion with `event_key` deduplication.
+
+WebSocket:
 
 | Protocol | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| WS | `/ws/notifications/` | First-message JWT (`{"type":"auth","token":"..."}`) | Stable | Subscribes current user to `notifications_{user_id}` and pushes `{"type":"notification","data":{...}}` events for newly-created notifications. |
-
-Still pending in Slice 9:
-- None.
+| WS | `/ws/notifications/` | First-message JWT (`{"type":"auth","token":"..."}`) | Stable | Subscribes current user to channel group `notifications_{user_id}` and pushes `{"type":"notification","data":{...}}` events for newly-created notifications. |
 
 ### 3.8 Leaderboard
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/stats/leaderboard/` | Yes | Stable | Canonical leaderboard endpoint for Slice 11. Supports `type=overall|challenge|quiz|course`, returns `type`, `my_rank`, `total_users`, and paged `results`. |
-| GET | `/api/leaderboard/` | Yes | Stable | Compatibility alias that returns the same payload as `/api/stats/leaderboard/`. |
+| GET | `/api/stats/leaderboard/` | Yes | Stable | Canonical endpoint. Supports `type=overall\|challenge\|quiz\|course`; returns `type`, `my_rank`, `total_users`, and paged `results`. |
+| GET | `/api/leaderboard/` | Yes | Stable | Compatibility alias returning the same payload. |
+
+Pagination: leaderboard uses a dedicated page size default of **10** (`limit` query param overrides; see `backend/api/services/leaderboard_service.py:DEFAULT_PAGE_SIZE`). This differs from the project-wide DRF `PAGE_SIZE=20`.
 
 ### 3.9 System Config
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/admin/config/` | Admin | Stable | Admin-only list grouped by `category`; secret values are masked by default. |
-| GET | `/api/admin/config/{key}/` | Admin | Stable | Admin-only detail lookup by config key (supports dotted keys); clear secret value requires manual permission. |
-| PATCH | `/api/admin/config/{key}/` | Admin | Stable | Admin-only value update with type validation (`bool`, `int`, `string`, `json`, `secret`). |
+| GET | `/api/admin/config/` | Admin | Stable | List grouped by `category`: `{[category]: SystemConfig[]}`; secret values masked by default. |
+| GET | `/api/admin/config/{key}/` | Admin | Stable | Detail lookup by config key (supports dotted keys); clear secret read requires manual permission `system.config.view_secret`. |
+| PATCH | `/api/admin/config/{key}/` | Admin | Stable | Value update with type validation (`bool`, `int`, `string`, `json`, `secret`). |
 
 Notes:
 - `PATCH` returns `403` with `{"detail": "Config is not editable"}` when `is_editable=false`.
 - Invalid payload type for config `value_type` returns `400` with deterministic validation error.
 - Cache for non-runtime config reads is invalidated after successful updates.
-- List response is grouped object by `category`: `{[category]: SystemConfig[]}`.
-- Secret clear-text read is restricted to principals with manual permission `system.config.view_secret`.
-- Frontend admin config page is implemented at locale routes `/vi/admin/config` and `/en/admin/config` using typed service/hook integration.
+- Frontend admin config page is implemented at locale routes `/vi/admin/config` and `/en/admin/config`.
 
 ### 3.10 Authorization / RBAC
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/admin/permissions/` | Admin | Partial | Active read-only permission list endpoint; supports `include_inactive=true` query. |
-| GET | `/api/admin/roles/` | Admin | Partial | Active role list endpoint. |
-| POST | `/api/admin/roles/` | Admin | Partial | Active custom role creation endpoint. |
-| GET | `/api/admin/roles/{id}/` | Admin | Partial | Active role detail endpoint. |
-| PUT/PATCH | `/api/admin/roles/{id}/` | Admin | Partial | Active role update endpoint; system role rename blocked. |
-| DELETE | `/api/admin/roles/{id}/` | Admin | Partial | Active role delete endpoint; system role delete blocked. |
-| GET | `/api/admin/roles/{id}/permissions/` | Admin | Partial | Active assigned-permissions endpoint for role. |
-| POST | `/api/admin/roles/{id}/permissions/` | Admin | Partial | Active permission assignment endpoint using payload `{permission_id}`. |
-| DELETE | `/api/admin/roles/{id}/permissions/{perm_id}/` | Admin | Partial | Active permission revoke endpoint for role mapping. |
-| GET | `/api/users/{id}/roles/` | Admin | Partial | Active endpoint to list roles assigned to a user. |
-| POST | `/api/users/{id}/roles/` | Admin | Partial | Active endpoint to assign a role to a user using payload `{role_id}`. |
-| DELETE | `/api/users/{id}/roles/{role_id}/` | Admin | Partial | Active endpoint to remove a role from a user. |
+| GET | `/api/admin/permissions/` | Admin | Partial | Read-only permission list; supports `include_inactive=true` query. |
+| GET | `/api/admin/roles/` | Admin | Partial | Role list. |
+| POST | `/api/admin/roles/` | Admin | Partial | Custom role creation. |
+| GET | `/api/admin/roles/{id}/` | Admin | Partial | Role detail. |
+| PUT/PATCH | `/api/admin/roles/{id}/` | Admin | Partial | Role update; system role rename blocked. |
+| DELETE | `/api/admin/roles/{id}/` | Admin | Partial | Role delete; system role delete blocked. |
+| GET | `/api/admin/roles/{id}/permissions/` | Admin | Partial | Assigned permissions for role. |
+| POST | `/api/admin/roles/{id}/permissions/` | Admin | Partial | Permission assignment payload `{permission_id}`. |
+| DELETE | `/api/admin/roles/{id}/permissions/{perm_id}/` | Admin | Partial | Permission revoke for role mapping. |
+| GET | `/api/users/{id}/roles/` | Admin | Partial | List roles assigned to a user. Custom viewset (`UserRoleViewSet`) supports only `list`, `create`, `destroy`. |
+| POST | `/api/users/{id}/roles/` | Admin | Partial | Assign role using payload `{role_id}`. |
+| DELETE | `/api/users/{id}/roles/{role_id}/` | Admin | Partial | Remove role from user. |
 
 Notes:
-- Canonical role-permission assignment route is `/api/admin/roles/{id}/permissions/`.
-- RBAC endpoints are admin-only and include action-level `HasJWTPermission('<permission_key>')` checks when JWT auth context is present.
+- Canonical role-permission assignment route: `/api/admin/roles/{id}/permissions/`.
+- RBAC endpoints are admin-only and include action-level `HasJWTPermission('<permission_key>')` checks.
 - Role-permission and user-role mapping changes invalidate permission cache for affected users.
-- Frontend RBAC admin pages are implemented at locale routes `/vi/admin/rbac`, `/en/admin/rbac`, `/vi/admin/rbac/roles/{id}`, and `/vi/admin/rbac/users/{id}/roles` using the same backend contracts.
+- Frontend RBAC admin pages at `/vi/admin/rbac`, `/en/admin/rbac`, `/vi/admin/rbac/roles/{id}`, `/vi/admin/rbac/users/{id}/roles`.
 
 ### 3.11 Statistics
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/admin/stats/` | Admin | Stable | Canonical admin overview endpoint for Slice 11. Returns `user_count`, `active_today`, and `solves_week`. |
-| GET | `/api/admin/stats/users/{id}/` | Admin | Stable | Canonical admin user detail endpoint for Slice 11. Returns nested `user`, `points`, `completion`, `activity`, and `sessions` groups for the selected user id. |
+| GET | `/api/admin/stats/` | Admin | Stable | Returns `user_count`, `active_today`, and `solves_week`. |
+| GET | `/api/admin/stats/users/{id}/` | Admin | Stable | Returns nested `user`, `points`, `completion`, `activity`, and `sessions` groups for the selected user id. |
 
 ---
 
 ## 4. Planned APIs (Not Implemented Yet)
 
-These contracts are planned by slices and PRDs, but are not active in the current backend routing.
+These contracts are planned but are not active in the current backend routing.
 
 ### 4.1 Slice 1 — Authentication
 
 - `POST /api/auth/password/reset/`
 - `POST /api/auth/password/reset/confirm/`
 
-Notes:
-- Password reset remains deferred by decision `Q-INFRA-03` until email backend setup is finalized.
+Deferred by decision `Q-INFRA-03` until email backend setup is finalized.
 
-### 4.2 Slice 5 — Learn (pending beyond Task 5.4)
+### 4.2 Slice 5 — Learn (frontend delivery beyond Task 5.4)
 
 - Frontend Learn delivery and Outline integration remain pending (`Task 5.5` to `Task 5.8`) — see `docs/IMPL_PLAN.md` Slice 5.
 
-### 4.3 Slice 6 — Challenge (CTF)
+### 4.3 Slice 6 — Challenge (GitLab sync, Task 6.8)
 
-All routes under `/api/challenge/*` are planned. None are active in current routing.
-
-**Challenge resource:**
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| GET | `/api/challenge/challenges/` | Yes | List; Members see `published` only; Admin/Editor see all statuses. Filters: `status`, `difficulty`, `category`, `search`. |
-| POST | `/api/challenge/challenges/` | Admin/Editor | Create challenge. |
-| GET | `/api/challenge/challenges/{slug}/` | Yes | Detail. |
-| PUT/PATCH | `/api/challenge/challenges/{slug}/` | Admin/Editor | Update challenge metadata. |
-| DELETE | `/api/challenge/challenges/{slug}/` | Admin | Delete challenge. |
-
-**Category + Tag:**
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| GET | `/api/challenge/categories/` | Yes | List categories. |
-| POST | `/api/challenge/categories/` | Admin/Editor | Create category. |
-| GET | `/api/challenge/categories/{id}/` | Yes | Detail. |
-| PUT/PATCH | `/api/challenge/categories/{id}/` | Admin/Editor | Update. |
-| DELETE | `/api/challenge/categories/{id}/` | Admin | Delete. |
-| GET | `/api/challenge/tags/` | Yes | List tags. |
-| POST | `/api/challenge/tags/` | Admin/Editor | Create tag. |
-| PUT/PATCH | `/api/challenge/tags/{id}/` | Admin/Editor | Update tag. |
-| DELETE | `/api/challenge/tags/{id}/` | Admin/Editor | Delete tag. |
-
-**Tree nodes:**
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| GET | `/api/challenge/nodes/` | Yes | List root nodes (no parent). Filter: `parent_id`. |
-| POST | `/api/challenge/nodes/` | Admin/Editor | Create node. `is_item=false` → folder; `is_item=true` → requires `challenge_id`. |
-| GET | `/api/challenge/nodes/{id}/` | Yes | Node detail. |
-| PUT/PATCH | `/api/challenge/nodes/{id}/` | Admin/Editor | Update title/position. |
-| DELETE | `/api/challenge/nodes/{id}/` | Admin/Editor | Delete node (and subtree). |
-| GET | `/api/challenge/nodes/{id}/children/` | Yes | Lazy-load direct children. |
-| POST | `/api/challenge/nodes/{id}/move/` | Admin/Editor | Move node to new parent. Payload: `{parent_id}` (null = root). Cycle-safe. |
-
-**Flags:** `Partial` (Task 6.3 — implemented; flag submission in Task 6.4)
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| GET | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | List flags. `flag_value` omitted for non-Admin/Editor. |
-| POST | `/api/challenge/challenges/{slug}/flags/` | Admin/Editor | Create flag. `flag_value` stored as plaintext (static or regex). |
-| PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Update flag. |
-| DELETE | `/api/challenge/challenges/{slug}/flags/{id}/` | Admin/Editor | Delete flag. |
-
-**Flag submission + progress:** `Stable` (Task 6.4 + 6.6)
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| POST | `/api/challenge/challenges/{slug}/submit/` | Member+ | Payload: `{flag: string}`. Response: `{correct: bool}`. Server-side check; `flag_value` never returned. On first solve: updates progress, increments `challenge_completed`, triggers notification. |
-| GET | `/api/challenge/challenges/{slug}/progress/` | Member+ | Per-challenge progress for current user: `{is_solved: bool, attempt_count: int, completed_at: datetime\|null}`. Added in Task 6.6 for detail page progress card. |
-| GET | `/api/challenge/progress/` | Yes | Aggregate for current user: `{solved_count, total_attempts}`. |
-
-**Instance management (Wave 1: MockDeploymentBackend):** `Stable` (Task 6.5)
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| POST | `/api/challenge/challenges/{slug}/instance/start/` | Member+ | Start instance. Returns `ChallengeInstance`. Idempotent if running instance exists. `400` if challenge is not `instance_required`. |
-| POST | `/api/challenge/challenges/{slug}/instance/stop/` | Member+ | Stop running instance. `404` if no running instance. |
-| GET | `/api/challenge/challenges/{slug}/instance/status/` | Member+ | Returns latest instance for user, or `{status: "none"}`. |
-| GET | `/api/challenge/instances/` | Admin/Editor | List all instances; filterable by `challenge`, `user`, `status`. |
-| POST | `/api/challenge/instances/{id}/kill/` | Admin | Force-terminate any instance. |
-
-**GitLab sync (Task 6.8 — separate delivery):**
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | POST | `/api/challenge/challenges/{slug}/sync-gitlab/` | Admin/Editor | Trigger GitLab sync. Reads `challenge.git.url` from `system_config`. Returns updated `ChallengeGitlab` record. |
-
-Notes:
-- Legacy flat routes (`/api/challenges/*`) will be removed when Task 6.1 is implemented.
-- `flag_value` is role-gated at serializer level — Member responses never include the field.
-- Instance routes are active in Wave 1 with `MockDeploymentBackend`; `instance_info` contains mock connection data until Wave 2 wires `SocketDeploymentBackend`.
-
-### 4.4 Slice 11 — Statistics
-
-- Admin statistics endpoints are active — see §3.11.
-
-Note:
-- Quiz WebSocket (`ws://host/ws/quiz/{quiz_id}/`) and CRUD endpoints are active — see §3.6 and §3.6.1.
-- Learn Task 5.1 endpoints are active — see §3.3.
 
 ---
 
@@ -525,11 +398,55 @@ Note:
 Deferred by project decision. Do not treat as active API.
 
 - Candidate route family: `/api/ai/*`
-- Current backend root router does not activate AI URLs.
+- Backend root router does not activate AI URLs (`backend/backend/urls.py:24` is commented out).
+- Scaffold exists at `backend/ai/urls.py` (single stub route `/ask/`) — kept for future activation, not callable in current build.
 
 ---
 
-## 6. Error and Security Notes
+## 6. Route Migration / Legacy
+
+> Single source of truth for endpoint migration from historical/legacy examples to canonical contracts.
+
+### 6.1 HTTP Route Migration
+
+| Domain | Legacy Route | Canonical Target | Notes |
+|---|---|---|---|
+| Learn | `/api/courses/` | `/api/learn/courses/` | Domain namespaced |
+| Learn | `/api/courses/{id}/` | `/api/learn/courses/{slug}/` | Identifier changes from `id` to `slug` |
+| Learn | `/api/courses/{id}/tree/` | `/api/learn/courses/{slug}/nodes/` | Tree contract is node-based |
+| Learn | `/api/courses/{id}/progress/` | `/api/learn/courses/{slug}/progress/` | Same feature, namespaced path |
+| Learn | `/api/lessons/{id}/` | `/api/learn/lessons/{id}/` | Domain namespaced |
+| Learn | `/api/lessons/{id}/complete/` | `/api/learn/lessons/{id}/progress/complete/` | Completion under progress namespace |
+| Learn | `/api/lessons/` (list) | _no canonical namespaced list_ | Legacy `/api/lessons/` remains the only list endpoint; per-id operations migrate to `/api/learn/lessons/{id}/...`. |
+| Challenge | `/api/challenges/` | `/api/challenge/challenges/` | Domain namespaced |
+| Challenge | `/api/challenges/{id}/` | `/api/challenge/challenges/{slug}/` | Identifier changes from `id` to `slug` |
+| Challenge | `/api/challenges/{id}/submit-flag/` | `/api/challenge/challenges/{slug}/submit/` | Submit contract unified |
+| Challenge | `/api/challenges/{id}/create-instance/` | `/api/challenge/challenges/{slug}/instance/{start\|stop\|status}/` | Lifecycle split into 3 sub-endpoints (no unified `/instance/` route) |
+| System Config | `/api/config/` | `/api/admin/config/` | Admin-only API |
+| System Config | `/api/config/{key}/` | `/api/admin/config/{key}/` | Key-based lookup/update |
+
+Usage rules:
+- Legacy routes are retained only for runtime compatibility during migration.
+- New implementation and new documentation must use canonical target routes.
+- If a legacy route and target route differ in identifier semantics (`id` vs `slug`), follow the target contract.
+
+### 6.2 WebSocket Auth Migration
+
+| Legacy Pattern | Canonical Pattern | Notes |
+|---|---|---|
+| `ws://host/ws/quiz/{quiz_id}/?token={jwt}` | Connect without token, then send first message `{"type":"auth","token":"<access_jwt>"}` | Avoids token leakage in logs/history |
+
+### 6.3 Removed legacy routes (return 404)
+
+| Route | Removed in | Canonical replacement |
+|---|---|---|
+| `GET /api/quizzes/` | Slice 7 Task 7.1 | `GET /api/quiz/quizzes/` |
+| `GET /api/quizzes/{id}/` | Slice 7 Task 7.1 | `GET /api/quiz/quizzes/{id}/` |
+| All `/api/quizzes/*` sub-routes | Slice 7 Task 7.1 | `/api/quiz/quizzes/*` |
+
+---
+
+## 7. Error and Security Notes
 
 - Error payload shape is currently endpoint-dependent and will be normalized in later slices.
 - System Config secret values are masked by default; clear-text access is limited to principals with manual permission `system.config.view_secret`.
@@ -537,10 +454,10 @@ Deferred by project decision. Do not treat as active API.
 
 ---
 
-## 7. Change Control
+## 8. Change Control
 
 When endpoint behavior changes:
 1. Update this file first (`docs/API.md`).
 2. Reconcile progress state in `docs/STATUS.md`.
 3. If scope or sequencing changes, update `docs/IMPL_PLAN.md`.
-4. If document dependencies change, update `AGENT.md`.
+4. If document dependencies change, update `CLAUDE.md`.

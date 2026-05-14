@@ -21,7 +21,9 @@ All PostgreSQL ENUMs map to Django `TextChoices`.
 | `lesson_source` | `manual`, `outline` |
 | `question_type` | `single_choice`, `multi_choice`, `fill_blank` |
 | `config_type` | `bool`, `int`, `string`, `json`, `secret` |
-| `notification_type` | `manual`, `auto_challenge_complete`, `auto_course_complete`, `auto_quiz_complete`, `system` |
+| `notification_type` | `system`, `achievement`, `course`, `challenge`, `quiz` |
+
+> Categories are content-area based. Auto-generated vs manual is not encoded in type — it's distinguished by whether `event_key` is set.
 
 ---
 
@@ -36,7 +38,9 @@ updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 updated_by  BIGINT REFERENCES user(id)   -- nullable
 ```
 
-**Join tables** (tag maps, role_permission) use **CreateAudit only** — no `updated_at`/`updated_by`.
+**Join tables** (tag maps, `role_permission`, `user_role`, `user_permission`) use **CreateAudit only** — no `updated_at`/`updated_by`.
+
+> **Carve-out:** Join tables that carry **mutable state** (e.g. `position` for ordering, `expires_at` for revocation) use **FullAudit** so we can audit who changed the state and when. Example: `lesson_question` (has `position` field — reorderable) uses FullAudit despite being a join table.
 
 ---
 
@@ -59,6 +63,7 @@ Primary authentication record.
 | `is_staff` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | `is_superuser` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | `permission_version` | INT | NOT NULL, DEFAULT 0 — incremented when roles/permissions change |
+| `last_login_ip` | INET / VARCHAR(45) | nullable — IP address of last successful login (for security audit/anomaly detection) |
 | *(audit fields)* | | |
 
 **Indexes:** `username`, `email`
@@ -465,6 +470,7 @@ A single learning unit. Created atomically with `course_node` item creation in S
 | `status` | content_status | NOT NULL, DEFAULT 'draft' |
 | `content_md` | TEXT | nullable — markdown content (for markdown type) |
 | `video_url` | TEXT | nullable — video URL (for video type) |
+| `video_duration` | INTEGER | nullable — Video duration in seconds (used when lesson_type=video) |
 | `learning_point` | INTEGER | DEFAULT 0 |
 | `learning_time` | INTEGER | nullable — minutes |
 | *(audit fields)* | | |
@@ -476,15 +482,15 @@ A single learning unit. Created atomically with `course_node` item creation in S
 
 ---
 
-#### `lesson_question` (join table)
-Links a lesson (miniquiz) to quiz questions.
+#### `lesson_question` (join table — FullAudit carve-out)
+Links a lesson (miniquiz) to quiz questions. Uses **FullAudit** (not CreateAudit) because `position` is mutable — we audit who reordered. See §2 carve-out note.
 
 | Field | Type | Constraints |
 |-------|------|-------------|
 | `lesson_id` | BIGINT | PK part, FK → lesson(id) CASCADE |
 | `question_id` | BIGINT | PK part, FK → quiz_question(id) CASCADE |
 | `position` | INTEGER | NOT NULL, DEFAULT 0 — question order in miniquiz |
-| *(audit fields)* | | |
+| *(FullAudit fields)* | | created_at, created_by, updated_at, updated_by |
 
 ---
 
@@ -775,55 +781,34 @@ Runtime key-value configuration store. Primary key is the config key string.
 
 **Indexes:** `category`, `is_runtime`, `is_editable`
 
-**Known system_config keys (summary):**
-
-| Key | Type | Purpose |
-|-----|------|---------|
-
-| `auth.local_login_enabled` | bool | Enable native login/register |
-| `auth.sso_enabled` | bool | Enable SSO via Authentik |
-| `auth.authorization_enabled` | bool | Enable RBAC permission checks |
-| `outline.enabled` | bool | Enable Outline integration |
-| `outline.url` | string | Outline instance base URL |
-| `outline.api_token` | secret | Outline API token |
-| `challenge.git.url` | string | GitLab instance base URL |
-| `challenge.deploy.api_url` | string | Challenge deploy backend base URL |
-| `challenge.instance_ttl_minutes` | int | Default TTL for challenge instances |
+> **Full key list:** see `docs/CONFIG.md` for the canonical list of all system_config keys (~48 keys including AI section). DATA_MODEL.md only documents the entity/schema; key inventory lives in CONFIG.md per Tier 2 single-source-of-truth principle.
 
 ---
 
 ### 3.7 Notification Domain
 
 #### `notification`
+Flat per-user or broadcast notification record.
+
+> The original 2-entity design (notification + user_notification) was simplified to a single flat table during implementation. Broadcast vs per-user is distinguished by whether `user` FK is NULL.
 
 | Field | Type | Constraints |
 |-------|------|-------------|
 | `id` | BIGSERIAL | PK |
+| `user_id` | BIGINT | nullable, FK → user(id) CASCADE — NULL means broadcast/system-wide |
+| `type` | notification_type | NOT NULL — `system`, `achievement`, `course`, `challenge`, `quiz` |
 | `title` | TEXT | NOT NULL |
-| `body` | TEXT | nullable |
-| `payload` | JSONB | nullable — extra data |
-| `send_at` | TIMESTAMPTZ | nullable — scheduled send time |
-| `is_broadcast` | BOOLEAN | NOT NULL, DEFAULT FALSE |
-| `notification_type` | notification_type | NOT NULL, DEFAULT 'manual' |
-| *(audit fields)* | | |
-
-**Indexes:** `send_at`
-
----
-
-#### `user_notification`
-Delivery record per user per notification.
-
-| Field | Type | Constraints |
-|-------|------|-------------|
-| `id` | BIGSERIAL | PK |
-| `notification_id` | BIGINT | NOT NULL, FK → notification(id) CASCADE |
-| `user_id` | BIGINT | NOT NULL, FK → user(id) CASCADE |
+| `message` | TEXT | NOT NULL |
+| `metadata` | JSONB | nullable — payload for click action/context |
+| `event_key` | VARCHAR(255) | nullable, db_index — stable deduplication key for auto-generated notifications |
 | `is_read` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | `read_at` | TIMESTAMPTZ | nullable |
+| `is_broadcast` | BOOLEAN | NOT NULL, DEFAULT FALSE |
 | *(audit fields)* | | |
 
-**Indexes:** `user_id`, `(user_id, is_read)`, `notification_id`
+**Indexes:** `(user_id, -created_at)`, `is_read`, `is_broadcast`
+
+**Unique constraint:** `(user_id, event_key)` — prevents duplicate auto-generated notifications per user.
 
 ---
 
@@ -832,19 +817,25 @@ Delivery record per user per notification.
 #### `audit_log`
 Immutable event log for sensitive admin actions.
 
+> Schema is denormalized for forensics: actor_username, ip_address, and user_agent are captured at write time so audit trail survives user deletion.
+
 | Field | Type | Constraints |
 |-------|------|-------------|
 | `id` | BIGSERIAL | PK |
-| `actor_id` | BIGINT | nullable, FK → user(id) |
-| `event_type` | VARCHAR(100) | NOT NULL — e.g. `role_grant`, `permission_update`, `user_delete` |
-| `target_table` | TEXT | nullable |
-| `target_id` | BIGINT | nullable |
-| `diff` | JSONB | nullable — before/after or metadata |
-| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT now() |
+| `timestamp` | TIMESTAMPTZ | NOT NULL, auto_now_add, db_index — when the event happened |
+| `actor_type` | VARCHAR(20) | NOT NULL — `user`, `system`, `api` |
+| `actor_id` | BIGINT | nullable — user/service id; NULL for anonymous |
+| `actor_username` | TEXT | nullable — denormalized; preserved if user is deleted |
+| `aggregate_type` | VARCHAR(20) | NOT NULL — entity type changed (e.g. `user`, `course`, `role`, `permission`, `system`) |
+| `aggregate_id` | BIGINT | NOT NULL — entity id |
+| `action` | TEXT | NOT NULL — action performed (e.g. `create`, `update`, `delete`, `login`) |
+| `metadata` | JSONB | nullable — diff or extra context (changed fields, old/new values) |
+| `ip_address` | INET / VARCHAR(45) | nullable — client IP at write time |
+| `user_agent` | TEXT | nullable — client user-agent at write time |
 
-**Indexes:** `actor_id`, `event_type`, `(target_table, target_id)`
+**Indexes:** `-timestamp`, `(actor_type, actor_id)`, `(aggregate_type, aggregate_id)`, `action`
 
-**Note:** `audit_log` has no `updated_*` fields — it is append-only.
+**Note:** `audit_log` does NOT inherit `FullAudit` — it is append-only (`models.Model` directly). No `updated_*` fields.
 
 ---
 
@@ -898,7 +889,7 @@ All in `backend/api/models.py`:
 
 | Abstract model | Fields added | Usage |
 |----------------|-------------|-------|
-| `CreateAudit` | `created_at`, `created_by` | Join tables |
+| `CreateAudit` | `created_at`, `created_by` | Pure join tables (no mutable fields beyond FKs) |
 | `UpdateAudit` | `updated_at`, `updated_by` | (rare standalone) |
 | `FullAudit(CreateAudit, UpdateAudit)` | all 4 audit fields | All domain entities |
 | `SoftDeleteAudit` | `deleted_at`, `deleted_by`, `is_deleted` property | (not yet used in v3 schema) |

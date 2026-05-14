@@ -1,4 +1,10 @@
-# KẾ HOẠCH TRIỂN KHAI ILS v2 — NHÓM 2 NGƯỜI
+# KẾ HOẠCH TRIỂN KHAI ILS v2 — NHÓM 2 NGƯỜI (HISTORICAL SNAPSHOT)
+
+> ⚠️ **Historical snapshot, không phải tài liệu sống.**
+> File này là bản chụp kế hoạch phân công 2-người ở thời điểm 2026-03-12 (đầu dự án), được archive trong Session 4 của doc normalization (2026-05-14) sau khi vai trò "live planning doc" hết hiệu lực — toàn bộ Slice 0–9, 11 đã ship. Live tracker hiện tại: `docs/STATUS.md`. Canonical engineering plan: `docs/IMPL_PLAN.md`.
+> Nguyên bản: `docs/TEAM_PLAN.md`. Xem `docs/normalization/LEDGER.md` để truy ngược.
+
+---
 
 > Tài liệu phân tích và lên kế hoạch phát triển song song cho nhóm 2 thành viên.
 > Dựa trên: `AGENT.md`, `IMPL_PLAN.md`, `STATUS.md`, `REQUIREMENTS.md`, `DECISIONS.md`, `ARCHITECTURE.md`

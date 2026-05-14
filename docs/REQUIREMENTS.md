@@ -219,6 +219,14 @@
 
 ---
 
+### 2.9. AI Assistant — ⚠️ DEFERRED
+
+- Tính năng AI assistant (3 mode: learn / editor / learning_path) đã có scaffold trong `backend/ai/` nhưng **không nằm trong scope hiện tại**.
+- Chi tiết spec: `docs/prd/09-ai-assistant.md`. Trạng thái: `docs/STATUS.md → Deferred Features`.
+- Không triển khai khi chưa có phê duyệt rõ ràng từ team.
+
+---
+
 ## 3. Yêu cầu phi chức năng
 
 - **Database:** Tận dụng sức mạnh PostgreSQL

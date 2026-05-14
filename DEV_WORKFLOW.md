@@ -60,7 +60,7 @@ Test:
 
 Trước khi viết code, đọc nhanh:
 
-- [`AGENT.md`](AGENT.md) — quick reference (stack, cách chạy project)
+- [`CLAUDE.md`](CLAUDE.md) — quick reference (stack, cách chạy project)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — nguyên tắc thiết kế, **những gì KHÔNG làm**
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — business rules, validation
 - [`design/database/vx/dbv3.sql`](design/database/vx/dbv3.sql) — ⚠️ legacy schema reference; `docs/DATA_MODEL.md` là authoritative
@@ -124,7 +124,7 @@ AI agent **phải** gọi `add-memory` ít nhất 1 lần cuối session:
 ```
 
 > **Rule:** Nếu session tạo ≥ 3 file hoặc có flow phức tạp → bắt buộc lưu memory.
-> AI agent: xem `CLAUDE.md → Phase 3` để biết đầy đủ.
+> AI agent: xem `CLAUDE.md` §"Session Completion — Memory Update" để biết đầy đủ.
 
 ---
 
@@ -160,7 +160,7 @@ git commit -m "slice0/task0.2: add custom User model + initial migrations
 [ ] 2.  Kiểm tra DECISIONS.md → không có OPEN question mới
 [ ] 3.  Claim task trong STATUS.md (thêm tên + In Progress)
 [ ] 4.  Viết plan (files + bước làm + test) — TRƯỚC khi code          [AI: search memory trước]
-[ ] 5.  Đọc AGENT.md + ARCHITECTURE.md + DATA_MODEL.md liên quan
+[ ] 5.  Đọc CLAUDE.md + ARCHITECTURE.md + DATA_MODEL.md liên quan
 [ ] 6.  Implement đúng 1 task, viết test
 [ ] 7.  Chạy test → xanh hết
 [ ] 8.  Cập nhật STATUS.md (COMPLETED), BUGS.md nếu cần

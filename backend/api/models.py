@@ -752,6 +752,11 @@ class Lesson(FullAudit):
         MANUAL = 'manual', 'Manual'
         OUTLINE = 'outline', 'Outline'
 
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        PUBLISHED = 'published', 'Published'
+        ARCHIVED = 'archived', 'Archived'
+
     title = models.TextField(help_text="Tiêu đề bài học")
     lesson_type = models.CharField(
         max_length=20,
@@ -761,6 +766,13 @@ class Lesson(FullAudit):
         max_length=20,
         choices=Source.choices,
         default=Source.MANUAL
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        db_index=True,
+        help_text="Content lifecycle status (draft/published/archived)"
     )
     
     content_md = models.TextField(
@@ -839,7 +851,10 @@ class CourseNode(BaseNode):
 
 class LessonQuestion(FullAudit):
     """
-    Many-to-Many relationship giữa Lesson và QuizQuestion (cho miniquiz)
+    Many-to-Many relationship giữa Lesson và QuizQuestion (cho miniquiz).
+    NOTE: Uses FullAudit (not CreateAudit) because `position` is mutable —
+    we track who reordered and when. See DATA_MODEL.md §2 carve-out for
+    join tables with mutable state.
     """
     lesson = models.ForeignKey(
         Lesson,
@@ -1799,9 +1814,10 @@ class UserRole(CreateAudit):
         return f"{self.user.username} - {self.role.name}"
 
 
-class UserPermission(FullAudit):
+class UserPermission(CreateAudit):
     """
     Deny-only direct override. Row existence means denied.
+    Join table — CreateAudit only (no updated_*) per DATA_MODEL.md §2 rule.
     """
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

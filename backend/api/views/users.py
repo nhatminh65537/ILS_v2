@@ -85,11 +85,3 @@ class UserViewSet(viewsets.ModelViewSet):
         user = get_object_or_404(User, username=username)
         activities = UserService.build_user_activity(user, self.activity_limit)
         return Response(ActivityEventSerializer(activities, many=True).data)
-
-    @action(detail=False, methods=['get'])
-    def profile(self, request):
-        return self.me_profile(request)
-
-    @action(detail=False, methods=['patch'])
-    def update_profile(self, request):
-        return self.me_profile(request)

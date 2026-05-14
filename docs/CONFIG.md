@@ -47,6 +47,7 @@
 | `auth.local_login_enabled` | bool | `true` | ✅ | ✅ | `true` | Enable native username/password login. Set to `false` to force SSO-only. |
 | `auth.registration_enabled` | bool | `true` | ✅ | ✅ | `false` | Allow new users to self-register via the local sign-up form. Disable for invite-only orgs. |
 | `auth.password_reset_enabled` | bool | `true` | ✅ | ✅ | `true` | Allow users to request a password reset email. Requires SMTP configured. |
+| | | | | | | > **Note:** Reserved — backend password reset endpoint not yet implemented (frontend page is a "Coming soon" stub). Honor this flag when the feature is built. |
 | `auth.sso_enabled` | bool | `false` | ✅ | ✅ | `true` | Enable SSO login via Authentik (OAuth2). |
 | `auth.sso_base_url` | string | `""` | ✅ | ❌ | `"https://auth.example.com"` | Authentik instance base URL (no trailing slash). |
 | `auth.sso_client_id` | string | `""` | ✅ | ❌ | `"ils-app"` | OAuth2 client ID registered in Authentik. |
@@ -167,6 +168,8 @@ GitLab is used to sync challenge metadata, README, and source files. Each CTF ch
 ---
 
 ### `ai` — AI Assistant
+
+> ⚠️ **DEFERRED — Slice 10 (AI Assistant) is deferred (see `docs/STATUS.md`). These keys are documented but NOT seeded in `seed_config.py`. They will be added to the seed when Slice 10 is approved for implementation.**
 
 | Key | Type | Default | Editable | Runtime | Example | Description |
 |-----|------|---------|----------|---------|---------|-------------|

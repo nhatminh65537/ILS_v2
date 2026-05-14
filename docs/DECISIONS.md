@@ -4,7 +4,7 @@
 > **OPEN** = needs human decision before coding can begin.
 > **RESOLVED** = decision made; implementation must follow it.
 >
-> Last updated: 2026-04-01
+> Last updated: 2026-05-04 (Session 1 normalize)
 
 ---
 
@@ -15,9 +15,21 @@
 3. Update `docs/IMPL_PLAN.md` slice header to mark questions resolved.
 4. If implementation deviates from a resolved decision, update this document and IMPL_PLAN.
 
+> 📒 **Structure note (post-Session-1 normalize):** Tất cả Q-* decisions hiện tại đều RESOLVED. Phần dưới giữ chi tiết deliberation cho mục đích traceability. Khi có OPEN decision mới, thêm vào section **Currently Open** ngay dưới đây.
+
 ---
 
-## Index of Open Questions
+## Currently Open
+
+_Không có decision OPEN nào tại thời điểm này (2026-05-04)._
+
+Khi có OPEN decision mới, thêm entry tại đây với format:
+- ID, Status: OPEN, Blocks (slice nào), Problem, Options, Recommend.
+- Khi resolve → đổi Status sang RESOLVED, ghi "Decision" + "Implementation" (file:line), và move xuống section detail tương ứng.
+
+---
+
+## Decision Index (all)
 
 | ID | Topic | Blocks | Status |
 |----|-------|--------|--------|
@@ -40,7 +52,7 @@
 | [Q-INFRA-09](#q-infra-09-cors-and-domain-configuration) | CORS policy + frontend/backend domain | Slice 1 (Task 1.5), Slice 4 | **RESOLVED** (Option A) |
 | [Q-INFRA-10](#q-infra-10-frontend-useradmin-surface-separation) | Frontend user/admin surface separation | Slice 4+, Slice 8 admin FE | **RESOLVED** (Option A) |
 | [Q-ARCH-01](#q-arch-01-max-permissions-bitmap-capacity) | Max permissions bitmap encode size | Slice 2 (permission design) | **RESOLVED** (Option B) |
-| [Q-CONFIG-01](#q-config-01-default-systemconfig-auth-values) | Default auth.* system_config values at seed | Slice 0, 1 | **OPEN** |
+| [Q-CONFIG-01](#q-config-01-default-system-config-auth-values-at-seed) | Default auth.* system_config values at seed | Slice 0, 1 | **RESOLVED** (Option A) |
 | [Q-LEARN-01](#q-learn-01-lesson-node-creation-atomicity) | Lesson node creation: 1-step or 2-step | Slice 5 | **RESOLVED** (Option A) |
 | [Q-LEARN-02](#q-learn-02-mini-quiz-question-source) | Mini-quiz question source | Slice 5 | **RESOLVED** (Option A) |
 | [Q-LEARN-03](#q-learn-03-course-progress-on-structure-change) | Course progress when structure changes | Slice 5 | **RESOLVED** (Option D) |
@@ -97,6 +109,8 @@ Task 1.4 deferred password reset but session management still needs clarity:
 | C | Both A and B | Complete control | Scope creep for Task 1.4 |
 
 **Decision:** Choose Option C. Both single-session revoke (`DELETE /api/auth/sessions/{id}/`) and logout-all (`POST /api/auth/logout-all/`) endpoints are implemented. This gives users granular per-device control while also supporting full session purge (e.g. on password change or security incident).
+
+**Implementation:** `backend/auth_app/urls.py:23` (`LogoutAllView`); test coverage at `backend/auth_app/tests/test_auth_api.py:184–205`.
 
 ---
 
@@ -176,20 +190,17 @@ Permissions use base64-encoded bitmap in JWT token. Current decision: text-encod
 
 ### Q-CONFIG-01: Default System Config Auth Values at Seed
 
-**Status:** OPEN
+**Status:** RESOLVED (Option A)
+**Resolved:** 2026-04-15+ (implicit decision during seed_config finalize)
 **Blocks:** Slice 0 (Task 0.3 — seed_config completion) and Slice 1 (default auth behavior)
 
 **Problem:**
 Task 0.3 seeds 42 canonical keys from CONFIG.md. Current defaults:
-- `auth.local_login_enabled = true` 
+- `auth.local_login_enabled = true`
 - `auth.sso_enabled = false`
 - `auth.authorization_enabled = true`
 
-**Question:** Are these defaults right for first-time deployment? For example:
-- Should SSO be pre-enabled if Authentik not yet configured (would break login)?
-- Should AuthZ be `false` by default in dev (as per R-DEV-01 bypass policy)?
-
-**Decision needed:** Confirm or adjust 3 auth.* seed values.
+**Question:** Are these defaults right for first-time deployment?
 
 **Options:**
 | Option | local_login | sso_enabled | authz_enabled | Rationale |
@@ -198,13 +209,15 @@ Task 0.3 seeds 42 canonical keys from CONFIG.md. Current defaults:
 | B (dev-friendly) | true | false | **false** | Unblock feature dev without RBAC complexity |
 | C (production-ready) | **true** | **true** | true | Assume Authentik will be configured; allow fallback |
 
-**Decision:** _(not yet made)_
+**Decision:** Choose Option A. RBAC bypass for dev is handled separately via `R-DEV-01` (toggle `auth.authorization_enabled` at runtime), not via seed defaults. SSO opt-in pattern avoids breaking first-boot login when Authentik chưa cấu hình.
+
+**Implementation:** `backend/api/management/commands/seed_config.py:81–88`.
 
 ---
 
-## CRITICAL Block Issues (Discovered 2026-03-24)
+## Slice 1 Critical Block History (Discovered 2026-03-24, all RESOLVED)
 
-These 4 questions emerged during Slice 1 planning and must be resolved BEFORE Task implementation begins:
+These 4 questions emerged during Slice 1 planning. All đã được resolved trước khi Slice 1 implementation. Giữ lại làm context lịch sử.
 
 ---
 
@@ -296,7 +309,9 @@ Task 1.5 references `frontend/src/app/`, `frontend/src/components/`, `frontend/s
 
 ---
 
-## OPEN Questions
+## Slice 1 Infrastructure Decisions (all RESOLVED)
+
+> Section này từng có header "OPEN Questions" thời điểm 2026-03 nhưng tất cả đã được resolve. Đổi tên ở Session 1 normalize.
 
 ---
 
@@ -1163,7 +1178,7 @@ Custom user model via `AUTH_USER_MODEL` setting, extending `AbstractBaseUser`. P
 ### R-ARCH-12: Instance Deployment — Strategy Pattern
 
 **Decision date:** 2026-03-12
-**Source:** `docs/ARCHITECTURE.md §4.10`, `docs/REQUIREMENTS.md §2.4`
+**Source:** `docs/ARCHITECTURE.md §4.11`, `docs/REQUIREMENTS.md §2.4`
 
 Instance deployment uses Strategy pattern with a `Protocol` class (`InstanceDeploymentBackend`). Current implementation: `SocketDeploymentBackend` (required for university course). Replaceable with HTTP/gRPC backends later. Instance management is a **separate project** — ILS only calls the interface.
 
@@ -1181,7 +1196,7 @@ Both `lesson` and `quiz_question` have `status content_status NOT NULL DEFAULT '
 ### R-DEV-01: Authorization Bypass Toggle for Development
 
 **Decision date:** 2026-03-12
-**Source:** `docs/CONFIG.md`, `docs/ARCHITECTURE.md §4.11`
+**Source:** `docs/CONFIG.md`, `docs/ARCHITECTURE.md §4.12`
 
 `system_config[auth.authorization_enabled]` (bool, default `true`) allows disabling RBAC permission checks at runtime.
 

@@ -2,7 +2,7 @@
 
 > This document covers system design, folder structure, data flows, and architectural decisions.
 > For data model details, see `docs/DATA_MODEL.md`.
-> For quick-start and implementation guide, see `AGENT.md`.
+> For quick-start and implementation guide, see `CLAUDE.md`.
 
 ---
 
@@ -44,7 +44,8 @@ ILS v2 is a **self-hosted cybersecurity learning platform** for small organizati
 ```
 ILS_v2/
 ├── .claude/                # Local Claude tooling metadata (environment-specific)
-├── AGENT.md                # AI agent quick-reference guide
+├── CLAUDE.md               # AI agent quick-reference guide (Claude Code auto-loads)
+├── DEV_WORKFLOW.md         # Dev session workflow checklist (humans)
 ├── README.md               # Project overview + quick start
 ├── Makefile                # Common dev commands
 ├── requirements.txt        # Python dependencies
@@ -59,9 +60,7 @@ ILS_v2/
 │   ├── BUGS.md             # Known bugs and fix history
 │   ├── IMPL_PLAN.md        # Vertical slice implementation plan (Slices 0–11)
 │   ├── API.md              # Canonical API reference by implementation progress
-│   ├── FE_SETUP.md         # Frontend setup + env + MSW/i18n bootstrap
-│   ├── FE_CONVENTIONS.md   # Frontend coding + service/store/type conventions
-│   ├── FE_PAGE_INVENTORY.md # Frontend routes inventory by slice
+│   ├── FRONTEND.md         # Frontend setup + conventions + page inventory (3 sections)
 │   ├── REQUIREMENTS.md     # Full project requirements
 │   └── prd/                # Product Requirements Documents
 │       ├── README.md       # PRD index
@@ -102,11 +101,13 @@ ILS_v2/
 │   │       ├── users.py
 │   │       ├── courses.py
 │   │       ├── challenges.py
+│   │       ├── challenge_nodes.py # ChallengeNodeViewSet
 │   │       ├── quizzes.py
 │   │       ├── notifications.py
 │   │       ├── leaderboard.py
 │   │       ├── roles.py         # Admin: RoleViewSet
 │   │       ├── admin_users.py   # Admin: AdminUserViewSet, UserRoleViewSet
+│   │       ├── admin_stats.py   # Admin: AdminStatsViewSet
 │   │       ├── permissions.py   # Admin: PermissionViewSet
 │   │       ├── system_config.py # Admin: SystemConfigViewSet
 │   │       └── __init__.py
@@ -180,7 +181,7 @@ Chosen because:
 
 **Implementation:** Every API endpoint requires a specific permission. Permissions are **flat** (no hierarchy). Roles are bundles of permissions. Built-in roles (Admin, Editor, Member) are auto-created via `@add_role_granted` decorator scan at startup.
 
-**Decision record:** See `requirements.docx` Q1-Q9 in section 2.2.
+**Decision record:** See `docs/DECISIONS.md` — Decision Index and the Q-AUTH-* / R-ARCH-* entries
 
 ---
 
@@ -219,7 +220,7 @@ Permissions are created automatically by scanning all registered API endpoints a
 - Permission `name` is auto-generated in lowercase: `{app_label}.{resource_name}.{handler_method_name}`.
   - `resource_name`: class name after removing suffix `ViewSet`/`View`/`APIView`/`GenericViewSet`, then normalize snake_case
   - `handler_method_name`: Python handler name bound to the route (`list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`, custom action, hoặc `get`/`post`...)
-  - Optional override via `permission_code` attribute on view.
+  - Optional override via `HasJWTPermission('explicit.key')` in `permission_classes`
 
 **Built-in roles** use explicit handler-level grants:
 - `@add_role_granted(...)` can be declared on a view class as a default baseline.
@@ -603,7 +604,7 @@ Client → POST /api/challenge/challenges/{slug}/submit/ { flag }
 
 ## 8. Code Conventions Reference
 
-> Full conventions in `AGENT.md`. Key highlights:
+> Full conventions in `CLAUDE.md`. Key highlights:
 
 **Django Models:**
 - Inherit from `FullAudit` (or `CreateAudit` for join tables)

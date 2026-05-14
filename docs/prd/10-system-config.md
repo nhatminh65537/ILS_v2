@@ -2,7 +2,7 @@
 
 **Feature:** System Configuration — Cấu hình hệ thống
 **Status:** Planned
-**Priority:** High (prerequisite for other features)
+**Priority:** High
 
 ---
 

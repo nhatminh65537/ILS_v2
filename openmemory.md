@@ -20,14 +20,14 @@ Target: one instance per organization, no horizontal scale needed.
 | File | Purpose |
 |------|---------|
 | `design/database/vx/dbv3.sql` | **Legacy artifact** — historical schema, not authoritative |
-| `backend/api/models.py` | All ORM models (~1195 lines) |
+| `backend/api/models.py` | All ORM models (~2059 lines) |
 | `backend/ai/` | ⚠️ DEFERRED — AI assistant scaffold (not active, not in INSTALLED_APPS) |
 | `backend/backend/settings.py` | Django config (SQLite dev, PostgreSQL commented out) |
 | `docs/STATUS.md` | Implementation status per slice |
 | `docs/BUGS.md` | Known bugs and fix history |
 | `docs/CONFIG.md` | Canonical system_config keys |
 | `docs/API.md` | Canonical API reference by implementation progress |
-| `AGENT.md` | AI agent quick-reference guide |
+| `CLAUDE.md` | AI agent quick-reference guide (canonical; absorbs former AGENT.md) |
 
 ## Components
 
@@ -89,7 +89,7 @@ Target: one instance per organization, no horizontal scale needed.
 - Slice 1 Task 1.3 implemented on 2026-03-30: SSO/AuthentiK backend endpoints are active (`GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`) with OIDC state/nonce validation (cache TTL 5 minutes), account-link conflict handling, and test coverage expanded to 22 passing auth tests.
 - Slice 1 Task 1.4A implemented on 2026-04-13: auth password/session APIs are active (`POST /api/auth/password/change/`, `GET /api/auth/sessions/`, `DELETE /api/auth/sessions/{id}/`) with runtime password policy checks from `auth.password.*`, active-session filtering, ownership-safe revoke-by-id, and all auth_app tests passing after coverage expansion.
 - Slice 1 Task 1.5 implemented on 2026-04-01: frontend auth pages (`/vi|en/login`, `/vi|en/register`) now use interactive feature components, localized validation/error mapping, direct SSO redirect (`/api/auth/sso/redirect/`), and guarded token refresh flow that skips auth endpoints to avoid retry loops.
-- Slice 4 Frontend Foundation implemented on 2026-03-31: typed contracts + services, Zustand store scaffolding, MSW handlers/fixtures/provider, next-intl (`vi` default, `en` secondary) locale routing, and baseline UI primitives/documents (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md`).
+- Slice 4 Frontend Foundation implemented on 2026-03-31: typed contracts + services, Zustand store scaffolding, MSW handlers/fixtures/provider, next-intl (`vi` default, `en` secondary) locale routing, and baseline UI primitives/documents (`FE_SETUP.md`, `FE_CONVENTIONS.md`, `FE_PAGE_INVENTORY.md` — later merged into `docs/FRONTEND.md` by doc normalization 2026-05-14).
 - Slice 4 runtime stabilization applied on 2026-03-31: removed redundant shadcn Tailwind package import from `frontend/app/globals.css` to resolve intermittent `Can't resolve 'tailwindcss'` runtime failures.
 - Slice 2 Task 2.1 implemented on 2026-03-30: startup permission auto-discovery is active via `auth_app.services.permission_discovery`, syncing `Permission.is_active`, built-in role mappings from `@add_role_granted`, and lowercase naming format `{app_label}.{resource_name}.{handler_method_name}`.
 - 2026-04-01 RBAC frontend list normalization: `frontend/src/services/rbac.service.ts` now flattens DRF paginated list payloads before `useRbac` or RBAC views consume them, preventing `filter is not a function` crashes when `/api/admin/permissions/` is paginated.
@@ -144,7 +144,7 @@ Target: one instance per organization, no horizontal scale needed.
 - **ORM naming alignment**: Prefer schema-aligned field names from docs (`path`, `external_id`, `encoded_permissions` as TEXT-like payload) and keep permission model flat (no hierarchy).
 - **User profile naming alignment**: Use `total_learning_point`, `total_challenge_point`, `total_quiz_point` naming in code and serializers.
 - **Profile page UX pattern**: Avatar dropdown follows GitHub/GitLab pattern — "Hồ sơ" links to public `/profile/{username}`, "Cài đặt" links to `/profile/settings`. Profile removed from top navbar; kept in sidebar only.
-- **Catalog route group pattern**: Feature pages with content filter panels (quizzes, courses, challenges) live under `(catalog)` route group with `showSidebar=false`. Each `*CatalogClient.tsx` renders its own two-column layout (sticky `w-56` filter panel left + content grid right) — no sidebar injection through layout hierarchy. See `docs/FE_CONVENTIONS.md` Catalog Route Group Pattern section.
+- **Catalog route group pattern**: Feature pages with content filter panels (quizzes, courses, challenges) live under `(catalog)` route group with `showSidebar=false`. Each `*CatalogClient.tsx` renders its own two-column layout (sticky `w-56` filter panel left + content grid right) — no sidebar injection through layout hierarchy. See `docs/FRONTEND.md` §2 — Catalog Route Group Pattern section.
 - **Quiz type field names (aligned to backend)**: `time_limit_sec` (not `time_limit_seconds`), `quiz_point`, `total_questions`; no `pass_score_percent`, no `is_shuffled`; `QuizQuestion.content: Record<string, unknown>` (not `question_text`); `QuizQuestionOption.content: string` (not `text`); `QuizAttempt.total_score` (not `score`); `QuizAttemptResponse` has NO `first_question` (questions arrive via WebSocket).
 - **shadcn Select usage**: All `<select>` elements should use shadcn `<Select>` from `@/components/ui/select` for theme consistency. Value is always `string` — convert to/from domain types explicitly (e.g., `String(id)` / `Number(v)` for numeric IDs).
 - **Quizzes navigation**: `UserLayout` accepts `quizzesLabel: string` prop; Quizzes link appears in both sidebar and top navbar. All `UserLayout` call sites must pass this prop.
@@ -228,43 +228,11 @@ Key requirements by domain:
 | `docs/prd/08-statistics.md` | Statistics PRD (leaderboard, admin stats) |
 | `docs/prd/09-ai-assistant.md` | AI PRD (3 modes, rate limit, LLM integration) — DEFERRED |
 | `docs/prd/10-system-config.md` | System Config PRD (runtime KV store) |
+| `DEV_WORKFLOW.md` | Dev session workflow — checklist for all devs: pick task → plan → code → update docs → commit |
 
 ## Document Dependency Tree
 
-Tier hierarchy (Tier 1 = source of truth, Tier 6 = aggregated index):
-
-```
-Tier 1 (human-authored, require human decision):
-  docs/REQUIREMENTS.md  ←→  docs/prd/*.md    [SIBLINGS — update together]
-    REQUIREMENTS = basic ideas/scope (genesis doc)
-    prd/*.md = detailed analysis/acceptance criteria
-  docs/DECISIONS.md      (open questions + resolved decisions)
-
-Tier 2 (core design):
-  docs/DATA_MODEL.md    ← AUTHORITATIVE for all entity/schema (DATA_MODEL wins conflicts)
-  docs/ARCHITECTURE.md  ← REQUIREMENTS + prd/*.md + DECISIONS
-  docs/CONFIG.md        ← prd/10-system-config.md + DECISIONS
-
-Tier 3 (implementation reference):
-  backend/api/models.py          ← DATA_MODEL.md (primary)
-  design/database/vx/dbv3.sql   ⚠️ LEGACY ARTIFACT — pre-normalization; no longer authoritative
-
-Tier 4 (planning):
-  docs/IMPL_PLAN.md     ← ARCHITECTURE + DATA_MODEL + DECISIONS
-
-Tier 5 (living trackers):
-  docs/STATUS.md        ← mirrors IMPL_PLAN.md
-  docs/BUGS.md          ← cross-refs backend code
-
-Tier 6 (agent index):
-  AGENT.md + openmemory.md
-```
-
-**Conflict resolution:** DATA_MODEL.md > models.py | REQUIREMENTS ↔ prd/*.md (siblings, must agree) | DECISIONS.md(RESOLVED) > ARCHITECTURE.md > IMPL_PLAN.md | dbv3.sql = legacy, always loses
-**Propagation rule:** Parent change MUST propagate to dependents in same session, or defer to a named normalization session tracked in STATUS.md.
-**OPEN question in DECISIONS.md = BLOCKER — never implement past an open question.**
-**Full propagation guide in AGENT.md §Document Dependency Tree.**
-| `DEV_WORKFLOW.md` | **Dev session workflow** — checklist for all devs: pick task → plan → code → update docs → commit |
+See `CLAUDE.md` §"Document Dependency Tree" for the canonical Tier hierarchy, conflict resolution rules, and update propagation guide. Mirroring it here would drift; this file holds only OpenMemory-specific notes (Components / Patterns / Status).
 
 ## User Defined Namespaces
 
