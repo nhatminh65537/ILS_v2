@@ -106,7 +106,9 @@
       "registrationDisabled": "Đăng ký hiện đang bị tắt.",
       "localLoginDisabled": "Đăng nhập nội bộ hiện đang bị tắt.",
       "loginFailed": "Đăng nhập thất bại.",
-      "registerFailed": "Đăng ký thất bại."
+      "registerFailed": "Đăng ký thất bại.",
+      "usernameTaken": "Tên đăng nhập đã được sử dụng.",
+      "emailTaken": "Email đã được sử dụng."
     }
   },
   "adminAuth": {

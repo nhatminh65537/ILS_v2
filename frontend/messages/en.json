@@ -106,7 +106,9 @@
       "registrationDisabled": "Registration is currently disabled.",
       "localLoginDisabled": "Local login is currently disabled.",
       "loginFailed": "Login failed.",
-      "registerFailed": "Registration failed."
+      "registerFailed": "Registration failed.",
+      "usernameTaken": "This username is already taken.",
+      "emailTaken": "This email is already registered."
     }
   },
   "adminAuth": {

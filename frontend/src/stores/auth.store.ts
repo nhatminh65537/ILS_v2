@@ -41,6 +41,21 @@ const syncTokenStorage = (accessToken: string | null, refreshToken: string | nul
   }
 }
 
+const AUTH_BROADCAST_CHANNEL = 'ils-auth'
+
+const broadcastLogout = (): void => {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') {
+    return
+  }
+  try {
+    const channel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL)
+    channel.postMessage({ type: 'logout' })
+    channel.close()
+  } catch {
+    /* BroadcastChannel may be blocked in some environments — ignore */
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -96,6 +111,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           isLoading: false,
         })
+        broadcastLogout()
       },
       logout: () => {
         get().clearAuth()

@@ -19,6 +19,11 @@ class RegisterRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError('Username already exists.')
         return value
 
+    def validate_email(self, value):
+        if value and User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('Email already exists.')
+        return value
+
 
 class LoginRequestSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)

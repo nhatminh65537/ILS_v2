@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -31,15 +30,16 @@ const getInitials = (name: string | undefined): string => {
 export function SessionNavControls({ locale }: SessionNavControlsProps) {
   const tAuth = useTranslations('auth')
   const tNav = useTranslations('navigation')
-  const router = useRouter()
   const { isAuthenticated, isLoading, user, logout } = useAuth()
 
   const initials = useMemo(() => getInitials(user?.username), [user?.username])
 
   const handleLogout = async () => {
     await logout()
-    router.replace(`/${locale}/login`)
-    router.refresh()
+    // Hard navigate to avoid any race between Zustand store clear and the
+    // GuestOnlyGate that wraps the login page (which would otherwise bounce
+    // us back to /dashboard if it still observes the old auth state).
+    window.location.assign(`/${locale}/login`)
   }
 
   if (!isAuthenticated) {

@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminPortalCard } from '@/components/features/dashboard/AdminPortalCard'
 
 type DashboardPageProps = {
   params: Promise<{ locale: string }>
@@ -9,7 +9,6 @@ type DashboardPageProps = {
 export default async function DashboardPage({ params }: DashboardPageProps) {
   const { locale } = await params
   const t = await getTranslations('dashboard')
-  const tAdmin = await getTranslations('admin')
 
   return (
     <section className="space-y-8">
@@ -42,17 +41,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
             <p className="text-muted-foreground">{t('cards.quizDescription')}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>{tAdmin('title')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-muted-foreground">{tAdmin('portalDescription')}</p>
-            <Link className="block text-xs underline" href={`/${locale}/admin/login`}>
-              {tAdmin('portalEntry')}
-            </Link>
-          </CardContent>
-        </Card>
+        <AdminPortalCard locale={locale} />
       </section>
     </section>
   )

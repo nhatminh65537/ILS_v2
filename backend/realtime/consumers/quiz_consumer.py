@@ -160,7 +160,13 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             if not user_id:
                 await self.close(code=CloseCode.AUTH_FAILED)
                 return
-            
+
+            # Reject tokens whose UserSession was revoked (parity with HTTP auth).
+            session_id = payload.get('session_id')
+            if session_id is not None and not await self._session_is_active(session_id):
+                await self.close(code=CloseCode.AUTH_FAILED)
+                return
+
             # Fetch and validate user
             user = await self._get_user_by_id(user_id)
             if not user or not user.is_active:
@@ -424,6 +430,11 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             return User.objects.get(id=user_id)
         except User.DoesNotExist:
             return None
+
+    @database_sync_to_async
+    def _session_is_active(self, session_id: int) -> bool:
+        from api.models import UserSession
+        return UserSession.objects.filter(id=session_id, revoked_at__isnull=True).exists()
 
     @database_sync_to_async
     def _get_quiz(self, quiz_id: int) -> Optional[Quiz]:

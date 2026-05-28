@@ -511,6 +511,16 @@ class TestAuthApp:
         assert response.status_code == 403
 
     def test_token_refresh_old_token_invalid_after_rotation(self, api_client, member_user):
+        # Within the grace window the old refresh token is honoured (returns
+        # the successor's tokens) so concurrent refresh requests can't
+        # accidentally log the user out (bug A-06). After the window it must
+        # be rejected.
+        from datetime import timedelta
+        from django.utils import timezone
+
+        from api.models import UserSession
+        from auth_app.constants import REFRESH_GRACE_WINDOW_SECONDS
+
         login = api_client.post(
             '/api/auth/login/',
             {
@@ -523,6 +533,12 @@ class TestAuthApp:
 
         first_refresh = api_client.post('/api/auth/token/refresh/', {'refresh': old_refresh}, format='json')
         assert first_refresh.status_code == 200
+
+        grace_reuse = api_client.post('/api/auth/token/refresh/', {'refresh': old_refresh}, format='json')
+        assert grace_reuse.status_code == 200
+
+        past = timezone.now() - timedelta(seconds=REFRESH_GRACE_WINDOW_SECONDS + 5)
+        UserSession.objects.filter(replaced_at__isnull=False).update(replaced_at=past)
 
         reused = api_client.post('/api/auth/token/refresh/', {'refresh': old_refresh}, format='json')
         assert reused.status_code == 401

@@ -64,10 +64,8 @@ class RegisterView(APIView):
             )
             UserRole.objects.get_or_create(user=user, role=member_role)
 
-            tokens = TokenService().issue_tokens(user)
-            SessionService().create_session(
-                user=user,
-                refresh_token=tokens['refresh'],
+            tokens = TokenService().issue_tokens_for_new_session(
+                user,
                 device_info=request.META.get('HTTP_USER_AGENT', ''),
             )
 
@@ -100,14 +98,19 @@ class LoginView(APIView):
             password=serializer.validated_data['password'],
         )
         if user is None or not user.is_active:
-            cache.set(cache_key, fail_count + 1, timeout=DEFAULT_LOGIN_FAILURE_TTL_SECONDS)
+            # Fixed-window counter: first fail sets the TTL, later fails only
+            # increment without resetting the window.
+            if not cache.add(cache_key, 1, timeout=DEFAULT_LOGIN_FAILURE_TTL_SECONDS):
+                try:
+                    cache.incr(cache_key)
+                except ValueError:
+                    cache.set(cache_key, fail_count + 1, timeout=DEFAULT_LOGIN_FAILURE_TTL_SECONDS)
             return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         cache.delete(cache_key)
 
-        tokens = TokenService().issue_tokens(user)
         device_info = serializer.validated_data.get('device_info') or request.META.get('HTTP_USER_AGENT', '')
-        SessionService().create_session(user=user, refresh_token=tokens['refresh'], device_info=device_info)
+        tokens = TokenService().issue_tokens_for_new_session(user, device_info=device_info)
 
         payload = {
             'access': tokens['access'],

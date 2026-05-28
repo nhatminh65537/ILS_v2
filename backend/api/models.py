@@ -1491,6 +1491,13 @@ class User(AbstractUser, CreateAudit, UpdateAudit):
             models.Index(fields=['username']),
             models.Index(fields=['email']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['email'],
+                condition=models.Q(email__gt=''),
+                name='uniq_user_email_when_present',
+            ),
+        ]
     
     def __str__(self):
         return self.username
@@ -1649,6 +1656,15 @@ class UserSession(FullAudit):
         related_name='revoked_sessions',
         db_column='revoked_by'
     )
+    replaced_by = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='replaces',
+        db_column='replaced_by',
+    )
+    replaced_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'user_session'
@@ -1657,6 +1673,7 @@ class UserSession(FullAudit):
             models.Index(fields=['refresh_token_hash']),
             models.Index(fields=['revoked_at']),
             models.Index(fields=['expires_at']),
+            models.Index(fields=['replaced_at']),
         ]
 
     def __str__(self):

@@ -194,8 +194,8 @@ Notes: __________
 - Expected: HTTP 401, FE hiển thị "Sai thông tin đăng nhập".
 
 **[A-05] Rate limit login**
-- Steps: 10 lần login sai liên tiếp trong 1 phút.
-- Expected: từ lần thứ 6+ trả 429 (config `auth.login.rate_limit`).
+- Steps: 10 lần login sai liên tiếp.
+- Expected: từ lần thứ 6+ trả 429. Sau **5 phút** kể từ lần fail đầu tiên (TTL cố định `DEFAULT_LOGIN_FAILURE_TTL_SECONDS=300s`), counter tự expire → login lại được. Lưu ý: TTL không reset khi thử login bị ban (fixed window, sau F37). Nếu muốn 1 phút cần đổi config TTL trước khi test.
 
 **[A-06] JWT auto-refresh**
 - Steps: Login → giữ tab 16 phút (access_ttl=15m) → thực hiện action gọi API (vd. mở `/vi/courses`).

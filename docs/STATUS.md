@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-05-04 (Frontend bugfix batch — 5 reported + 3 related bugs fixed)
+> Last updated: 2026-05-29 (Auth hardening — 8 bug auth/session từ Integration Test Pass 1 nhóm A; xem F37)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.

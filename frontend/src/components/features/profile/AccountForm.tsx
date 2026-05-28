@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -43,7 +42,6 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 
 export function AccountForm({ locale, profile, onAccountUpdated }: AccountFormProps) {
   const t = useTranslations('profile')
-  const router = useRouter()
   const clearAuth = useAuthStore((state) => state.clearAuth)
 
   const [username, setUsername] = useState(profile.username)
@@ -83,14 +81,14 @@ export function AccountForm({ locale, profile, onAccountUpdated }: AccountFormPr
       const updatedUser = await updateMyAccount(payload)
 
       if (hasUsernameChange) {
+        clearAuth()
         try {
           await logoutAll()
         } catch {
           // Continue with local logout flow even if server-side revoke-all fails.
         }
-        clearAuth()
-        router.replace(`/${locale}/login`)
-        router.refresh()
+        // Hard navigate to dodge the GuestOnlyGate race after clearAuth.
+        window.location.assign(`/${locale}/login`)
         return
       }
 

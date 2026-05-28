@@ -117,6 +117,11 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             user_id = payload.get('user_id')
             if not user_id:
                 return None
+            session_id = payload.get('session_id')
+            if session_id is not None:
+                from api.models import UserSession
+                if not UserSession.objects.filter(id=session_id, revoked_at__isnull=True).exists():
+                    return None
             user = User.objects.filter(id=user_id, is_active=True).first()
             return user
         except (InvalidToken, TokenError, TokenBackendError):

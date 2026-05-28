@@ -57,6 +57,36 @@ const getLocaleAwareLoginPath = (): string => {
   return '/vi/login'
 }
 
+// Refresh-mutex: when many requests get 401 at the same time we only want a
+// single POST /api/auth/token/refresh/ in flight. Concurrent callers await the
+// same promise and pick up the new access token together.
+let inflightRefresh: Promise<string> | null = null
+
+const performRefresh = async (): Promise<string> => {
+  const refreshToken = localStorage.getItem('refresh_token')
+  if (!refreshToken) {
+    throw new Error('No refresh token')
+  }
+  const response = await axios.post(
+    '/api/auth/token/refresh/',
+    { refresh: refreshToken },
+    { baseURL: process.env.NEXT_PUBLIC_API_URL }
+  )
+  const { access, refresh } = response.data as { access: string; refresh: string }
+  localStorage.setItem('access_token', access)
+  localStorage.setItem('refresh_token', refresh)
+  return access
+}
+
+const refreshAccessToken = (): Promise<string> => {
+  if (inflightRefresh === null) {
+    inflightRefresh = performRefresh().finally(() => {
+      inflightRefresh = null
+    })
+  }
+  return inflightRefresh
+}
+
 /**
  * Response interceptor:
  * - 401 → attempt refresh token flow → retry original request
@@ -77,31 +107,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token')
-        if (!refreshToken) {
-          // No refresh token — redirect to login
-          const event = new CustomEvent('auth:logout', { detail: 'No refresh token' })
-          window.dispatchEvent(event)
-          window.location.href = getLocaleAwareLoginPath()
-          return Promise.reject(error)
-        }
-
-        // Attempt refresh
-        const refreshResponse = await axios.post(
-          '/api/auth/token/refresh/',
-          {
-            refresh: refreshToken,
-          },
-          {
-            baseURL: process.env.NEXT_PUBLIC_API_URL,
-          }
-        )
-
-        const { access, refresh } = refreshResponse.data
-        localStorage.setItem('access_token', access)
-        localStorage.setItem('refresh_token', refresh)
-
-        // Update authorization header and retry original request
+        const access = await refreshAccessToken()
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${access}`
         }
