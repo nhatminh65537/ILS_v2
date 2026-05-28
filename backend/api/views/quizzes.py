@@ -1,9 +1,10 @@
-from django.shortcuts import get_object_or_404
+﻿from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import Quiz, QuizNode
@@ -18,7 +19,7 @@ from api.serializers import (
 from api.services.quiz_service import QuizService
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class QuizViewSet(viewsets.ModelViewSet):
     """Quiz management viewset."""
 
@@ -40,23 +41,23 @@ class QuizViewSet(viewsets.ModelViewSet):
             return QuizConfigSerializer
         return QuizListSerializer
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     @action(detail=True, methods=['get', 'post'], url_path='questions')
     def questions(self, request, pk=None):
         quiz = self.get_object()
@@ -74,7 +75,7 @@ class QuizViewSet(viewsets.ModelViewSet):
         QuizService.sync_total_questions(quiz)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     @action(detail=True, methods=['get', 'put', 'delete'], url_path=r'questions/(?P<qid>\d+)')
     def question_detail(self, request, pk=None, qid=None):
         quiz = self.get_object()
@@ -117,7 +118,7 @@ class QuizViewSet(viewsets.ModelViewSet):
         return Response(QuizService.build_default_progress_payload(quiz.id, request.user.id))
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class QuizNodeViewSet(viewsets.ModelViewSet):
     """QuizNode tree CRUD API."""
 
@@ -131,19 +132,19 @@ class QuizNodeViewSet(viewsets.ModelViewSet):
             return queryset.filter(parent__isnull=True)
         return queryset
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
@@ -153,7 +154,7 @@ class QuizNodeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(node.children.order_by('position', 'id'), many=True)
         return Response(serializer.data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     @action(detail=True, methods=['post'])
     def move(self, request, pk=None):
         node = self.get_object()

@@ -4,6 +4,7 @@
  */
 
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios'
+import { emitPermissionError } from '@/lib/permission-error-bus'
 import { ApiError } from '@/types/api'
 
 const apiClient: AxiosInstance = axios.create({
@@ -114,6 +115,22 @@ apiClient.interceptors.response.use(
         window.location.href = getLocaleAwareLoginPath()
         return Promise.reject(refreshError)
       }
+    }
+
+    // 403 Forbidden — surface a global permission-denied dialog so user feedback
+    // is consistent across the admin surface. We still reject the promise so
+    // callers can clean up loading states.
+    if (error.response?.status === 403) {
+      const responseData = error.response.data
+      const detailMessage =
+        typeof responseData === 'object' && responseData !== null && 'detail' in responseData
+          ? String((responseData as { detail?: unknown }).detail ?? '')
+          : ''
+      emitPermissionError({
+        status: 403,
+        message: detailMessage || undefined,
+        endpoint: originalRequest?.url,
+      })
     }
 
     // Other errors — keep field-level validation payload when available.

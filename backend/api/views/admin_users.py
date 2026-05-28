@@ -1,8 +1,9 @@
-from django.shortcuts import get_object_or_404
+﻿from django.shortcuts import get_object_or_404
 from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from ..models import Role, User, UserRole
@@ -14,7 +15,7 @@ from ..serializers import (
 from ..services.admin_user_service import AdminUserService
 
 
-@add_role_granted('Admin')
+@add_role_granted(BUILTIN_ROLE_ADMIN)
 class AdminUserViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -33,7 +34,7 @@ class AdminUserViewSet(
         return AdminUserService.apply_filters(queryset, self.request.query_params)
 
 
-@add_role_granted('Admin')
+@add_role_granted(BUILTIN_ROLE_ADMIN)
 class UserRoleViewSet(viewsets.ViewSet):
     """User role assignment viewset."""
 

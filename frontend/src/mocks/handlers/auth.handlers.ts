@@ -20,6 +20,20 @@ const STAFF_PERMISSION_IDS = getPermissionIdsByNames([
   'api.system_config.retrieve',
 ])
 
+const ALL_ADMIN_SECTIONS = [
+  'dashboard',
+  'config',
+  'rbac',
+  'users',
+  'statistics',
+  'notifications',
+  'learn',
+  'challenges',
+  'quizzes',
+] as const
+
+const STAFF_ADMIN_SECTIONS = ['dashboard', 'learn', 'challenges', 'quizzes'] as const
+
 const resolvePermissionIdsForUser = (user: { is_superuser?: boolean; is_staff?: boolean }): number[] => {
   if (user.is_superuser) {
     return permissionFixtures.map((permission) => permission.id)
@@ -32,14 +46,25 @@ const resolvePermissionIdsForUser = (user: { is_superuser?: boolean; is_staff?: 
   return []
 }
 
+const resolveAdminSectionsForUser = (user: { is_superuser?: boolean; is_staff?: boolean }): readonly string[] => {
+  if (user.is_superuser) {
+    return ALL_ADMIN_SECTIONS
+  }
+  if (user.is_staff) {
+    return STAFF_ADMIN_SECTIONS
+  }
+  return []
+}
+
 const issueAuthTokens = (user: {
   id: number
   is_superuser?: boolean
   is_staff?: boolean
 }): { access: string; refresh: string } => {
   const permissionIds = resolvePermissionIdsForUser(user)
+  const adminSections = resolveAdminSectionsForUser(user)
   return {
-    access: buildMockAccessToken(user.id, permissionIds),
+    access: buildMockAccessToken(user.id, permissionIds, adminSections),
     refresh: buildMockRefreshToken(user.id),
   }
 }

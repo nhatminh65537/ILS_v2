@@ -8,25 +8,44 @@ from api.models import (
     UserChallengeSubmit,
     UserProfile,
 )
+from auth_app.constants import PERM_MATERIAL_READ_ARCHIVE, PERM_MATERIAL_READ_DRAFT
 
 
 class ChallengeService:
     """Domain operations for challenge flows."""
 
     @staticmethod
-    def is_editor_or_admin(user):
-        if user.is_superuser:
-            return True
-        return user.user_roles.filter(role__name__in=['Admin', 'Editor']).exists()
+    def _can_read_draft(user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.has_permission(PERM_MATERIAL_READ_DRAFT)
+
+    @staticmethod
+    def _can_read_archive(user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.has_permission(PERM_MATERIAL_READ_ARCHIVE)
+
+    @classmethod
+    def _allowed_statuses(cls, user) -> set:
+        allowed = {Challenge.Status.PUBLISHED}
+        if cls._can_read_draft(user):
+            allowed.add(Challenge.Status.DRAFT)
+        if cls._can_read_archive(user):
+            allowed.add(Challenge.Status.ARCHIVED)
+        return allowed
 
     @classmethod
     def filter_visible_learn_challenges(cls, queryset, user, query_params):
+        allowed = cls._allowed_statuses(user)
         status_param = query_params.get('status')
-
-        if not cls.is_editor_or_admin(user):
-            queryset = queryset.filter(status=Challenge.Status.PUBLISHED)
-        elif status_param:
-            queryset = queryset.filter(status=status_param)
+        if status_param:
+            if status_param in allowed:
+                queryset = queryset.filter(status=status_param)
+            else:
+                queryset = queryset.none()
+        else:
+            queryset = queryset.filter(status__in=allowed)
 
         difficulty = query_params.get('difficulty')
         if difficulty:

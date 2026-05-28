@@ -3,16 +3,21 @@ from django.db.models import Max
 from django.utils import timezone
 
 from api.models import Course, CourseNode, Lesson, LessonQuestion, QuizQuestion
+from auth_app.constants import PERM_MATERIAL_READ_ARCHIVE, PERM_MATERIAL_READ_DRAFT
 
 
 class LessonService:
     @staticmethod
-    def is_editor_or_admin(user) -> bool:
+    def _can_read_draft(user) -> bool:
         if not user or not user.is_authenticated:
             return False
-        if getattr(user, 'is_superuser', False):
-            return True
-        return user.user_roles.filter(role__name__in=['Admin', 'Editor']).exists()
+        return user.has_permission(PERM_MATERIAL_READ_DRAFT)
+
+    @staticmethod
+    def _can_read_archive(user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.has_permission(PERM_MATERIAL_READ_ARCHIVE)
 
     @classmethod
     def get_visible_lesson_by_id(cls, lesson_id: int, user) -> Lesson:
@@ -25,10 +30,14 @@ class LessonService:
 
         course = node.course
 
-        if not cls.is_editor_or_admin(user) and course.status != Course.Status.PUBLISHED:
-            raise Lesson.DoesNotExist('Lesson not visible.')
+        if course.status == Course.Status.PUBLISHED:
+            return lesson
+        if course.status == Course.Status.DRAFT and cls._can_read_draft(user):
+            return lesson
+        if course.status == Course.Status.ARCHIVED and cls._can_read_archive(user):
+            return lesson
 
-        return lesson
+        raise Lesson.DoesNotExist('Lesson not visible.')
 
     @staticmethod
     def require_miniquiz(lesson: Lesson) -> None:

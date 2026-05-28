@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import User
@@ -20,7 +21,7 @@ from api.serializers import (
 from api.services.user_service import UserService
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class UserViewSet(viewsets.ModelViewSet):
     """User management viewset."""
 

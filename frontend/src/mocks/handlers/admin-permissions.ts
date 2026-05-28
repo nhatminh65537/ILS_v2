@@ -92,7 +92,11 @@ export const getPermissionIdsByNames = (names: readonly string[]): number[] =>
     .map((name) => permissionIdByName.get(name))
     .filter((value): value is number => Number.isInteger(value))
 
-export const buildMockAccessToken = (userId: number, permissionIds: readonly number[]): string => {
+export const buildMockAccessToken = (
+  userId: number,
+  permissionIds: readonly number[],
+  adminSections: readonly string[] = []
+): string => {
   const header = encodeBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const adminSurface = permissionIds.length > 0
   const payload = encodeBase64Url(
@@ -101,6 +105,7 @@ export const buildMockAccessToken = (userId: number, permissionIds: readonly num
       permissions: encodePermissionBitmap(permissionIds),
       pv: 1,
       admin_surface: adminSurface,
+      admin_sections: adminSections,
     })
   )
   return `${header}.${payload}.mock-signature`

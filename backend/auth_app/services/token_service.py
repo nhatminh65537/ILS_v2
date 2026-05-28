@@ -2,12 +2,13 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR
 from api.services.permission_service import PermissionService
 from api.models import UserSession
 from auth_app.constants import (
+    ADMIN_SECTIONS,
     DEFAULT_REFRESH_RATE_LIMIT_PER_MINUTE,
     DEFAULT_REFRESH_RATE_LIMIT_WINDOW_SECONDS,
+    PERM_ADMIN_PORTAL_ACCESS,
     REFRESH_RATE_CACHE_KEY_TEMPLATE,
 )
 from auth_app.services.session_service import SessionService
@@ -28,15 +29,18 @@ class TokenService:
     def issue_tokens(self, user) -> dict:
         permissions = self.get_or_refresh_permission_cache(user)
         admin_surface = self._has_admin_surface_access(user)
+        admin_sections = self._compute_admin_sections(user)
         refresh = RefreshToken.for_user(user)
         refresh['permissions'] = permissions
         refresh['pv'] = user.permission_version
         refresh['admin_surface'] = admin_surface
+        refresh['admin_sections'] = admin_sections
 
         access = refresh.access_token
         access['permissions'] = permissions
         access['pv'] = user.permission_version
         access['admin_surface'] = admin_surface
+        access['admin_sections'] = admin_sections
 
         return {
             'access': str(access),
@@ -47,10 +51,16 @@ class TokenService:
         return PermissionService.get_or_refresh_cache(user)
 
     def _has_admin_surface_access(self, user) -> bool:
-        if getattr(user, 'is_superuser', False):
-            return True
+        return bool(user and user.has_permission(PERM_ADMIN_PORTAL_ACCESS))
 
-        return user.user_roles.filter(role__name__in=[BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR]).exists()
+    def _compute_admin_sections(self, user) -> list:
+        if not user or not user.is_authenticated:
+            return []
+        return [
+            section_key
+            for section_key, perm_name in ADMIN_SECTIONS.items()
+            if user.has_permission(perm_name)
+        ]
 
     def refresh_tokens(self, refresh_token: str, device_info: str = '') -> dict:
         refresh_hash = self.session_service.hash_token(refresh_token)

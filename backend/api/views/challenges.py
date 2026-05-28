@@ -1,4 +1,4 @@
-from django.db import IntegrityError
+﻿from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeInstance, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
@@ -24,7 +25,7 @@ from api.serializers import (
 from api.services.challenge_service import ChallengeService
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnChallengeViewSet(viewsets.ModelViewSet):
     """Canonical namespaced challenge CRUD API under /api/challenge/challenges/."""
 
@@ -64,7 +65,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
             return None
         return str(raw).strip().lower()
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         requested_slug = self._normalize_slug(request.data)
         if requested_slug and Challenge.objects.filter(slug=requested_slug).exists():
@@ -84,7 +85,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         detail_serializer = ChallengeDetailSerializer(challenge, context={'request': request})
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         requested_slug = self._normalize_slug(request.data)
@@ -101,12 +102,12 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         detail_serializer = ChallengeDetailSerializer(challenge, context={'request': request})
         return Response(detail_serializer.data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def partial_update(self, request, *args, **kwargs):
         kwargs['partial'] = True
         return self.update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         challenge = self.get_object()
         mode = request.query_params.get('mode', 'archive')
@@ -126,7 +127,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def flags(self, request, slug=None):
         challenge = self.get_object()
         if request.method == 'GET':
@@ -142,7 +143,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def flag_detail(self, request, slug=None, flag_id=None):
         challenge = self.get_object()
         flag = get_object_or_404(ChallengeFlag, id=flag_id, challenge=challenge)
@@ -159,7 +160,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         flag = serializer.save()
         return Response(ChallengeFlagSerializer(flag, context={'request': request}).data)
 
-    @add_role_granted('Admin', 'Editor', 'Member')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def submit(self, request, slug=None):
         challenge = self.get_object()
         serializer = ChallengeFlagSubmitSerializer(data=request.data)
@@ -187,7 +188,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
 
         return Response({'correct': is_correct})
 
-    @add_role_granted('Admin', 'Editor', 'Member')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def instance_start(self, request, slug=None):
         challenge = self.get_object()
         if not challenge.instance_required:
@@ -212,7 +213,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @add_role_granted('Admin', 'Editor', 'Member')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def instance_stop(self, request, slug=None):
         challenge = self.get_object()
         running = ChallengeService.get_running_instance(challenge, request.user)
@@ -221,7 +222,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         running.stop()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @add_role_granted('Admin', 'Editor', 'Member')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def instance_status(self, request, slug=None):
         challenge = self.get_object()
         instance = (
@@ -234,14 +235,14 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
             return Response({'status': 'none'})
         return Response(ChallengeInstanceSerializer(instance, context={'request': request}).data)
 
-    @add_role_granted('Admin', 'Editor', 'Member')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def challenge_progress(self, request, slug=None):
         challenge = self.get_object()
         serializer = UserChallengeProgressDetailSerializer(challenge, request.user)
         return Response(serializer.data)
 
 
-@add_role_granted('Admin', 'Editor')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
 class ChallengeInstanceAdminView(APIView):
     """Admin view for listing all instances and force-killing them."""
 
@@ -262,7 +263,7 @@ class ChallengeInstanceAdminView(APIView):
         return Response(serializer.data)
 
 
-@add_role_granted('Admin')
+@add_role_granted(BUILTIN_ROLE_ADMIN)
 class ChallengeInstanceKillView(APIView):
     """Admin-only force-kill for a specific instance."""
 
@@ -276,7 +277,7 @@ class ChallengeInstanceKillView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class ChallengeProgressView(APIView):
     """Aggregate challenge progress for the requesting user."""
 
@@ -290,7 +291,7 @@ class ChallengeProgressView(APIView):
         return Response({'solved_count': solved_count, 'total_attempts': total_attempts})
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnChallengeCategoryViewSet(viewsets.ModelViewSet):
     """Canonical namespaced category CRUD API under /api/challenge/categories/."""
 
@@ -298,24 +299,24 @@ class LearnChallengeCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = ChallengeCategorySerializer
     permission_classes = [IsAuthenticated, HasJWTPermission]
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnChallengeTagViewSet(viewsets.ModelViewSet):
     """Canonical namespaced tag CRUD API under /api/challenge/tags/."""
 
@@ -323,18 +324,18 @@ class LearnChallengeTagViewSet(viewsets.ModelViewSet):
     serializer_class = ChallengeTagSerializer
     permission_classes = [IsAuthenticated, HasJWTPermission]
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)

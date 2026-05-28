@@ -6,7 +6,12 @@
     "cancel": "Cancel",
     "close": "Close",
     "search": "Search",
-    "status": "Status"
+    "status": "Status",
+    "permissionDenied": {
+      "title": "Permission denied",
+      "defaultMessage": "You do not have permission to perform this action.",
+      "acknowledge": "OK"
+    }
   },
   "navigation": {
     "home": "Home",

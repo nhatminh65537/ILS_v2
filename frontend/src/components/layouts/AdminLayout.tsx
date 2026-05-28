@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
-import { AppShell } from './AppShell'
+import { AdminSidebar, type AdminSidebarItem } from './AdminSidebar'
+import { Footer } from './Footer'
+import { Navbar } from './Navbar'
+import { SessionNavControls } from './SessionNavControls'
+import type { ShellNavItem } from './types'
 
 type AdminLayoutProps = {
   locale: string
@@ -52,36 +56,41 @@ export function AdminLayout({
   const statisticsHref = `/${locale}/admin/statistics`
   const userDashboardHref = `/${locale}/dashboard`
 
+  const sidebarItems: readonly AdminSidebarItem[] = [
+    { href: dashboardHref, label: dashboardLabel, section: 'dashboard' },
+    { href: usersHref, label: usersLabel, section: 'users' },
+    { href: rbacHref, label: rbacLabel, section: 'rbac' },
+    { href: configHref, label: configLabel, section: 'config' },
+    { href: quizzesHref, label: quizzesLabel, section: 'quizzes' },
+    { href: coursesHref, label: coursesLabel, section: 'learn' },
+    { href: challengesHref, label: challengesLabel, section: 'challenges' },
+    { href: notificationsHref, label: notificationsLabel, section: 'notifications' },
+    { href: statisticsHref, label: statisticsLabel, section: 'statistics' },
+  ]
+
+  const topLinks: readonly ShellNavItem[] = [
+    { href: adminHomeHref, label: adminHomeLabel },
+    { href: userDashboardHref, label: userPortalLabel },
+  ]
+
   return (
-    <AppShell
-      locale={locale}
-      brandHref={adminHomeHref}
-      brandLabel={brandLabel}
-      footerText={footerText}
-      sidebarLinks={[
-        { href: dashboardHref, label: dashboardLabel },
-        { href: usersHref, label: usersLabel },
-        { href: rbacHref, label: rbacLabel },
-        { href: configHref, label: configLabel },
-        { href: quizzesHref, label: quizzesLabel },
-        { href: coursesHref, label: coursesLabel },
-        { href: challengesHref, label: challengesLabel },
-        { href: notificationsHref, label: notificationsLabel },
-        { href: statisticsHref, label: statisticsLabel },
-      ]}
-      sidebarTitle={sidebarTitle}
-      surfaceLabel={surfaceLabel}
-      topLinks={[
-        { href: adminHomeHref, label: adminHomeLabel },
-        { href: dashboardHref, label: dashboardLabel },
-        { href: rbacHref, label: rbacLabel },
-        { href: configHref, label: configLabel },
-        { href: usersHref, label: usersLabel },
-        { href: quizzesHref, label: quizzesLabel },
-        { href: userDashboardHref, label: userPortalLabel },
-      ]}
-    >
-      {children}
-    </AppShell>
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <Navbar
+        brandHref={adminHomeHref}
+        brandLabel={brandLabel}
+        links={topLinks}
+        surfaceLabel={surfaceLabel}
+        trailing={<SessionNavControls locale={locale} />}
+      />
+
+      <div className="mx-auto flex w-full max-w-7xl flex-1 gap-4 px-4 py-6 md:px-6 lg:gap-6">
+        <div className="hidden w-64 shrink-0 md:block">
+          <AdminSidebar items={sidebarItems} title={sidebarTitle} />
+        </div>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
+
+      <Footer text={footerText} />
+    </div>
   )
 }

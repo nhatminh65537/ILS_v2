@@ -4,5 +4,22 @@ The fixture implementations are grouped by domain in backend/tests/fixtures.
 This conftest re-exports them to keep fixture names and test imports unchanged.
 """
 
+import pytest
+
 from tests.fixtures.auth import *  # noqa: F401,F403
 from tests.fixtures.rbac import *  # noqa: F401,F403
+
+
+@pytest.fixture(autouse=True)
+def _seed_authz_discovery(db):
+    """Ensure URL-scanned + code-registered permissions exist in the test DB.
+
+    Tests rely on role grants linked via the discovery routine (admin/editor
+    get system.material.read_draft, etc.). Without this, role-name fixtures
+    create Role rows with zero permissions linked and authz checks fall through.
+
+    Note: each test runs in its own transaction that is rolled back at the end,
+    so this fixture re-runs per test. discover_permissions() is idempotent.
+    """
+    from auth_app.services.permission_discovery import discover_permissions
+    discover_permissions()

@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { AdminAccessGate } from '@/components/layouts/AdminAccessGate'
 import { AdminLayout } from '@/components/layouts/AdminLayout'
+import { AdminProtectedSectionGate } from '@/components/layouts/AdminProtectedSectionGate'
 
 type AdminProtectedLayoutProps = {
   children: React.ReactNode
@@ -36,7 +37,9 @@ export default async function AdminProtectedLayout({
         usersLabel={tAdmin('users')}
         userPortalLabel={tSurface('admin.userPortalLabel')}
       >
-        {children}
+        <AdminProtectedSectionGate locale={locale} loadingLabel={tSurface('admin.loadingAccess')}>
+          {children}
+        </AdminProtectedSectionGate>
       </AdminLayout>
     </AdminAccessGate>
   )

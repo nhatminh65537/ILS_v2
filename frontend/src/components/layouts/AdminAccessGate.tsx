@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { hasAdminSurfaceAccess } from '@/lib/rbac-claim'
+import { getAdminSections, hasAdminSurfaceAccess } from '@/lib/rbac-claim'
 import { useAuthStore } from '@/stores/auth.store'
 
 type AdminAccessGateProps = {
@@ -116,6 +116,33 @@ export function UserAccessGate({ locale, loadingLabel, children }: UserAccessGat
   }, [isAuthenticated, isReady, locale, router])
 
   if (!isReady || !isAuthenticated) {
+    return <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">{loadingLabel}</div>
+  }
+
+  return <>{children}</>
+}
+
+type AdminSectionGateProps = {
+  section: string
+  locale: string
+  loadingLabel: string
+  children: ReactNode
+}
+
+export function AdminSectionGate({ section, locale, loadingLabel, children }: AdminSectionGateProps) {
+  const router = useRouter()
+  const { isReady, isAuthenticated } = useAuthGuardState()
+  const accessToken = useAuthStore((state) => state.accessToken)
+  const sections = useMemo(() => getAdminSections(accessToken), [accessToken])
+  const hasSection = sections.has(section)
+
+  useEffect(() => {
+    if (isReady && isAuthenticated && !hasSection) {
+      router.replace(`/${locale}/admin`)
+    }
+  }, [hasSection, isAuthenticated, isReady, locale, router])
+
+  if (!isReady || !isAuthenticated || !hasSection) {
     return <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">{loadingLabel}</div>
   }
 

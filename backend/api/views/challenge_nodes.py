@@ -1,16 +1,17 @@
-from django.shortcuts import get_object_or_404
+﻿from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import ChallengeNode
 from api.serializers import ChallengeNodeSerializer
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class ChallengeNodeViewSet(viewsets.ModelViewSet):
     """ChallengeNode tree CRUD API."""
 
@@ -24,19 +25,19 @@ class ChallengeNodeViewSet(viewsets.ModelViewSet):
             return queryset.filter(parent__isnull=True)
         return queryset
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
@@ -46,7 +47,7 @@ class ChallengeNodeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(node.children.order_by('position', 'id'), many=True)
         return Response(serializer.data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     @action(detail=True, methods=['post'])
     def move(self, request, pk=None):
         node = self.get_object()

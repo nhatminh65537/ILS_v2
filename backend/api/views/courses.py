@@ -1,4 +1,4 @@
-from django.db import IntegrityError
+﻿from django.db import IntegrityError
 from django.db.models import Count
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -6,6 +6,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson, LessonQuestion, QuizQuestion
@@ -36,7 +37,7 @@ from api.services.learn_progress_service import LearnProgressService
 from api.services.lesson_service import LessonService
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class CourseViewSet(viewsets.ModelViewSet):
     """Course management viewset."""
 
@@ -51,11 +52,11 @@ class CourseViewSet(viewsets.ModelViewSet):
             return CourseDetailSerializer
         return CourseListSerializer
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     @action(detail=True, methods=['get'])
     def tree(self, request, pk=None):
         course = self.get_object()
@@ -77,7 +78,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Enrolled successfully'})
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LessonViewSet(viewsets.ReadOnlyModelViewSet):
     """Lesson viewset (read-only for users)."""
 
@@ -98,7 +99,7 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({'content': rendered})
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnCourseViewSet(viewsets.ModelViewSet):
     """Canonical namespaced course CRUD API under /api/learn/courses/."""
 
@@ -136,7 +137,7 @@ class LearnCourseViewSet(viewsets.ModelViewSet):
             return None
         return str(raw).strip().lower()
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         requested_slug = self._normalize_slug(request.data)
         if requested_slug and Course.objects.filter(slug=requested_slug).exists():
@@ -162,7 +163,7 @@ class LearnCourseViewSet(viewsets.ModelViewSet):
         )
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         requested_slug = self._normalize_slug(request.data)
@@ -182,7 +183,7 @@ class LearnCourseViewSet(viewsets.ModelViewSet):
         )
         return Response(detail_serializer.data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         course = self.get_object()
         mode = request.query_params.get('mode', 'archive')
@@ -230,7 +231,7 @@ class LearnCourseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnCourseCategoryViewSet(viewsets.ModelViewSet):
     """Canonical namespaced category CRUD API under /api/learn/categories/."""
 
@@ -238,24 +239,24 @@ class LearnCourseCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CourseCategorySerializer
     permission_classes = [IsAuthenticated, HasJWTPermission]
 
-    @add_role_granted('Admin')
+    @add_role_granted(BUILTIN_ROLE_ADMIN)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin')
+    @add_role_granted(BUILTIN_ROLE_ADMIN)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @add_role_granted('Admin')
+    @add_role_granted(BUILTIN_ROLE_ADMIN)
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
-    @add_role_granted('Admin')
+    @add_role_granted(BUILTIN_ROLE_ADMIN)
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnCourseTagViewSet(viewsets.ModelViewSet):
     """Canonical namespaced tag CRUD API under /api/learn/tags/."""
 
@@ -263,24 +264,24 @@ class LearnCourseTagViewSet(viewsets.ModelViewSet):
     serializer_class = CourseTagSerializer
     permission_classes = [IsAuthenticated, HasJWTPermission]
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnCourseNodeViewSet(viewsets.ViewSet):
     """Canonical learn course node tree API under /api/learn/courses/{slug}/nodes/*."""
 
@@ -325,7 +326,7 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
         serializer = LearnCourseNodeSerializer(children, many=True, context={'request': request})
         return Response(serializer.data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def create(self, request, slug=None):
         course = self._get_course(slug, request.user)
         serializer = LearnCourseNodeWriteSerializer(data=request.data)
@@ -341,7 +342,7 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
         response_serializer = LearnCourseNodeSerializer(node, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, slug=None, pk=None):
         course = self._get_course(slug, request.user)
         node = self._get_node(course, pk)
@@ -382,7 +383,7 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
         response_serializer = LearnCourseNodeSerializer(node, context={'request': request})
         return Response(response_serializer.data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, slug=None, pk=None):
         course = self._get_course(slug, request.user)
         node = self._get_node(course, pk)
@@ -391,7 +392,7 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnLessonViewSet(viewsets.ViewSet):
     """Canonical learn lesson endpoints under /api/learn/lessons/* (Task 5.3)."""
 
@@ -426,7 +427,7 @@ class LearnLessonViewSet(viewsets.ViewSet):
         )
         return Response(UserLessonProgressSerializer(progress).data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, pk=None):
         lesson = self._get_lesson_or_404(pk, request.user)
         serializer = LearnLessonUpdateSerializer(lesson, data=request.data, partial=True)
@@ -445,7 +446,7 @@ class LearnLessonViewSet(viewsets.ViewSet):
         mappings = LessonService.list_lesson_questions(lesson)
         return Response(LearnLessonQuestionSerializer(mappings, many=True).data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def add_question(self, request, pk=None):
         lesson = self._get_lesson_or_404(pk, request.user)
         try:
@@ -471,7 +472,7 @@ class LearnLessonViewSet(viewsets.ViewSet):
         return Response(LearnLessonQuestionSerializer(mapping).data, status=status.HTTP_201_CREATED)
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class LearnLessonQuestionViewSet(viewsets.ViewSet):
     """Canonical lesson-question mapping endpoints under /api/learn/lesson-questions/*."""
 
@@ -490,7 +491,7 @@ class LearnLessonQuestionViewSet(viewsets.ViewSet):
 
         return Response(LearnLessonQuestionSerializer(mapping).data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def update(self, request, pk=None):
         try:
             mapping = self._get_mapping(int(pk))
@@ -507,7 +508,7 @@ class LearnLessonQuestionViewSet(viewsets.ViewSet):
         )
         return Response(LearnLessonQuestionSerializer(mapping).data)
 
-    @add_role_granted('Admin', 'Editor')
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, pk=None):
         try:
             mapping = self._get_mapping(int(pk))

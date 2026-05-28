@@ -1,9 +1,10 @@
-from rest_framework import status, viewsets
+﻿from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import Notification
@@ -16,7 +17,7 @@ from api.serializers import (
 from api.services.notification_service import NotificationService
 
 
-@add_role_granted('Admin', 'Editor', 'Member')
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """Notification viewset."""
 
@@ -44,7 +45,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-@add_role_granted('Admin')
+@add_role_granted(BUILTIN_ROLE_ADMIN)
 class AdminNotificationViewSet(viewsets.GenericViewSet):
     """Admin notification actions."""
 

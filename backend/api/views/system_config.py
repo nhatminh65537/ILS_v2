@@ -1,7 +1,8 @@
-from rest_framework import mixins, status, viewsets
+﻿from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from ..models import SystemConfig
@@ -9,7 +10,7 @@ from ..serializers import SystemConfigSerializer
 from ..services.system_config_service import SystemConfigService
 
 
-@add_role_granted('Admin')
+@add_role_granted(BUILTIN_ROLE_ADMIN)
 class SystemConfigViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,

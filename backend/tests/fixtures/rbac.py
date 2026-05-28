@@ -6,22 +6,19 @@ def rbac_seed(db):
     """Seed built-in roles and sample permissions for RBAC tests."""
     from api.models import Permission, Role, RolePermission
 
-    # Create built-in roles (matches Task 2.1 auto-discovery)
-    admin_role = Role.objects.create(name='Admin', is_system=True)
-    editor_role = Role.objects.create(name='Editor', is_system=True)
-    member_role = Role.objects.create(name='Member', is_system=True)
+    # Built-in roles may already exist via the autouse discovery fixture.
+    admin_role, _ = Role.objects.get_or_create(name='Admin', defaults={'is_system': True})
+    editor_role, _ = Role.objects.get_or_create(name='Editor', defaults={'is_system': True})
+    member_role, _ = Role.objects.get_or_create(name='Member', defaults={'is_system': True})
 
-    # Create sample permissions
-    perms = [
-        Permission.objects.create(name='api.config.read', is_active=True),
-        Permission.objects.create(name='api.config.write', is_active=True),
-        Permission.objects.create(name='api.user.read', is_active=True),
-        Permission.objects.create(name='api.user.write', is_active=True),
-    ]
+    # Create sample permissions (these names are NOT part of URL scan / code registry).
+    perms = []
+    for name in ('api.config.read', 'api.config.write', 'api.user.read', 'api.user.write'):
+        perm, _ = Permission.objects.get_or_create(name=name, defaults={'is_active': True})
+        perms.append(perm)
 
-    # Assign permissions to Admin role
     for perm in perms:
-        RolePermission.objects.create(role=admin_role, permission=perm)
+        RolePermission.objects.get_or_create(role=admin_role, permission=perm)
 
     return {
         'admin_role': admin_role,

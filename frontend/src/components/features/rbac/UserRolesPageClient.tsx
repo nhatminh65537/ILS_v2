@@ -1,12 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
-import { canManageUserRoles } from '@/lib/rbac-claim'
 import { useRbac } from '@/hooks/useRbac'
-import { useAuthStore } from '@/stores/auth.store'
 import { UserRoleAssignmentPanel } from './UserRoleAssignmentPanel'
 
 type UserRolesPageClientProps = {
@@ -17,14 +15,12 @@ type UserRolesPageClientProps = {
 export function UserRolesPageClient({ locale, userId }: UserRolesPageClientProps) {
   const t = useTranslations('adminRbac')
   const tRoot = useTranslations()
-  const accessToken = useAuthStore((state) => state.accessToken)
 
   const {
     isMutating,
     loadPermissions,
     loadRoles,
     loadUserRoles,
-    permissionsState,
     rolesState,
     submitAssignUserRole,
     submitRevokeUserRole,
@@ -41,11 +37,6 @@ export function UserRolesPageClient({ locale, userId }: UserRolesPageClientProps
   useEffect(() => {
     void loadUserRoles(userId)
   }, [loadUserRoles, userId])
-
-  const capability = useMemo(
-    () => canManageUserRoles(accessToken, permissionsState.data),
-    [accessToken, permissionsState.data]
-  )
 
   const handleAssignRole = async (targetUserId: number, roleId: number) => {
     const result = await submitAssignUserRole(targetUserId, roleId)
@@ -94,15 +85,11 @@ export function UserRolesPageClient({ locale, userId }: UserRolesPageClientProps
         <p className="text-xs text-muted-foreground">{t('status.loadingUserRoles')}</p>
       ) : null}
 
-      {!capability.canAssignUserRole && !capability.canRevokeUserRole ? (
-        <p className="text-xs text-muted-foreground">{t('status.readOnlyHint')}</p>
-      ) : null}
-
       <UserRoleAssignmentPanel
         allRoles={rolesState.data}
         assignedUserRoles={userRolesState.data}
-        canAssign={capability.canAssignUserRole}
-        canRevoke={capability.canRevokeUserRole}
+        canAssign={true}
+        canRevoke={true}
         isMutating={isMutating}
         onAssignRole={handleAssignRole}
         onRevokeRole={handleRevokeRole}

@@ -280,7 +280,13 @@ class ChallengeFlagSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         request = self.context.get('request')
-        if request is None or not ChallengeService.is_editor_or_admin(request.user):
+        user = getattr(request, 'user', None)
+        can_view_flag = bool(
+            user
+            and user.is_authenticated
+            and user.has_permission('api.learn_challenge.flags')
+        )
+        if not can_view_flag:
             data.pop('flag_value', None)
         return data
 

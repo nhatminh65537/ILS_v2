@@ -1,37 +1,34 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { canManageSystemConfig } from '@/lib/rbac-claim'
 import { mapSystemConfigErrorToMessageKey } from '@/lib/system-config-error-map'
 import {
   isMaskedSecretValue,
   parseConfigValue,
   validateConfigInput,
 } from '@/lib/system-config-value'
-import { listPermissions } from '@/services/rbac.service'
 import {
   getSystemConfigByKey,
   listSystemConfigs,
   updateSystemConfigValue,
 } from '@/services/system-config.service'
-import { useAuthStore } from '@/stores/auth.store'
 import type {
   SystemConfigDto,
   SystemConfigGroupedMap,
   SystemConfigInputValue,
 } from '@/types/admin.types'
-import type { PermissionDto, SystemConfigCapabilities } from '@/types/rbac.types'
+import type { SystemConfigCapabilities } from '@/types/rbac.types'
 
 type ActionResult = {
   success: boolean
   messageKey?: string
 }
 
-const EMPTY_CAPABILITIES: SystemConfigCapabilities = {
-  canList: false,
-  canRetrieve: false,
-  canUpdate: false,
-  canViewSecret: false,
+const PERMISSIVE_CAPABILITIES: SystemConfigCapabilities = {
+  canList: true,
+  canRetrieve: true,
+  canUpdate: true,
+  canViewSecret: true,
 }
 
 const removeFromRecord = <T,>(record: Record<string, T>, key: string): Record<string, T> => {
@@ -66,28 +63,18 @@ const updateConfigInGroups = (
 }
 
 export const useSystemConfig = () => {
-  const accessToken = useAuthStore((state) => state.accessToken)
-
   const [groupedConfigs, setGroupedConfigs] = useState<SystemConfigGroupedMap>({})
   const [isLoading, setIsLoading] = useState(false)
   const [loadErrorMessageKey, setLoadErrorMessageKey] = useState<string | null>(null)
-
-  const [permissionsCatalog, setPermissionsCatalog] = useState<readonly PermissionDto[]>([])
-  const [isLoadingCapabilities, setIsLoadingCapabilities] = useState(false)
-  const [capabilitiesErrorMessageKey, setCapabilitiesErrorMessageKey] = useState<string | null>(null)
 
   const [editingValues, setEditingValues] = useState<Record<string, SystemConfigInputValue>>({})
   const [rowErrorMessageKeys, setRowErrorMessageKeys] = useState<Record<string, string>>({})
   const [revealedSecretValues, setRevealedSecretValues] = useState<Record<string, string>>({})
   const [savingKeys, setSavingKeys] = useState<Set<string>>(new Set<string>())
 
-  const capabilities = useMemo<SystemConfigCapabilities>(() => {
-    if (!accessToken || permissionsCatalog.length === 0) {
-      return EMPTY_CAPABILITIES
-    }
-
-    return canManageSystemConfig(accessToken, permissionsCatalog)
-  }, [accessToken, permissionsCatalog])
+  const capabilities: SystemConfigCapabilities = PERMISSIVE_CAPABILITIES
+  const isLoadingCapabilities = false
+  const capabilitiesErrorMessageKey: string | null = null
 
   const allConfigs = useMemo(() => {
     return Object.values(groupedConfigs).flat()
@@ -98,18 +85,7 @@ export const useSystemConfig = () => {
   }, [groupedConfigs])
 
   const loadCapabilities = useCallback(async () => {
-    setIsLoadingCapabilities(true)
-    setCapabilitiesErrorMessageKey(null)
-
-    try {
-      const permissions = await listPermissions(true)
-      setPermissionsCatalog(permissions)
-    } catch (error) {
-      setPermissionsCatalog([])
-      setCapabilitiesErrorMessageKey(mapSystemConfigErrorToMessageKey(error))
-    } finally {
-      setIsLoadingCapabilities(false)
-    }
+    /* no-op: capabilities are derived from BE 403 responses now */
   }, [])
 
   const loadConfigs = useCallback(async () => {

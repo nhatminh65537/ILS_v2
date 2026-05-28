@@ -1,8 +1,9 @@
-from rest_framework import status, viewsets
+﻿from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from auth_app.constants import BUILTIN_ROLE_ADMIN
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from ..models import Permission, Role, RolePermission
@@ -10,7 +11,7 @@ from ..serializers import PermissionTreeSerializer, RolePermissionSerializer, Ro
 from ..services.role_service import RoleService
 
 
-@add_role_granted('Admin')
+@add_role_granted(BUILTIN_ROLE_ADMIN)
 class RoleViewSet(viewsets.ModelViewSet):
     """Role CRUD viewset."""
 

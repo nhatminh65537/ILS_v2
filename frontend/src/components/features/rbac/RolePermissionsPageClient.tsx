@@ -4,9 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
-import { canManageRoles } from '@/lib/rbac-claim'
 import { useRbac } from '@/hooks/useRbac'
-import { useAuthStore } from '@/stores/auth.store'
 import { PermissionAssignmentPanel } from './PermissionAssignmentPanel'
 
 type RolePermissionsPageClientProps = {
@@ -17,7 +15,6 @@ type RolePermissionsPageClientProps = {
 export function RolePermissionsPageClient({ locale, roleId }: RolePermissionsPageClientProps) {
   const t = useTranslations('adminRbac')
   const tRoot = useTranslations()
-  const accessToken = useAuthStore((state) => state.accessToken)
 
   const {
     activePermissions,
@@ -46,11 +43,6 @@ export function RolePermissionsPageClient({ locale, roleId }: RolePermissionsPag
   const role = useMemo(
     () => rolesState.data.find((item) => item.id === roleId) ?? null,
     [rolesState.data, roleId]
-  )
-
-  const capability = useMemo(
-    () => canManageRoles(accessToken, permissionsState.data),
-    [accessToken, permissionsState.data]
   )
 
   const handleAssign = async (targetRoleId: number, permissionId: number) => {
@@ -90,15 +82,11 @@ export function RolePermissionsPageClient({ locale, roleId }: RolePermissionsPag
       ) : null}
       {submitErrorKey ? <p className="text-xs text-destructive">{tRoot(submitErrorKey)}</p> : null}
 
-      {!capability.canAssignRolePermission && !capability.canRevokeRolePermission ? (
-        <p className="text-xs text-muted-foreground">{t('status.readOnlyHint')}</p>
-      ) : null}
-
       <PermissionAssignmentPanel
         allPermissions={activePermissions}
         assignedPermissions={rolePermissions}
-        canAssign={capability.canAssignRolePermission}
-        canRevoke={capability.canRevokeRolePermission}
+        canAssign={true}
+        canRevoke={true}
         isMutating={isMutating}
         onAssign={handleAssign}
         onRevoke={handleRevoke}

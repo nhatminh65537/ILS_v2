@@ -6,7 +6,12 @@
     "cancel": "Hủy",
     "close": "Đóng",
     "search": "Tìm kiếm",
-    "status": "Trạng thái"
+    "status": "Trạng thái",
+    "permissionDenied": {
+      "title": "Không đủ quyền",
+      "defaultMessage": "Bạn không có quyền thực hiện thao tác này.",
+      "acknowledge": "Đã hiểu"
+    }
   },
   "navigation": {
     "home": "Trang chủ",

@@ -13,9 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { canManageRoles } from '@/lib/rbac-claim'
 import { useRbac } from '@/hooks/useRbac'
-import { useAuthStore } from '@/stores/auth.store'
 import type { RoleDto } from '@/types/rbac.types'
 import { RbacActionToolbar } from './RbacActionToolbar'
 import { RoleFormDialog } from './RoleFormDialog'
@@ -28,7 +26,6 @@ type RbacOverviewClientProps = {
 export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
   const t = useTranslations('adminRbac')
   const tRoot = useTranslations()
-  const accessToken = useAuthStore((state) => state.accessToken)
 
   const {
     rolesState,
@@ -58,11 +55,6 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
     void loadPermissions(includeInactive)
     void loadPermissionsPage(includeInactive, 1)
   }, [includeInactive, loadPermissions, loadPermissionsPage])
-
-  const capability = useMemo(
-    () => canManageRoles(accessToken, permissionsState.data),
-    [accessToken, permissionsState.data]
-  )
 
   const filteredRoles = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -170,15 +162,11 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
       ) : null}
       {submitErrorKey ? <p className="text-xs text-destructive">{tRoot(submitErrorKey)}</p> : null}
 
-      {!capability.canListRoles ? (
-        <p className="text-xs text-muted-foreground">{t('status.readOnlyHint')}</p>
-      ) : null}
-
       <RoleListPanel
-        canCreate={capability.canCreateRole}
-        canDelete={capability.canDeleteRole}
-        canManagePermissions={capability.canAssignRolePermission || capability.canRevokeRolePermission}
-        canUpdate={capability.canUpdateRole}
+        canCreate={true}
+        canDelete={true}
+        canManagePermissions={true}
+        canUpdate={true}
         isLoading={rolesState.isLoading}
         isMutating={isMutating}
         locale={locale}

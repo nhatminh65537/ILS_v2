@@ -4,16 +4,36 @@ from django.db.models import Count, F, Q
 
 from api.models import Course, CourseNode, CourseTagMap, Lesson, UserCourseProgress, UserLessonProgress
 from api.utils import get_config
+from auth_app.constants import (
+    PERM_MATERIAL_PURGE,
+    PERM_MATERIAL_READ_ARCHIVE,
+    PERM_MATERIAL_READ_DRAFT,
+)
 
 
 class CourseService:
     """Domain operations for course view flows."""
 
     @staticmethod
-    def is_editor_or_admin(user):
-        if user.is_superuser:
-            return True
-        return user.user_roles.filter(role__name__in=['Admin', 'Editor']).exists()
+    def _can_read_draft(user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.has_permission(PERM_MATERIAL_READ_DRAFT)
+
+    @staticmethod
+    def _can_read_archive(user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.has_permission(PERM_MATERIAL_READ_ARCHIVE)
+
+    @classmethod
+    def _allowed_statuses(cls, user) -> set:
+        allowed = {Course.Status.PUBLISHED}
+        if cls._can_read_draft(user):
+            allowed.add(Course.Status.DRAFT)
+        if cls._can_read_archive(user):
+            allowed.add(Course.Status.ARCHIVED)
+        return allowed
 
     @staticmethod
     def filter_visible_courses(queryset, user, query_params):
@@ -21,12 +41,15 @@ class CourseService:
 
     @classmethod
     def filter_visible_learn_courses(cls, queryset, user, query_params):
+        allowed = cls._allowed_statuses(user)
         status_param = query_params.get('status')
-
-        if not cls.is_editor_or_admin(user):
-            queryset = queryset.filter(status=Course.Status.PUBLISHED)
-        elif status_param:
-            queryset = queryset.filter(status=status_param)
+        if status_param:
+            if status_param in allowed:
+                queryset = queryset.filter(status=status_param)
+            else:
+                queryset = queryset.none()
+        else:
+            queryset = queryset.filter(status__in=allowed)
 
         category = query_params.get('category') or query_params.get('category_id')
         if category:
@@ -44,9 +67,7 @@ class CourseService:
 
     @classmethod
     def get_visible_course_by_slug(cls, slug, user):
-        queryset = Course.objects.filter(slug=slug)
-        if not cls.is_editor_or_admin(user):
-            queryset = queryset.filter(status=Course.Status.PUBLISHED)
+        queryset = Course.objects.filter(slug=slug, status__in=cls._allowed_statuses(user))
         return queryset.get()
 
     @staticmethod
@@ -310,8 +331,8 @@ class CourseService:
                 course.save(update_fields=['status', 'updated_at'])
             return 'archived'
 
-        if not actor.is_superuser and not actor.user_roles.filter(role__name='Admin').exists():
-            raise PermissionError('Only Admin can purge a course')
+        if not actor or not actor.is_authenticated or not actor.has_permission(PERM_MATERIAL_PURGE):
+            raise PermissionError('Only users with material.purge permission can purge a course')
 
         course.delete()
         return 'purged'

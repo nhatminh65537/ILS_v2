@@ -5,6 +5,7 @@ from django.urls import URLPattern, URLResolver, get_resolver
 
 from api.models import Permission, Role, RolePermission
 from auth_app.permissions import derive_permission_key, get_role_granted
+from auth_app.permissions_registry import iter_code_permissions
 
 
 LOGGER = logging.getLogger(__name__)
@@ -12,17 +13,25 @@ SKIP_PREFIXES = ('admin/', '__debug__/')
 REQUIRED_TABLES = {'permission', 'role', 'role_permission'}
 
 
+class PermissionDiscoveryConflictError(RuntimeError):
+    """Raised when a permission name is registered from multiple sources."""
+
+
 def discover_permissions() -> dict:
     """
-    Discover permissions from decorated endpoints and sync RolePermission mappings.
+    Discover permissions from decorated endpoints + the code-registered catalog
+    and sync RolePermission mappings.
 
-    Naming format is lowercase: {app_label}.{resource_name}.{handler_method_name}
+    URL-scanned names use the lowercase `{app_label}.{resource_name}.{handler}`
+    convention. Code-registered names use the `system.*` namespace. Conflicts
+    raise `PermissionDiscoveryConflictError`.
     """
     if not _has_required_tables():
         LOGGER.info('AUTHZ-DISCOVERY skip missing tables')
         return {
             'scanned_routes': 0,
             'discovered_permissions': 0,
+            'code_registered_permissions': 0,
             'created_permissions': 0,
             'reactivated_permissions': 0,
             'inactive_permissions': 0,
@@ -31,10 +40,12 @@ def discover_permissions() -> dict:
         }
 
     discovered, scanned_routes = _collect_discovered_permissions()
+    code_registered_count = _merge_code_permissions(discovered)
 
     stats = {
         'scanned_routes': scanned_routes,
         'discovered_permissions': len(discovered),
+        'code_registered_permissions': code_registered_count,
         'created_permissions': 0,
         'reactivated_permissions': 0,
         'inactive_permissions': 0,
@@ -47,20 +58,28 @@ def discover_permissions() -> dict:
 
         role_cache = {}
         for permission_name, meta in discovered.items():
+            description = meta.get('description') or f"Auto-discovered from {meta['source']}"
             permission, created = Permission.objects.get_or_create(
                 name=permission_name,
                 defaults={
-                    'description': f"Auto-discovered from {meta['source']}",
+                    'description': description,
                     'is_active': True,
                 },
             )
 
             if created:
                 stats['created_permissions'] += 1
-            elif not permission.is_active:
-                permission.is_active = True
-                permission.save(update_fields=['is_active', 'updated_at'])
-                stats['reactivated_permissions'] += 1
+            else:
+                update_fields = []
+                if not permission.is_active:
+                    permission.is_active = True
+                    update_fields.append('is_active')
+                    stats['reactivated_permissions'] += 1
+                if permission.description != description:
+                    permission.description = description
+                    update_fields.append('description')
+                if update_fields:
+                    permission.save(update_fields=update_fields + ['updated_at'])
 
             for role_name in sorted(meta['roles']):
                 role = role_cache.get(role_name)
@@ -88,10 +107,12 @@ def discover_permissions() -> dict:
         stats['inactive_permissions'] = Permission.objects.filter(is_active=False).count()
 
     LOGGER.info(
-        'AUTHZ-DISCOVERY done scanned_routes=%s discovered_permissions=%s created_permissions=%s '
-        'reactivated_permissions=%s inactive_permissions=%s created_roles=%s linked_role_permissions=%s',
+        'AUTHZ-DISCOVERY done scanned_routes=%s discovered_permissions=%s code_registered_permissions=%s '
+        'created_permissions=%s reactivated_permissions=%s inactive_permissions=%s '
+        'created_roles=%s linked_role_permissions=%s',
         stats['scanned_routes'],
         stats['discovered_permissions'],
+        stats['code_registered_permissions'],
         stats['created_permissions'],
         stats['reactivated_permissions'],
         stats['inactive_permissions'],
@@ -99,6 +120,31 @@ def discover_permissions() -> dict:
         stats['linked_role_permissions'],
     )
     return stats
+
+
+def _merge_code_permissions(discovered: dict) -> int:
+    """Merge code-registered permissions into the discovered map.
+
+    Raises if a code permission name collides with a URL-scanned name.
+    Returns the number of permissions merged in.
+    """
+    count = 0
+    for code_permission in iter_code_permissions():
+        name = code_permission.name
+        if name in discovered:
+            raise PermissionDiscoveryConflictError(
+                f'AUTHZ-DISCOVERY conflict: permission name "{name}" registered '
+                f'from both URL scan and code registry. Rename one of them.'
+            )
+
+        roles = {role.strip() for role in code_permission.granted_roles if role and role.strip()}
+        discovered[name] = {
+            'roles': roles,
+            'source': f'code-registry:{code_permission.name}',
+            'description': code_permission.description,
+        }
+        count += 1
+    return count
 
 
 def _collect_discovered_permissions() -> tuple[dict, int]:

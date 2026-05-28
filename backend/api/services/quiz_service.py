@@ -1,24 +1,41 @@
 from django.shortcuts import get_object_or_404
 
 from api.models import Quiz, QuizConfig, QuizQuestion, UserQuizProgress
+from auth_app.constants import PERM_MATERIAL_READ_ARCHIVE, PERM_MATERIAL_READ_DRAFT
 
 
 class QuizService:
     """Domain operations for quiz view flows."""
 
     @staticmethod
-    def is_editor_or_admin(user):
-        if user.is_superuser:
-            return True
-        return user.user_roles.filter(role__name__in=['Admin', 'Editor']).exists()
+    def _can_read_draft(user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.has_permission(PERM_MATERIAL_READ_DRAFT)
+
+    @staticmethod
+    def _can_read_archive(user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.has_permission(PERM_MATERIAL_READ_ARCHIVE)
+
+    @classmethod
+    def _allowed_statuses(cls, user) -> set:
+        allowed = {Quiz.Status.PUBLISHED}
+        if cls._can_read_draft(user):
+            allowed.add(Quiz.Status.DRAFT)
+        if cls._can_read_archive(user):
+            allowed.add(Quiz.Status.ARCHIVED)
+        return allowed
 
     @classmethod
     def filter_visible_quizzes(cls, queryset, user, status_param):
-        if not cls.is_editor_or_admin(user):
-            return queryset.filter(status=Quiz.Status.PUBLISHED)
+        allowed = cls._allowed_statuses(user)
         if status_param:
-            return queryset.filter(status=status_param)
-        return queryset
+            if status_param in allowed:
+                return queryset.filter(status=status_param)
+            return queryset.none()
+        return queryset.filter(status__in=allowed)
 
     @staticmethod
     def get_quiz_question(quiz, qid):

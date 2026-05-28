@@ -6,6 +6,8 @@ import base64
 import re
 from rest_framework.permissions import BasePermission
 
+from auth_app.constants import BUILTIN_ROLE_MEMBER
+
 ROLE_GRANTED_ATTR = '__role_granted__'
 
 
@@ -188,7 +190,7 @@ class HasJWTPermission(BasePermission):
             # Endpoint has no role restriction → allow authenticated users
             return True
 
-        if 'Member' in effective_roles:
+        if BUILTIN_ROLE_MEMBER in effective_roles:
             # Any authenticated user qualifies for Member-grade endpoints
             return True
 
