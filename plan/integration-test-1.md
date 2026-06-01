@@ -19,6 +19,22 @@ Dự án ILS v2 (cybersecurity learning platform self-hosted, 3 trụ: Learn / C
 
 ---
 
+## Kết quả & xử lý — Pass 1 nhóm B/C (cập nhật 2026-06-01)
+
+> Tổng hợp sau khi điều tra các phát hiện manual. Chi tiết bug: `docs/BUGS.md` F38/F39.
+
+| Case | Kết quả | Xử lý |
+|------|---------|-------|
+| **[B-03]** Custom role `Manager` có quyền nhưng vẫn 403 `/api/admin/users/` | **BUG nghiêm trọng (CRITICAL)** — không phải stale-JWT. Root cause: `HasJWTPermission` dùng `isinstance(request.auth, dict)` nhưng `request.auth` là `AccessToken` → bitmap bị bỏ qua → fallback role-name (chỉ biết built-in role) → custom role vô tác dụng. | **Fixed F38**: bitmap-only, bỏ fallback + is_superuser. Verified: editor1+Manager → 200. |
+| **[B-__]** Role X đổi → user cập nhật ra sao | DB-side đã đúng (`assign/remove_role`, `RoleService` invalidate cache + bump pv). Vấn đề thực nằm trong cùng bug F38 (bitmap không chạy). | **Đóng cùng F38.** Cache permission đồng bộ qua `permission_version` + discovery clear cache khi permission set đổi. |
+| **[B-04]** Filter user FE-only | Không phải bug. Dataset ~100 user → FE filter hợp lý. BE đã có `?search=`. | **Giữ nguyên** (ghi nhận). |
+| **[C-02/03/05]** | Plan test sai (không có `system.site_name`, không có config enum). | **Skip** (plan không khớp code/tài liệu). |
+| **[C-06]** maintenance_mode | Chưa triển khai cơ chế. | **Defer** — tính sau (ngoài scope đợt này). |
+| **[_-08]** Không đọc được secret config | Thiếu tính năng (secret write-only). | **Implemented**: permission `system.config.read_secret` + endpoint `GET /api/admin/config/{key}/reveal/` (admin-only) + nút reveal FE. |
+| **[_-10]** `MISSING_MESSAGE notifications.notifications.errors.authRequired` | BUG i18n double-namespace (class F29/F30). | **Fixed F39**: `NotificationBell` dùng root translator cho `socketErrorKey`. |
+
+---
+
 ## 1. Chuẩn bị Database & Môi trường
 
 ### 1.1. Cài đặt dependencies (chỉ làm 1 lần đầu)
@@ -63,10 +79,10 @@ Sau khi backend start, dùng FE register page hoặc curl:
 
 ```powershell
 # Tạo user Editor
-curl -X POST http://localhost:8000/api/auth/register/ -H "Content-Type: application/json" -d '{\"username\":\"editor1\",\"email\":\"editor1@test.local\",\"password\":\"editor1234\"}'
+curl.exe -X POST http://localhost:8000/api/auth/register/ -H "Content-Type: application/json" -d '{\"username\":\"editor1\",\"email\":\"editor1@test.local\",\"password\":\"editor1234\"}'
 
 # Tạo user Member
-curl -X POST http://localhost:8000/api/auth/register/ -H "Content-Type: application/json" -d '{\"username\":\"member1\",\"email\":\"member1@test.local\",\"password\":\"member1234\"}'
+curl.exe -X POST http://localhost:8000/api/auth/register/ -H "Content-Type: application/json" -d '{\"username\":\"member1\",\"email\":\"member1@test.local\",\"password\":\"member1234\"}'
 ```
 
 Rồi vào FE admin (đăng nhập admin) **/vi/admin/rbac/users/[id]/roles** để gán role `Editor` cho `editor1`. (User `member1` mặc định có role Member sau register.)

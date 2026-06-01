@@ -13,6 +13,16 @@ def _assign_role(user, role_name):
     UserRole.objects.get_or_create(user=user, role=role)
 
 
+def _jwt_client(user):
+    """APIClient carrying a real JWT (authorization is bitmap-driven)."""
+    from auth_app.services.token_service import TokenService
+
+    tokens = TokenService().issue_tokens_for_new_session(user, device_info='pytest')
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+    return client
+
+
 def _extract_results(response):
     data = response.data
     if isinstance(data, dict) and 'results' in data:
@@ -56,7 +66,20 @@ def test_member_list_learn_courses_shows_only_published(member_client, member_us
 def test_member_status_filter_cannot_expose_draft(member_client, member_user, published_course, draft_course):
     _assign_role(member_user, 'Member')
 
+    # A member has no draft-read permission, so explicitly requesting the draft
+    # status must return nothing rather than leaking drafts (or silently
+    # downgrading to published).
     response = member_client.get('/api/learn/courses/?status=draft')
+
+    assert response.status_code == 200
+    results = _extract_results(response)
+    assert len(results) == 0
+
+
+def test_member_default_list_shows_only_published(member_client, member_user, published_course, draft_course):
+    _assign_role(member_user, 'Member')
+
+    response = member_client.get('/api/learn/courses/')
 
     assert response.status_code == 200
     results = _extract_results(response)
@@ -178,12 +201,10 @@ def test_non_admin_cannot_write_categories(editor_client, editor_user, member_cl
 
 def test_tag_routes_permission_behavior(editor_user, member_user):
     _assign_role(editor_user, 'Editor')
+    _assign_role(member_user, 'Member')
 
-    editor_client = APIClient()
-    editor_client.force_authenticate(user=editor_user)
-
-    member_client = APIClient()
-    member_client.force_authenticate(user=member_user)
+    editor_client = _jwt_client(editor_user)
+    member_client = _jwt_client(member_user)
 
     editor_create = editor_client.post(
         '/api/learn/tags/',
@@ -224,12 +245,10 @@ def test_learn_detail_route_and_legacy_route_both_work(member_client, member_use
 
 def test_delete_course_archives_by_default_and_admin_can_purge(editor_user, admin_user):
     _assign_role(editor_user, 'Editor')
+    _assign_role(admin_user, 'Admin')
 
-    editor_client = APIClient()
-    editor_client.force_authenticate(user=editor_user)
-
-    admin_client = APIClient()
-    admin_client.force_authenticate(user=admin_user)
+    editor_client = _jwt_client(editor_user)
+    admin_client = _jwt_client(admin_user)
 
     course = Course.objects.create(slug='delete-course', title='Delete Course', status=Course.Status.DRAFT)
 

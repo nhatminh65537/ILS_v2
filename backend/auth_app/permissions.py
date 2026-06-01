@@ -6,8 +6,6 @@ import base64
 import re
 from rest_framework.permissions import BasePermission
 
-from auth_app.constants import BUILTIN_ROLE_MEMBER
-
 ROLE_GRANTED_ATTR = '__role_granted__'
 
 
@@ -114,22 +112,39 @@ class HasJWTPermission(BasePermission):
     def __init__(self, permission_key: str = None):
         super().__init__()
         self.permission_key = permission_key
-    
+
+    def __call__(self):
+        """Allow using a configured instance directly in ``permission_classes``.
+
+        DRF instantiates each entry of ``permission_classes`` by calling it. By
+        returning ``self`` we let callers pass an instance carrying an explicit
+        permission key, e.g.
+        ``permission_classes=[IsAuthenticated, HasJWTPermission('x.y.z')]``.
+        """
+        return self
+
     def has_permission(self, request, view):
         """
-        Check if user has permission in JWT claims.
+        Check if the request's JWT carries the permission bit for this endpoint.
 
-        Permission check order:
-            1. auth.authorization_enabled=false → allow all authenticated users (dev bypass)
-            2. JWT bitmap present → bitmap check (production path)
-            3. No JWT bitmap (force_authenticate in tests) → role-grant fallback:
-               - superuser → allow
-               - 'Member' in effective_roles → allow (any authenticated user)
-               - otherwise → check DB UserRole entries
+        This is the single source of truth for authorization — the encoded
+        permission bitmap in the access token. There is NO role-name fallback
+        and NO ``is_superuser`` short-circuit: every caller (including
+        superusers) must hold the permission via an assigned Role. This keeps
+        the model purely permission-driven and fail-closed.
+
+        Check order:
+            1. ``auth.authorization_enabled=false`` → allow any authenticated
+               user (development bypass only).
+            2. Endpoint has no resolvable permission key (non-viewset / no
+               string action) → allow (nothing to check).
+            3. Otherwise → look up the permission id and test the token bitmap
+               bit. Missing token / missing bitmap / unknown permission / any
+               error → deny.
 
         Permission key resolution (when not explicit):
-            1. Auto-derived from view class + action: RoleViewSet + 'list' → 'api.role.list'
-            2. No string action (non-viewset or Mock view) → no restriction
+            Auto-derived from view class + action, e.g.
+            ``RoleViewSet + 'list' → 'api.role.list'``.
         """
         # Import here to avoid circular imports and ensure Django setup
         from api.utils import get_config
@@ -137,7 +152,7 @@ class HasJWTPermission(BasePermission):
         # Development bypass: if authZ disabled, allow access
         try:
             if not get_config('auth.authorization_enabled', True):
-                return request.user and request.user.is_authenticated
+                return bool(request.user and request.user.is_authenticated)
         except Exception:
             # If config lookup fails, continue with normal check
             pass
@@ -145,8 +160,6 @@ class HasJWTPermission(BasePermission):
         # User must be authenticated
         if not request.user or not request.user.is_authenticated:
             return False
-
-        user = request.user
 
         # Resolve action name (must be a string — guard against Mock in tests)
         action = getattr(view, 'action', None)
@@ -157,42 +170,31 @@ class HasJWTPermission(BasePermission):
         key = self.permission_key
         if not key:
             if not action:
-                # Non-viewset view or unknown action — no restriction
+                # Non-viewset view or unknown action — nothing to authorize.
                 return True
             key = derive_permission_key(view.__class__, action)
 
-        # ── Fast path: JWT bitmap ────────────────────────────────────────────
-        token_data = request.auth if isinstance(request.auth, dict) else {}
-        permissions_bitmap = token_data.get('permissions', '')
-
-        if permissions_bitmap:
+        # ── Bitmap check: the only authorization path ────────────────────────
+        # ``request.auth`` is a SimpleJWT ``AccessToken`` (supports ``.get``);
+        # for safety we also accept a plain dict. Anything else → no bitmap.
+        auth = request.auth
+        permissions_bitmap = ''
+        if auth is not None:
             try:
-                from api.models import Permission
-                permission = Permission.objects.get(name=key)
-                return check_bit_in_bitmap(permissions_bitmap, permission.id)
-            except Permission.DoesNotExist:
-                # Permission not in DB — deny (scanner must have run first)
-                return False
+                permissions_bitmap = auth.get('permissions', '') or ''
             except Exception:
-                return False
+                permissions_bitmap = ''
 
-        # ── Fallback: no JWT bitmap (e.g. force_authenticate in tests) ───────
-        # Resolve effective roles from @add_role_granted metadata
-        if user.is_superuser:
-            return True
+        if not permissions_bitmap:
+            # No bitmap → cannot prove the permission → deny (fail-closed).
+            return False
 
-        handler = getattr(view.__class__, action, None) if action else None
-        handler_roles = get_role_granted(handler) if handler else ()
-        class_roles = get_role_granted(view.__class__)
-        effective_roles = handler_roles if handler_roles else class_roles
-
-        if not effective_roles:
-            # Endpoint has no role restriction → allow authenticated users
-            return True
-
-        if BUILTIN_ROLE_MEMBER in effective_roles:
-            # Any authenticated user qualifies for Member-grade endpoints
-            return True
-
-        # Elevated roles (Admin, Editor) → check DB
-        return user.user_roles.filter(role__name__in=effective_roles).exists()
+        try:
+            from api.models import Permission
+            permission = Permission.objects.get(name=key)
+            return check_bit_in_bitmap(permissions_bitmap, permission.id)
+        except Permission.DoesNotExist:
+            # Permission not in DB — deny (discovery must have run first).
+            return False
+        except Exception:
+            return False

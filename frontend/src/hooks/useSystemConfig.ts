@@ -8,8 +8,8 @@ import {
   validateConfigInput,
 } from '@/lib/system-config-value'
 import {
-  getSystemConfigByKey,
   listSystemConfigs,
+  revealSystemConfigSecret,
   updateSystemConfigValue,
 } from '@/services/system-config.service'
 import type {
@@ -205,7 +205,7 @@ export const useSystemConfig = () => {
       })
 
       try {
-        const detail = await getSystemConfigByKey(config.key)
+        const detail = await revealSystemConfigSecret(config.key)
         const secretValue = detail.value
 
         if (typeof secretValue !== 'string' || isMaskedSecretValue(secretValue)) {

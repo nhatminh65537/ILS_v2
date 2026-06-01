@@ -35,7 +35,18 @@ def test_member_list_quizzes_shows_only_published(member_client, member_user, pu
 def test_member_status_filter_cannot_expose_draft(member_client, member_user, published_quiz, draft_quiz):
     _assign_role(member_user, 'Member')
 
+    # A member cannot read drafts, so explicitly requesting the draft status
+    # returns nothing rather than leaking drafts or silently downgrading.
     response = member_client.get('/api/quiz/quizzes/?status=draft')
+
+    assert response.status_code == 200
+    assert response.data['count'] == 0
+
+
+def test_member_default_quiz_list_shows_only_published(member_client, member_user, published_quiz, draft_quiz):
+    _assign_role(member_user, 'Member')
+
+    response = member_client.get('/api/quiz/quizzes/')
 
     assert response.status_code == 200
     assert response.data['count'] == 1

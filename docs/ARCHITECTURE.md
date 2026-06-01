@@ -181,6 +181,14 @@ Chosen because:
 
 **Implementation:** Every API endpoint requires a specific permission. Permissions are **flat** (no hierarchy). Roles are bundles of permissions. Built-in roles (Admin, Editor, Member) are auto-created via `@add_role_granted` decorator scan at startup.
 
+**Two permission sources (merged at startup by `discover_permissions()`):**
+1. **URL-scanned (`api.*`)** — derived from `@add_role_granted` on viewsets/handlers, named `{app_label}.{resource}.{handler}` (e.g. `api.role.list`).
+2. **Code-registered (`system.*`)** — declared in `backend/auth_app/permissions_registry.py` for authorization concepts that don't map to a single REST endpoint: `system.admin_portal.access`, `system.admin_portal.<section>`, `system.material.{read_draft,read_archive,purge}`, `system.config.read_secret`. A name collision between the two sources raises `PermissionDiscoveryConflictError`.
+
+Service-layer visibility checks use `user.has_permission('system.…')` — never role-name filtering. When the permission set or its role links change, discovery clears `user_permission_cache` so users pick up new permissions on next token issuance.
+
+**Derived JWT claims (set in `TokenService`):** besides `permissions`/`pv`, the token carries `admin_surface` (from `system.admin_portal.access`), `admin_sections[]` (per-entry from the `ADMIN_SECTIONS` map), and `session_id` (for revocation). The frontend gates admin nav/routes off `admin_sections`; it does **not** re-derive capabilities from the bitmap.
+
 **Decision record:** See `docs/DECISIONS.md` — Decision Index and the Q-AUTH-* / R-ARCH-* entries
 
 ---
@@ -263,13 +271,13 @@ class RoleViewSet(viewsets.ModelViewSet):
 permission_classes = [IsAuthenticated, HasJWTPermission('api.role.list')]
 ```
 
-**No-JWT-bitmap fallback (test environments using `force_authenticate`):**
-When `request.auth` is not a JWT dict (no bitmap), `HasJWTPermission` falls back to role-grant metadata:
-1. `user.is_superuser` → allow
-2. `'Member' in effective_roles` → allow (any authenticated user qualifies)
-3. Otherwise → `user.user_roles.filter(role__name__in=effective_roles).exists()` → DB check
+**Bitmap is the single source of truth — no role-name fallback, no `is_superuser` short-circuit (F38, 2026-06-01):**
+`HasJWTPermission` reads the encoded bitmap from `request.auth` (a SimpleJWT `AccessToken`, accessed via `request.auth.get('permissions')`; a plain dict is also accepted) and tests the bit at `Permission.id`. Authorization is **purely permission-driven and fail-closed**:
+- No token / no bitmap / unknown permission / decode error → **deny**.
+- `is_superuser` does **not** bypass anything — a superuser must hold the permission via an assigned Role (`seed_admin` grants the `Admin` role).
+- There is **no** role-name fallback. (The earlier fallback silently masked a bug where the bitmap path was skipped entirely because `request.auth` is an `AccessToken`, not a `dict` — see BUGS.md F38.)
 
-This fallback is **never reached in production** (all JWT-authenticated requests carry a bitmap).
+> ⚠️ **Testing implication:** `force_authenticate` leaves `request.auth = None`, so it can never exercise the bitmap path and a request authenticated that way is now denied for any permissioned endpoint. Tests that hit protected endpoints **must authenticate with a real JWT** (`TokenService.issue_tokens_for_new_session` + `client.credentials(HTTP_AUTHORIZATION='Bearer …')`). The shared `admin/editor/member_client` fixtures do this and assign the matching built-in Role.
 
 ---
 
@@ -449,7 +457,8 @@ Request → Extract Bearer token
   → Check bit at position permission.id in bitmap
       → Bit set (1): granted, proceed
       → Bit unset (0): return 403
-  → No DB hit for permission check (permission.id cached in memory at startup)
+  → The bit test itself is in-memory; the permission row (id for the required
+    name) is resolved with a lightweight lookup per check
 ```
 
 ### 5.4 Permission Cache Invalidation Flow

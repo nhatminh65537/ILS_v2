@@ -8,7 +8,10 @@ class SystemConfigSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if instance.value_type == SystemConfig.ConfigType.SECRET:
+        # Secret values are masked by default. They are only revealed when the
+        # view explicitly opts in via context AFTER checking the caller holds
+        # `system.config.read_secret` (see SystemConfigViewSet.reveal).
+        if instance.value_type == SystemConfig.ConfigType.SECRET and not self.context.get('reveal_secrets'):
             data['value'] = '***'
         return data
 

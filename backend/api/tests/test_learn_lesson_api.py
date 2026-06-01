@@ -12,6 +12,16 @@ def _assign_role(user, role_name):
     UserRole.objects.get_or_create(user=user, role=role)
 
 
+def _jwt_client(user):
+    """APIClient carrying a real JWT (authorization is bitmap-driven)."""
+    from auth_app.services.token_service import TokenService
+
+    tokens = TokenService().issue_tokens_for_new_session(user, device_info='pytest')
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+    return client
+
+
 @pytest.fixture
 def published_course(db):
     category = CourseCategory.objects.create(name='Lesson Published Category')
@@ -246,8 +256,8 @@ def test_member_can_retrieve_mapping_for_published_course(member_client, member_
     question = _create_question()
 
     # Create mapping with an elevated client
-    admin_client = APIClient()
-    admin_client.force_authenticate(user=admin_user)
+    _assign_role(admin_user, 'Admin')
+    admin_client = _jwt_client(admin_user)
 
     attach_response = admin_client.post(
         f'/api/learn/lessons/{lesson.id}/questions/',
@@ -275,8 +285,8 @@ def test_member_cannot_retrieve_mapping_for_draft_course(member_client, member_u
 
     question = _create_question()
 
-    admin_client = APIClient()
-    admin_client.force_authenticate(user=admin_user)
+    _assign_role(admin_user, 'Admin')
+    admin_client = _jwt_client(admin_user)
 
     attach_response = admin_client.post(
         f'/api/learn/lessons/{lesson.id}/questions/',

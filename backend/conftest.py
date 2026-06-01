@@ -11,6 +11,21 @@ from tests.fixtures.rbac import *  # noqa: F401,F403
 
 
 @pytest.fixture(autouse=True)
+def _clear_caches():
+    """Reset the process-wide cache between tests.
+
+    `get_config` caches non-runtime config values, and session/permission flags
+    are cached too. The default LocMem cache persists across tests in the same
+    process, so without this a config value (e.g. `auth.authorization_enabled`)
+    set by one test would leak into the next and cause order-dependent failures.
+    """
+    from django.core.cache import cache
+    cache.clear()
+    yield
+    cache.clear()
+
+
+@pytest.fixture(autouse=True)
 def _seed_authz_discovery(db):
     """Ensure URL-scanned + code-registered permissions exist in the test DB.
 

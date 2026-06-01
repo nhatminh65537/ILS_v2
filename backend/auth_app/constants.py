@@ -23,6 +23,7 @@ REFRESH_TTL_CONFIG_KEY = 'auth.token.refresh_ttl'
 DEFAULT_REFRESH_TTL_MINUTES = 60 * 24 * 7
 
 PERM_ADMIN_PORTAL_ACCESS = 'system.admin_portal.access'
+PERM_CONFIG_READ_SECRET = 'system.config.read_secret'
 PERM_MATERIAL_READ_DRAFT = 'system.material.read_draft'
 PERM_MATERIAL_READ_ARCHIVE = 'system.material.read_archive'
 PERM_MATERIAL_PURGE = 'system.material.purge'

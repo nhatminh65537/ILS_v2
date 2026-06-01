@@ -45,6 +45,11 @@ const truncate = (value: string, maxLength: number): string => {
 
 export function NotificationBell({ locale }: NotificationBellProps) {
   const t = useTranslations('notifications')
+  // socketErrorKey is a root-relative message path (e.g.
+  // 'notifications.errors.authRequired'), so it must be resolved with a
+  // root-scoped translator — using the 'notifications'-scoped `t` would
+  // double-prefix it into 'notifications.notifications.errors.…'.
+  const tRoot = useTranslations()
   const {
     notifications,
     unreadCount,
@@ -92,7 +97,7 @@ export function NotificationBell({ locale }: NotificationBellProps) {
         <DropdownMenuSeparator />
 
         {socketErrorKey ? (
-          <DropdownMenuItem disabled>{t(socketErrorKey as Parameters<typeof t>[0])}</DropdownMenuItem>
+          <DropdownMenuItem disabled>{tRoot(socketErrorKey as Parameters<typeof tRoot>[0])}</DropdownMenuItem>
         ) : null}
 
         {latestFive.length === 0 ? (

@@ -327,7 +327,8 @@ Pagination: leaderboard uses a dedicated page size default of **10** (`limit` qu
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
 | GET | `/api/admin/config/` | Admin | Stable | List grouped by `category`: `{[category]: SystemConfig[]}`; secret values masked by default. |
-| GET | `/api/admin/config/{key}/` | Admin | Stable | Detail lookup by config key (supports dotted keys); clear secret read requires manual permission `system.config.view_secret`. |
+| GET | `/api/admin/config/{key}/` | Admin | Stable | Detail lookup by config key (supports dotted keys); secret values are **always masked** (`***`) on this path. |
+| GET | `/api/admin/config/{key}/reveal/` | Admin (`system.config.read_secret`) | Stable | Returns the real (unmasked) value for secret keys. Gated by the code-registered permission `system.config.read_secret` (granted to `Admin` by default). |
 | PATCH | `/api/admin/config/{key}/` | Admin | Stable | Value update with type validation (`bool`, `int`, `string`, `json`, `secret`). |
 
 Notes:
@@ -449,7 +450,7 @@ Usage rules:
 ## 7. Error and Security Notes
 
 - Error payload shape is currently endpoint-dependent and will be normalized in later slices.
-- System Config secret values are masked by default; clear-text access is limited to principals with manual permission `system.config.view_secret`.
+- System Config secret values are always masked on list/detail; clear-text access is via the dedicated `GET /api/admin/config/{key}/reveal/` endpoint, gated by permission `system.config.read_secret` (Admin by default).
 - API documentation must be updated in the same session whenever endpoint routing or serializer contract changes.
 
 ---

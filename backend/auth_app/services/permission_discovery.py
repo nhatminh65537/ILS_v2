@@ -106,6 +106,19 @@ def discover_permissions() -> dict:
 
         stats['inactive_permissions'] = Permission.objects.filter(is_active=False).count()
 
+    # When the permission set or its role links changed, drop cached bitmaps so
+    # that users pick up newly added permissions on their next token issuance.
+    # We only clear the cache (no permission_version bump): the next
+    # get_or_refresh_cache recomputes from the current role grants, and tokens
+    # already in flight keep working until they are refreshed.
+    if (
+        stats['created_permissions']
+        or stats['reactivated_permissions']
+        or stats['linked_role_permissions']
+    ):
+        from api.models import UserPermissionCache
+        UserPermissionCache.objects.all().delete()
+
     LOGGER.info(
         'AUTHZ-DISCOVERY done scanned_routes=%s discovered_permissions=%s code_registered_permissions=%s '
         'created_permissions=%s reactivated_permissions=%s inactive_permissions=%s '

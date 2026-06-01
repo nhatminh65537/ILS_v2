@@ -78,6 +78,18 @@ class TestSystemConfigAPI:
         assert response.data['key'] == 'auth.sso_client_secret'
         assert response.data['value'] == '***'
 
+    def test_reveal_returns_real_secret_for_admin(self, admin_client, config_seed):
+        response = admin_client.get('/api/admin/config/auth.sso_client_secret/reveal/')
+
+        assert response.status_code == 200
+        assert response.data['key'] == 'auth.sso_client_secret'
+        assert response.data['value'] == 'super-secret'
+
+    def test_reveal_forbidden_for_non_admin(self, member_client, config_seed):
+        response = member_client.get('/api/admin/config/auth.sso_client_secret/reveal/')
+
+        assert response.status_code == 403
+
     def test_patch_bool_value_success(self, admin_client, config_seed):
         response = admin_client.patch(
             '/api/admin/config/auth.local_login_enabled/',

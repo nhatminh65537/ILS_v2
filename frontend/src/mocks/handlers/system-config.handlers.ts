@@ -171,6 +171,23 @@ export const systemConfigHandlers = [
     return HttpResponse.json(toGroupedResponse(configs))
   }),
 
+  http.get('*/api/admin/config/:key/reveal/', ({ request, params }) => {
+    const auth = requirePermission(request, ['system.config.read_secret'])
+    if (!auth.ok) {
+      return auth.response
+    }
+
+    const configKey = decodeURIComponent(String(params.key))
+    const config = configs.find((item) => item.key === configKey)
+    if (!config) {
+      return notFound('Not found')
+    }
+
+    // Reveal endpoint returns the real (unmasked) value once the caller is
+    // authorized via system.config.read_secret.
+    return HttpResponse.json(serializeConfig(config, { maskSecret: false }))
+  }),
+
   http.get('*/api/admin/config/:key/', ({ request, params }) => {
     const auth = requirePermission(request, ['api.system_config.retrieve'])
     if (!auth.ok) {
@@ -183,11 +200,11 @@ export const systemConfigHandlers = [
       return notFound('Not found')
     }
 
-    const canViewSecret = hasPermission(auth.accessToken, 'system.config.view_secret')
-
+    // Secrets are always masked on the normal retrieve path; use the dedicated
+    // reveal endpoint (gated by system.config.read_secret) to read real values.
     return HttpResponse.json(
       serializeConfig(config, {
-        maskSecret: config.value_type === 'secret' && !canViewSecret,
+        maskSecret: config.value_type === 'secret',
       })
     )
   }),

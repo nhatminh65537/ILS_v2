@@ -17,6 +17,11 @@ export const getSystemConfigByKey = async (key: string): Promise<SystemConfigDto
   return response.data as SystemConfigDto
 }
 
+export const revealSystemConfigSecret = async (key: string): Promise<SystemConfigDto> => {
+  const response = await apiClient.get(`/api/admin/config/${encodeConfigKey(key)}/reveal/`)
+  return response.data as SystemConfigDto
+}
+
 export const updateSystemConfigValue = async (
   key: string,
   payload: UpdateConfigPayload

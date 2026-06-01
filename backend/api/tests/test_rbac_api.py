@@ -129,7 +129,7 @@ class TestRBACEndpoints:
         from api.models import UserRole
 
         role = rbac_seed['member_role']
-        UserRole.objects.create(user=member_user, role=role)
+        UserRole.objects.get_or_create(user=member_user, role=role)
 
         response = admin_client.get(f'/api/users/{member_user.id}/roles/')
 
@@ -141,7 +141,7 @@ class TestRBACEndpoints:
         from api.models import UserRole
 
         role = rbac_seed['member_role']
-        UserRole.objects.create(user=member_user, role=role)
+        UserRole.objects.get_or_create(user=member_user, role=role)
 
         response = admin_client.delete(f'/api/users/{member_user.id}/roles/{role.id}/')
 

@@ -18,6 +18,7 @@ from auth_app.constants import (
     BUILTIN_ROLE_ADMIN,
     BUILTIN_ROLE_EDITOR,
     PERM_ADMIN_PORTAL_ACCESS,
+    PERM_CONFIG_READ_SECRET,
     PERM_ADMIN_SECTION_CHALLENGES,
     PERM_ADMIN_SECTION_CONFIG,
     PERM_ADMIN_SECTION_DASHBOARD,
@@ -45,6 +46,11 @@ CODE_PERMISSIONS: Tuple[CodePermission, ...] = (
         name=PERM_ADMIN_PORTAL_ACCESS,
         description='Access the admin portal surface.',
         granted_roles=(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR),
+    ),
+    CodePermission(
+        name=PERM_CONFIG_READ_SECRET,
+        description='Reveal the real (unmasked) value of secret system config keys.',
+        granted_roles=(BUILTIN_ROLE_ADMIN,),
     ),
     CodePermission(
         name=PERM_MATERIAL_READ_DRAFT,
