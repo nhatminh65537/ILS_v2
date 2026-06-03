@@ -11,6 +11,9 @@ export interface LearnLessonDetail {
   readonly video_duration?: number | null
   readonly learning_point: number
   readonly learning_time?: number | null
+  /** Owning course, used for the admin breadcrumb back-link. */
+  readonly course_slug?: string | null
+  readonly course_title?: string | null
 }
 
 export interface LearnMiniQuizOption {

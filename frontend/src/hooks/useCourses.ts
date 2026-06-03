@@ -14,6 +14,7 @@ import {
   listLearnNodeChildren,
   listLearnRootNodes,
 } from '@/services/courses.service'
+import type { CourseListParams } from '@/types/course.types'
 import { useCoursesStore } from '@/stores/courses.store'
 
 export function useCourses() {
@@ -61,18 +62,26 @@ export function useCourses() {
   const resetLessonState = useCoursesStore((s) => s.resetLessonState)
   const reset = useCoursesStore((s) => s.reset)
 
-  const loadCourses = useCallback(async () => {
-    setCatalogLoading(true)
-    setError(null)
-    try {
-      const data = await listLearnCourses()
-      setCourses([...data.items])
-    } catch {
-      setError('courses.errors.loadFailed')
-    } finally {
-      setCatalogLoading(false)
-    }
-  }, [setCatalogLoading, setCourses, setError])
+  const loadCourses = useCallback(
+    async (params?: CourseListParams) => {
+      setCatalogLoading(true)
+      setError(null)
+      try {
+        const data = await listLearnCourses(params)
+        // Replace the catalog with the server-filtered page. We intentionally do
+        // not clear the previous list first so the grid stays mounted (smooth,
+        // flicker-free re-render between filter requests).
+        setCourses([...data.items])
+        return { count: data.count, next: data.next, previous: data.previous }
+      } catch {
+        setError('courses.errors.loadFailed')
+        return { count: 0, next: null, previous: null }
+      } finally {
+        setCatalogLoading(false)
+      }
+    },
+    [setCatalogLoading, setCourses, setError]
+  )
 
   const loadCourseDetail = useCallback(
     async (slug: string) => {

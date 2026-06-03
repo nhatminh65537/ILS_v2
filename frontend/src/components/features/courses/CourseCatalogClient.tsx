@@ -1,16 +1,20 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCourses } from '@/hooks/useCourses'
-import { ContentStatus } from '@/types/course.types'
+import { listLearnCategories, listLearnTags } from '@/services/courses.service'
+import { type CourseCategory, type CourseListParams, type CourseTag } from '@/types/course.types'
 import { CourseCard } from './CourseCard'
 import { CourseFilterPanel, type CourseStatusFilter } from './CourseFilterPanel'
 
 type CourseCatalogClientProps = {
   locale: string
 }
+
+const PAGE_SIZE = 12
 
 export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
   const t = useTranslations('courses')
@@ -21,29 +25,83 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
 
+  const [availableCategories, setAvailableCategories] = useState<CourseCategory[]>([])
+  const [availableTags, setAvailableTags] = useState<CourseTag[]>([])
+
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState<{ count: number; hasNext: boolean; hasPrevious: boolean }>({
+    count: 0,
+    hasNext: false,
+    hasPrevious: false,
+  })
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+
+  // Snapshot of the filters that were actually applied (drives requests). The
+  // editable filter state above only takes effect when "Apply" is pressed.
+  const appliedRef = useRef<{ search: string; status: CourseStatusFilter; categoryIds: number[]; tagIds: number[] }>({
+    search: '',
+    status: 'all',
+    categoryIds: [],
+    tagIds: [],
+  })
+
+  const runQuery = useCallback(
+    async (targetPage: number) => {
+      const applied = appliedRef.current
+      const params: CourseListParams = {
+        limit: PAGE_SIZE,
+        offset: (targetPage - 1) * PAGE_SIZE,
+        ...(applied.search.trim() ? { search: applied.search.trim() } : {}),
+        ...(applied.status !== 'all' ? { status: applied.status } : {}),
+        ...(applied.categoryIds.length === 1 ? { category: applied.categoryIds[0] } : {}),
+        ...(applied.tagIds.length > 0 ? { tags: applied.tagIds.join(',') } : {}),
+      }
+
+      const result = await loadCourses(params)
+      setPagination({
+        count: result.count,
+        hasNext: Boolean(result.next),
+        hasPrevious: Boolean(result.previous),
+      })
+      setPage(targetPage)
+      setHasLoadedOnce(true)
+    },
+    [loadCourses]
+  )
+
+  // Initial load + taxonomy for filter options.
   useEffect(() => {
-    void loadCourses()
-  }, [loadCourses])
-
-  const availableCategories = useMemo(() => {
-    const map = new Map<number, { id: number; name: string; description?: string }>()
-    for (const course of courses) {
-      if (course.category) {
-        map.set(course.category.id, course.category)
+    void runQuery(1)
+    void (async () => {
+      try {
+        const [cats, tags] = await Promise.all([listLearnCategories(), listLearnTags()])
+        setAvailableCategories([...cats.items])
+        setAvailableTags([...tags.items])
+      } catch {
+        // Taxonomy is optional for the catalog; ignore load failures.
       }
-    }
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
-  }, [courses])
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const availableTags = useMemo(() => {
-    const map = new Map<number, { id: number; name: string; description?: string }>()
-    for (const course of courses) {
-      for (const tag of course.tags) {
-        map.set(tag.id, tag)
-      }
+  const handleApply = () => {
+    appliedRef.current = {
+      search,
+      status: statusFilter,
+      categoryIds: selectedCategoryIds,
+      tagIds: selectedTagIds,
     }
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
-  }, [courses])
+    void runQuery(1)
+  }
+
+  const handleReset = () => {
+    setSearch('')
+    setStatusFilter('all')
+    setSelectedCategoryIds([])
+    setSelectedTagIds([])
+    appliedRef.current = { search: '', status: 'all', categoryIds: [], tagIds: [] }
+    void runQuery(1)
+  }
 
   const handleCategoryToggle = (categoryId: number) => {
     setSelectedCategoryIds((prev) =>
@@ -57,46 +115,10 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
     )
   }
 
-  const handleReset = () => {
-    setSearch('')
-    setStatusFilter('all')
-    setSelectedCategoryIds([])
-    setSelectedTagIds([])
-  }
-
-  const visibleCourses = useMemo(() => {
-    const query = search.trim().toLowerCase()
-
-    return courses
-      .filter((course) => {
-        if (statusFilter === 'all') {
-          return course.status === ContentStatus.Published
-        }
-        return course.status === statusFilter
-      })
-      .filter((course) => {
-        if (!query) {
-          return true
-        }
-        return (
-          course.title.toLowerCase().includes(query) ||
-          (course.description ?? '').toLowerCase().includes(query)
-        )
-      })
-      .filter((course) => {
-        if (selectedCategoryIds.length === 0) {
-          return true
-        }
-        return course.category ? selectedCategoryIds.includes(course.category.id) : false
-      })
-      .filter((course) => {
-        if (selectedTagIds.length === 0) {
-          return true
-        }
-        const tagIds = course.tags.map((tag) => tag.id)
-        return selectedTagIds.every((id) => tagIds.includes(id))
-      })
-  }, [courses, search, selectedCategoryIds, selectedTagIds, statusFilter])
+  const totalPages = Math.max(1, Math.ceil(pagination.count / PAGE_SIZE))
+  // Only show full skeletons on the very first load; subsequent filter/page
+  // requests keep the existing grid mounted (smooth, no flicker).
+  const showInitialSkeletons = isCatalogLoading && !hasLoadedOnce
 
   return (
     <div className="flex gap-6">
@@ -109,10 +131,12 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
             selectedTagIds={selectedTagIds}
             availableCategories={availableCategories}
             availableTags={availableTags}
+            isLoading={isCatalogLoading}
             onSearchChange={setSearch}
             onStatusChange={setStatusFilter}
             onCategoryToggle={handleCategoryToggle}
             onTagToggle={handleTagToggle}
+            onApply={handleApply}
             onReset={handleReset}
           />
         </div>
@@ -124,7 +148,7 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
           <p className="text-muted-foreground">{t('catalog.subtitle')}</p>
         </header>
 
-        {isCatalogLoading ? (
+        {showInitialSkeletons ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-48 rounded-lg" />
@@ -132,19 +156,43 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
           </div>
         ) : error ? (
           <p className="text-sm text-destructive">{t('errors.loadFailed')}</p>
-        ) : visibleCourses.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {courses.filter((course) => course.status === ContentStatus.Published).length === 0
-              ? t('empty.noCourses')
-              : t('empty.noResults')}
-          </p>
+        ) : courses.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('empty.noResults')}</p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleCourses.map((course) => (
-              <CourseCard key={course.id} course={course} locale={locale} />
-            ))}
+          <div className={isCatalogLoading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {courses.map((course) => (
+                <CourseCard key={course.id} course={course} locale={locale} />
+              ))}
+            </div>
           </div>
         )}
+
+        {pagination.count > PAGE_SIZE ? (
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-sm text-muted-foreground">
+              {t('catalog.pageOf', { page, total: totalPages })}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!pagination.hasPrevious || isCatalogLoading}
+                onClick={() => void runQuery(page - 1)}
+              >
+                {t('catalog.previous')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!pagination.hasNext || isCatalogLoading}
+                onClick={() => void runQuery(page + 1)}
+              >
+                {t('catalog.next')}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
   )

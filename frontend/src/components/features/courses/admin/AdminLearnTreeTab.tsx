@@ -2,17 +2,20 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+} from '@dnd-kit/core'
+import { arrayMove } from '@dnd-kit/sortable'
+import { Button } from '@/components/ui/button'
 import { useAdminLearnCourseTree } from '@/hooks/useAdminLearnCourseTree'
-import { LessonType, LessonSource, type CourseNode } from '@/types/course.types'
+import type { AdminLearnNodeCreatePayload, CourseNode } from '@/types/course.types'
+import { AdminLearnNodeCreateDialog } from './AdminLearnNodeCreateDialog'
 import { AdminLearnNodeTree } from './AdminLearnNodeTree'
 
 type AdminLearnTreeTabProps = {
@@ -20,36 +23,29 @@ type AdminLearnTreeTabProps = {
   slug: string
 }
 
-type LessonFormState = {
-  nodeTitle: string
-  lessonTitle: string
-  lessonType: LessonType
-  parentId: string
-  position: string
-  contentMd: string
-  videoUrl: string
-}
-
-const collectFolderNodes = (
-  roots: CourseNode[],
+/** Build node-by-id and parent-id lookups across root + cached children. */
+const buildIndex = (
+  rootNodes: CourseNode[],
   childrenByParentId: Record<number, CourseNode[]>
-): CourseNode[] => {
-  const result: CourseNode[] = []
+) => {
+  const nodeById = new Map<number, CourseNode>()
+  const parentIdByNodeId = new Map<number, number | null>()
+  const siblingsByParentKey = new Map<string, CourseNode[]>()
 
-  const walk = (nodes: CourseNode[]) => {
+  const register = (nodes: CourseNode[], parentId: number | null) => {
+    siblingsByParentKey.set(String(parentId), nodes)
     for (const node of nodes) {
-      if (!node.is_item) {
-        result.push(node)
-      }
-      const children = childrenByParentId[node.id] ?? []
-      if (children.length > 0) {
-        walk(children)
+      nodeById.set(node.id, node)
+      parentIdByNodeId.set(node.id, parentId)
+      const children = childrenByParentId[node.id]
+      if (children) {
+        register(children, node.id)
       }
     }
   }
 
-  walk(roots)
-  return result
+  register(rootNodes, null)
+  return { nodeById, parentIdByNodeId, siblingsByParentKey }
 }
 
 export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
@@ -64,85 +60,83 @@ export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
     submitCreateLessonNode,
     submitRenameNode,
     submitMoveNode,
-    submitReorderNode,
+    submitReorderSiblings,
     submitDeleteNode,
   } = useAdminLearnCourseTree()
 
-  const [folderTitle, setFolderTitle] = useState('')
-  const [folderParentId, setFolderParentId] = useState('root')
-  const [folderPosition, setFolderPosition] = useState('')
+  const [createParent, setCreateParent] = useState<{ id: number | null; label: string } | null>(null)
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null)
 
-  const [lessonForm, setLessonForm] = useState<LessonFormState>({
-    nodeTitle: '',
-    lessonTitle: '',
-    lessonType: LessonType.Markdown,
-    parentId: 'root',
-    position: '',
-    contentMd: '',
-    videoUrl: '',
-  })
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
 
   useEffect(() => {
     void loadRoot(slug)
   }, [loadRoot, slug])
 
-  const folderOptions = useMemo(
-    () => collectFolderNodes(treeState.rootNodes, treeState.childrenByParentId),
-    [treeState.childrenByParentId, treeState.rootNodes]
+  const index = useMemo(
+    () => buildIndex(treeState.rootNodes, treeState.childrenByParentId),
+    [treeState.rootNodes, treeState.childrenByParentId]
   )
 
-  const handleCreateFolder = async () => {
-    if (!folderTitle.trim()) {
+  const handleCreate = async (payload: AdminLearnNodeCreatePayload): Promise<boolean> => {
+    if (payload.is_item) {
+      return submitCreateLessonNode(slug, payload)
+    }
+    return submitCreateFolder(slug, payload)
+  }
+
+  const openCreateRoot = () => setCreateParent({ id: null, label: t('tree.parentRoot') })
+  const openCreateChild = (node: CourseNode) => setCreateParent({ id: node.id, label: node.title })
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const overId = event.over ? Number(event.over.id) : null
+    if (overId == null) {
+      setDropTargetId(null)
       return
     }
-
-    const ok = await submitCreateFolder(slug, {
-      title: folderTitle.trim(),
-      parent_id: folderParentId === 'root' ? null : Number(folderParentId),
-      position: folderPosition.trim() ? Number(folderPosition) : undefined,
-      is_item: false,
-    })
-
-    if (ok) {
-      setFolderTitle('')
-      setFolderParentId('root')
-      setFolderPosition('')
+    const activeNodeId = Number(event.active.id)
+    const overNode = index.nodeById.get(overId)
+    const activeParent = index.parentIdByNodeId.get(activeNodeId) ?? null
+    // Highlight a folder only when dropping there would actually move the node
+    // (i.e. it's a different folder than its current parent).
+    if (overNode && !overNode.is_item && overNode.id !== activeNodeId && overNode.id !== activeParent) {
+      setDropTargetId(overNode.id)
+    } else {
+      setDropTargetId(null)
     }
   }
 
-  const handleCreateLessonNode = async () => {
-    if (!lessonForm.nodeTitle.trim() || !lessonForm.lessonTitle.trim()) {
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const activeNodeId = Number(event.active.id)
+    const overId = event.over ? Number(event.over.id) : null
+    setDropTargetId(null)
+
+    if (overId == null || overId === activeNodeId) {
       return
     }
 
-    const lessonPayload = {
-      title: lessonForm.lessonTitle.trim(),
-      lesson_type: lessonForm.lessonType,
-      source: LessonSource.Manual,
-      content_md: lessonForm.lessonType === LessonType.Markdown ? lessonForm.contentMd.trim() : undefined,
-      video_url: lessonForm.lessonType === LessonType.Video ? lessonForm.videoUrl.trim() : undefined,
-      learning_point: 0,
-      learning_time: null,
+    const activeParent = index.parentIdByNodeId.get(activeNodeId) ?? null
+    const overNode = index.nodeById.get(overId)
+    const overParent = index.parentIdByNodeId.get(overId) ?? null
+
+    // Case 1: dropped directly on a different folder -> move into it.
+    if (overNode && !overNode.is_item && overNode.id !== activeParent && overNode.id !== activeNodeId) {
+      await submitMoveNode(slug, activeNodeId, overNode.id)
+      return
     }
 
-    const ok = await submitCreateLessonNode(slug, {
-      title: lessonForm.nodeTitle.trim(),
-      parent_id: lessonForm.parentId === 'root' ? null : Number(lessonForm.parentId),
-      position: lessonForm.position.trim() ? Number(lessonForm.position) : undefined,
-      is_item: true,
-      lesson: lessonPayload,
-    })
-
-    if (ok) {
-      setLessonForm({
-        nodeTitle: '',
-        lessonTitle: '',
-        lessonType: LessonType.Markdown,
-        parentId: 'root',
-        position: '',
-        contentMd: '',
-        videoUrl: '',
-      })
+    // Case 2: dropped on a sibling in the same parent -> reorder that group.
+    if (overParent === activeParent) {
+      const siblings = index.siblingsByParentKey.get(String(activeParent)) ?? []
+      const fromIndex = siblings.findIndex((n) => n.id === activeNodeId)
+      const toIndex = siblings.findIndex((n) => n.id === overId)
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return
+      }
+      const orderedIds = arrayMove(siblings, fromIndex, toIndex).map((n) => n.id)
+      await submitReorderSiblings(slug, activeParent, orderedIds)
     }
   }
 
@@ -151,122 +145,55 @@ export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
       {treeState.errorMessageKey ? <p className="text-sm text-destructive">{t(treeState.errorMessageKey as never)}</p> : null}
       {mutationErrorKey ? <p className="text-sm text-destructive">{t(mutationErrorKey as never)}</p> : null}
 
-      <div className="grid gap-4 rounded-md border border-border p-4 lg:grid-cols-2">
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">{t('tree.createFolderTitle')}</h3>
-          <Input value={folderTitle} placeholder={t('tree.folderTitlePlaceholder')} onChange={(event) => setFolderTitle(event.target.value)} />
-          <div className="grid gap-2 md:grid-cols-2">
-            <Select value={folderParentId} onValueChange={setFolderParentId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('tree.parentLabel')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="root">{t('tree.parentRoot')}</SelectItem>
-                {folderOptions.map((folder) => (
-                  <SelectItem key={folder.id} value={String(folder.id)}>{folder.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input value={folderPosition} type="number" min={0} placeholder={t('tree.positionPlaceholder')} onChange={(event) => setFolderPosition(event.target.value)} />
-          </div>
-          <Button disabled={isMutating || !folderTitle.trim()} onClick={() => void handleCreateFolder()}>{t('tree.createFolder')}</Button>
-        </div>
-
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">{t('tree.createLessonNodeTitle')}</h3>
-          <Input
-            value={lessonForm.nodeTitle}
-            placeholder={t('tree.lessonNodeTitlePlaceholder')}
-            onChange={(event) => setLessonForm((prev) => ({ ...prev, nodeTitle: event.target.value }))}
-          />
-          <Input
-            value={lessonForm.lessonTitle}
-            placeholder={t('tree.lessonTitlePlaceholder')}
-            onChange={(event) => setLessonForm((prev) => ({ ...prev, lessonTitle: event.target.value }))}
-          />
-          <div className="grid gap-2 md:grid-cols-3">
-            <Select
-              value={lessonForm.lessonType}
-              onValueChange={(value) => setLessonForm((prev) => ({ ...prev, lessonType: value as LessonType }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={LessonType.Markdown}>{t('lessonTypes.markdown')}</SelectItem>
-                <SelectItem value={LessonType.Video}>{t('lessonTypes.video')}</SelectItem>
-                <SelectItem value={LessonType.MiniQuiz}>{t('lessonTypes.miniquiz')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={lessonForm.parentId} onValueChange={(value) => setLessonForm((prev) => ({ ...prev, parentId: value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('tree.parentLabel')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="root">{t('tree.parentRoot')}</SelectItem>
-                {folderOptions.map((folder) => (
-                  <SelectItem key={folder.id} value={String(folder.id)}>{folder.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              value={lessonForm.position}
-              type="number"
-              min={0}
-              placeholder={t('tree.positionPlaceholder')}
-              onChange={(event) => setLessonForm((prev) => ({ ...prev, position: event.target.value }))}
-            />
-          </div>
-          {lessonForm.lessonType === LessonType.Markdown ? (
-            <textarea
-              className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-              placeholder={t('tree.markdownPlaceholder')}
-              value={lessonForm.contentMd}
-              onChange={(event) => setLessonForm((prev) => ({ ...prev, contentMd: event.target.value }))}
-            />
-          ) : null}
-          {lessonForm.lessonType === LessonType.Video ? (
-            <Input
-              value={lessonForm.videoUrl}
-              placeholder={t('tree.videoUrlPlaceholder')}
-              onChange={(event) => setLessonForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
-            />
-          ) : null}
-          <Button
-            disabled={isMutating || !lessonForm.nodeTitle.trim() || !lessonForm.lessonTitle.trim()}
-            onClick={() => void handleCreateLessonNode()}
-          >
-            {t('tree.createLessonNode')}
-          </Button>
-        </div>
-      </div>
-
       <div className="rounded-md border border-border p-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">{t('tree.treeTitle')}</h3>
-          <Button variant="outline" size="sm" onClick={() => void loadRoot(slug)} disabled={isMutating || treeState.isRootLoading}>
-            {t('actions.refresh')}
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" disabled={isMutating} onClick={openCreateRoot}>
+              {t('tree.addRoot')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void loadRoot(slug)} disabled={isMutating || treeState.isRootLoading}>
+              {t('actions.refresh')}
+            </Button>
+          </div>
         </div>
 
-        {treeState.isRootLoading ? <p className="text-sm text-muted-foreground">{t('status.loadingTree')}</p> : null}
-        {!treeState.isRootLoading ? (
-          <AdminLearnNodeTree
-            locale={locale}
-            slug={slug}
-            rootNodes={treeState.rootNodes}
-            expandedNodeIds={treeState.expandedNodeIds}
-            childrenByParentId={treeState.childrenByParentId}
-            isNodeLoadingById={treeState.isNodeLoadingById}
-            isMutating={isMutating}
-            onToggle={(node) => void expandNode(slug, node)}
-            onRename={(nodeId, title) => submitRenameNode(slug, nodeId, title)}
-            onMove={(nodeId, parentId) => submitMoveNode(slug, nodeId, parentId)}
-            onReorder={(nodeId, position) => submitReorderNode(slug, nodeId, position)}
-            onDelete={(nodeId) => submitDeleteNode(slug, nodeId)}
-          />
-        ) : null}
+        <p className="mb-3 text-xs text-muted-foreground">{t('tree.dragHint')}</p>
+
+        {treeState.isRootLoading ? (
+          <p className="text-sm text-muted-foreground">{t('status.loadingTree')}</p>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <AdminLearnNodeTree
+              locale={locale}
+              rootNodes={treeState.rootNodes}
+              expandedNodeIds={treeState.expandedNodeIds}
+              childrenByParentId={treeState.childrenByParentId}
+              isNodeLoadingById={treeState.isNodeLoadingById}
+              isMutating={isMutating}
+              dropTargetId={dropTargetId}
+              onToggle={(node) => void expandNode(slug, node)}
+              onRename={(nodeId, title) => submitRenameNode(slug, nodeId, title)}
+              onDelete={(nodeId) => submitDeleteNode(slug, nodeId)}
+              onAddChild={openCreateChild}
+            />
+          </DndContext>
+        )}
       </div>
+
+      <AdminLearnNodeCreateDialog
+        open={createParent !== null}
+        parentId={createParent?.id ?? null}
+        parentLabel={createParent?.label ?? t('tree.parentRoot')}
+        isSubmitting={isMutating}
+        onOpenChange={(open) => !open && setCreateParent(null)}
+        onCreate={handleCreate}
+      />
     </div>
   )
 }

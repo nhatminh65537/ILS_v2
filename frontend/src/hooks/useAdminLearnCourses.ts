@@ -132,7 +132,7 @@ export const useAdminLearnCourses = () => {
       setListState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadCoursesFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadCoursesFailed'),
       }))
     }
   }, [])
@@ -152,7 +152,7 @@ export const useAdminLearnCourses = () => {
       setDetailState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadCourseDetailFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadCourseDetailFailed'),
       }))
     }
   }, [])
@@ -172,7 +172,7 @@ export const useAdminLearnCourses = () => {
       setTaxonomyState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadTaxonomyFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadTaxonomyFailed'),
       }))
     }
   }, [])
@@ -186,7 +186,7 @@ export const useAdminLearnCourses = () => {
       await loadCourseList({ ...activeParamsRef.current })
       return created
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.createCourseFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.createCourseFailed'))
       return null
     } finally {
       setIsMutating(false)
@@ -206,23 +206,39 @@ export const useAdminLearnCourses = () => {
       await loadCourseList({ ...activeParamsRef.current })
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.updateCourseFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.updateCourseFailed'))
       return false
     } finally {
       setIsMutating(false)
     }
   }, [loadCourseList])
 
-  const submitDeleteCourse = useCallback(async (slug: string): Promise<boolean> => {
+  const submitArchiveCourse = useCallback(async (slug: string): Promise<boolean> => {
     setIsMutating(true)
     setMutationErrorKey(null)
 
     try {
-      await deleteAdminLearnCourse(slug)
+      await deleteAdminLearnCourse(slug, 'archive')
       await loadCourseList({ ...activeParamsRef.current })
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.deleteCourseFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.archiveCourseFailed'))
+      return false
+    } finally {
+      setIsMutating(false)
+    }
+  }, [loadCourseList])
+
+  const submitPurgeCourse = useCallback(async (slug: string): Promise<boolean> => {
+    setIsMutating(true)
+    setMutationErrorKey(null)
+
+    try {
+      await deleteAdminLearnCourse(slug, 'purge')
+      await loadCourseList({ ...activeParamsRef.current })
+      return true
+    } catch (error) {
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.purgeCourseFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -242,7 +258,7 @@ export const useAdminLearnCourses = () => {
       await loadTaxonomies()
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.createCategoryFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.createCategoryFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -261,7 +277,7 @@ export const useAdminLearnCourses = () => {
       await loadTaxonomies()
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.updateCategoryFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.updateCategoryFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -277,7 +293,7 @@ export const useAdminLearnCourses = () => {
       await loadTaxonomies()
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.deleteCategoryFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.deleteCategoryFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -293,7 +309,7 @@ export const useAdminLearnCourses = () => {
       await loadTaxonomies()
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.createTagFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.createTagFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -312,7 +328,7 @@ export const useAdminLearnCourses = () => {
       await loadTaxonomies()
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.updateTagFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.updateTagFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -328,7 +344,7 @@ export const useAdminLearnCourses = () => {
       await loadTaxonomies()
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.deleteTagFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.deleteTagFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -348,7 +364,8 @@ export const useAdminLearnCourses = () => {
     loadTaxonomies,
     submitCreateCourse,
     submitUpdateCourse,
-    submitDeleteCourse,
+    submitArchiveCourse,
+    submitPurgeCourse,
     submitStatusToggle,
     submitCreateCategory,
     submitUpdateCategory,

@@ -24,10 +24,12 @@ type CourseFilterPanelProps = {
   selectedTagIds: number[]
   availableCategories: CourseCategory[]
   availableTags: CourseTag[]
+  isLoading?: boolean
   onSearchChange: (value: string) => void
   onStatusChange: (value: CourseStatusFilter) => void
   onCategoryToggle: (categoryId: number) => void
   onTagToggle: (tagId: number) => void
+  onApply: () => void
   onReset: () => void
 }
 
@@ -38,29 +40,20 @@ export function CourseFilterPanel({
   selectedTagIds,
   availableCategories,
   availableTags,
+  isLoading = false,
   onSearchChange,
   onStatusChange,
   onCategoryToggle,
   onTagToggle,
+  onApply,
   onReset,
 }: CourseFilterPanelProps) {
   const t = useTranslations('courses')
-
-  const hasActiveFilters =
-    search.trim() !== '' ||
-    statusFilter !== 'all' ||
-    selectedCategoryIds.length > 0 ||
-    selectedTagIds.length > 0
 
   return (
     <aside className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">{t('filter.title')}</p>
-        {hasActiveFilters ? (
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onReset}>
-            {t('filter.reset')}
-          </Button>
-        ) : null}
       </div>
 
       <div className="space-y-1.5">
@@ -69,6 +62,11 @@ export function CourseFilterPanel({
           placeholder={t('catalog.searchPlaceholder')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              onApply()
+            }
+          }}
           className="h-8 text-sm"
         />
       </div>
@@ -141,6 +139,17 @@ export function CourseFilterPanel({
           </div>
         </>
       ) : null}
+
+      <Separator />
+
+      <div className="flex gap-2">
+        <Button size="sm" className="flex-1" disabled={isLoading} onClick={onApply}>
+          {t('filter.apply')}
+        </Button>
+        <Button variant="outline" size="sm" disabled={isLoading} onClick={onReset}>
+          {t('filter.reset')}
+        </Button>
+      </div>
     </aside>
   )
 }

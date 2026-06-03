@@ -7,8 +7,10 @@ import {
   deleteAdminLearnNode,
   listAdminLearnNodeChildren,
   listAdminLearnRootNodes,
+  reorderAdminLearnNodes,
   updateAdminLearnNode,
 } from '@/services/courses.service'
+import { LessonType } from '@/types/course.types'
 import type {
   AdminLearnNodeCreatePayload,
   AdminLearnNodeUpdatePayload,
@@ -48,7 +50,7 @@ export const useAdminLearnCourseTree = () => {
       setTreeState((s) => ({
         ...s,
         isRootLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadTreeFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadTreeFailed'),
       }))
     }
   }, [])
@@ -83,15 +85,41 @@ export const useAdminLearnCourseTree = () => {
           ...s.isNodeLoadingById,
           [parentId]: false,
         },
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadTreeChildrenFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadTreeChildrenFailed'),
       }))
     }
   }, [])
 
   const refreshTree = useCallback(async (slug: string) => {
-    setTreeState((s) => ({ ...s, childrenByParentId: {} }))
-    await loadRoot(slug)
-  }, [loadRoot])
+    // Reload root + re-fetch children of every currently-expanded folder.
+    // Clearing childrenByParentId alone would leave expanded folders showing an
+    // empty body (the row stays expanded but its child cache is gone and nothing
+    // re-triggers loadChildren) — that was the "empty folder after create" bug.
+    const expandedIds = treeState.expandedNodeIds
+
+    const [rootNodes, ...childrenResults] = await Promise.all([
+      listAdminLearnRootNodes(slug),
+      ...expandedIds.map((id) =>
+        listAdminLearnNodeChildren(slug, id)
+          .then((children) => ({ id, children }))
+          .catch(() => null)
+      ),
+    ])
+
+    const nextChildrenByParentId: Record<number, CourseNode[]> = {}
+    for (const result of childrenResults) {
+      if (result) {
+        nextChildrenByParentId[result.id] = result.children
+      }
+    }
+
+    setTreeState((s) => ({
+      ...s,
+      rootNodes,
+      childrenByParentId: nextChildrenByParentId,
+      errorMessageKey: null,
+    }))
+  }, [treeState.expandedNodeIds])
 
   const expandNode = useCallback(async (slug: string, node: CourseNode) => {
     if (node.is_item) {
@@ -138,40 +166,53 @@ export const useAdminLearnCourseTree = () => {
   const submitCreateFolder = useCallback(async (slug: string, payload: AdminLearnNodeCreatePayload) => {
     return runMutation(slug, async () => {
       await createAdminLearnNode(slug, payload)
-    }, 'adminLearn.errors.createFolderFailed')
+    }, 'errors.createFolderFailed')
   }, [runMutation])
 
   const submitCreateLessonNode = useCallback(async (slug: string, payload: AdminLearnNodeCreatePayload) => {
+    const lesson = payload.lesson
+    if (lesson?.lesson_type === LessonType.Markdown && !(lesson.content_md ?? '').trim()) {
+      setMutationErrorKey('errors.markdownContentRequired')
+      return false
+    }
+    if (lesson?.lesson_type === LessonType.Video && !(lesson.video_url ?? '').trim()) {
+      setMutationErrorKey('errors.videoUrlRequired')
+      return false
+    }
+
     return runMutation(slug, async () => {
       await createAdminLearnNode(slug, payload)
-    }, 'adminLearn.errors.createLessonNodeFailed')
+    }, 'errors.createLessonNodeFailed')
   }, [runMutation])
 
   const submitRenameNode = useCallback(async (slug: string, nodeId: number, title: string) => {
     return runMutation(slug, async () => {
       const payload: AdminLearnNodeUpdatePayload = { title }
       await updateAdminLearnNode(slug, nodeId, payload)
-    }, 'adminLearn.errors.renameNodeFailed')
+    }, 'errors.renameNodeFailed')
   }, [runMutation])
 
   const submitMoveNode = useCallback(async (slug: string, nodeId: number, parentId: number | null) => {
     return runMutation(slug, async () => {
       const payload: AdminLearnNodeUpdatePayload = { parent_id: parentId }
       await updateAdminLearnNode(slug, nodeId, payload)
-    }, 'adminLearn.errors.moveNodeFailed')
+    }, 'errors.moveNodeFailed')
   }, [runMutation])
 
-  const submitReorderNode = useCallback(async (slug: string, nodeId: number, position: number) => {
+  const submitReorderSiblings = useCallback(async (
+    slug: string,
+    parentId: number | null,
+    orderedIds: number[]
+  ) => {
     return runMutation(slug, async () => {
-      const payload: AdminLearnNodeUpdatePayload = { position }
-      await updateAdminLearnNode(slug, nodeId, payload)
-    }, 'adminLearn.errors.reorderNodeFailed')
+      await reorderAdminLearnNodes(slug, parentId, orderedIds)
+    }, 'errors.reorderNodeFailed')
   }, [runMutation])
 
   const submitDeleteNode = useCallback(async (slug: string, nodeId: number) => {
     return runMutation(slug, async () => {
       await deleteAdminLearnNode(slug, nodeId)
-    }, 'adminLearn.errors.deleteNodeFailed')
+    }, 'errors.deleteNodeFailed')
   }, [runMutation])
 
   return {
@@ -186,7 +227,7 @@ export const useAdminLearnCourseTree = () => {
     submitCreateLessonNode,
     submitRenameNode,
     submitMoveNode,
-    submitReorderNode,
+    submitReorderSiblings,
     submitDeleteNode,
   }
 }

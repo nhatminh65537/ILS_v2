@@ -1,7 +1,8 @@
-﻿from django.db import IntegrityError
+﻿from django.db import IntegrityError, transaction
 from django.db.models import Count
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -17,6 +18,7 @@ from api.serializers import (
     CourseNodeSerializer,
     CourseCategorySerializer,
     CourseTagSerializer,
+    LearnCourseNodeReorderSerializer,
     LearnCourseNodeSerializer,
     LearnCourseNodeUpdateSerializer,
     LearnCourseNodeWriteSerializer,
@@ -105,6 +107,9 @@ class LearnCourseViewSet(viewsets.ModelViewSet):
 
     queryset = Course.objects.all().select_related('category').prefetch_related('tag_mappings__tag')
     permission_classes = [IsAuthenticated, HasJWTPermission]
+    # Use limit/offset paging so the frontend catalog + admin list (which send
+    # ``limit``/``offset``) drive backend pagination directly.
+    pagination_class = LimitOffsetPagination
     lookup_field = 'slug'
     lookup_url_kwarg = 'slug'
 
@@ -305,7 +310,7 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
             CourseNode.objects.filter(course_id=course.id, parent__isnull=True)
             .select_related('lesson')
             .annotate(children_count=Count('children'))
-            .order_by('position', 'id')
+            .order_by('is_item', 'position', 'id')
         )
         serializer = LearnCourseNodeSerializer(nodes, many=True, context={'request': request})
         return Response(serializer.data)
@@ -321,7 +326,7 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
             CourseNode.objects.filter(course_id=course.id, parent_id=node.id)
             .select_related('lesson')
             .annotate(children_count=Count('children'))
-            .order_by('position', 'id')
+            .order_by('is_item', 'position', 'id')
         )
         serializer = LearnCourseNodeSerializer(children, many=True, context={'request': request})
         return Response(serializer.data)
@@ -368,20 +373,46 @@ class LearnCourseNodeViewSet(viewsets.ViewSet):
             moved = True
 
         updated_fields = []
+        title_changed = False
         if 'title' in payload:
             node.title = payload['title']
             updated_fields.append('title')
+            title_changed = True
         if 'position' in payload:
             node.position = payload['position']
             updated_fields.append('position')
 
         if updated_fields:
-            node.save(update_fields=updated_fields + ['updated_at'])
-            if not moved:
-                CourseService.bump_course_structure_version(course.id)
+            with transaction.atomic():
+                node.save(update_fields=updated_fields + ['updated_at'])
+                # Keep lesson.title in sync with the node title for item nodes so
+                # the single shared "title" field stays consistent across renames.
+                if title_changed and node.is_item and node.lesson_id:
+                    Lesson.objects.filter(id=node.lesson_id).update(title=node.title)
+                if not moved:
+                    CourseService.bump_course_structure_version(course.id)
 
         response_serializer = LearnCourseNodeSerializer(node, context={'request': request})
         return Response(response_serializer.data)
+
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    def reorder(self, request, slug=None):
+        course = self._get_course(slug, request.user)
+        serializer = LearnCourseNodeReorderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
+
+        try:
+            CourseService.reorder_course_node_siblings(
+                course,
+                payload.get('parent_id'),
+                payload['ordered_ids'],
+                request.user,
+            )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def destroy(self, request, slug=None, pk=None):

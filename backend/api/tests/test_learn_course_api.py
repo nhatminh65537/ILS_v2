@@ -87,6 +87,52 @@ def test_member_default_list_shows_only_published(member_client, member_user, pu
     assert results[0]['slug'] == published_course.slug
 
 
+def test_tag_filter_uses_and_semantics(member_client, member_user, db):
+    from api.models import CourseTagMap
+
+    _assign_role(member_user, 'Member')
+
+    category = CourseCategory.objects.create(name='Tagged Category')
+    tag_web = CourseTag.objects.create(name='web')
+    tag_crypto = CourseTag.objects.create(name='crypto')
+
+    course_both = Course.objects.create(
+        slug='both-tags', title='Both', status=Course.Status.PUBLISHED, category=category,
+    )
+    course_web_only = Course.objects.create(
+        slug='web-only', title='Web Only', status=Course.Status.PUBLISHED, category=category,
+    )
+    CourseTagMap.objects.create(course=course_both, tag=tag_web)
+    CourseTagMap.objects.create(course=course_both, tag=tag_crypto)
+    CourseTagMap.objects.create(course=course_web_only, tag=tag_web)
+
+    # Single tag -> both courses carry 'web'
+    response = member_client.get(f'/api/learn/courses/?tags={tag_web.id}')
+    slugs = {c['slug'] for c in _extract_results(response)}
+    assert slugs == {'both-tags', 'web-only'}
+
+    # AND of two tags -> only the course carrying both
+    response = member_client.get(f'/api/learn/courses/?tags={tag_web.id},{tag_crypto.id}')
+    slugs = {c['slug'] for c in _extract_results(response)}
+    assert slugs == {'both-tags'}
+
+
+def test_limit_offset_pagination(member_client, member_user, db):
+    _assign_role(member_user, 'Member')
+    category = CourseCategory.objects.create(name='Paging Category')
+    for i in range(3):
+        Course.objects.create(
+            slug=f'paging-{i}', title=f'Paging {i}',
+            status=Course.Status.PUBLISHED, category=category,
+        )
+
+    response = member_client.get('/api/learn/courses/?limit=2&offset=0')
+    assert response.status_code == 200
+    assert response.data['count'] == 3
+    assert len(response.data['results']) == 2
+    assert response.data['next'] is not None
+
+
 def test_editor_can_create_learn_course(editor_client, editor_user):
     _assign_role(editor_user, 'Editor')
     category = CourseCategory.objects.create(name='Create Category')

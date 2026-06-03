@@ -298,6 +298,9 @@ class LessonSerializer(serializers.ModelSerializer):
 class LearnLessonDetailSerializer(serializers.ModelSerializer):
     """Lesson detail serializer for canonical /api/learn/lessons/{id}/ endpoints."""
 
+    course_slug = serializers.SerializerMethodField(read_only=True)
+    course_title = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Lesson
         fields = [
@@ -310,8 +313,24 @@ class LearnLessonDetailSerializer(serializers.ModelSerializer):
             'video_duration',
             'learning_point',
             'learning_time',
+            'course_slug',
+            'course_title',
         ]
         read_only_fields = fields
+
+    def _course(self, obj):
+        # Lesson <-> CourseNode is a reverse O2O exposed as ``node``; the node
+        # carries the owning course used for the admin breadcrumb back-link.
+        node = getattr(obj, 'node', None)
+        return getattr(node, 'course', None) if node else None
+
+    def get_course_slug(self, obj):
+        course = self._course(obj)
+        return course.slug if course else None
+
+    def get_course_title(self, obj):
+        course = self._course(obj)
+        return course.title if course else None
 
 
 class LearnLessonUpdateSerializer(serializers.ModelSerializer):
@@ -436,8 +455,11 @@ class LearnLessonWriteSerializer(serializers.Serializer):
     title = serializers.CharField(required=False, allow_blank=False, trim_whitespace=True)
     lesson_type = serializers.ChoiceField(choices=Lesson.LessonType.choices)
     source = serializers.ChoiceField(choices=Lesson.Source.choices, required=False)
-    content_md = serializers.CharField(required=False, allow_null=True, allow_blank=False)
-    video_url = serializers.CharField(required=False, allow_null=True, allow_blank=False)
+    # allow_blank so the cross-field validate() below can emit the friendlier
+    # "Required for markdown/video lessons" message instead of a generic
+    # "This field may not be blank." field error.
+    content_md = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    video_url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     video_duration = serializers.IntegerField(required=False, allow_null=True, min_value=0)
     learning_point = serializers.IntegerField(required=False, min_value=0)
     learning_time = serializers.IntegerField(required=False, allow_null=True, min_value=0)
@@ -498,6 +520,25 @@ class LearnCourseNodeUpdateSerializer(serializers.Serializer):
         if not attrs:
             raise serializers.ValidationError('At least one field must be provided')
         return attrs
+
+
+class LearnCourseNodeReorderSerializer(serializers.Serializer):
+    """Reorder siblings of a parent by sending the full ordered list of ids.
+
+    The service reindexes ``position`` to 0..n following this exact order, so a
+    drag-and-drop UI only needs to post the new sibling sequence (folder-first).
+    """
+
+    parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    ordered_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+    )
+
+    def validate_ordered_ids(self, value):
+        if len(set(value)) != len(value):
+            raise serializers.ValidationError('ordered_ids must not contain duplicates')
+        return value
 
 
 class UserCourseProgressSerializer(serializers.ModelSerializer):

@@ -102,7 +102,7 @@ export const useAdminLearnLessonEditor = () => {
       setLessonState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadLessonFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadLessonFailed'),
       }))
     }
   }, [])
@@ -117,7 +117,7 @@ export const useAdminLearnLessonEditor = () => {
       setMappingsState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadMappingsFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadMappingsFailed'),
       }))
     }
   }, [])
@@ -136,7 +136,7 @@ export const useAdminLearnLessonEditor = () => {
       setQuizState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadQuizzesFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadQuizzesFailed'),
       }))
     }
   }, [])
@@ -151,7 +151,7 @@ export const useAdminLearnLessonEditor = () => {
       setQuizQuestionState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.loadQuizQuestionsFailed'),
+        errorMessageKey: mapLearnAdminErrorToMessageKey(error, 'errors.loadQuizQuestionsFailed'),
       }))
     }
   }, [])
@@ -160,13 +160,23 @@ export const useAdminLearnLessonEditor = () => {
     lessonId: number,
     payload: AdminLearnLessonUpdatePayload
   ): Promise<boolean> => {
-    if (lessonState.data?.lesson_type === LessonType.Markdown && !(payload.content_md ?? '').trim()) {
-      setMutationErrorKey('adminLearn.errors.markdownContentRequired')
+    // Only enforce content requirements when the relevant field is part of this
+    // update; metadata-only saves (title/point/time) must not be blocked.
+    if (
+      'content_md' in payload &&
+      lessonState.data?.lesson_type === LessonType.Markdown &&
+      !(payload.content_md ?? '').trim()
+    ) {
+      setMutationErrorKey('errors.markdownContentRequired')
       return false
     }
 
-    if (lessonState.data?.lesson_type === LessonType.Video && !(payload.video_url ?? '').trim()) {
-      setMutationErrorKey('adminLearn.errors.videoUrlRequired')
+    if (
+      'video_url' in payload &&
+      lessonState.data?.lesson_type === LessonType.Video &&
+      !(payload.video_url ?? '').trim()
+    ) {
+      setMutationErrorKey('errors.videoUrlRequired')
       return false
     }
 
@@ -178,7 +188,7 @@ export const useAdminLearnLessonEditor = () => {
       setLessonState({ data: updated, isLoading: false, errorMessageKey: null })
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.updateLessonFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.updateLessonFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -191,7 +201,7 @@ export const useAdminLearnLessonEditor = () => {
     selectedQuizId?: number
   ): Promise<boolean> => {
     if (!selectedQuizId || !payload.question_id) {
-      setMutationErrorKey('adminLearn.errors.quizSelectionRequired')
+      setMutationErrorKey('errors.quizSelectionRequired')
       return false
     }
 
@@ -203,7 +213,7 @@ export const useAdminLearnLessonEditor = () => {
       await loadLessonMappings(lessonId)
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.attachMappingFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.attachMappingFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -219,7 +229,7 @@ export const useAdminLearnLessonEditor = () => {
       await loadLessonMappings(lessonId)
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.deleteMappingFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.deleteMappingFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -253,7 +263,7 @@ export const useAdminLearnLessonEditor = () => {
       await loadLessonMappings(lessonId)
       return true
     } catch (error) {
-      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'adminLearn.errors.reorderMappingFailed'))
+      setMutationErrorKey(mapLearnAdminErrorToMessageKey(error, 'errors.reorderMappingFailed'))
       return false
     } finally {
       setIsMutating(false)

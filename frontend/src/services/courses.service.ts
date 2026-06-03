@@ -156,8 +156,26 @@ export const updateAdminLearnCourse = async (
 /**
  * DELETE /api/learn/courses/{slug}/
  */
-export const deleteAdminLearnCourse = async (slug: string): Promise<void> => {
-  await apiClient.delete(`/api/learn/courses/${slug}/`)
+export const deleteAdminLearnCourse = async (
+  slug: string,
+  mode: 'archive' | 'purge' = 'archive'
+): Promise<void> => {
+  await apiClient.delete(`/api/learn/courses/${slug}/`, { params: { mode } })
+}
+
+/**
+ * POST /api/learn/courses/{slug}/nodes/reorder/
+ * Reindex sibling order under a parent by sending the full ordered id list.
+ */
+export const reorderAdminLearnNodes = async (
+  slug: string,
+  parentId: number | null,
+  orderedIds: number[]
+): Promise<void> => {
+  await apiClient.post(`/api/learn/courses/${slug}/nodes/reorder/`, {
+    ...(parentId != null ? { parent_id: parentId } : {}),
+    ordered_ids: orderedIds,
+  })
 }
 
 /**

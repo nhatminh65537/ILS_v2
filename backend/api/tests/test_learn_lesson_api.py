@@ -78,6 +78,9 @@ def test_member_can_get_published_lesson_detail(member_client, member_user, publ
     assert response.status_code == 200
     assert response.data['id'] == lesson.id
     assert response.data['title'] == 'Lesson A'
+    # Breadcrumb back-link fields point to the owning course.
+    assert response.data['course_slug'] == published_course.slug
+    assert response.data['course_title'] == published_course.title
 
 
 def test_member_cannot_get_draft_lesson_detail(member_client, member_user, draft_course):

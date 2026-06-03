@@ -131,7 +131,10 @@
     "description": "Track progress through the content tree and complete lessons step by step.",
     "catalog": {
       "subtitle": "Browse published courses and continue your learning path",
-      "searchPlaceholder": "Search courses..."
+      "searchPlaceholder": "Search courses...",
+      "pageOf": "Page {page} / {total}",
+      "previous": "Previous",
+      "next": "Next"
     },
     "detail": {
       "backToCatalog": "Back to courses",
@@ -201,9 +204,10 @@
     },
     "filter": {
       "title": "Filters",
+      "apply": "Filter",
       "reset": "Reset",
       "status": "Status",
-      "statusAll": "Published only",
+      "statusAll": "All",
       "statusPublished": "Published",
       "statusDraft": "Draft",
       "statusArchived": "Archived",
@@ -873,7 +877,8 @@
       "loadingTitle": "Loading lesson..."
     },
     "navigation": {
-      "backToList": "Back to course list"
+      "backToList": "Course management",
+      "backToCourseTree": "Back to course content tree"
     },
     "form": {
       "titleLabel": "Title",
@@ -926,12 +931,21 @@
       "delete": "Delete",
       "edit": "Edit",
       "cancel": "Cancel",
+      "archive": "Archive",
+      "purge": "Delete permanently",
       "filterQuiz": "Filter quiz",
       "attachQuestion": "Attach question",
       "moveUp": "Up",
       "moveDown": "Down",
       "move": "Move",
       "rename": "Rename"
+    },
+    "metadata": {
+      "titleLabel": "Title",
+      "learningPointLabel": "Learning points",
+      "learningTimeLabel": "Duration (minutes)",
+      "videoDurationLabel": "Video duration (seconds)",
+      "optionalPlaceholder": "optional"
     },
     "columns": {
       "title": "Title",
@@ -953,7 +967,13 @@
     },
     "confirm": {
       "deleteCourse": "Delete course {title}?",
-      "deleteMapping": "Delete this mapping?"
+      "deleteMapping": "Are you sure you want to delete this mapping?",
+      "deleteMappingTitle": "Delete question mapping",
+      "archiveTitle": "Archive course",
+      "archiveCourse": "Archive course \"{title}\"? It will be hidden from learners but can be restored.",
+      "purgeTitle": "Delete course permanently",
+      "purgeCourse": "This action CANNOT be undone. All content of course \"{title}\" will be permanently deleted.",
+      "purgeTypeSlug": "Type the course slug to confirm:"
     },
     "empty": {
       "noTags": "No tags yet.",
@@ -973,23 +993,24 @@
       "outline": "Outline"
     },
     "tree": {
-      "createFolderTitle": "Create folder",
-      "folderTitlePlaceholder": "folder title",
-      "parentLabel": "Parent",
-      "parentRoot": "Root",
-      "positionPlaceholder": "position",
-      "createFolder": "Create folder",
-      "createLessonNodeTitle": "Create lesson node",
-      "lessonNodeTitlePlaceholder": "node title",
-      "lessonTitlePlaceholder": "lesson title",
-      "markdownPlaceholder": "markdown content",
-      "videoUrlPlaceholder": "video URL",
-      "createLessonNode": "Create lesson node",
+      "parentRoot": "Root (top level)",
       "treeTitle": "Course tree",
-      "renamePrompt": "Rename node",
-      "movePrompt": "Move node to parent id (blank for root)",
-      "deleteConfirm": "Delete this node and its subtree?",
-      "pathLabel": "path: {path}",
+      "addRoot": "+ Add at root",
+      "addChild": "Add",
+      "dragHint": "Drag the handle to reorder; drop onto a folder to move the node inside. Folders always sort above lessons.",
+      "createNodeTitle": "Create new node",
+      "createNodeUnder": "Create under: {parent}",
+      "nodeKindLabel": "Node type",
+      "titleLabel": "Title",
+      "titlePlaceholder": "node / lesson title",
+      "lessonTypeLabel": "Lesson type",
+      "videoUrlPlaceholder": "video URL",
+      "renameTitle": "Rename node",
+      "deleteTitle": "Delete node",
+      "deleteConfirm": "Delete this node and its entire subtree? This cannot be undone.",
+      "orderLabel": "order: {position}",
+      "pointLabel": "points: {point}",
+      "timeLabel": "min: {time}",
       "badgeLesson": "Lesson",
       "badgeFolder": "Folder",
       "loadingChildren": "Loading children...",
@@ -1031,6 +1052,8 @@
       "createCourseFailed": "Failed to create course.",
       "updateCourseFailed": "Failed to update course.",
       "deleteCourseFailed": "Failed to delete course.",
+      "archiveCourseFailed": "Failed to archive course.",
+      "purgeCourseFailed": "Failed to permanently delete course.",
       "createCategoryFailed": "Failed to create category.",
       "updateCategoryFailed": "Failed to update category.",
       "deleteCategoryFailed": "Failed to delete category.",

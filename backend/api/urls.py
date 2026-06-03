@@ -91,6 +91,11 @@ urlpatterns = [
         name='learn-course-node-list',
     ),
     re_path(
+        r'^learn/courses/(?P<slug>[a-z0-9-]+)/nodes/reorder/$',
+        LearnCourseNodeViewSet.as_view({'post': 'reorder'}),
+        name='learn-course-node-reorder',
+    ),
+    re_path(
         r'^learn/courses/(?P<slug>[a-z0-9-]+)/nodes/(?P<pk>\d+)/$',
         LearnCourseNodeViewSet.as_view({'put': 'update', 'delete': 'destroy'}),
         name='learn-course-node-detail',

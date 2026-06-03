@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useAdminLearnCourses } from '@/hooks/useAdminLearnCourses'
 import { ContentStatus, type Course } from '@/types/course.types'
 import { AdminLearnCategoryDialog } from './AdminLearnCategoryDialog'
@@ -44,7 +45,8 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
     loadCourseList,
     loadCoursePage,
     loadTaxonomies,
-    submitDeleteCourse,
+    submitArchiveCourse,
+    submitPurgeCourse,
     submitStatusToggle,
     submitCreateCategory,
     submitUpdateCategory,
@@ -58,6 +60,8 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
   const [tagDialogOpen, setTagDialogOpen] = useState(false)
+  const [archiveTarget, setArchiveTarget] = useState<Course | null>(null)
+  const [purgeTarget, setPurgeTarget] = useState<Course | null>(null)
 
   useEffect(() => {
     void loadCourseList({ status: 'all' })
@@ -68,12 +72,24 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
     await loadCourseList({ search: search.trim(), status: statusFilter })
   }
 
-  const handleDelete = async (course: Course) => {
-    if (!window.confirm(t('confirm.deleteCourse', { title: course.title }))) {
+  const handleArchiveConfirm = async () => {
+    if (!archiveTarget) {
       return
     }
+    const ok = await submitArchiveCourse(archiveTarget.slug)
+    if (ok) {
+      setArchiveTarget(null)
+    }
+  }
 
-    await submitDeleteCourse(course.slug)
+  const handlePurgeConfirm = async () => {
+    if (!purgeTarget) {
+      return
+    }
+    const ok = await submitPurgeCourse(purgeTarget.slug)
+    if (ok) {
+      setPurgeTarget(null)
+    }
   }
 
   const handleStatusToggle = async (course: Course, value: string) => {
@@ -186,8 +202,13 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/${locale}/admin/learn/courses/${course.slug}`}>{t('actions.edit')}</Link>
                         </Button>
-                        <Button variant="destructive" size="sm" disabled={isMutating} onClick={() => void handleDelete(course)}>
-                          {t('actions.delete')}
+                        {course.status !== ContentStatus.Archived ? (
+                          <Button variant="outline" size="sm" disabled={isMutating} onClick={() => setArchiveTarget(course)}>
+                            {t('actions.archive')}
+                          </Button>
+                        ) : null}
+                        <Button variant="destructive" size="sm" disabled={isMutating} onClick={() => setPurgeTarget(course)}>
+                          {t('actions.purge')}
                         </Button>
                       </div>
                     </TableCell>
@@ -242,6 +263,31 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
         onCreate={submitCreateTag}
         onUpdate={submitUpdateTag}
         onDelete={submitDeleteTag}
+      />
+
+      <ConfirmDialog
+        open={archiveTarget !== null}
+        title={t('confirm.archiveTitle')}
+        description={archiveTarget ? t('confirm.archiveCourse', { title: archiveTarget.title }) : undefined}
+        confirmLabel={t('actions.archive')}
+        cancelLabel={t('actions.cancel')}
+        isLoading={isMutating}
+        onConfirm={handleArchiveConfirm}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={purgeTarget !== null}
+        title={t('confirm.purgeTitle')}
+        description={purgeTarget ? t('confirm.purgeCourse', { title: purgeTarget.title }) : undefined}
+        confirmLabel={t('actions.purge')}
+        cancelLabel={t('actions.cancel')}
+        variant="destructive"
+        isLoading={isMutating}
+        requireText={purgeTarget?.slug}
+        requireTextLabel={t('confirm.purgeTypeSlug')}
+        onConfirm={handlePurgeConfirm}
+        onOpenChange={(open) => !open && setPurgeTarget(null)}
       />
     </section>
   )

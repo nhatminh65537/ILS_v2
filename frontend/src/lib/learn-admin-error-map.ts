@@ -36,23 +36,25 @@ export const mapLearnAdminErrorToMessageKey = (error: unknown, fallbackKey: stri
   const text = extractErrorText(error)
 
   if (containsText(text, 'not authenticated') || containsText(text, 'authentication credentials')) {
-    return 'adminLearn.errors.unauthenticated'
+    return 'errors.unauthenticated'
   }
 
   if (containsText(text, 'permission denied') || containsText(text, 'forbidden')) {
-    return 'adminLearn.errors.forbidden'
+    return 'errors.forbidden'
+  }
+
+  // Slug conflict must be checked before the generic validation rule below,
+  // otherwise a message containing "invalid"/"required" could shadow it.
+  if (containsText(text, 'slug already exists')) {
+    return 'errors.slugConflict'
   }
 
   if (containsText(text, 'not found')) {
-    return 'adminLearn.errors.notFound'
+    return 'errors.notFound'
   }
 
   if (containsText(text, 'required') || containsText(text, 'invalid')) {
-    return 'adminLearn.errors.validation'
-  }
-
-  if (containsText(text, 'slug already exists')) {
-    return 'adminLearn.errors.slugConflict'
+    return 'errors.validation'
   }
 
   return fallbackKey

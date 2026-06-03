@@ -223,3 +223,110 @@ def test_delete_subtree_removes_lessons(editor_client, editor_user, published_co
 
     assert not CourseNode.objects.filter(id=folder['id']).exists()
     assert not Lesson.objects.filter(id=lesson_id).exists()
+
+
+def _create_folder(client, slug, title, parent_id=None):
+    return client.post(
+        f'/api/learn/courses/{slug}/nodes/',
+        {'title': title, 'parent_id': parent_id, 'is_item': False},
+        format='json',
+    ).data
+
+
+def _create_lesson_node(client, slug, title, parent_id=None):
+    return client.post(
+        f'/api/learn/courses/{slug}/nodes/',
+        {
+            'title': title,
+            'parent_id': parent_id,
+            'is_item': True,
+            'lesson': {'lesson_type': Lesson.LessonType.MARKDOWN, 'content_md': 'x'},
+        },
+        format='json',
+    ).data
+
+
+def test_list_sorts_folders_before_lessons(editor_client, editor_user, published_course):
+    _assign_role(editor_user, 'Editor')
+
+    # Create a lesson first, then a folder — folder must still come first.
+    lesson = _create_lesson_node(editor_client, published_course.slug, 'Lesson 1')
+    folder = _create_folder(editor_client, published_course.slug, 'Folder 1')
+
+    response = editor_client.get(f'/api/learn/courses/{published_course.slug}/nodes/')
+    assert response.status_code == 200
+    ids = [node['id'] for node in response.data]
+    assert ids.index(folder['id']) < ids.index(lesson['id'])
+
+
+def test_create_node_defaults_position_to_end(editor_client, editor_user, published_course):
+    _assign_role(editor_user, 'Editor')
+
+    first = _create_folder(editor_client, published_course.slug, 'A')
+    second = _create_folder(editor_client, published_course.slug, 'B')
+    third = _create_folder(editor_client, published_course.slug, 'C')
+
+    assert CourseNode.objects.get(id=first['id']).position == 0
+    assert CourseNode.objects.get(id=second['id']).position == 1
+    assert CourseNode.objects.get(id=third['id']).position == 2
+
+
+def test_reorder_reindexes_siblings(editor_client, editor_user, published_course):
+    _assign_role(editor_user, 'Editor')
+
+    a = _create_folder(editor_client, published_course.slug, 'A')
+    b = _create_folder(editor_client, published_course.slug, 'B')
+    c = _create_folder(editor_client, published_course.slug, 'C')
+
+    # New order: C, A, B
+    response = editor_client.post(
+        f'/api/learn/courses/{published_course.slug}/nodes/reorder/',
+        {'parent_id': None, 'ordered_ids': [c['id'], a['id'], b['id']]},
+        format='json',
+    )
+    assert response.status_code == 204
+
+    assert CourseNode.objects.get(id=c['id']).position == 0
+    assert CourseNode.objects.get(id=a['id']).position == 1
+    assert CourseNode.objects.get(id=b['id']).position == 2
+
+
+def test_reorder_rejects_mismatched_sibling_set(editor_client, editor_user, published_course):
+    _assign_role(editor_user, 'Editor')
+
+    a = _create_folder(editor_client, published_course.slug, 'A')
+    b = _create_folder(editor_client, published_course.slug, 'B')
+
+    # Missing one sibling -> 400
+    response = editor_client.post(
+        f'/api/learn/courses/{published_course.slug}/nodes/reorder/',
+        {'parent_id': None, 'ordered_ids': [a['id']]},
+        format='json',
+    )
+    assert response.status_code == 400
+
+    # Foreign id mixed in -> 400
+    response = editor_client.post(
+        f'/api/learn/courses/{published_course.slug}/nodes/reorder/',
+        {'parent_id': None, 'ordered_ids': [a['id'], b['id'], 99999]},
+        format='json',
+    )
+    assert response.status_code == 400
+
+
+def test_rename_item_node_syncs_lesson_title(editor_client, editor_user, published_course):
+    _assign_role(editor_user, 'Editor')
+
+    item = _create_lesson_node(editor_client, published_course.slug, 'Original Title')
+    lesson_id = item['lesson']['id']
+    assert Lesson.objects.get(id=lesson_id).title == 'Original Title'
+
+    response = editor_client.put(
+        f'/api/learn/courses/{published_course.slug}/nodes/{item["id"]}/',
+        {'title': 'Renamed Title'},
+        format='json',
+    )
+    assert response.status_code == 200
+
+    assert CourseNode.objects.get(id=item['id']).title == 'Renamed Title'
+    assert Lesson.objects.get(id=lesson_id).title == 'Renamed Title'

@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Max, Q
 
 from api.models import Course, CourseNode, CourseTagMap, Lesson, UserCourseProgress, UserLessonProgress
 from api.utils import get_config
@@ -59,7 +59,38 @@ class CourseService:
         if search:
             queryset = queryset.filter(title__icontains=search)
 
+        # Tag AND-filter: ``?tags=1,2,3`` keeps only courses carrying *all* of the
+        # requested tags. Each tag id adds its own join so the conditions AND
+        # together (a single ``__in`` would be OR semantics).
+        tag_ids = cls._parse_tag_ids(query_params.get('tags'))
+        for tag_id in tag_ids:
+            queryset = queryset.filter(tag_mappings__tag_id=tag_id)
+        if tag_ids:
+            queryset = queryset.distinct()
+
         return queryset.select_related('category').prefetch_related('tag_mappings__tag').order_by('id')
+
+    @staticmethod
+    def _parse_tag_ids(raw):
+        if not raw:
+            return []
+        ids = []
+        for part in str(raw).split(','):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                ids.append(int(part))
+            except ValueError:
+                continue
+        # Preserve order but drop duplicates so repeated joins aren't generated.
+        seen = set()
+        unique = []
+        for tag_id in ids:
+            if tag_id not in seen:
+                seen.add(tag_id)
+                unique.append(tag_id)
+        return unique
 
     @staticmethod
     def get_course_tree_nodes(course):
@@ -116,7 +147,16 @@ class CourseService:
         if not title:
             raise ValueError('title is required')
 
-        position = payload.get('position', 0)
+        # Default new nodes to the end of their sibling list so the UI never has
+        # to ask for a position; explicit positions (legacy callers) still win.
+        position = payload.get('position', None)
+        if position is None:
+            max_position = (
+                CourseNode.objects.filter(course_id=course.id, parent_id=parent_id)
+                .aggregate(max_position=Max('position'))
+                .get('max_position')
+            )
+            position = 0 if max_position is None else max_position + 1
         is_item = bool(payload.get('is_item'))
         lesson_payload = payload.get('lesson')
 
@@ -239,6 +279,36 @@ class CourseService:
                 Lesson.objects.filter(id__in=lesson_ids).delete()
 
             CourseNode.objects.filter(id__in=subtree_ids).delete()
+            cls.bump_course_structure_version(course.id)
+
+    @classmethod
+    def reorder_course_node_siblings(cls, course, parent_id, ordered_ids, actor=None):
+        """Reindex ``position`` for the siblings under ``parent_id`` to 0..n.
+
+        ``ordered_ids`` must be exactly the set of sibling ids (same course, same
+        parent). The new ``position`` of each node equals its index in the list,
+        so the caller (drag-and-drop UI, already folder-first) fully controls the
+        order without ever producing duplicate positions.
+        """
+        sibling_qs = CourseNode.objects.filter(course_id=course.id, parent_id=parent_id)
+        sibling_ids = set(sibling_qs.values_list('id', flat=True))
+
+        if set(ordered_ids) != sibling_ids:
+            raise ValueError('ordered_ids must match exactly the siblings of the given parent')
+
+        nodes_by_id = {node.id: node for node in sibling_qs}
+        now = timezone.now()
+        to_update = []
+        for index, node_id in enumerate(ordered_ids):
+            node = nodes_by_id[node_id]
+            if node.position != index:
+                node.position = index
+                node.updated_at = now
+                to_update.append(node)
+
+        with transaction.atomic():
+            if to_update:
+                CourseNode.objects.bulk_update(to_update, ['position', 'updated_at'])
             cls.bump_course_structure_version(course.id)
 
     @staticmethod

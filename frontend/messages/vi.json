@@ -131,7 +131,10 @@
     "description": "Theo dõi tiến độ theo cây nội dung và hoàn thành lesson theo từng bước.",
     "catalog": {
       "subtitle": "Duyệt các khoá học đã phát hành và tiếp tục lộ trình học",
-      "searchPlaceholder": "Tìm kiếm khoá học..."
+      "searchPlaceholder": "Tìm kiếm khoá học...",
+      "pageOf": "Trang {page} / {total}",
+      "previous": "Trước",
+      "next": "Tiếp"
     },
     "detail": {
       "backToCatalog": "Quay lại khoá học",
@@ -201,9 +204,10 @@
     },
     "filter": {
       "title": "Bộ lọc",
+      "apply": "Lọc",
       "reset": "Đặt lại",
       "status": "Trạng thái",
-      "statusAll": "Chỉ đã phát hành",
+      "statusAll": "Tất cả",
       "statusPublished": "Đã phát hành",
       "statusDraft": "Nháp",
       "statusArchived": "Đã lưu trữ",
@@ -873,7 +877,8 @@
       "loadingTitle": "Đang tải bài học..."
     },
     "navigation": {
-      "backToList": "Quay lại danh sách khóa học"
+      "backToList": "Quản lý khóa học",
+      "backToCourseTree": "Quay lại cây nội dung khóa học"
     },
     "form": {
       "titleLabel": "Tiêu đề",
@@ -926,12 +931,21 @@
       "delete": "Xóa",
       "edit": "Sửa",
       "cancel": "Hủy",
+      "archive": "Lưu trữ",
+      "purge": "Xóa vĩnh viễn",
       "filterQuiz": "Lọc quiz",
       "attachQuestion": "Gắn câu hỏi",
       "moveUp": "Lên",
       "moveDown": "Xuống",
       "move": "Di chuyển",
       "rename": "Đổi tên"
+    },
+    "metadata": {
+      "titleLabel": "Tiêu đề",
+      "learningPointLabel": "Điểm học tập",
+      "learningTimeLabel": "Thời lượng (phút)",
+      "videoDurationLabel": "Thời lượng video (giây)",
+      "optionalPlaceholder": "tùy chọn"
     },
     "columns": {
       "title": "Tiêu đề",
@@ -953,7 +967,13 @@
     },
     "confirm": {
       "deleteCourse": "Xóa khóa học {title}?",
-      "deleteMapping": "Xóa mapping này?"
+      "deleteMapping": "Bạn có chắc muốn xóa mapping này?",
+      "deleteMappingTitle": "Xóa mapping câu hỏi",
+      "archiveTitle": "Lưu trữ khóa học",
+      "archiveCourse": "Lưu trữ khóa học \"{title}\"? Khóa học sẽ bị ẩn khỏi học viên nhưng có thể khôi phục.",
+      "purgeTitle": "Xóa vĩnh viễn khóa học",
+      "purgeCourse": "Hành động này KHÔNG THỂ hoàn tác. Toàn bộ nội dung của khóa học \"{title}\" sẽ bị xóa vĩnh viễn.",
+      "purgeTypeSlug": "Nhập slug khóa học để xác nhận:"
     },
     "empty": {
       "noTags": "Chưa có tag.",
@@ -973,23 +993,24 @@
       "outline": "Outline"
     },
     "tree": {
-      "createFolderTitle": "Tạo thư mục",
-      "folderTitlePlaceholder": "tiêu đề thư mục",
-      "parentLabel": "Nút cha",
-      "parentRoot": "Gốc",
-      "positionPlaceholder": "vị trí",
-      "createFolder": "Tạo thư mục",
-      "createLessonNodeTitle": "Tạo node bài học",
-      "lessonNodeTitlePlaceholder": "tiêu đề node",
-      "lessonTitlePlaceholder": "tiêu đề bài học",
-      "markdownPlaceholder": "nội dung markdown",
-      "videoUrlPlaceholder": "URL video",
-      "createLessonNode": "Tạo node bài học",
+      "parentRoot": "Gốc (cấp cao nhất)",
       "treeTitle": "Cây khóa học",
-      "renamePrompt": "Đổi tên node",
-      "movePrompt": "Di chuyển node tới parent id (để trống để về gốc)",
-      "deleteConfirm": "Xóa node này và toàn bộ cây con?",
-      "pathLabel": "path: {path}",
+      "addRoot": "+ Thêm ở gốc",
+      "addChild": "Thêm",
+      "dragHint": "Kéo biểu tượng tay nắm để sắp xếp lại; thả vào một thư mục để di chuyển node vào trong. Thư mục luôn nằm trên bài học.",
+      "createNodeTitle": "Tạo node mới",
+      "createNodeUnder": "Tạo trong: {parent}",
+      "nodeKindLabel": "Loại node",
+      "titleLabel": "Tiêu đề",
+      "titlePlaceholder": "tiêu đề node / bài học",
+      "lessonTypeLabel": "Loại bài học",
+      "videoUrlPlaceholder": "URL video",
+      "renameTitle": "Đổi tên node",
+      "deleteTitle": "Xóa node",
+      "deleteConfirm": "Xóa node này và toàn bộ cây con bên dưới? Hành động không thể hoàn tác.",
+      "orderLabel": "thứ tự: {position}",
+      "pointLabel": "điểm: {point}",
+      "timeLabel": "phút: {time}",
       "badgeLesson": "Bài học",
       "badgeFolder": "Thư mục",
       "loadingChildren": "Đang tải node con...",
@@ -1031,6 +1052,8 @@
       "createCourseFailed": "Tạo khóa học thất bại.",
       "updateCourseFailed": "Cập nhật khóa học thất bại.",
       "deleteCourseFailed": "Xóa khóa học thất bại.",
+      "archiveCourseFailed": "Lưu trữ khóa học thất bại.",
+      "purgeCourseFailed": "Xóa vĩnh viễn khóa học thất bại.",
       "createCategoryFailed": "Tạo category thất bại.",
       "updateCategoryFailed": "Cập nhật category thất bại.",
       "deleteCategoryFailed": "Xóa category thất bại.",
