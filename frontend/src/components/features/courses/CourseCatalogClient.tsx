@@ -8,7 +8,7 @@ import { useCourses } from '@/hooks/useCourses'
 import { listLearnCategories, listLearnTags } from '@/services/courses.service'
 import { type CourseCategory, type CourseListParams, type CourseTag } from '@/types/course.types'
 import { CourseCard } from './CourseCard'
-import { CourseFilterPanel, type CourseStatusFilter } from './CourseFilterPanel'
+import { CourseFilterPanel, type CourseProgressFilter, type CourseStatusFilter } from './CourseFilterPanel'
 
 type CourseCatalogClientProps = {
   locale: string
@@ -22,6 +22,7 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<CourseStatusFilter>('all')
+  const [progressFilter, setProgressFilter] = useState<CourseProgressFilter>('all')
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
 
@@ -97,6 +98,7 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
   const handleReset = () => {
     setSearch('')
     setStatusFilter('all')
+    setProgressFilter('all')
     setSelectedCategoryIds([])
     setSelectedTagIds([])
     appliedRef.current = { search: '', status: 'all', categoryIds: [], tagIds: [] }
@@ -116,6 +118,25 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
   }
 
   const totalPages = Math.max(1, Math.ceil(pagination.count / PAGE_SIZE))
+  // Progress filter is applied client-side over the current page (the API has
+  // no progress query param). 'not_started' = no progress or nothing completed,
+  // 'in_progress' = some but not all lessons done, 'completed' = all done.
+  const visibleCourses = courses.filter((course) => {
+    if (progressFilter === 'all') {
+      return true
+    }
+    const progress = course.user_progress
+    const completed = progress?.completed ?? 0
+    const total = progress?.total ?? 0
+    if (progressFilter === 'not_started') {
+      return completed === 0
+    }
+    if (progressFilter === 'in_progress') {
+      return completed > 0 && completed < total
+    }
+    // completed
+    return total > 0 && completed >= total
+  })
   // Only show full skeletons on the very first load; subsequent filter/page
   // requests keep the existing grid mounted (smooth, no flicker).
   const showInitialSkeletons = isCatalogLoading && !hasLoadedOnce
@@ -127,6 +148,7 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
           <CourseFilterPanel
             search={search}
             statusFilter={statusFilter}
+            progressFilter={progressFilter}
             selectedCategoryIds={selectedCategoryIds}
             selectedTagIds={selectedTagIds}
             availableCategories={availableCategories}
@@ -134,6 +156,7 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
             isLoading={isCatalogLoading}
             onSearchChange={setSearch}
             onStatusChange={setStatusFilter}
+            onProgressChange={setProgressFilter}
             onCategoryToggle={handleCategoryToggle}
             onTagToggle={handleTagToggle}
             onApply={handleApply}
@@ -156,12 +179,12 @@ export function CourseCatalogClient({ locale }: CourseCatalogClientProps) {
           </div>
         ) : error ? (
           <p className="text-sm text-destructive">{t('errors.loadFailed')}</p>
-        ) : courses.length === 0 ? (
+        ) : visibleCourses.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('empty.noResults')}</p>
         ) : (
           <div className={isCatalogLoading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {courses.map((course) => (
+              {visibleCourses.map((course) => (
                 <CourseCard key={course.id} course={course} locale={locale} />
               ))}
             </div>

@@ -151,6 +151,11 @@
       "completedLessons": "Đã hoàn thành {completed} / {total} bài",
       "noCourseProgress": "Chưa có tiến độ khóa học.",
       "guidedProgress": "Tiến độ hướng dẫn",
+      "learningPointLabel": "Điểm",
+      "collapseSidebar": "Thu gọn",
+      "expandSidebar": "Mở rộng",
+      "collapsePanel": "Thu gọn",
+      "expandPanel": "Mở rộng",
       "startButton": "Bắt đầu bài học",
       "completeButton": "Đánh dấu hoàn thành",
       "started": "Đã bắt đầu",
@@ -212,7 +217,12 @@
       "statusDraft": "Nháp",
       "statusArchived": "Đã lưu trữ",
       "categories": "Danh mục",
-      "tags": "Thẻ"
+      "tags": "Thẻ",
+      "progress": "Tiến độ học",
+      "progressAll": "Tất cả",
+      "progressNotStarted": "Chưa học",
+      "progressInProgress": "Đang học",
+      "progressCompleted": "Đã hoàn thành"
     },
     "empty": {
       "noCourses": "Không có khoá học nào.",
@@ -893,6 +903,7 @@
       "categoryPlaceholder": "Chọn category",
       "categoryNone": "Không có category",
       "learningPointLabel": "Điểm học tập",
+      "learningPointAutoHint": "Được tính tự động bằng tổng điểm của các bài học.",
       "estimatedTimeLabel": "Thời lượng dự kiến (phút)",
       "tagsLabel": "Tag"
     },
@@ -920,7 +931,12 @@
       "tagTitle": "Quản lý tag",
       "tagDescription": "Tạo, cập nhật hoặc xóa tag.",
       "namePlaceholder": "tên",
-      "descriptionPlaceholder": "mô tả"
+      "descriptionPlaceholder": "mô tả",
+      "createTitle": "Thêm mới",
+      "columnName": "Tên",
+      "columnDescription": "Mô tả",
+      "deleteConfirmTitle": "Xác nhận xóa",
+      "deleteConfirmDescription": "Bạn có chắc muốn xóa \"{name}\"? Hành động này không thể hoàn tác."
     },
     "actions": {
       "createCourse": "Tạo khóa học",
@@ -933,6 +949,7 @@
       "cancel": "Hủy",
       "archive": "Lưu trữ",
       "purge": "Xóa vĩnh viễn",
+      "changeStatus": "Đổi trạng thái",
       "filterQuiz": "Lọc quiz",
       "attachQuestion": "Gắn câu hỏi",
       "moveUp": "Lên",
@@ -998,6 +1015,7 @@
       "addRoot": "+ Thêm ở gốc",
       "addChild": "Thêm",
       "dragHint": "Kéo biểu tượng tay nắm để sắp xếp lại; thả vào một thư mục để di chuyển node vào trong. Thư mục luôn nằm trên bài học.",
+      "rootDropZone": "Thả vào đây để đưa lên cấp cao nhất",
       "createNodeTitle": "Tạo node mới",
       "createNodeUnder": "Tạo trong: {parent}",
       "nodeKindLabel": "Loại node",
@@ -1025,6 +1043,8 @@
       "markdownPlaceholder": "Nhập nội dung markdown cho bài học",
       "previewTitle": "Xem trước",
       "previewEmpty": "Chưa có nội dung.",
+      "showPreview": "Xem trước",
+      "showEditor": "Chỉnh sửa",
       "videoUrlPlaceholder": "Dán URL video",
       "videoPreviewEmpty": "Hãy nhập URL video để xem trước.",
       "quizSelectorTitle": "Bộ chọn câu hỏi theo quiz",

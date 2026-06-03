@@ -211,16 +211,10 @@ export function AdminLearnCourseForm({
           <Input
             id={`admin-learn-point-${mode}`}
             type="number"
-            min={0}
-            step={1}
+            readOnly
             value={String(form.learningPoint)}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                learningPoint: Math.max(0, Number(event.target.value || 0)),
-              }))
-            }
           />
+          <p className="text-xs text-muted-foreground">{t('form.learningPointAutoHint')}</p>
         </div>
 
         <div className="space-y-1">

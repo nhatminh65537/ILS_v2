@@ -12,11 +12,12 @@ def _assign_role(user, role_name):
     UserRole.objects.get_or_create(user=user, role=role)
 
 
-def _create_lesson_node(course, title='Lesson', lesson_type=Lesson.LessonType.MARKDOWN, content='content'):
+def _create_lesson_node(course, title='Lesson', lesson_type=Lesson.LessonType.MARKDOWN, content='content', learning_point=0):
     lesson = Lesson.objects.create(
         title=title,
         lesson_type=lesson_type,
         content_md=content if lesson_type == Lesson.LessonType.MARKDOWN else None,
+        learning_point=learning_point,
     )
     CourseNode.objects.create(
         course=course,
@@ -90,8 +91,9 @@ def test_complete_progress_is_idempotent(member_client, member_user, published_c
 def test_course_completion_updates_profile_once(member_client, member_user, published_course):
     _assign_role(member_user, 'Member')
 
-    lesson_1 = _create_lesson_node(published_course, title='Course Completion Lesson 1')
-    lesson_2 = _create_lesson_node(published_course, title='Course Completion Lesson 2')
+    lesson_1 = _create_lesson_node(published_course, title='Course Completion Lesson 1', learning_point=15)
+    lesson_2 = _create_lesson_node(published_course, title='Course Completion Lesson 2', learning_point=25)
+    lessons_total = lesson_1.learning_point + lesson_2.learning_point
 
     profile, _ = UserProfile.objects.get_or_create(user=member_user)
     assert profile.course_completed == 0
@@ -99,6 +101,10 @@ def test_course_completion_updates_profile_once(member_client, member_user, publ
 
     complete_1 = member_client.post(f'/api/learn/lessons/{lesson_1.id}/progress/complete/')
     assert complete_1.status_code == 200
+
+    # Points are awarded per-lesson on first completion.
+    profile.refresh_from_db()
+    assert profile.total_learning_point == lesson_1.learning_point
 
     course_progress = UserCourseProgress.objects.get(user=member_user, course=published_course)
     assert course_progress.completed_at is None
@@ -111,7 +117,7 @@ def test_course_completion_updates_profile_once(member_client, member_user, publ
 
     profile.refresh_from_db()
     assert profile.course_completed == 1
-    assert profile.total_learning_point == published_course.learning_point
+    assert profile.total_learning_point == lessons_total
 
     # Re-complete after finished course must not double-award.
     repeat_complete = member_client.post(f'/api/learn/lessons/{lesson_2.id}/progress/complete/')
@@ -119,7 +125,7 @@ def test_course_completion_updates_profile_once(member_client, member_user, publ
 
     profile.refresh_from_db()
     assert profile.course_completed == 1
-    assert profile.total_learning_point == published_course.learning_point
+    assert profile.total_learning_point == lessons_total
 
 
 def test_get_course_progress_returns_contract_payload(member_client, member_user, published_course):
@@ -181,9 +187,7 @@ def test_member_cannot_track_progress_for_draft_course(member_client, member_use
 def test_legacy_complete_and_namespaced_complete_do_not_double_award(member_client, member_user, published_course):
     _assign_role(member_user, 'Member')
 
-    lesson = _create_lesson_node(published_course, title='Legacy Compatibility Lesson')
-    published_course.learning_point = 25
-    published_course.save(update_fields=['learning_point'])
+    lesson = _create_lesson_node(published_course, title='Legacy Compatibility Lesson', learning_point=25)
 
     profile, _ = UserProfile.objects.get_or_create(user=member_user)
 
@@ -196,3 +200,15 @@ def test_legacy_complete_and_namespaced_complete_do_not_double_award(member_clie
     profile.refresh_from_db()
     assert profile.course_completed == 1
     assert profile.total_learning_point == 25
+
+
+def test_recompute_course_learning_point_sums_lessons(published_course):
+    from api.services.course_service import CourseService
+
+    _create_lesson_node(published_course, title='Sum Lesson 1', learning_point=10)
+    _create_lesson_node(published_course, title='Sum Lesson 2', learning_point=15)
+
+    CourseService.recompute_course_learning_point(published_course.id)
+
+    published_course.refresh_from_db()
+    assert published_course.learning_point == 25

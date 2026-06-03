@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,14 +16,12 @@ type NeighborLessonLink = {
 type LessonProgressSidebarProps = {
   locale: string
   slug: string
-  isStarted: boolean
   isCompleted: boolean
   isSubmitting: boolean
   signal: LessonCompletionSignal
   courseProgress: UserCourseProgress | null
   previousLesson: NeighborLessonLink | null
   nextLesson: NeighborLessonLink | null
-  onStart: () => void
   onComplete: () => void
 }
 
@@ -36,63 +36,77 @@ const toPercent = (value: number | string): number => {
 export function LessonProgressSidebar({
   locale,
   slug,
-  isStarted,
   isCompleted,
   isSubmitting,
   signal,
   courseProgress,
   previousLesson,
   nextLesson,
-  onStart,
   onComplete,
 }: LessonProgressSidebarProps) {
   const t = useTranslations('courses.lessonViewer')
+
+  const [isProgressCollapsed, setIsProgressCollapsed] = useState(false)
 
   const coursePercent = courseProgress ? toPercent(courseProgress.percent) : 0
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
           <CardTitle className="text-base">{t('progressTitle')}</CardTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setIsProgressCollapsed((prev) => !prev)}
+            aria-expanded={!isProgressCollapsed}
+            aria-label={isProgressCollapsed ? t('expandPanel') : t('collapsePanel')}
+          >
+            {isProgressCollapsed ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
+          </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {courseProgress ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{t('courseProgress')}</span>
-                <span className="font-medium">{coursePercent.toFixed(2)}%</span>
+        {!isProgressCollapsed ? (
+          <CardContent className="space-y-4">
+            {courseProgress ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{t('courseProgress')}</span>
+                  <span className="font-medium">{coursePercent.toFixed(2)}%</span>
+                </div>
+                <Progress value={coursePercent} />
+                <p className="text-xs text-muted-foreground">
+                  {t('completedLessons', {
+                    completed: courseProgress.completed,
+                    total: courseProgress.lesson_count,
+                  })}
+                </p>
               </div>
-              <Progress value={coursePercent} />
-              <p className="text-xs text-muted-foreground">
-                {t('completedLessons', {
-                  completed: courseProgress.completed,
-                  total: courseProgress.lesson_count,
-                })}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t('noCourseProgress')}</p>
-          )}
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('noCourseProgress')}</p>
+            )}
 
-          <div className="space-y-2 rounded-md border p-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{t('guidedProgress')}</span>
-              <span className="font-medium">{signal.progressPercent.toFixed(0)}%</span>
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{t('guidedProgress')}</span>
+                <span className="font-medium">{signal.progressPercent.toFixed(0)}%</span>
+              </div>
+              <Progress value={signal.progressPercent} />
+              <p className="text-xs text-muted-foreground">{t(signal.hintKey)}</p>
             </div>
-            <Progress value={signal.progressPercent} />
-            <p className="text-xs text-muted-foreground">{t(signal.hintKey)}</p>
-          </div>
 
-          <div className="space-y-2">
-            <Button type="button" variant="outline" className="w-full" disabled={isStarted || isSubmitting} onClick={onStart}>
-              {isStarted ? t('started') : t('startButton')}
-            </Button>
-            <Button type="button" className="w-full" disabled={isCompleted || isSubmitting} onClick={onComplete}>
-              {isCompleted ? t('completed') : t('completeButton')}
-            </Button>
-          </div>
-        </CardContent>
+            <div className="space-y-2">
+              <Button type="button" className="w-full" disabled={isCompleted || isSubmitting} onClick={onComplete}>
+                {isCompleted ? t('completed') : t('completeButton')}
+              </Button>
+            </div>
+          </CardContent>
+        ) : null}
       </Card>
 
       <Card>

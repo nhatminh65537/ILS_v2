@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAdminChallenges } from '@/hooks/useAdminChallenges'
-import type { CreateChallengePayload } from '@/types/challenge.types'
+import type { CreateChallengePayload, UpdateChallengePayload } from '@/types/challenge.types'
 import { AdminChallengeForm } from './AdminChallengeForm'
 
 type AdminChallengeCreatePageClientProps = {
@@ -28,8 +28,8 @@ export function AdminChallengeCreatePageClient({ locale }: AdminChallengeCreateP
     void loadTaxonomies()
   }, [loadTaxonomies])
 
-  const handleSubmit = async (payload: CreateChallengePayload) => {
-    const created = await submitCreateChallenge(payload)
+  const handleSubmit = async (payload: CreateChallengePayload | UpdateChallengePayload) => {
+    const created = await submitCreateChallenge(payload as CreateChallengePayload)
     if (created?.slug) {
       router.push(`/${locale}/admin/challenges/${created.slug}`)
     }

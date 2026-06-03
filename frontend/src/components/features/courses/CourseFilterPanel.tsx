@@ -17,9 +17,12 @@ import { ContentStatus, type CourseCategory, type CourseTag } from '@/types/cour
 
 export type CourseStatusFilter = 'all' | ContentStatus
 
+export type CourseProgressFilter = 'all' | 'not_started' | 'in_progress' | 'completed'
+
 type CourseFilterPanelProps = {
   search: string
   statusFilter: CourseStatusFilter
+  progressFilter: CourseProgressFilter
   selectedCategoryIds: number[]
   selectedTagIds: number[]
   availableCategories: CourseCategory[]
@@ -27,6 +30,7 @@ type CourseFilterPanelProps = {
   isLoading?: boolean
   onSearchChange: (value: string) => void
   onStatusChange: (value: CourseStatusFilter) => void
+  onProgressChange: (value: CourseProgressFilter) => void
   onCategoryToggle: (categoryId: number) => void
   onTagToggle: (tagId: number) => void
   onApply: () => void
@@ -36,6 +40,7 @@ type CourseFilterPanelProps = {
 export function CourseFilterPanel({
   search,
   statusFilter,
+  progressFilter,
   selectedCategoryIds,
   selectedTagIds,
   availableCategories,
@@ -43,6 +48,7 @@ export function CourseFilterPanel({
   isLoading = false,
   onSearchChange,
   onStatusChange,
+  onProgressChange,
   onCategoryToggle,
   onTagToggle,
   onApply,
@@ -84,6 +90,23 @@ export function CourseFilterPanel({
             <SelectItem value={ContentStatus.Published}>{t('filter.statusPublished')}</SelectItem>
             <SelectItem value={ContentStatus.Draft}>{t('filter.statusDraft')}</SelectItem>
             <SelectItem value={ContentStatus.Archived}>{t('filter.statusArchived')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">{t('filter.progress')}</Label>
+        <Select value={progressFilter} onValueChange={(v) => onProgressChange(v as CourseProgressFilter)}>
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filter.progressAll')}</SelectItem>
+            <SelectItem value="not_started">{t('filter.progressNotStarted')}</SelectItem>
+            <SelectItem value="in_progress">{t('filter.progressInProgress')}</SelectItem>
+            <SelectItem value="completed">{t('filter.progressCompleted')}</SelectItem>
           </SelectContent>
         </Select>
       </div>

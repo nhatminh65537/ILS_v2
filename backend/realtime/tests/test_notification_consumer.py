@@ -152,7 +152,8 @@ async def test_notification_ws_broadcast_fanout_to_active_connections(member_use
             'title': 'Broadcast WS',
             'message': 'Broadcast delivery test',
             'metadata': {'kind': 'broadcast-test'},
-        }
+        },
+        actor=member_user,
     )
 
     member_event = await member_ws.receive_json_from(timeout=2)

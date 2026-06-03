@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import rehypeHighlight from 'rehype-highlight'
+import remarkGfm from 'remark-gfm'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 
@@ -17,21 +20,42 @@ export function AdminLearnLessonMarkdownTab({
 }: AdminLearnLessonMarkdownTabProps) {
   const t = useTranslations('adminLearn')
   const [content, setContent] = useState(initialContent)
+  const [showPreview, setShowPreview] = useState(false)
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPreview((prev) => !prev)}
+        >
+          {showPreview ? t('lesson.showEditor') : t('lesson.showPreview')}
+        </Button>
+      </div>
+
+      {showPreview ? (
+        <div className="min-h-72 rounded-md border border-border p-3">
+          {content ? (
+            <article className="prose prose-lesson max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                {content}
+              </ReactMarkdown>
+            </article>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t('lesson.previewEmpty')}</p>
+          )}
+        </div>
+      ) : (
         <textarea
           className="min-h-72 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
           value={content}
           placeholder={t('lesson.markdownPlaceholder')}
           onChange={(event) => setContent(event.target.value)}
         />
-        <div className="min-h-72 rounded-md border border-border p-3">
-          <p className="mb-2 text-xs text-muted-foreground">{t('lesson.previewTitle')}</p>
-          <pre className="whitespace-pre-wrap text-sm">{content || t('lesson.previewEmpty')}</pre>
-        </div>
-      </div>
+      )}
+
       <Button disabled={isSubmitting} onClick={() => void onSave(content)}>
         {t('actions.save')}
       </Button>

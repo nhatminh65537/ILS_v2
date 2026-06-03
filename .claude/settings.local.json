@@ -46,7 +46,14 @@
       "Bash(git -C D:/PBL5/ILS_v2 status)",
       "Bash(python3 -m json.tool)",
       "Bash(dir /b \"D:\\\\PBL5\\\\ILS_v2\\\\frontend\\\\src\\\\app\\\\[locale]\")",
-      "Bash(git -C \"D:/PBL5/ILS_v2\" log --oneline -8)"
+      "Bash(git -C \"D:/PBL5/ILS_v2\" log --oneline -8)",
+      "Bash(cat)",
+      "Bash(python /tmp/extract_config_keys.py)",
+      "Bash(grep \"'key':\" \"D:\\\\\\\\PBL5\\\\\\\\ILS_v2\\\\\\\\backend\\\\\\\\api\\\\\\\\management\\\\\\\\commands\\\\\\\\seed_config.py\")",
+      "Bash(xargs wc *)",
+      "Bash(git -C /d/PBL5/ILS_v2 mv docs/TEAM_PLAN.md docs/reports/2026-03-12_team-plan-snapshot.md)",
+      "Bash(git -C /d/PBL5/ILS_v2 rm docs/RELEASE_CHECKLIST_SLICE5_8.md)",
+      "Bash(git -C /d/PBL5/ILS_v2 status --short docs/)"
     ]
   }
 }

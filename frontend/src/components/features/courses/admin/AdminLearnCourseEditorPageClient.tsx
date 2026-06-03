@@ -35,11 +35,15 @@ export function AdminLearnCourseEditorPageClient({ locale, slug }: AdminLearnCou
   return (
     <section className="space-y-6 p-6">
       <header className="space-y-2">
+        <nav className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+          <Link className="hover:text-foreground hover:underline" href={`/${locale}/admin/learn/courses`}>
+            {t('navigation.backToList')}
+          </Link>
+          <span>/</span>
+          <span className="text-foreground">{detailState.data?.title ?? t('editor.title')}</span>
+        </nav>
         <h1 className="text-3xl font-semibold">{t('editor.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('editor.subtitle')}</p>
-        <Link className="text-xs underline" href={`/${locale}/admin/learn/courses`}>
-          {t('navigation.backToList')}
-        </Link>
       </header>
 
       {detailState.errorMessageKey ? <p className="text-sm text-destructive">{t(detailState.errorMessageKey as never)}</p> : null}

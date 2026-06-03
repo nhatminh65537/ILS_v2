@@ -123,6 +123,9 @@ class LearnProgressService:
         course = cls._resolve_course_for_lesson(lesson)
         cls.get_or_create_course_progress(user=user, course=course, actor=actor)
 
+        if transitioned:
+            cls.award_lesson_points(user=user, lesson=lesson)
+
         return lesson_progress, transitioned
 
     @classmethod
@@ -198,14 +201,29 @@ class LearnProgressService:
         return cls._build_course_progress_payload(course_progress)
 
     @staticmethod
+    def award_lesson_points(user, lesson: Lesson) -> None:
+        """Award a lesson's learning_point to the user's total exactly once.
+
+        Called only on the first completion transition of a lesson, so the
+        increment is idempotent across repeated complete calls.
+        """
+        points = int(lesson.learning_point or 0)
+        if points <= 0:
+            return
+
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        UserProfile.objects.filter(pk=profile.pk).update(
+            total_learning_point=F('total_learning_point') + points,
+        )
+
+    @staticmethod
     def sync_user_profile_on_course_completion(user, course: Course, previous_completed_at, new_completed_at) -> None:
         if previous_completed_at is not None or new_completed_at is None:
             return
 
+        # Points are awarded per-lesson on completion; course completion only
+        # bumps the completed-course counter to avoid double-counting points.
         profile, _ = UserProfile.objects.get_or_create(user=user)
-        learning_point = int(course.learning_point or 0)
-
         UserProfile.objects.filter(pk=profile.pk).update(
             course_completed=F('course_completed') + 1,
-            total_learning_point=F('total_learning_point') + learning_point,
         )

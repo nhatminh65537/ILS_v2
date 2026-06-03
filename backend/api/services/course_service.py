@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Count, F, Max, Q
+from django.db.models import Count, F, Max, Q, Sum
 
 from api.models import Course, CourseNode, CourseTagMap, Lesson, UserCourseProgress, UserLessonProgress
 from api.utils import get_config
@@ -131,6 +131,20 @@ class CourseService:
     def bump_course_structure_version(course_id):
         Course.objects.filter(id=course_id).update(structure_version=F('structure_version') + 1)
 
+    @staticmethod
+    def recompute_course_learning_point(course_id):
+        """Recompute a course's total learning_point as the sum of its lessons'.
+
+        Keeps ``Course.learning_point`` an auto-derived aggregate so editors do
+        not maintain it manually.
+        """
+        total = (
+            Lesson.objects.filter(node__course_id=course_id)
+            .aggregate(total=Sum('learning_point'))
+            .get('total')
+        ) or 0
+        Course.objects.filter(id=course_id).update(learning_point=total)
+
     @classmethod
     def create_course_node_atomic(cls, course, payload, actor):
         max_depth = int(get_config('learn.max_tree_depth', default=5) or 5)
@@ -201,6 +215,9 @@ class CourseService:
             )
 
             cls.bump_course_structure_version(course.id)
+
+        if is_item:
+            cls.recompute_course_learning_point(course.id)
 
         return node
 
@@ -280,6 +297,9 @@ class CourseService:
 
             CourseNode.objects.filter(id__in=subtree_ids).delete()
             cls.bump_course_structure_version(course.id)
+
+        if lesson_ids:
+            cls.recompute_course_learning_point(course.id)
 
     @classmethod
     def reorder_course_node_siblings(cls, course, parent_id, ordered_ids, actor=None):

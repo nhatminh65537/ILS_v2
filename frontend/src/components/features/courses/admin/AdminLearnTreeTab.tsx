@@ -6,6 +6,7 @@ import {
   DndContext,
   PointerSensor,
   closestCenter,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -48,6 +49,25 @@ const buildIndex = (
   return { nodeById, parentIdByNodeId, siblingsByParentKey }
 }
 
+const ROOT_DROP_ID = 'admin-learn-root-drop'
+
+/** Droppable strip that lets a node be moved out to the top level. */
+function RootDropZone({ isActive, label }: { isActive: boolean; label: string }) {
+  const { setNodeRef, isOver } = useDroppable({ id: ROOT_DROP_ID })
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mb-3 rounded-md border border-dashed px-3 py-2 text-center text-xs transition-colors ${
+        isOver || isActive
+          ? 'border-primary bg-primary/10 text-primary'
+          : 'border-border text-muted-foreground'
+      }`}
+    >
+      {label}
+    </div>
+  )
+}
+
 export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
   const t = useTranslations('adminLearn')
   const {
@@ -66,6 +86,7 @@ export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
 
   const [createParent, setCreateParent] = useState<{ id: number | null; label: string } | null>(null)
   const [dropTargetId, setDropTargetId] = useState<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -91,7 +112,12 @@ export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
   const openCreateChild = (node: CourseNode) => setCreateParent({ id: node.id, label: node.title })
 
   const handleDragOver = (event: DragOverEvent) => {
-    const overId = event.over ? Number(event.over.id) : null
+    const overRawId = event.over ? event.over.id : null
+    if (overRawId === ROOT_DROP_ID) {
+      setDropTargetId(null)
+      return
+    }
+    const overId = overRawId != null ? Number(overRawId) : null
     if (overId == null) {
       setDropTargetId(null)
       return
@@ -110,14 +136,29 @@ export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const activeNodeId = Number(event.active.id)
-    const overId = event.over ? Number(event.over.id) : null
+    const overRawId = event.over ? event.over.id : null
     setDropTargetId(null)
+    setIsDragging(false)
 
-    if (overId == null || overId === activeNodeId) {
+    if (overRawId == null) {
       return
     }
 
     const activeParent = index.parentIdByNodeId.get(activeNodeId) ?? null
+
+    // Case 0: dropped on the root zone -> move to the top level (if not already there).
+    if (overRawId === ROOT_DROP_ID) {
+      if (activeParent !== null) {
+        await submitMoveNode(slug, activeNodeId, null)
+      }
+      return
+    }
+
+    const overId = Number(overRawId)
+    if (overId === activeNodeId) {
+      return
+    }
+
     const overNode = index.nodeById.get(overId)
     const overParent = index.parentIdByNodeId.get(overId) ?? null
 
@@ -166,9 +207,15 @@ export function AdminLearnTreeTab({ locale, slug }: AdminLearnTreeTabProps) {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={() => setIsDragging(true)}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
+            onDragCancel={() => {
+              setDropTargetId(null)
+              setIsDragging(false)
+            }}
           >
+            <RootDropZone isActive={isDragging} label={t('tree.rootDropZone')} />
             <AdminLearnNodeTree
               locale={locale}
               rootNodes={treeState.rootNodes}

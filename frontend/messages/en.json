@@ -151,6 +151,11 @@
       "completedLessons": "{completed} / {total} lessons completed",
       "noCourseProgress": "No course progress yet.",
       "guidedProgress": "Guided completion",
+      "learningPointLabel": "Points",
+      "collapseSidebar": "Collapse",
+      "expandSidebar": "Expand",
+      "collapsePanel": "Collapse",
+      "expandPanel": "Expand",
       "startButton": "Start lesson",
       "completeButton": "Mark as complete",
       "started": "Lesson started",
@@ -212,7 +217,12 @@
       "statusDraft": "Draft",
       "statusArchived": "Archived",
       "categories": "Categories",
-      "tags": "Tags"
+      "tags": "Tags",
+      "progress": "Learning progress",
+      "progressAll": "All",
+      "progressNotStarted": "Not started",
+      "progressInProgress": "In progress",
+      "progressCompleted": "Completed"
     },
     "empty": {
       "noCourses": "No courses available.",
@@ -893,6 +903,7 @@
       "categoryPlaceholder": "Select category",
       "categoryNone": "No category",
       "learningPointLabel": "Learning points",
+      "learningPointAutoHint": "Automatically calculated as the sum of lesson points.",
       "estimatedTimeLabel": "Estimated time (minutes)",
       "tagsLabel": "Tags"
     },
@@ -920,7 +931,12 @@
       "tagTitle": "Tag manager",
       "tagDescription": "Create, update, or remove tags.",
       "namePlaceholder": "name",
-      "descriptionPlaceholder": "description"
+      "descriptionPlaceholder": "description",
+      "createTitle": "Add new",
+      "columnName": "Name",
+      "columnDescription": "Description",
+      "deleteConfirmTitle": "Confirm deletion",
+      "deleteConfirmDescription": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
     },
     "actions": {
       "createCourse": "Create course",
@@ -933,6 +949,7 @@
       "cancel": "Cancel",
       "archive": "Archive",
       "purge": "Delete permanently",
+      "changeStatus": "Change status",
       "filterQuiz": "Filter quiz",
       "attachQuestion": "Attach question",
       "moveUp": "Up",
@@ -998,6 +1015,7 @@
       "addRoot": "+ Add at root",
       "addChild": "Add",
       "dragHint": "Drag the handle to reorder; drop onto a folder to move the node inside. Folders always sort above lessons.",
+      "rootDropZone": "Drop here to move to the top level",
       "createNodeTitle": "Create new node",
       "createNodeUnder": "Create under: {parent}",
       "nodeKindLabel": "Node type",
@@ -1025,6 +1043,8 @@
       "markdownPlaceholder": "Write markdown lesson content",
       "previewTitle": "Preview",
       "previewEmpty": "No content yet.",
+      "showPreview": "Preview",
+      "showEditor": "Edit",
       "videoUrlPlaceholder": "Paste video URL",
       "videoPreviewEmpty": "Provide a video URL to preview.",
       "quizSelectorTitle": "Quiz-filtered question selector",

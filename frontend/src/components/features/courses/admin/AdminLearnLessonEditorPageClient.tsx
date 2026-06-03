@@ -92,11 +92,6 @@ export function AdminLearnLessonEditorPageClient({ locale, lessonId }: AdminLear
         </nav>
         <h1 className="text-3xl font-semibold">{t('lessonEditor.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('lessonEditor.subtitle')}</p>
-        {courseSlug ? (
-          <Link className="text-xs underline" href={`/${locale}/admin/learn/courses/${courseSlug}`}>
-            {t('navigation.backToCourseTree')}
-          </Link>
-        ) : null}
       </header>
 
       {lessonState.errorMessageKey ? <p className="text-sm text-destructive">{t(lessonState.errorMessageKey as never)}</p> : null}

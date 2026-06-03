@@ -23,10 +23,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useAdminLearnCourses } from '@/hooks/useAdminLearnCourses'
 import { ContentStatus, type Course } from '@/types/course.types'
-import { AdminLearnCategoryDialog } from './AdminLearnCategoryDialog'
-import { AdminLearnTagDialog } from './AdminLearnTagDialog'
 
 type AdminLearnCourseListPageClientProps = {
   locale: string
@@ -38,7 +44,6 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
   const t = useTranslations('adminLearn')
   const {
     listState,
-    taxonomyState,
     paginationState,
     isMutating,
     mutationErrorKey,
@@ -48,18 +53,10 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
     submitArchiveCourse,
     submitPurgeCourse,
     submitStatusToggle,
-    submitCreateCategory,
-    submitUpdateCategory,
-    submitDeleteCategory,
-    submitCreateTag,
-    submitUpdateTag,
-    submitDeleteTag,
   } = useAdminLearnCourses()
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
-  const [tagDialogOpen, setTagDialogOpen] = useState(false)
   const [archiveTarget, setArchiveTarget] = useState<Course | null>(null)
   const [purgeTarget, setPurgeTarget] = useState<Course | null>(null)
 
@@ -121,8 +118,12 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle>{t('list.title')}</CardTitle>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setCategoryDialogOpen(true)}>{t('taxonomy.manageCategories')}</Button>
-            <Button variant="outline" onClick={() => setTagDialogOpen(true)}>{t('taxonomy.manageTags')}</Button>
+            <Button asChild variant="outline">
+              <Link href={`/${locale}/admin/learn/categories`}>{t('taxonomy.manageCategories')}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/${locale}/admin/learn/tags`}>{t('taxonomy.manageTags')}</Link>
+            </Button>
             <Button asChild>
               <Link href={`/${locale}/admin/learn/courses/new`}>{t('actions.createCourse')}</Link>
             </Button>
@@ -178,22 +179,7 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
                     <TableCell>{course.slug}</TableCell>
                     <TableCell>{course.category?.name ?? '-'}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{t(`status.${course.status}` as never)}</Badge>
-                        <Select
-                          value={course.status}
-                          onValueChange={(value) => void handleStatusToggle(course, value)}
-                        >
-                          <SelectTrigger className="h-8 w-36">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={ContentStatus.Draft}>{t('status.draft')}</SelectItem>
-                            <SelectItem value={ContentStatus.Published}>{t('status.published')}</SelectItem>
-                            <SelectItem value={ContentStatus.Archived}>{t('status.archived')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Badge variant="secondary">{t(`status.${course.status}` as never)}</Badge>
                     </TableCell>
                     <TableCell>{course.user_progress?.total ?? '-'}</TableCell>
                     <TableCell>{formatDate(course.updated_at)}</TableCell>
@@ -202,6 +188,35 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/${locale}/admin/learn/courses/${course.slug}`}>{t('actions.edit')}</Link>
                         </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isMutating}>
+                              {t('actions.changeStatus')}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>{t('actions.changeStatus')}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              disabled={course.status === ContentStatus.Draft}
+                              onSelect={() => void handleStatusToggle(course, ContentStatus.Draft)}
+                            >
+                              {t('status.draft')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={course.status === ContentStatus.Published}
+                              onSelect={() => void handleStatusToggle(course, ContentStatus.Published)}
+                            >
+                              {t('status.published')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={course.status === ContentStatus.Archived}
+                              onSelect={() => void handleStatusToggle(course, ContentStatus.Archived)}
+                            >
+                              {t('status.archived')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         {course.status !== ContentStatus.Archived ? (
                           <Button variant="outline" size="sm" disabled={isMutating} onClick={() => setArchiveTarget(course)}>
                             {t('actions.archive')}
@@ -244,26 +259,6 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
           ) : null}
         </CardContent>
       </Card>
-
-      <AdminLearnCategoryDialog
-        open={categoryDialogOpen}
-        categories={taxonomyState.categories}
-        isSubmitting={isMutating}
-        onOpenChange={setCategoryDialogOpen}
-        onCreate={submitCreateCategory}
-        onUpdate={submitUpdateCategory}
-        onDelete={submitDeleteCategory}
-      />
-
-      <AdminLearnTagDialog
-        open={tagDialogOpen}
-        tags={taxonomyState.tags}
-        isSubmitting={isMutating}
-        onOpenChange={setTagDialogOpen}
-        onCreate={submitCreateTag}
-        onUpdate={submitUpdateTag}
-        onDelete={submitDeleteTag}
-      />
 
       <ConfirmDialog
         open={archiveTarget !== null}

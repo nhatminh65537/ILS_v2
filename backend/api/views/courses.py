@@ -465,6 +465,12 @@ class LearnLessonViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         lesson.refresh_from_db()
+        try:
+            course_id = lesson.node.course_id
+        except CourseNode.DoesNotExist:
+            course_id = None
+        if course_id is not None:
+            CourseService.recompute_course_learning_point(course_id)
         return Response(LearnLessonDetailSerializer(lesson).data)
 
     def questions(self, request, pk=None):
