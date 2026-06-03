@@ -130,6 +130,27 @@ def test_editor_can_create_challenge(editor_client, editor_user, category):
     assert Challenge.objects.filter(slug='new-challenge').exists()
 
 
+def test_create_challenge_without_storage_path_defaults_from_slug(editor_client, editor_user, category):
+    """E-01 regression: admin form does not send storage_path; it must default, not 400."""
+    _assign_role(editor_user, 'Editor')
+
+    response = editor_client.post(
+        '/api/challenge/challenges/',
+        {
+            'slug': 'no-storage-path',
+            'title': 'No Storage Path',
+            'status': Challenge.Status.DRAFT,
+            'difficulty': Challenge.Difficulty.EASY,
+            'category_id': category.id,
+        },
+        format='json',
+    )
+
+    assert response.status_code == 201
+    challenge = Challenge.objects.get(slug='no-storage-path')
+    assert challenge.storage_path == 'challenges/no-storage-path'
+
+
 def test_member_cannot_create_challenge(member_client, member_user, category):
     _assign_role(member_user, 'Member')
 
@@ -204,6 +225,29 @@ def test_editor_can_update_challenge(editor_client, editor_user, published_chall
 
     assert response.status_code == 200
     assert response.data['title'] == 'Updated Title'
+
+
+def test_editor_patch_challenge_without_slug(editor_client, editor_user, published_challenge):
+    """PATCH from the edit form omits the immutable slug; it must not 400 as required."""
+    _assign_role(editor_user, 'Editor')
+
+    response = editor_client.patch(
+        f'/api/challenge/challenges/{published_challenge.slug}/',
+        {
+            'title': 'Patched Title',
+            'description': 'patched',
+            'status': published_challenge.status,
+            'difficulty': published_challenge.difficulty,
+            'challenge_point': 250,
+            'instance_required': False,
+        },
+        format='json',
+    )
+
+    assert response.status_code == 200, response.data
+    assert response.data['title'] == 'Patched Title'
+    published_challenge.refresh_from_db()
+    assert published_challenge.challenge_point == 250
 
 
 def test_editor_archive_challenge(editor_client, editor_user, published_challenge):
@@ -406,3 +450,60 @@ def test_invalid_tag_ids_rejected(editor_client, editor_user, category):
     )
 
     assert response.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Flat-search: pagination, tag AND-filter, solved filter, is_solved (Phase A5)
+# ---------------------------------------------------------------------------
+
+def test_list_returns_paginated_envelope(member_client, member_user, published_challenge):
+    _assign_role(member_user, 'Member')
+
+    response = member_client.get('/api/challenge/challenges/')
+
+    assert response.status_code == 200
+    assert set(response.data.keys()) >= {'count', 'next', 'previous', 'results'}
+
+
+def test_tag_and_filter_requires_all_tags(editor_client, editor_user, category):
+    _assign_role(editor_user, 'Editor')
+    from api.models import ChallengeTag, ChallengeTagMap
+
+    tag_a = ChallengeTag.objects.create(name='alpha')
+    tag_b = ChallengeTag.objects.create(name='beta')
+
+    both = Challenge.objects.create(slug='both', title='Both', status=Challenge.Status.PUBLISHED, storage_path='c/both')
+    only_a = Challenge.objects.create(slug='only-a', title='OnlyA', status=Challenge.Status.PUBLISHED, storage_path='c/a')
+    ChallengeTagMap.objects.create(challenge=both, tag=tag_a)
+    ChallengeTagMap.objects.create(challenge=both, tag=tag_b)
+    ChallengeTagMap.objects.create(challenge=only_a, tag=tag_a)
+
+    response = editor_client.get(f'/api/challenge/challenges/?tags={tag_a.id},{tag_b.id}')
+    slugs = [r['slug'] for r in _results(response)]
+
+    assert 'both' in slugs
+    assert 'only-a' not in slugs
+
+
+def test_solved_filter_and_is_solved_flag(member_client, member_user, published_challenge, category):
+    _assign_role(member_user, 'Member')
+    from api.models import UserChallengeProgress
+    from django.utils import timezone
+
+    other = Challenge.objects.create(
+        slug='unsolved', title='Unsolved', status=Challenge.Status.PUBLISHED, storage_path='c/u'
+    )
+    UserChallengeProgress.objects.create(
+        user=member_user, challenge=published_challenge, completed_at=timezone.now()
+    )
+
+    solved_resp = member_client.get('/api/challenge/challenges/?solved=true')
+    solved_slugs = [r['slug'] for r in _results(solved_resp)]
+    assert published_challenge.slug in solved_slugs
+    assert 'unsolved' not in solved_slugs
+    assert all(r['is_solved'] for r in _results(solved_resp))
+
+    unsolved_resp = member_client.get('/api/challenge/challenges/?solved=false')
+    unsolved_slugs = [r['slug'] for r in _results(unsolved_resp)]
+    assert 'unsolved' in unsolved_slugs
+    assert published_challenge.slug not in unsolved_slugs

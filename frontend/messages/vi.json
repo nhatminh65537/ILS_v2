@@ -240,7 +240,11 @@
     "description": "Luyện tập theo độ khó, nộp flag và theo dõi điểm tích lũy.",
     "catalog": {
       "title": "Thử thách",
-      "empty": "Không tìm thấy thử thách nào."
+      "empty": "Không tìm thấy thử thách nào.",
+      "subtitle": "Duyệt thư mục và các bài CTF.",
+      "pageOf": "Trang {page}/{total}",
+      "previous": "Trước",
+      "next": "Sau"
     },
     "detail": {
       "backToCatalog": "Quay lại danh sách",
@@ -277,7 +281,12 @@
       "searchPlaceholder": "Tìm kiếm thử thách...",
       "difficulty": "Độ khó",
       "category": "Danh mục",
-      "tags": "Thẻ"
+      "tags": "Thẻ",
+      "apply": "Lọc",
+      "solved": "Trạng thái giải",
+      "solvedAll": "Tất cả",
+      "solvedYes": "Đã giải",
+      "solvedNo": "Chưa giải"
     },
     "instance": {
       "title": "Instance",
@@ -289,7 +298,14 @@
       "restart": "Khởi động lại"
     },
     "errors": {
-      "detailLoadFailed": "Không thể tải thông tin thử thách."
+      "detailLoadFailed": "Không thể tải thông tin thử thách.",
+      "loadFailed": "Không tải được danh sách thử thách."
+    },
+    "explorer": {
+      "root": "Gốc",
+      "emptyFolder": "Thư mục này trống.",
+      "foldersHeading": "Thư mục",
+      "challengesHeading": "Thử thách"
     }
   },
   "quizzes": {
@@ -1116,7 +1132,8 @@
     },
     "navigation": {
       "backToList": "Quay lại danh sách challenge",
-      "backToEditor": "Quay lại trình chỉnh sửa"
+      "backToEditor": "Quay lại trình chỉnh sửa",
+      "backToExplorer": "Quay lại trình duyệt"
     },
     "form": {
       "titleLabel": "Tiêu đề",
@@ -1161,7 +1178,18 @@
       "manageCategories": "Quản lý danh mục",
       "manageTags": "Quản lý thẻ",
       "namePlaceholder": "tên",
-      "descriptionPlaceholder": "mô tả"
+      "descriptionPlaceholder": "mô tả",
+      "createTitle": "Thêm mới",
+      "columnName": "Tên",
+      "columnDescription": "Mô tả",
+      "categoryTitle": "Danh mục",
+      "categoryDescription": "Quản lý danh mục thử thách.",
+      "tagTitle": "Thẻ",
+      "tagDescription": "Quản lý thẻ thử thách.",
+      "emptyCategories": "Chưa có danh mục.",
+      "emptyTags": "Chưa có thẻ.",
+      "deleteConfirmTitle": "Xóa mục này?",
+      "deleteConfirmDescription": "\"{name}\" sẽ bị xóa vĩnh viễn."
     },
     "category": {
       "title": "Quản lý danh mục",
@@ -1258,7 +1286,8 @@
         "isRegex": "Là mẫu regex",
         "isCaseSensitive": "Phân biệt hoa thường",
         "randomTailLength": "Độ dài đuôi ngẫu nhiên"
-      }
+      },
+      "deleteConfirmTitle": "Xóa flag?"
     },
     "instances": {
       "title": "Quản lý instance",
@@ -1280,7 +1309,8 @@
         "running": "Đang chạy",
         "stopped": "Đã dừng",
         "terminated": "Đã kết thúc"
-      }
+      },
+      "killConfirmTitle": "Dừng instance?"
     },
     "empty": {
       "noChallenges": "Không tìm thấy challenge.",
@@ -1309,19 +1339,44 @@
       "createTagFailed": "Tạo thẻ thất bại.",
       "updateTagFailed": "Cập nhật thẻ thất bại.",
       "deleteTagFailed": "Xóa thẻ thất bại.",
-      "loadTreeFailed": "Tải cây challenge thất bại.",
+      "loadTreeFailed": "Không tải được cây thử thách.",
       "loadTreeChildrenFailed": "Tải nút con thất bại.",
-      "createFolderFailed": "Tạo thư mục thất bại.",
-      "createNodeFailed": "Tạo nút challenge thất bại.",
+      "createFolderFailed": "Không tạo được thư mục.",
+      "createNodeFailed": "Không tạo được thử thách.",
       "renameNodeFailed": "Đổi tên nút thất bại.",
-      "moveNodeFailed": "Di chuyển nút thất bại.",
+      "moveNodeFailed": "Không di chuyển được mục.",
       "reorderNodeFailed": "Sắp xếp lại nút thất bại.",
-      "deleteNodeFailed": "Xóa nút thất bại.",
+      "deleteNodeFailed": "Không xóa được các mục đã chọn.",
       "loadFlagsFailed": "Tải flag thất bại.",
       "createFlagFailed": "Tạo flag thất bại.",
       "updateFlagFailed": "Cập nhật flag thất bại.",
       "deleteFlagFailed": "Xóa flag thất bại.",
       "loadInstancesFailed": "Tải instance thất bại."
+    },
+    "explorer": {
+      "root": "Gốc",
+      "back": "Quay lại",
+      "newItem": "Tạo mới",
+      "createTitle": "Tạo thư mục hoặc thử thách",
+      "createUnder": "Tạo trong: {parent}",
+      "kindLabel": "Loại",
+      "kindFolder": "Thư mục",
+      "kindChallenge": "Thử thách",
+      "titleLabel": "Tiêu đề",
+      "titlePlaceholder": "Nhập tiêu đề",
+      "createChallengeHint": "Hệ thống tạo thử thách nháp và chuyển bạn tới trang chỉnh sửa.",
+      "emptyFolder": "Thư mục này trống.",
+      "selectedCount": "Đã chọn {count}",
+      "moveSelected": "Di chuyển",
+      "deleteSelected": "Xóa",
+      "clearSelection": "Bỏ chọn",
+      "moveTitle": "Di chuyển tới thư mục",
+      "moveDescription": "Chọn nơi đến cho {count} mục.",
+      "moveDestination": "Nơi đến: {destination}",
+      "moveHere": "Di chuyển vào đây",
+      "noSubfolders": "Không có thư mục con.",
+      "deleteConfirmTitle": "Xóa các mục đã chọn?",
+      "deleteConfirmDescription": "{count} mục (kèm nội dung thư mục nếu có) sẽ bị xóa vĩnh viễn."
     }
   },
   "profile": {

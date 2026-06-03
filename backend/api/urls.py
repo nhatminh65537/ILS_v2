@@ -251,6 +251,16 @@ urlpatterns = [
         name='challenge-node-list',
     ),
     re_path(
+        r'^challenge/nodes/explorer/$',
+        ChallengeNodeViewSet.as_view({'get': 'explorer_root'}),
+        name='challenge-node-explorer-root',
+    ),
+    re_path(
+        r'^challenge/nodes/(?P<pk>\d+)/explorer/$',
+        ChallengeNodeViewSet.as_view({'get': 'explorer_folder'}),
+        name='challenge-node-explorer-folder',
+    ),
+    re_path(
         r'^challenge/nodes/(?P<pk>\d+)/$',
         ChallengeNodeViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
         name='challenge-node-detail',

@@ -10,7 +10,7 @@ import { notFound, toPaginatedResponse } from '@/mocks/handlers/shared'
 import { ChallengeSource, InstanceStatus } from '@/types/challenge.types'
 
 export const challengesHandlers = [
-  // ── List challenges ──────────────────────────────────────────────────────────
+  // ── List challenges (flat search) ──────────────────────────────────────────────
   http.get('*/api/challenge/challenges/', ({ request }) => {
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '20')
@@ -19,6 +19,10 @@ export const challengesHandlers = [
     const categoryId = url.searchParams.get('category')
     const search = url.searchParams.get('search')
     const statusFilter = url.searchParams.get('status')
+    const tagsParam = url.searchParams.get('tags')
+    const solvedParam = url.searchParams.get('solved')
+
+    const solvedIds = new Set(challengeProgressFixture.filter((p) => p.solved).map((p) => p.challenge_id))
 
     let results = [...challengesFixture]
     if (difficulty) results = results.filter((c) => c.difficulty === difficulty)
@@ -29,8 +33,23 @@ export const challengesHandlers = [
     }
     if (statusFilter) results = results.filter((c) => c.status === statusFilter)
 
+    // Tag AND-filter: keep only challenges carrying *all* requested tag ids.
+    if (tagsParam) {
+      const wantedTagIds = tagsParam.split(',').map((s) => Number(s.trim())).filter(Boolean)
+      results = results.filter((c) => {
+        const ids = new Set((c.tags ?? []).map((tg) => tg.id))
+        return wantedTagIds.every((id) => ids.has(id))
+      })
+    }
+
+    if (solvedParam === 'true') results = results.filter((c) => solvedIds.has(c.id))
+    if (solvedParam === 'false') results = results.filter((c) => !solvedIds.has(c.id))
+
+    // Attach is_solved like the backend list serializer.
+    const withSolved = results.map((c) => ({ ...c, is_solved: solvedIds.has(c.id) }))
+
     return HttpResponse.json(
-      toPaginatedResponse(results, { limit, offset, basePath: '/api/challenge/challenges/' })
+      toPaginatedResponse(withSolved, { limit, offset, basePath: '/api/challenge/challenges/' })
     )
   }),
 

@@ -424,11 +424,11 @@ export const challengesFixture: Challenge[] = [
 ]
 
 export const challengeNodesFixture: ChallengeNode[] = [
-  { id: 1, challenge_id: null, path: '1', position: 1, title: 'Web Fundamentals', is_item: false },
-  { id: 2, challenge_id: 1, parent_id: 1, path: '1.1', position: 1, title: 'XSS Lab', is_item: true },
-  { id: 3, challenge_id: null, path: '2', position: 2, title: 'Token Security', is_item: false },
-  { id: 4, challenge_id: 3, parent_id: 3, path: '2.1', position: 1, title: 'JWT Pwn', is_item: true },
-  { id: 5, challenge_id: null, path: '3', position: 3, title: 'Forensics', is_item: false },
+  { id: 1, challenge: null, parent: null, path: '', position: 1, title: 'Web Fundamentals', is_item: false },
+  { id: 2, challenge: 1, challenge_slug: 'xss-lab', parent: 1, path: '1', position: 1, title: 'XSS Lab', is_item: true },
+  { id: 3, challenge: null, parent: null, path: '', position: 2, title: 'Token Security', is_item: false },
+  { id: 4, challenge: 3, challenge_slug: 'jwt-pwn', parent: 3, path: '3', position: 1, title: 'JWT Pwn', is_item: true },
+  { id: 5, challenge: null, parent: null, path: '', position: 3, title: 'Forensics', is_item: false },
 ]
 
 export const challengeFlagsFixture: ChallengeFlag[] = [

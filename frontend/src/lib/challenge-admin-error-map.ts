@@ -32,27 +32,34 @@ const extractErrorText = (error: unknown): string => {
   return ''
 }
 
+/**
+ * Returns a translation key relative to the `adminChallenges` namespace.
+ * Consumers translate it with a translator scoped to `adminChallenges`
+ * (e.g. `useTranslations('adminChallenges')`), so keys must NOT be prefixed
+ * with `adminChallenges.` or they resolve to a double namespace (F29/F30 class).
+ * The `fallbackKey` passed in must likewise be relative (e.g. `errors.createFailed`).
+ */
 export const mapChallengeAdminErrorToMessageKey = (error: unknown, fallbackKey: string): string => {
   const text = extractErrorText(error)
 
   if (containsText(text, 'not authenticated') || containsText(text, 'authentication credentials')) {
-    return 'adminChallenges.errors.unauthenticated'
+    return 'errors.unauthenticated'
   }
 
   if (containsText(text, 'permission denied') || containsText(text, 'forbidden')) {
-    return 'adminChallenges.errors.forbidden'
+    return 'errors.forbidden'
   }
 
   if (containsText(text, 'not found')) {
-    return 'adminChallenges.errors.notFound'
-  }
-
-  if (containsText(text, 'required') || containsText(text, 'invalid')) {
-    return 'adminChallenges.errors.validation'
+    return 'errors.notFound'
   }
 
   if (containsText(text, 'slug already exists') || containsText(text, 'unique')) {
-    return 'adminChallenges.errors.slugConflict'
+    return 'errors.slugConflict'
+  }
+
+  if (containsText(text, 'required') || containsText(text, 'invalid')) {
+    return 'errors.validation'
   }
 
   return fallbackKey

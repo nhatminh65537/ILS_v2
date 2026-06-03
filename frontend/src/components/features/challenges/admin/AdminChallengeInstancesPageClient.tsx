@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -48,6 +49,7 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
   const [statusFilter, setStatusFilter] = useState('all')
   const [userFilter, setUserFilter] = useState('')
   const [challengeFilter, setChallengeFilter] = useState('')
+  const [killTarget, setKillTarget] = useState<AdminChallengeInstanceDto | null>(null)
 
   const load = async () => {
     setPageState((s) => ({ ...s, isLoading: true, error: null }))
@@ -68,11 +70,12 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleKill = async (instance: AdminChallengeInstanceDto) => {
-    if (!window.confirm(t('instances.killConfirm', { user: instance.user_username }))) return
+  const handleKillConfirm = async () => {
+    if (!killTarget) return
     setIsKilling(true)
     try {
-      await killChallengeInstance(instance.id)
+      await killChallengeInstance(killTarget.id)
+      setKillTarget(null)
       await load()
     } finally {
       setIsKilling(false)
@@ -155,7 +158,7 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
                           variant="destructive"
                           size="sm"
                           disabled={isKilling || instance.status !== 'running'}
-                          onClick={() => void handleKill(instance)}
+                          onClick={() => setKillTarget(instance)}
                         >
                           {t('instances.kill')}
                         </Button>
@@ -168,6 +171,18 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={killTarget !== null}
+        title={t('instances.killConfirmTitle')}
+        description={killTarget ? t('instances.killConfirm', { user: killTarget.user_username }) : ''}
+        confirmLabel={t('instances.kill')}
+        cancelLabel={t('actions.cancel')}
+        variant="destructive"
+        isLoading={isKilling}
+        onConfirm={() => void handleKillConfirm()}
+        onOpenChange={(open) => !open && setKillTarget(null)}
+      />
     </section>
   )
 }

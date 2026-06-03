@@ -2,6 +2,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -31,6 +32,7 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
 
     queryset = Challenge.objects.all().select_related('category').prefetch_related('tag_mappings__tag')
     permission_classes = [IsAuthenticated, HasJWTPermission]
+    pagination_class = LimitOffsetPagination
     lookup_field = 'slug'
     lookup_url_kwarg = 'slug'
 
@@ -46,6 +48,25 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         if self.action in {'create', 'update', 'partial_update'}:
             return ChallengeWriteSerializer
         return ChallengeListSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            solved_ids = ChallengeService.solved_challenge_ids(
+                request.user, [c.id for c in page]
+            )
+            serializer = self.get_serializer(
+                page, many=True, context={'request': request, 'solved_ids': solved_ids}
+            )
+            return self.get_paginated_response(serializer.data)
+
+        solved_ids = ChallengeService.solved_challenge_ids(request.user)
+        serializer = self.get_serializer(
+            queryset, many=True, context={'request': request, 'solved_ids': solved_ids}
+        )
+        return Response(serializer.data)
 
     def _build_slug_conflict_response(self, slug):
         suggestions = ChallengeService.build_slug_suggestions(slug)
@@ -95,7 +116,9 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = self.get_serializer(instance, data=request.data)
+        # Honour partial (PATCH) so the immutable slug is not required on edit.
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         challenge = serializer.save()
 

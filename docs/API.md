@@ -168,7 +168,7 @@ Routes in this subsection are legacy-flat paths kept for compatibility — see �
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/challenge/challenges/` | Yes | Partial | List challenges (members see published only; editor/admin can filter by `status`, `difficulty`, `category`, `search`). |
+| GET | `/api/challenge/challenges/` | Yes | Partial | Flat list (LimitOffset paginated: `count/next/previous/results`). Members see published only. Filters: `status`, `difficulty`, `category`, `search`, `tags=1,2,3` (AND), `solved=true|false`. Each row includes `is_solved`. |
 | POST | `/api/challenge/challenges/` | Yes | Partial | Create challenge (admin/editor only). |
 | GET | `/api/challenge/challenges/{slug}/` | Yes | Partial | Challenge detail (slug lookup). |
 | PUT/PATCH | `/api/challenge/challenges/{slug}/` | Yes | Partial | Update challenge (admin/editor only). |
@@ -183,13 +183,15 @@ Routes in this subsection are legacy-flat paths kept for compatibility — see �
 | GET | `/api/challenge/tags/{id}/` | Yes | Partial | Tag detail. |
 | PUT/PATCH | `/api/challenge/tags/{id}/` | Yes | Partial | Tag update (admin/editor only). |
 | DELETE | `/api/challenge/tags/{id}/` | Yes | Partial | Tag delete (admin/editor only). |
-| GET | `/api/challenge/nodes/` | Yes | Partial | Root nodes only. |
-| POST | `/api/challenge/nodes/` | Yes | Partial | Create node (admin/editor only). |
+| GET | `/api/challenge/nodes/` | Yes | Partial | Root nodes only; folder-first then title A→Z. |
+| POST | `/api/challenge/nodes/` | Yes | Partial | Create node (admin/editor only); `{title, parent_id, is_item}`. `is_item=true` atomically creates a draft Challenge (slug from title) and links it. Response includes `challenge_slug`. |
 | GET | `/api/challenge/nodes/{id}/` | Yes | Partial | Node detail. |
-| PUT/PATCH | `/api/challenge/nodes/{id}/` | Yes | Partial | Update node (admin/editor only). |
+| PUT/PATCH | `/api/challenge/nodes/{id}/` | Yes | Partial | Update node title (admin/editor only). |
 | DELETE | `/api/challenge/nodes/{id}/` | Yes | Partial | Delete node (admin/editor only). |
-| GET | `/api/challenge/nodes/{id}/children/` | Yes | Partial | Direct children only (lazy load). |
-| POST | `/api/challenge/nodes/{id}/move/` | Yes | Partial | Move node (admin/editor only); cycle-safe; updates descendant paths. |
+| GET | `/api/challenge/nodes/{id}/children/` | Yes | Partial | Direct children only (lazy load); folder-first then title A→Z. |
+| POST | `/api/challenge/nodes/{id}/move/` | Yes | Partial | Move node (admin/editor only); cycle/depth-safe; bulk-updates descendant paths (no N+1). |
+| GET | `/api/challenge/nodes/explorer/` | Yes | Partial | File-explorer root: `{folder, breadcrumb, nodes[]}`; item nodes carry challenge summary + `is_solved`; members see published items only. |
+| GET | `/api/challenge/nodes/{id}/explorer/` | Yes | Partial | File-explorer contents of folder `{id}` (same shape as root). |
 | GET | `/api/challenge/challenges/{slug}/flags/` | Yes (Admin/Editor) | Stable | List flags. `flag_value` omitted for non-Admin/Editor. |
 | POST | `/api/challenge/challenges/{slug}/flags/` | Yes (Admin/Editor) | Stable | Create flag (static or regex). |
 | PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Yes (Admin/Editor) | Stable | Update flag. |

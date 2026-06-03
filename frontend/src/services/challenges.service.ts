@@ -8,6 +8,7 @@ import type {
   Challenge,
   ChallengeCategory,
   ChallengeCategoryMutationPayload,
+  ChallengeExplorerResponse,
   ChallengeFlag,
   ChallengeFlagMutationPayload,
   ChallengeInstance,
@@ -30,8 +31,30 @@ export const listChallenges = async (params?: {
   category?: number
   search?: string
   tags?: number[]
+  solved?: boolean
 }): Promise<PaginatedResponse<Challenge>> => {
-  const response = await apiClient.get('/api/challenge/challenges/', { params })
+  // Serialize array params the way the backend expects (comma-joined tag ids).
+  const query: Record<string, unknown> = { ...(params ?? {}) }
+  if (Array.isArray(params?.tags)) {
+    if (params.tags.length > 0) {
+      query.tags = params.tags.join(',')
+    } else {
+      delete query.tags
+    }
+  }
+  const response = await apiClient.get('/api/challenge/challenges/', { params: query })
+  return response.data
+}
+
+/** File-explorer contents at the root (no folderId) or inside a folder. */
+export const listChallengeFolderContents = async (
+  folderId?: number | null
+): Promise<ChallengeExplorerResponse> => {
+  const url =
+    folderId == null
+      ? '/api/challenge/nodes/explorer/'
+      : `/api/challenge/nodes/${folderId}/explorer/`
+  const response = await apiClient.get(url)
   return response.data
 }
 

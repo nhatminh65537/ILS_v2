@@ -91,7 +91,7 @@ export const useAdminChallenges = () => {
       setListState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'adminChallenges.errors.loadListFailed'),
+        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'errors.loadListFailed'),
       }))
     }
   }, [])
@@ -111,7 +111,7 @@ export const useAdminChallenges = () => {
       setDetailState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'adminChallenges.errors.loadDetailFailed'),
+        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'errors.loadDetailFailed'),
       }))
     }
   }, [])
@@ -126,7 +126,7 @@ export const useAdminChallenges = () => {
       setTaxonomyState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'adminChallenges.errors.loadTaxonomyFailed'),
+        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'errors.loadTaxonomyFailed'),
       }))
     }
   }, [])
@@ -146,19 +146,19 @@ export const useAdminChallenges = () => {
   }, [])
 
   const submitCreateChallenge = useCallback(async (payload: CreateChallengePayload): Promise<Challenge | null> => {
-    const created = await runMutation(() => createChallenge(payload), 'adminChallenges.errors.createFailed')
+    const created = await runMutation(() => createChallenge(payload), 'errors.createFailed')
     if (created) await loadChallengeList({ ...activeParamsRef.current as Record<string, string> })
     return created
   }, [loadChallengeList, runMutation])
 
   const submitUpdateChallenge = useCallback(async (slug: string, payload: UpdateChallengePayload): Promise<boolean> => {
-    const updated = await runMutation(() => updateChallenge(slug, payload), 'adminChallenges.errors.updateFailed')
+    const updated = await runMutation(() => updateChallenge(slug, payload), 'errors.updateFailed')
     if (updated) setDetailState({ data: updated, isLoading: false, errorMessageKey: null })
     return Boolean(updated)
   }, [runMutation])
 
   const submitDeleteChallenge = useCallback(async (slug: string): Promise<boolean> => {
-    const ok = await runMutation(async () => { await deleteChallenge(slug) }, 'adminChallenges.errors.deleteFailed')
+    const ok = await runMutation(async () => { await deleteChallenge(slug) }, 'errors.deleteFailed')
     if (ok !== null) await loadChallengeList({ ...activeParamsRef.current as Record<string, string> })
     return ok !== null
   }, [loadChallengeList, runMutation])
@@ -168,37 +168,37 @@ export const useAdminChallenges = () => {
   }, [submitUpdateChallenge])
 
   const submitCreateCategory = useCallback(async (payload: ChallengeCategoryMutationPayload): Promise<boolean> => {
-    const ok = await runMutation(() => createChallengeCategory(payload), 'adminChallenges.errors.createCategoryFailed')
+    const ok = await runMutation(() => createChallengeCategory(payload), 'errors.createCategoryFailed')
     if (ok) await loadTaxonomies()
     return Boolean(ok)
   }, [loadTaxonomies, runMutation])
 
   const submitUpdateCategory = useCallback(async (id: number, payload: ChallengeCategoryMutationPayload): Promise<boolean> => {
-    const ok = await runMutation(() => updateChallengeCategory(id, payload), 'adminChallenges.errors.updateCategoryFailed')
+    const ok = await runMutation(() => updateChallengeCategory(id, payload), 'errors.updateCategoryFailed')
     if (ok) await loadTaxonomies()
     return Boolean(ok)
   }, [loadTaxonomies, runMutation])
 
   const submitDeleteCategory = useCallback(async (id: number): Promise<boolean> => {
-    const ok = await runMutation(async () => { await deleteChallengeCategory(id) }, 'adminChallenges.errors.deleteCategoryFailed')
+    const ok = await runMutation(async () => { await deleteChallengeCategory(id) }, 'errors.deleteCategoryFailed')
     if (ok !== null) await loadTaxonomies()
     return ok !== null
   }, [loadTaxonomies, runMutation])
 
   const submitCreateTag = useCallback(async (payload: ChallengeTagMutationPayload): Promise<boolean> => {
-    const ok = await runMutation(() => createChallengeTag(payload), 'adminChallenges.errors.createTagFailed')
+    const ok = await runMutation(() => createChallengeTag(payload), 'errors.createTagFailed')
     if (ok) await loadTaxonomies()
     return Boolean(ok)
   }, [loadTaxonomies, runMutation])
 
   const submitUpdateTag = useCallback(async (id: number, payload: ChallengeTagMutationPayload): Promise<boolean> => {
-    const ok = await runMutation(() => updateChallengeTag(id, payload), 'adminChallenges.errors.updateTagFailed')
+    const ok = await runMutation(() => updateChallengeTag(id, payload), 'errors.updateTagFailed')
     if (ok) await loadTaxonomies()
     return Boolean(ok)
   }, [loadTaxonomies, runMutation])
 
   const submitDeleteTag = useCallback(async (id: number): Promise<boolean> => {
-    const ok = await runMutation(async () => { await deleteChallengeTag(id) }, 'adminChallenges.errors.deleteTagFailed')
+    const ok = await runMutation(async () => { await deleteChallengeTag(id) }, 'errors.deleteTagFailed')
     if (ok !== null) await loadTaxonomies()
     return ok !== null
   }, [loadTaxonomies, runMutation])

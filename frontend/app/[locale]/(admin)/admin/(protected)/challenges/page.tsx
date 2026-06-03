@@ -1,10 +1,10 @@
-import { AdminChallengeListPageClient } from '@/components/features/challenges/admin/AdminChallengeListPageClient'
+import { AdminChallengeExplorerClient } from '@/components/features/challenges/admin/AdminChallengeExplorerClient'
 
 type Props = {
   params: Promise<{ locale: string }>
 }
 
-export default async function AdminChallengeListPage({ params }: Props) {
+export default async function AdminChallengeExplorerPage({ params }: Props) {
   const { locale } = await params
-  return <AdminChallengeListPageClient locale={locale} />
+  return <AdminChallengeExplorerClient locale={locale} />
 }

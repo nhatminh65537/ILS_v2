@@ -55,6 +55,8 @@ export interface Challenge {
   readonly challenge_point: number
   readonly instance_required: boolean
   readonly tags?: readonly ChallengeTag[]
+  /** Present on the flat-search list serializer; true when the requester solved it. */
+  readonly is_solved?: boolean
   readonly created_at: string
   readonly updated_at: string
 }
@@ -62,14 +64,17 @@ export interface Challenge {
 /** Challenge tree node */
 export interface ChallengeNode {
   readonly id: number
-  /** null = folder; set = challenge item node */
-  readonly challenge_id: number | null
-  readonly parent_id?: number | null
+  /** null = folder; set = challenge item node (FK id from the serializer) */
+  readonly challenge: number | null
+  /** Slug of the linked challenge (item nodes only); used to navigate to the editor. */
+  readonly challenge_slug?: string | null
+  readonly parent?: number | null
   readonly path: string // dot-separated: "1.2"
   readonly position: number
   readonly title: string
-  /** true when challenge_id is set (item node); false = folder */
+  /** true when challenge is set (item node); false = folder */
   readonly is_item: boolean
+  readonly has_children?: boolean
   readonly children?: readonly ChallengeNode[]
 }
 
@@ -165,6 +170,42 @@ export interface ChallengeProgressDetailResponse {
   readonly completed_at: string | null
 }
 
+/** Challenge summary embedded in a file-explorer item node. */
+export interface ChallengeExplorerSummary {
+  readonly id: number
+  readonly slug: string
+  readonly title: string
+  readonly difficulty?: ChallengeDifficulty
+  readonly status: 'draft' | 'published' | 'archived'
+  readonly challenge_point: number
+  readonly instance_required: boolean
+  readonly category_name?: string | null
+  readonly tags?: readonly ChallengeTag[]
+  readonly is_solved: boolean
+}
+
+/** One node (folder or challenge item) in the file-explorer. */
+export interface ChallengeExplorerNode {
+  readonly id: number
+  readonly is_item: boolean
+  readonly title: string
+  readonly path: string
+  readonly challenge: ChallengeExplorerSummary | null
+}
+
+/** A breadcrumb crumb for explorer navigation. */
+export interface ChallengeBreadcrumbCrumb {
+  readonly id: number
+  readonly title: string
+}
+
+/** Response of the explorer endpoints (root or folder). */
+export interface ChallengeExplorerResponse {
+  readonly folder: { id: number; title: string; path: string } | null
+  readonly breadcrumb: readonly ChallengeBreadcrumbCrumb[]
+  readonly nodes: readonly ChallengeExplorerNode[]
+}
+
 /** Global aggregate progress for current user */
 export interface GlobalChallengeProgressResponse {
   readonly solved_count: number
@@ -194,15 +235,12 @@ export interface ChallengeFlagMutationPayload {
 export interface AdminChallengeNodeCreatePayload {
   title: string
   parent_id: number | null
-  position?: number
+  /** Folder = false; item auto-creates a draft Challenge from the title. */
   is_item: boolean
-  challenge_id?: number | null
 }
 
 export interface AdminChallengeNodeUpdatePayload {
   title?: string
-  parent_id?: number | null
-  position?: number
 }
 
 export interface AdminChallengeNodeMovePayload {

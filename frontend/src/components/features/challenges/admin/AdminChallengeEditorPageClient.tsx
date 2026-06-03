@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAdminChallenges } from '@/hooks/useAdminChallenges'
 import type { UpdateChallengePayload } from '@/types/challenge.types'
 import { AdminChallengeMetadataTab } from './AdminChallengeMetadataTab'
-import { AdminChallengeTreeTab } from './AdminChallengeTreeTab'
 
 type AdminChallengeEditorPageClientProps = {
   locale: string
@@ -39,7 +38,7 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
         <h1 className="text-3xl font-semibold">{t('editor.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('editor.subtitle')}</p>
         <Link className="text-xs underline" href={`/${locale}/admin/challenges`}>
-          {t('navigation.backToList')}
+          {t('navigation.backToExplorer')}
         </Link>
       </header>
 
@@ -63,7 +62,6 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
             <Tabs defaultValue="metadata" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="metadata">{t('tabs.metadata')}</TabsTrigger>
-                <TabsTrigger value="tree">{t('tabs.tree')}</TabsTrigger>
                 <TabsTrigger value="flags" asChild>
                   <Link href={`/${locale}/admin/challenges/${slug}/flags`}>
                     {t('tabs.flags')}
@@ -78,9 +76,6 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
                   isSubmitting={isMutating}
                   onSubmit={(payload) => submitUpdateChallenge(slug, payload as UpdateChallengePayload)}
                 />
-              </TabsContent>
-              <TabsContent value="tree" className="space-y-4">
-                <AdminChallengeTreeTab locale={locale} />
               </TabsContent>
             </Tabs>
           ) : (

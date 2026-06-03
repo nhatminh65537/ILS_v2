@@ -4,12 +4,76 @@ import {
   challengeFlagsFixture,
   challengeInstancesFixture,
   challengeNodesFixture,
+  challengeProgressFixture,
   challengesFixture,
   challengeTagsFixture,
   usersFixture,
 } from '@/mocks/data/fixtures'
 import { notFound, toPaginatedResponse } from '@/mocks/handlers/shared'
-import { InstanceStatus } from '@/types/challenge.types'
+import { InstanceStatus, type ChallengeNode } from '@/types/challenge.types'
+
+const sortFolderFirst = (a: ChallengeNode, b: ChallengeNode): number => {
+  if (a.is_item !== b.is_item) {
+    return a.is_item ? 1 : -1
+  }
+  const byTitle = a.title.toLowerCase().localeCompare(b.title.toLowerCase())
+  return byTitle !== 0 ? byTitle : a.id - b.id
+}
+
+/** Build the explorer response (folders + visible items + breadcrumb) for a folder. */
+const buildExplorerResponse = (folder: ChallengeNode | null) => {
+  const parentId = folder?.id ?? null
+  const solvedIds = new Set(challengeProgressFixture.filter((p) => p.solved).map((p) => p.challenge_id))
+
+  const nodes = challengeNodesFixture
+    .filter((n) => (n.parent ?? null) === parentId)
+    .sort(sortFolderFirst)
+    .map((node) => {
+      if (!node.is_item || node.challenge == null) {
+        return { id: node.id, is_item: node.is_item, title: node.title, path: node.path, challenge: null }
+      }
+      const challenge = challengesFixture.find((c) => c.id === node.challenge)
+      return {
+        id: node.id,
+        is_item: node.is_item,
+        title: node.title,
+        path: node.path,
+        challenge: challenge
+          ? {
+              id: challenge.id,
+              slug: challenge.slug,
+              title: challenge.title,
+              difficulty: challenge.difficulty,
+              status: challenge.status,
+              challenge_point: challenge.challenge_point,
+              instance_required: challenge.instance_required,
+              category_name: challenge.category_name ?? null,
+              tags: challenge.tags ?? [],
+              is_solved: solvedIds.has(challenge.id),
+            }
+          : null,
+      }
+    })
+    // Members only see published items; drafts are hidden in the explorer.
+    .filter((n) => !n.is_item || (n.challenge && n.challenge.status === 'published'))
+
+  // Breadcrumb: walk ancestor path (ids) then append the folder itself.
+  const breadcrumb: { id: number; title: string }[] = []
+  if (folder) {
+    const ancestorIds = folder.path ? folder.path.split('.').map(Number) : []
+    for (const aid of ancestorIds) {
+      const anc = challengeNodesFixture.find((n) => n.id === aid)
+      if (anc) breadcrumb.push({ id: anc.id, title: anc.title })
+    }
+    breadcrumb.push({ id: folder.id, title: folder.title })
+  }
+
+  return {
+    folder: folder ? { id: folder.id, title: folder.title, path: folder.path } : null,
+    breadcrumb,
+    nodes,
+  }
+}
 
 export const adminChallengesHandlers = [
   // ── Categories ───────────────────────────────────────────────────────────────
@@ -83,14 +147,15 @@ export const adminChallengesHandlers = [
   }),
 
   // ── Challenge nodes (tree) ────────────────────────────────────────────────────
+  // Folder-first (is_item asc), then title A->Z — mirrors the backend ordering.
   http.get('*/api/challenge/nodes/', () => {
-    const roots = challengeNodesFixture.filter((n) => !n.parent_id)
+    const roots = challengeNodesFixture.filter((n) => !n.parent).sort(sortFolderFirst)
     return HttpResponse.json(roots)
   }),
 
   http.get('*/api/challenge/nodes/:id/children/', ({ params }) => {
     const parentId = Number(params.id)
-    const children = challengeNodesFixture.filter((n) => n.parent_id === parentId)
+    const children = challengeNodesFixture.filter((n) => n.parent === parentId).sort(sortFolderFirst)
     return HttpResponse.json(children)
   }),
 
@@ -98,18 +163,44 @@ export const adminChallengesHandlers = [
     const payload = (await request.json()) as {
       title: string
       parent_id?: number | null
-      position?: number
       is_item?: boolean
-      challenge_id?: number | null
     }
+    const parentId = payload.parent_id ?? null
+    const parent = parentId ? challengeNodesFixture.find((n) => n.id === parentId) : null
+    const newId = Math.max(0, ...challengeNodesFixture.map((n) => n.id)) + 1
+    const isItem = payload.is_item ?? false
+
+    // Atomic item create synthesises a draft challenge (slug from title).
+    let challengeId: number | null = null
+    let challengeSlug: string | undefined
+    if (isItem) {
+      const slug = payload.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'challenge'
+      challengeId = Math.max(0, ...challengesFixture.map((c) => c.id)) + 1
+      challengeSlug = slug
+      challengesFixture.push({
+        id: challengeId,
+        slug,
+        title: payload.title,
+        status: 'draft',
+        source: 'manual' as never,
+        storage_path: `challenges/${slug}`,
+        challenge_point: 0,
+        instance_required: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as never)
+    }
+
+    const path = parent ? (parent.path ? `${parent.path}.${parent.id}` : String(parent.id)) : ''
     const newNode = {
-      id: challengeNodesFixture.length + 100,
-      challenge_id: payload.challenge_id ?? null,
-      parent_id: payload.parent_id ?? null,
-      path: payload.parent_id ? `${payload.parent_id}.${challengeNodesFixture.length + 100}` : `${challengeNodesFixture.length + 100}`,
-      position: payload.position ?? 99,
+      id: newId,
+      challenge: challengeId,
+      challenge_slug: challengeSlug ?? null,
+      parent: parentId,
+      path,
+      position: 99,
       title: payload.title,
-      is_item: payload.is_item ?? false,
+      is_item: isItem,
     }
     challengeNodesFixture.push(newNode)
     return HttpResponse.json(newNode, { status: 201 })
@@ -119,7 +210,7 @@ export const adminChallengesHandlers = [
     const id = Number(params.id)
     const index = challengeNodesFixture.findIndex((n) => n.id === id)
     if (index < 0) return notFound('Node not found')
-    const payload = (await request.json()) as { title?: string; parent_id?: number | null; position?: number }
+    const payload = (await request.json()) as { title?: string }
     challengeNodesFixture[index] = { ...challengeNodesFixture[index], ...payload }
     return HttpResponse.json(challengeNodesFixture[index])
   }),
@@ -137,8 +228,23 @@ export const adminChallengesHandlers = [
     const index = challengeNodesFixture.findIndex((n) => n.id === id)
     if (index < 0) return notFound('Node not found')
     const payload = (await request.json()) as { parent_id: number | null }
-    challengeNodesFixture[index] = { ...challengeNodesFixture[index], parent_id: payload.parent_id ?? undefined }
+    const parentId = payload.parent_id ?? null
+    const parent = parentId ? challengeNodesFixture.find((n) => n.id === parentId) : null
+    const path = parent ? (parent.path ? `${parent.path}.${parent.id}` : String(parent.id)) : ''
+    challengeNodesFixture[index] = { ...challengeNodesFixture[index], parent: parentId, path }
     return HttpResponse.json(challengeNodesFixture[index])
+  }),
+
+  // ── File-explorer (folders + visible challenge items + breadcrumb) ─────────────
+  http.get('*/api/challenge/nodes/explorer/', () => {
+    return HttpResponse.json(buildExplorerResponse(null))
+  }),
+
+  http.get('*/api/challenge/nodes/:id/explorer/', ({ params }) => {
+    const folderId = Number(params.id)
+    const folder = challengeNodesFixture.find((n) => n.id === folderId)
+    if (!folder) return notFound('Folder not found')
+    return HttpResponse.json(buildExplorerResponse(folder))
   }),
 
   // ── Flag CRUD (admin) ─────────────────────────────────────────────────────────

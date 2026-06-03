@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -77,6 +78,7 @@ export function AdminChallengeFlagsPageClient({ locale, slug }: AdminChallengeFl
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFlag, setEditingFlag] = useState<ChallengeFlag | null>(null)
   const [form, setForm] = useState<FlagFormState>(EMPTY_FORM)
+  const [deleteTarget, setDeleteTarget] = useState<ChallengeFlag | null>(null)
 
   useEffect(() => {
     void loadFlags(slug)
@@ -115,9 +117,10 @@ export function AdminChallengeFlagsPageClient({ locale, slug }: AdminChallengeFl
     if (ok) setDialogOpen(false)
   }
 
-  const handleDelete = async (flag: ChallengeFlag) => {
-    if (!window.confirm(t('flags.deleteConfirm'))) return
-    await submitDeleteFlag(slug, flag.id)
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
+    const ok = await submitDeleteFlag(slug, deleteTarget.id)
+    if (ok) setDeleteTarget(null)
   }
 
   return (
@@ -174,7 +177,7 @@ export function AdminChallengeFlagsPageClient({ locale, slug }: AdminChallengeFl
                         <Button variant="outline" size="sm" onClick={() => openEdit(flag)}>
                           {t('actions.edit')}
                         </Button>
-                        <Button variant="destructive" size="sm" disabled={isMutating} onClick={() => void handleDelete(flag)}>
+                        <Button variant="destructive" size="sm" disabled={isMutating} onClick={() => setDeleteTarget(flag)}>
                           {t('actions.delete')}
                         </Button>
                       </div>
@@ -231,6 +234,18 @@ export function AdminChallengeFlagsPageClient({ locale, slug }: AdminChallengeFl
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t('flags.deleteConfirmTitle')}
+        description={t('flags.deleteConfirm')}
+        confirmLabel={t('actions.delete')}
+        cancelLabel={t('actions.cancel')}
+        variant="destructive"
+        isLoading={isMutating}
+        onConfirm={() => void handleDeleteConfirm()}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      />
     </section>
   )
 }

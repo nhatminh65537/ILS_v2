@@ -44,11 +44,12 @@ class ChallengeNodeSerializer(serializers.ModelSerializer):
     """Challenge node serializer for tree CRUD endpoints."""
 
     has_children = serializers.SerializerMethodField(read_only=True)
+    challenge_slug = serializers.CharField(source='challenge.slug', read_only=True, default=None)
 
     class Meta:
         model = ChallengeNode
-        fields = ['id', 'parent', 'is_item', 'title', 'position', 'path', 'challenge', 'has_children']
-        read_only_fields = ['id', 'path', 'has_children']
+        fields = ['id', 'parent', 'is_item', 'title', 'position', 'path', 'challenge', 'challenge_slug', 'has_children']
+        read_only_fields = ['id', 'path', 'challenge_slug', 'has_children']
 
     def validate(self, attrs):
         instance = getattr(self, 'instance', None)
@@ -103,11 +104,31 @@ class ChallengeNodeSerializer(serializers.ModelSerializer):
         return obj.children.exists()
 
 
+class ChallengeNodeWriteSerializer(serializers.Serializer):
+    """Write serializer for atomic challenge node creation.
+
+    For folders (``is_item=false``) only ``title`` + ``parent_id`` are used.
+    For items (``is_item=true``) the backend auto-creates a draft Challenge from
+    ``title``; the client never supplies ``challenge_id`` or ``position``.
+    """
+
+    title = serializers.CharField()
+    parent_id = serializers.IntegerField(required=False, allow_null=True)
+    is_item = serializers.BooleanField(required=False, default=False)
+
+    def validate_title(self, value):
+        normalized = (value or '').strip()
+        if not normalized:
+            raise serializers.ValidationError('title is required.')
+        return normalized
+
+
 class ChallengeListSerializer(serializers.ModelSerializer):
     """Challenge list serializer (minimal fields)"""
 
     category_name = serializers.CharField(source='category.name', read_only=True)
     tags = serializers.SerializerMethodField()
+    is_solved = serializers.SerializerMethodField()
 
     class Meta:
         model = Challenge
@@ -123,6 +144,7 @@ class ChallengeListSerializer(serializers.ModelSerializer):
             'tags',
             'challenge_point',
             'instance_required',
+            'is_solved',
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
@@ -132,6 +154,45 @@ class ChallengeListSerializer(serializers.ModelSerializer):
             [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
             many=True,
         ).data
+
+    def get_is_solved(self, obj):
+        # ``solved_ids`` is injected once by the view to avoid per-row queries.
+        solved_ids = self.context.get('solved_ids')
+        if solved_ids is None:
+            return False
+        return obj.id in solved_ids
+
+
+class ChallengeExplorerSerializer(serializers.ModelSerializer):
+    """Node serializer for the user/admin file-explorer (folders + challenge items)."""
+
+    challenge = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChallengeNode
+        fields = ['id', 'is_item', 'title', 'path', 'challenge']
+        read_only_fields = fields
+
+    def get_challenge(self, obj):
+        if not obj.is_item or obj.challenge is None:
+            return None
+        challenge = obj.challenge
+        solved_ids = self.context.get('solved_ids') or set()
+        return {
+            'id': challenge.id,
+            'slug': challenge.slug,
+            'title': challenge.title,
+            'difficulty': challenge.difficulty,
+            'status': challenge.status,
+            'challenge_point': challenge.challenge_point,
+            'instance_required': challenge.instance_required,
+            'category_name': challenge.category.name if challenge.category else None,
+            'tags': ChallengeTagSerializer(
+                [tm.tag for tm in challenge.tag_mappings.all()],
+                many=True,
+            ).data,
+            'is_solved': challenge.id in solved_ids,
+        }
 
 
 class ChallengeDetailSerializer(serializers.ModelSerializer):
@@ -177,6 +238,10 @@ class ChallengeWriteSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True,
     )
+    # storage_path is NOT NULL in the model, but manual challenges authored via the
+    # admin form have no real file path. Make it optional here and default it from
+    # the slug in create() so the form does not have to collect it.
+    storage_path = serializers.CharField(required=False, allow_blank=True)
     category = ChallengeCategorySerializer(read_only=True)
     tags = serializers.SerializerMethodField()
 
@@ -245,6 +310,10 @@ class ChallengeWriteSerializer(serializers.ModelSerializer):
 
         if category_id is not None:
             validated_data['category'] = ChallengeCategory.objects.get(id=category_id)
+
+        # Default storage_path for manual challenges that don't supply one.
+        if not validated_data.get('storage_path'):
+            validated_data['storage_path'] = f"challenges/{validated_data['slug']}"
 
         challenge = Challenge.objects.create(**validated_data)
         ChallengeService.upsert_challenge_tags(challenge, tag_ids)

@@ -240,7 +240,11 @@
     "description": "Practice by difficulty, submit flags, and track earned points.",
     "catalog": {
       "title": "Challenges",
-      "empty": "No challenges found."
+      "empty": "No challenges found.",
+      "subtitle": "Browse folders and CTF challenges.",
+      "pageOf": "Page {page} of {total}",
+      "previous": "Previous",
+      "next": "Next"
     },
     "detail": {
       "backToCatalog": "Back to challenges",
@@ -277,7 +281,12 @@
       "searchPlaceholder": "Search challenges...",
       "difficulty": "Difficulty",
       "category": "Category",
-      "tags": "Tags"
+      "tags": "Tags",
+      "apply": "Apply",
+      "solved": "Solved status",
+      "solvedAll": "All",
+      "solvedYes": "Solved",
+      "solvedNo": "Unsolved"
     },
     "instance": {
       "title": "Instance",
@@ -289,7 +298,14 @@
       "restart": "Restart Instance"
     },
     "errors": {
-      "detailLoadFailed": "Failed to load challenge details."
+      "detailLoadFailed": "Failed to load challenge details.",
+      "loadFailed": "Failed to load challenges."
+    },
+    "explorer": {
+      "root": "Root",
+      "emptyFolder": "This folder is empty.",
+      "foldersHeading": "Folders",
+      "challengesHeading": "Challenges"
     }
   },
   "quizzes": {
@@ -1116,7 +1132,8 @@
     },
     "navigation": {
       "backToList": "Back to challenge list",
-      "backToEditor": "Back to editor"
+      "backToEditor": "Back to editor",
+      "backToExplorer": "Back to explorer"
     },
     "form": {
       "titleLabel": "Title",
@@ -1161,7 +1178,18 @@
       "manageCategories": "Manage categories",
       "manageTags": "Manage tags",
       "namePlaceholder": "name",
-      "descriptionPlaceholder": "description"
+      "descriptionPlaceholder": "description",
+      "createTitle": "Add new",
+      "columnName": "Name",
+      "columnDescription": "Description",
+      "categoryTitle": "Categories",
+      "categoryDescription": "Manage challenge categories.",
+      "tagTitle": "Tags",
+      "tagDescription": "Manage challenge tags.",
+      "emptyCategories": "No categories yet.",
+      "emptyTags": "No tags yet.",
+      "deleteConfirmTitle": "Delete this item?",
+      "deleteConfirmDescription": "\"{name}\" will be permanently removed."
     },
     "category": {
       "title": "Category manager",
@@ -1258,7 +1286,8 @@
         "isRegex": "Is regex pattern",
         "isCaseSensitive": "Case sensitive",
         "randomTailLength": "Random tail length"
-      }
+      },
+      "deleteConfirmTitle": "Delete flag?"
     },
     "instances": {
       "title": "Instance management",
@@ -1280,7 +1309,8 @@
         "running": "Running",
         "stopped": "Stopped",
         "terminated": "Terminated"
-      }
+      },
+      "killConfirmTitle": "Kill instance?"
     },
     "empty": {
       "noChallenges": "No challenges found.",
@@ -1309,19 +1339,44 @@
       "createTagFailed": "Failed to create tag.",
       "updateTagFailed": "Failed to update tag.",
       "deleteTagFailed": "Failed to delete tag.",
-      "loadTreeFailed": "Failed to load challenge tree.",
+      "loadTreeFailed": "Failed to load the challenge tree.",
       "loadTreeChildrenFailed": "Failed to load node children.",
-      "createFolderFailed": "Failed to create folder.",
-      "createNodeFailed": "Failed to create challenge node.",
+      "createFolderFailed": "Failed to create the folder.",
+      "createNodeFailed": "Failed to create the challenge.",
       "renameNodeFailed": "Failed to rename node.",
-      "moveNodeFailed": "Failed to move node.",
+      "moveNodeFailed": "Failed to move the item.",
       "reorderNodeFailed": "Failed to reorder node.",
-      "deleteNodeFailed": "Failed to delete node.",
+      "deleteNodeFailed": "Failed to delete the selected items.",
       "loadFlagsFailed": "Failed to load flags.",
       "createFlagFailed": "Failed to create flag.",
       "updateFlagFailed": "Failed to update flag.",
       "deleteFlagFailed": "Failed to delete flag.",
       "loadInstancesFailed": "Failed to load instances."
+    },
+    "explorer": {
+      "root": "Root",
+      "back": "Back",
+      "newItem": "New",
+      "createTitle": "Create folder or challenge",
+      "createUnder": "Creating under: {parent}",
+      "kindLabel": "Type",
+      "kindFolder": "Folder",
+      "kindChallenge": "Challenge",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter a title",
+      "createChallengeHint": "A draft challenge is created; you'll be taken to its editor.",
+      "emptyFolder": "This folder is empty.",
+      "selectedCount": "{count} selected",
+      "moveSelected": "Move",
+      "deleteSelected": "Delete",
+      "clearSelection": "Clear",
+      "moveTitle": "Move to folder",
+      "moveDescription": "Choose a destination for {count} item(s).",
+      "moveDestination": "Destination: {destination}",
+      "moveHere": "Move here",
+      "noSubfolders": "No subfolders.",
+      "deleteConfirmTitle": "Delete selected items?",
+      "deleteConfirmDescription": "{count} item(s) (including any folder contents) will be permanently deleted."
     }
   },
   "profile": {
