@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -12,47 +13,71 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ContentStatus, type AdminQuizMutationPayload, type Quiz } from '@/types/quiz.types'
+import {
+  ContentStatus,
+  type AdminQuizMutationPayload,
+  type Quiz,
+  type QuizCategory,
+  type QuizTag,
+} from '@/types/quiz.types'
 
 type AdminQuizFormProps = {
   mode: 'create' | 'edit'
   initialQuiz?: Quiz | null
+  categories?: QuizCategory[]
+  tags?: QuizTag[]
   isSubmitting: boolean
   submitLabel: string
   onSubmit: (payload: AdminQuizMutationPayload) => Promise<void> | void
 }
 
-const DEFAULT_FORM: AdminQuizMutationPayload = {
+type FormState = {
+  title: string
+  description: string
+  status: ContentStatus
+  time_limit_sec: number
+  categoryId: number | null
+  tagIds: number[]
+}
+
+const DEFAULT_FORM: FormState = {
   title: '',
   description: '',
   status: ContentStatus.Draft,
-  quiz_point: 10,
   time_limit_sec: 0,
+  categoryId: null,
+  tagIds: [],
 }
 
-const buildInitialForm = (initialQuiz?: Quiz | null): AdminQuizMutationPayload => {
+const buildInitialForm = (initialQuiz?: Quiz | null): FormState => {
   if (!initialQuiz) {
     return { ...DEFAULT_FORM }
   }
+
+  const category = initialQuiz.category
+  const categoryId = typeof category === 'number' ? category : (category as QuizCategory | null)?.id ?? null
 
   return {
     title: initialQuiz.title,
     description: initialQuiz.description ?? '',
     status: initialQuiz.status,
-    quiz_point: initialQuiz.quiz_point,
     time_limit_sec: initialQuiz.time_limit_sec ?? 0,
+    categoryId,
+    tagIds: initialQuiz.tags?.map((tag) => tag.id) ?? [],
   }
 }
 
 export function AdminQuizForm({
   mode,
   initialQuiz,
+  categories = [],
+  tags = [],
   isSubmitting,
   submitLabel,
   onSubmit,
 }: AdminQuizFormProps) {
   const t = useTranslations('adminQuizzes')
-  const [form, setForm] = useState<AdminQuizMutationPayload>(() => buildInitialForm(initialQuiz))
+  const [form, setForm] = useState<FormState>(() => buildInitialForm(initialQuiz))
 
   const isValid = form.title.trim().length > 0
 
@@ -62,12 +87,14 @@ export function AdminQuizForm({
       return
     }
 
+    // quiz_point is derived server-side (sum of question scores) — not sent.
     await onSubmit({
       title: form.title.trim(),
       description: form.description?.trim() || '',
       status: form.status,
-      quiz_point: Math.max(0, Number(form.quiz_point ?? 0)),
       time_limit_sec: Math.max(0, Number(form.time_limit_sec ?? 0)),
+      category_id: form.categoryId,
+      tag_ids: form.tagIds,
     })
   }
 
@@ -94,7 +121,7 @@ export function AdminQuizForm({
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1">
           <Label>{t('form.statusLabel')}</Label>
           <Select
@@ -115,20 +142,29 @@ export function AdminQuizForm({
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor={`quiz-point-${mode}`}>{t('form.quizPointLabel')}</Label>
-          <Input
-            id={`quiz-point-${mode}`}
-            min={0}
-            step={1}
-            type="number"
-            value={String(form.quiz_point ?? 0)}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                quiz_point: Number(event.target.value || 0),
-              }))
-            }
-          />
+          <Label>{t('form.categoryLabel')}</Label>
+          <Select
+            value={form.categoryId != null ? String(form.categoryId) : 'none'}
+            onValueChange={(v) => setForm((prev) => ({ ...prev, categoryId: v === 'none' ? null : Number(v) }))}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t('form.categoryNone')}</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1">
+          <Label>{t('form.quizPointLabel')}</Label>
+          <div className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
+            {initialQuiz?.quiz_point ?? 0}
+          </div>
+          <p className="text-xs text-muted-foreground">{t('form.quizPointHint')}</p>
         </div>
 
         <div className="space-y-1">
@@ -150,8 +186,33 @@ export function AdminQuizForm({
         </div>
       </div>
 
-      <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-        {t('form.categoryTagInlineHint')}
+      <div className="space-y-2 rounded-md border border-border p-3">
+        <p className="text-sm font-medium">{t('form.tagsLabel')}</p>
+        {tags.length === 0 ? <p className="text-sm text-muted-foreground">{t('empty.noTags')}</p> : null}
+        <div className="grid gap-2 md:grid-cols-2">
+          {tags.map((tag) => {
+            const checked = form.tagIds.includes(tag.id)
+            return (
+              <label key={tag.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(next) => {
+                    setForm((prev) => {
+                      const set = new Set(prev.tagIds)
+                      if (next) {
+                        set.add(tag.id)
+                      } else {
+                        set.delete(tag.id)
+                      }
+                      return { ...prev, tagIds: [...set] }
+                    })
+                  }}
+                />
+                <span>{tag.name}</span>
+              </label>
+            )
+          })}
+        </div>
       </div>
 
       <Button disabled={!isValid || isSubmitting} type="submit">

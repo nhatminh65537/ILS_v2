@@ -44,12 +44,18 @@ export interface Quiz {
   readonly quiz_point: number
   readonly total_questions: number
   readonly time_limit_sec?: number
+  /** FK integer from list endpoint; nested object from detail endpoint */
+  readonly category?: number | QuizCategory | null
+  /** Convenience string from the list serializer */
+  readonly category_name?: string | null
   readonly tags?: readonly QuizTag[]
+  /** Present on the flat list serializer; true when the requester solved it. */
+  readonly is_solved?: boolean
   readonly updated_at: string
 }
 
 /**
- * Quiz tree node (folder-only in MVP)
+ * Quiz tree node (folder = node, quiz = leaf item via OneToOne quiz)
  * Matches QuizNodeSerializer fields exactly
  */
 export interface QuizNode {
@@ -59,8 +65,44 @@ export interface QuizNode {
   readonly title: string
   readonly position: number
   readonly path: string
+  /** null = folder; set = quiz item node (FK id from the serializer) */
   readonly quiz: number | null
   readonly has_children: boolean
+}
+
+/** Quiz summary embedded in a file-explorer item node. */
+export interface QuizExplorerSummary {
+  readonly id: number
+  readonly title: string
+  readonly status: ContentStatus
+  readonly quiz_point: number
+  readonly total_questions: number
+  readonly time_limit_sec?: number | null
+  readonly category_name?: string | null
+  readonly tags?: readonly QuizTag[]
+  readonly is_solved: boolean
+}
+
+/** One node (folder or quiz item) in the file-explorer. */
+export interface QuizExplorerNode {
+  readonly id: number
+  readonly is_item: boolean
+  readonly title: string
+  readonly path: string
+  readonly quiz: QuizExplorerSummary | null
+}
+
+/** A breadcrumb crumb for explorer navigation. */
+export interface QuizBreadcrumbCrumb {
+  readonly id: number
+  readonly title: string
+}
+
+/** Response of the explorer endpoints (root or folder). */
+export interface QuizExplorerResponse {
+  readonly folder: { id: number; title: string; path: string } | null
+  readonly breadcrumb: readonly QuizBreadcrumbCrumb[]
+  readonly nodes: readonly QuizExplorerNode[]
 }
 
 /**
@@ -109,6 +151,15 @@ export interface UserQuizProgress {
   readonly last_attempted_at?: string | null
 }
 
+/** Which subset of a quiz's questions to practice. */
+export enum QuizQuestionFilter {
+  All = 'all',
+  /** Only questions the user has NOT yet answered correctly. */
+  Unsolved = 'unsolved',
+  /** Only questions the user has already answered correctly (revision). */
+  Solved = 'solved',
+}
+
 /**
  * Quiz config per user
  * Matches QuizConfigSerializer (backend/api/serializers.py)
@@ -122,11 +173,23 @@ export interface QuizConfig {
   readonly time_limit_sec: number | null
   readonly random_question: boolean
   readonly random_option: boolean
+  readonly question_filter: QuizQuestionFilter
+  readonly immediate_feedback: boolean
   readonly allow_review: boolean
   readonly allow_retry: boolean
   readonly max_attempt?: number | null
   readonly is_default: boolean
   readonly is_active: boolean
+}
+
+/** Editable subset of QuizConfig the member can change on the detail page. */
+export interface QuizConfigUpdatePayload {
+  total_questions: number | null
+  time_limit_sec: number | null
+  random_question: boolean
+  random_option: boolean
+  question_filter: QuizQuestionFilter
+  immediate_feedback: boolean
 }
 
 /** Request/response payloads */
@@ -159,6 +222,35 @@ export interface AdminQuizMutationPayload {
   status: ContentStatus
   quiz_point?: number
   time_limit_sec?: number
+  category_id?: number | null
+  tag_ids?: number[]
+}
+
+// ── Admin node + taxonomy payloads (mirror challenge) ──────────────────────────
+
+export interface AdminQuizNodeCreatePayload {
+  title: string
+  parent_id: number | null
+  /** Folder = false; item auto-creates a draft Quiz from the title. */
+  is_item: boolean
+}
+
+export interface AdminQuizNodeUpdatePayload {
+  title?: string
+}
+
+export interface AdminQuizNodeMovePayload {
+  parent_id: number | null
+}
+
+export interface QuizCategoryMutationPayload {
+  name: string
+  description?: string
+}
+
+export interface QuizTagMutationPayload {
+  name: string
+  description?: string
 }
 
 export interface QuizQuestionOptionInput {
@@ -222,6 +314,8 @@ export interface SessionQuestion {
   readonly type: QuestionType
   readonly content: { text: string }
   readonly time_limit_sec?: number
+  /** When false, the session shows results only at the end (no per-question reveal). */
+  readonly immediate_feedback?: boolean
   readonly options?: readonly SessionQuestionOption[]
 }
 

@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
@@ -15,20 +14,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useAdminQuizzes } from '@/hooks/useAdminQuizzes'
 import { useAdminQuizQuestions } from '@/hooks/useAdminQuizQuestions'
 import type { AdminQuizQuestionMutationPayload, QuizQuestion } from '@/types/quiz.types'
-import { AdminQuizQuestionFormDialog } from './AdminQuizQuestionFormDialog'
-import { AdminQuizQuestionPreviewCard } from './AdminQuizQuestionPreviewCard'
+import { AdminQuizQuestionFormDialog } from '../AdminQuizQuestionFormDialog'
+import { AdminQuizQuestionPreviewCard } from '../AdminQuizQuestionPreviewCard'
 
-type AdminQuizQuestionsPageClientProps = {
-  locale: string
+type AdminQuizQuestionsTabProps = {
   quizId: number
 }
 
-export function AdminQuizQuestionsPageClient({ locale, quizId }: AdminQuizQuestionsPageClientProps) {
+/**
+ * Questions manager rendered inside the quiz editor's "Questions" tab.
+ * This is the former /admin/quizzes/[id]/questions page body, minus the page
+ * header + cross-navigation links (which the Tabs now provide).
+ */
+export function AdminQuizQuestionsTab({ quizId }: AdminQuizQuestionsTabProps) {
   const t = useTranslations('adminQuizzes')
-  const { detailState, loadDetail } = useAdminQuizzes()
   const {
     questionsState,
     isMutating,
@@ -46,9 +47,8 @@ export function AdminQuizQuestionsPageClient({ locale, quizId }: AdminQuizQuesti
   const [dialogKey, setDialogKey] = useState(0)
 
   useEffect(() => {
-    void loadDetail(quizId)
     void loadQuestions(quizId)
-  }, [loadDetail, loadQuestions, quizId])
+  }, [loadQuestions, quizId])
 
   const sortedQuestions = useMemo(
     () => [...questionsState.data].sort((a, b) => a.position - b.position),
@@ -64,7 +64,6 @@ export function AdminQuizQuestionsPageClient({ locale, quizId }: AdminQuizQuesti
     if (!editingQuestion) {
       return false
     }
-
     return submitUpdateQuestion(quizId, editingQuestion.id, payload)
   }
 
@@ -73,49 +72,26 @@ export function AdminQuizQuestionsPageClient({ locale, quizId }: AdminQuizQuesti
     if (!confirmed) {
       return
     }
-
     await submitDeleteQuestion(quizId, question.id)
   }
 
   const handleMove = async (questionId: number, direction: 'up' | 'down') => {
     const ids = sortedQuestions.map((question) => question.id)
     const currentIndex = ids.findIndex((id) => id === questionId)
-
     if (currentIndex < 0) {
       return
     }
-
     const nextIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
     if (nextIndex < 0 || nextIndex >= ids.length) {
       return
     }
-
     const nextIds = [...ids]
     ;[nextIds[currentIndex], nextIds[nextIndex]] = [nextIds[nextIndex], nextIds[currentIndex]]
     await submitReorderQuestions(quizId, nextIds)
   }
 
   return (
-    <section className="space-y-6 p-6">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold">{t('questions.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('questions.subtitle')}</p>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <Link className="underline" href={`/${locale}/admin/quizzes`}>
-            {t('backToList')}
-          </Link>
-          <Link className="underline" href={`/${locale}/admin/quizzes/${quizId}`}>
-            {t('actions.backToMetadata')}
-          </Link>
-        </div>
-      </header>
-
-      {detailState.data ? (
-        <p className="text-sm text-muted-foreground">
-          {t('questions.forQuiz', { title: detailState.data.title })}
-        </p>
-      ) : null}
-
+    <div className="space-y-4">
       {questionsState.errorMessageKey ? (
         <p className="text-sm text-destructive">{t(questionsState.errorMessageKey as Parameters<typeof t>[0])}</p>
       ) : null}
@@ -199,11 +175,7 @@ export function AdminQuizQuestionsPageClient({ locale, quizId }: AdminQuizQuesti
                         >
                           {t('actions.edit')}
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => void handleDelete(question)}
-                        >
+                        <Button size="sm" variant="destructive" onClick={() => void handleDelete(question)}>
                           {t('actions.delete')}
                         </Button>
                       </div>
@@ -228,6 +200,6 @@ export function AdminQuizQuestionsPageClient({ locale, quizId }: AdminQuizQuesti
         onSubmit={editingQuestion ? handleSubmitUpdate : handleSubmitCreate}
         open={dialogOpen}
       />
-    </section>
+    </div>
   )
 }

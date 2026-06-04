@@ -276,6 +276,15 @@ DEFAULT_CONFIGS = [
         'is_runtime': True,
     },
     {
+        'key': 'quiz.max_tree_depth',
+        'value': 5,
+        'value_type': SystemConfig.ConfigType.INT,
+        'category': 'quiz',
+        'description': 'Maximum folder nesting depth in the quiz tree.',
+        'is_editable': True,
+        'is_runtime': True,
+    },
+    {
         'key': 'challenge.deploy.enabled',
         'value': False,
         'value_type': SystemConfig.ConfigType.BOOL,

@@ -225,26 +225,32 @@ Legacy flat routes (kept for compatibility — see §6):
 
 | Method | Path | Auth | Status | Notes |
 |---|---|---|---|---|
-| GET | `/api/quiz/quizzes/` | Yes | Partial | List; members see published quizzes only. |
-| POST | `/api/quiz/quizzes/` | Yes | Partial | Create; editor/admin role required. |
-| GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Detail. |
-| PUT/PATCH | `/api/quiz/quizzes/{id}/` | Yes | Partial | Update; editor/admin role required. |
+| GET | `/api/quiz/quizzes/` | Yes | Partial | Paginated list; members see published only. Flat-search filters: `search`, `category`, `tags` (comma ids, AND), `solved`, `status`. Each row carries `category_name`, `tags`, `is_solved`. |
+| POST | `/api/quiz/quizzes/` | Yes | Partial | Create; editor/admin role required; accepts `category_id` + `tag_ids`. `quiz_point` is read-only (derived = sum of question scores). |
+| GET | `/api/quiz/quizzes/{id}/` | Yes | Partial | Detail (nested `category`, `tags`, `questions`). `quiz_point` is the derived max score. |
+| PUT/PATCH | `/api/quiz/quizzes/{id}/` | Yes | Partial | Update; editor/admin role required; accepts `category_id` + `tag_ids`. `quiz_point` read-only (ignored if sent). |
 | DELETE | `/api/quiz/quizzes/{id}/` | Yes | Partial | Delete; editor/admin role required. |
+| GET/POST | `/api/quiz/categories/` | Yes | Partial | Quiz category list/create; create editor/admin only. |
+| GET/PUT/PATCH/DELETE | `/api/quiz/categories/{id}/` | Yes | Partial | Quiz category detail/update/delete; mutate editor/admin only. |
+| GET/POST | `/api/quiz/tags/` | Yes | Partial | Quiz tag list/create; create editor/admin only. |
+| GET/PUT/PATCH/DELETE | `/api/quiz/tags/{id}/` | Yes | Partial | Quiz tag detail/update/delete; mutate editor/admin only. |
 | GET | `/api/quiz/quizzes/{id}/progress/` | Yes | Partial | Per-user aggregate (`best_score`, `attempt_count`, attempt timestamps); deterministic zero/default payload when no progress exists. |
 | GET | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Question management list; editor/admin only. |
-| POST | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Question create; supports single/multi/fill_blank validation. |
+| POST | `/api/quiz/quizzes/{id}/questions/` | Yes | Partial | Question create; supports single/multi/fill_blank validation; syncs `quiz.total_questions` + derived `quiz_point`. |
 | GET | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question detail; editor/admin only. |
-| PUT | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question update; editor/admin only. |
-| DELETE | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question delete; syncs `quiz.total_questions`. |
-| GET | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Per-user config retrieval. |
-| PUT | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Per-user config upsert. |
-| GET | `/api/quiz/nodes/` | Yes | Partial | Root list (`parent IS NULL`); MVP folder-only validation (`is_item=false` enforced). |
-| POST | `/api/quiz/nodes/` | Yes | Partial | Create; editor/admin only; MVP folder-only validation. |
+| PUT | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question update; editor/admin only; resyncs derived `quiz_point`. |
+| DELETE | `/api/quiz/quizzes/{id}/questions/{qid}/` | Yes | Partial | Question delete; syncs `quiz.total_questions` + derived `quiz_point`. |
+| GET | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Per-user config retrieval (auto-creates default). Fields: `total_questions` (null=all), `time_limit_sec` (null=no limit), `random_question`, `random_option`, `question_filter` (`all`/`unsolved`/`solved`), `immediate_feedback`. |
+| PUT | `/api/quiz/quizzes/{id}/config/` | Yes | Partial | Per-user config upsert; snapshotted into the attempt when the next session starts. |
+| GET | `/api/quiz/nodes/` | Yes | Partial | Root list (`parent IS NULL`); folder-first then title A→Z. |
+| POST | `/api/quiz/nodes/` | Yes | Partial | Atomic create (`title`, `parent_id`, `is_item`); editor/admin only. `is_item=true` creates a draft `Quiz` + linked node (response carries `quiz` id). |
+| GET | `/api/quiz/nodes/explorer/` | Yes | Partial | File-explorer root: `{folder, breadcrumb, nodes[]}`; item nodes carry quiz summary + `is_solved`; members see published items only. |
+| GET | `/api/quiz/nodes/{id}/explorer/` | Yes | Partial | File-explorer contents of folder `{id}` (same shape as root). |
 | GET | `/api/quiz/nodes/{id}/` | Yes | Partial | Node detail. |
-| PUT/PATCH | `/api/quiz/nodes/{id}/` | Yes | Partial | Rename/reorder/move via `parent`; editor/admin only. |
+| PUT/PATCH | `/api/quiz/nodes/{id}/` | Yes | Partial | Rename via `title`; editor/admin only (`is_item`/`quiz` immutable). |
 | DELETE | `/api/quiz/nodes/{id}/` | Yes | Partial | Subtree deletion via cascade. |
-| GET | `/api/quiz/nodes/{id}/children/` | Yes | Partial | Lazy children list. |
-| POST | `/api/quiz/nodes/{id}/move/` | Yes | Partial | Explicit move endpoint (`parent_id`); cycle-safe validation. |
+| GET | `/api/quiz/nodes/{id}/children/` | Yes | Partial | Lazy children list; folder-first then title A→Z. |
+| POST | `/api/quiz/nodes/{id}/move/` | Yes | Partial | Explicit move (`parent_id`); cycle-safe, bulk descendant path update. |
 
 Session lifecycle (start/answer/finish) is handled exclusively via WebSocket — see §3.6.1.
 
@@ -265,6 +271,11 @@ SERVER ← {"type": "auth_ok", "user_id": 123, "username": "alice"}
 CLIENT → {"action": "start"}
 SERVER ← {"type": "question", "attempt_id": 789, "question": {...}, "progress": {"current": 1, "total": 10}}
 ```
+The server reads the user's saved `quiz_config` at start: it filters the question set
+(`question_filter`: all/unsolved/solved), optionally shuffles (`random_question`/`random_option`),
+and caps to `total_questions`. Each `question` payload carries `immediate_feedback`; when
+`false` the client auto-advances without showing per-question results. Question visibility
+follows the parent **Quiz** status — there is no per-question publish lifecycle.
 
 **Submit answer (polymorphic by question type):**
 ```json

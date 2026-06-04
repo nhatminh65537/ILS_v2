@@ -1364,6 +1364,11 @@ class QuizConfig(FullAudit):
     """
     Cấu hình quiz cho từng user (hoặc default)
     """
+    class QuestionFilter(models.TextChoices):
+        ALL = 'all', 'All questions'
+        UNSOLVED = 'unsolved', 'Only not-yet-correct'
+        SOLVED = 'solved', 'Only already-correct'
+
     quiz = models.ForeignKey(
         Quiz,
         on_delete=models.CASCADE,
@@ -1376,7 +1381,7 @@ class QuizConfig(FullAudit):
         related_name='quiz_configs',
         db_column='user_id'
     )
-    
+
     total_questions = models.IntegerField(
         null=True,
         blank=True,
@@ -1389,7 +1394,17 @@ class QuizConfig(FullAudit):
     )
     random_question = models.BooleanField(default=True)
     random_option = models.BooleanField(default=True)
-    
+    question_filter = models.CharField(
+        max_length=20,
+        choices=QuestionFilter.choices,
+        default=QuestionFilter.ALL,
+        help_text="Lọc câu: tất cả / chỉ câu chưa từng đúng / chỉ câu đã đúng (ôn tập)"
+    )
+    immediate_feedback = models.BooleanField(
+        default=True,
+        help_text="Hiện đúng/sai ngay sau mỗi câu; nếu tắt chỉ xem tổng kết cuối"
+    )
+
     allow_review = models.BooleanField(default=True)
     allow_retry = models.BooleanField(default=True)
     max_attempt = models.IntegerField(
@@ -1397,7 +1412,7 @@ class QuizConfig(FullAudit):
         blank=True,
         help_text="Số lần làm tối đa (NULL = unlimited)"
     )
-    
+
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 

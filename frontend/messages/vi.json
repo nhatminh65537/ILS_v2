@@ -317,12 +317,36 @@
     "attemptCount": "Số lần làm",
     "catalog": {
       "subtitle": "Duyệt các bài quiz đã xuất bản và bắt đầu luyện tập",
-      "searchPlaceholder": "Tìm kiếm bài quiz..."
+      "searchPlaceholder": "Tìm kiếm bài quiz...",
+      "pageOf": "Trang {page}/{total}",
+      "previous": "Trước",
+      "next": "Sau"
     },
     "detail": {
       "backToCatalog": "Quay lại danh sách",
       "startSession": "Bắt đầu làm bài",
       "noProgress": "Chưa làm lần nào"
+    },
+    "config": {
+      "title": "Cấu hình luyện tập",
+      "loading": "Đang tải cấu hình...",
+      "randomQuestion": "Xáo trộn thứ tự câu hỏi",
+      "randomOption": "Xáo trộn đáp án",
+      "immediateFeedback": "Hiện kết quả ngay sau mỗi câu",
+      "questionFilter": "Câu hỏi luyện tập",
+      "filter": {
+        "all": "Tất cả câu hỏi",
+        "unsolved": "Chỉ câu chưa từng đúng",
+        "solved": "Chỉ câu đã đúng (ôn tập)"
+      },
+      "totalQuestions": "Số câu hỏi",
+      "totalQuestionsHint": "0 = tất cả câu hỏi",
+      "timeLimit": "Giới hạn thời gian (giây)",
+      "timeLimitHint": "0 = không giới hạn",
+      "save": "Lưu cấu hình",
+      "saving": "Đang lưu...",
+      "saved": "Đã lưu cấu hình",
+      "saveFailed": "Lưu cấu hình thất bại."
     },
     "labels": {
       "timeLimit": "Giới hạn thời gian",
@@ -344,7 +368,15 @@
       "timeLimitAny": "Tất cả",
       "timeLimit15": "≤ 15 phút",
       "timeLimit30": "≤ 30 phút",
-      "timeLimitNone": "Không giới hạn"
+      "timeLimitNone": "Không giới hạn",
+      "search": "Tìm kiếm",
+      "searchPlaceholder": "Tìm quiz...",
+      "solved": "Đã làm",
+      "solvedAll": "Tất cả",
+      "solvedYes": "Đã làm",
+      "solvedNo": "Chưa làm",
+      "category": "Danh mục",
+      "apply": "Áp dụng"
     },
     "empty": {
       "noQuizzes": "Không có bài quiz nào.",
@@ -375,6 +407,12 @@
         "backToDetail": "Quay lại bài quiz",
         "tryAgain": "Làm lại"
       }
+    },
+    "explorer": {
+      "root": "Gốc",
+      "emptyFolder": "Thư mục này trống.",
+      "foldersHeading": "Thư mục",
+      "quizzesHeading": "Quiz"
     }
   },
   "notifications": {
@@ -706,7 +744,9 @@
       "published": "Đã xuất bản",
       "archived": "Đã lưu trữ",
       "saving": "Đang lưu...",
-      "saveSuccess": "Lưu thành công."
+      "saveSuccess": "Lưu thành công.",
+      "loadingTree": "Đang tải...",
+      "saved": "Đã lưu."
     },
     "columns": {
       "title": "Tiêu đề",
@@ -730,9 +770,13 @@
       "descriptionPlaceholder": "mô tả ngắn cho quiz",
       "statusLabel": "Trạng thái",
       "quizPointLabel": "Điểm quiz",
+      "quizPointHint": "Tự động tính bằng tổng điểm các câu hỏi.",
       "timeLimitLabel": "Giới hạn thời gian (giây)",
       "timeLimitHint": "Dùng 0 nếu không giới hạn thời gian.",
-      "categoryTagInlineHint": "Quản lý Category/Tag inline sẽ bật khi backend cung cấp contract category-tag đầy đủ."
+      "categoryTagInlineHint": "Quản lý Category/Tag inline sẽ bật khi backend cung cấp contract category-tag đầy đủ.",
+      "categoryLabel": "Danh mục",
+      "categoryNone": "Không có danh mục",
+      "tagsLabel": "Thẻ"
     },
     "questions": {
       "title": "Quản lý câu hỏi",
@@ -801,7 +845,8 @@
     },
     "empty": {
       "noResults": "Không có quiz nào.",
-      "noQuizSelected": "Không tìm thấy quiz hoặc không thể truy cập."
+      "noQuizSelected": "Không tìm thấy quiz hoặc không thể truy cập.",
+      "noTags": "Chưa có thẻ nào."
     },
     "errors": {
       "unauthenticated": "Bạn cần đăng nhập để tiếp tục.",
@@ -817,7 +862,84 @@
       "questionCreateFailed": "Tạo câu hỏi thất bại.",
       "questionUpdateFailed": "Cập nhật câu hỏi thất bại.",
       "questionDeleteFailed": "Xóa câu hỏi thất bại.",
-      "reorderFailed": "Sắp xếp lại câu hỏi thất bại."
+      "reorderFailed": "Sắp xếp lại câu hỏi thất bại.",
+      "loadTreeFailed": "Không tải được cây quiz.",
+      "loadTaxonomyFailed": "Không tải được danh mục/thẻ.",
+      "createFolderFailed": "Không tạo được thư mục.",
+      "createNodeFailed": "Không tạo được quiz.",
+      "moveNodeFailed": "Không di chuyển được mục.",
+      "deleteNodeFailed": "Không xóa được mục.",
+      "createCategoryFailed": "Không tạo được danh mục.",
+      "updateCategoryFailed": "Không cập nhật được danh mục.",
+      "deleteCategoryFailed": "Không xóa được danh mục.",
+      "createTagFailed": "Không tạo được thẻ.",
+      "updateTagFailed": "Không cập nhật được thẻ.",
+      "deleteTagFailed": "Không xóa được thẻ."
+    },
+    "tabs": {
+      "metadata": "Thông tin",
+      "questions": "Câu hỏi"
+    },
+    "navigation": {
+      "backToExplorer": "Quay lại trình quản lý quiz"
+    },
+    "taxonomy": {
+      "manageCategories": "Quản lý danh mục",
+      "manageTags": "Quản lý thẻ",
+      "categoryTitle": "Danh mục quiz",
+      "tagTitle": "Thẻ quiz",
+      "categoryDescription": "Tạo và quản lý danh mục quiz.",
+      "tagDescription": "Tạo và quản lý thẻ quiz.",
+      "createTitle": "Tạo mới",
+      "namePlaceholder": "Tên",
+      "descriptionPlaceholder": "Mô tả (tùy chọn)",
+      "columnName": "Tên",
+      "columnDescription": "Mô tả",
+      "emptyCategories": "Chưa có danh mục.",
+      "emptyTags": "Chưa có thẻ.",
+      "deleteConfirmTitle": "Xóa mục",
+      "deleteConfirmDescription": "Xóa \"{name}\"? Hành động này không thể hoàn tác."
+    },
+    "explorer": {
+      "root": "Gốc",
+      "back": "Quay lại",
+      "newItem": "Tạo mới",
+      "openFolder": "Mở",
+      "createTitle": "Tạo mục",
+      "createUnder": "Tạo trong: {parent}",
+      "kindLabel": "Loại",
+      "kindFolder": "Thư mục",
+      "kindQuiz": "Quiz",
+      "titleLabel": "Tiêu đề",
+      "titlePlaceholder": "Nhập tiêu đề",
+      "createQuizHint": "Một quiz nháp sẽ được tạo và bạn được đưa thẳng vào trình chỉnh sửa.",
+      "searchPlaceholder": "Lọc trong thư mục này...",
+      "filterKindAll": "Tất cả loại",
+      "filterKindFolder": "Thư mục",
+      "filterKindQuiz": "Quiz",
+      "filterStatusAll": "Tất cả trạng thái",
+      "filterStatusDraft": "Nháp",
+      "filterStatusPublished": "Đã đăng",
+      "emptyFolder": "Thư mục này trống.",
+      "noFilterMatch": "Không có mục nào khớp bộ lọc.",
+      "selectedCount": "Đã chọn {count}",
+      "moveSelected": "Di chuyển",
+      "deleteSelected": "Xóa",
+      "clearSelection": "Bỏ chọn",
+      "moveTitle": "Di chuyển mục",
+      "moveDescription": "Chọn thư mục đích cho {count} mục.",
+      "moveDestination": "Đích: {destination}",
+      "moveHere": "Di chuyển vào đây",
+      "noSubfolders": "Không có thư mục con.",
+      "deleteConfirmTitle": "Xóa các mục đã chọn",
+      "deleteConfirmDescription": "Xóa {count} mục? Hành động này không thể hoàn tác.",
+      "columns": {
+        "name": "Tên",
+        "status": "Trạng thái",
+        "questions": "Câu hỏi",
+        "points": "Điểm",
+        "actions": "Thao tác"
+      }
     }
   },
   "adminNotifications": {

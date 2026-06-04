@@ -13,95 +13,99 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import type { QuizTag } from '@/types/quiz.types'
 
-export type TimeLimitFilter = 'any' | '15' | '30' | 'none'
+export type QuizSolvedFilter = 'all' | 'solved' | 'unsolved'
+
+type SimpleCategory = { id: number; name: string }
 
 type QuizFilterPanelProps = {
-  availableTags: string[]
   search: string
-  selectedTags: string[]
-  timeLimitFilter: TimeLimitFilter
+  selectedCategoryIds: number[]
+  selectedTagIds: number[]
+  solvedFilter: QuizSolvedFilter
+  availableCategories: SimpleCategory[]
+  availableTags: QuizTag[]
+  isLoading?: boolean
   onSearchChange: (value: string) => void
-  onTagToggle: (tag: string) => void
-  onTimeLimitChange: (value: TimeLimitFilter) => void
+  onCategoryToggle: (categoryId: number) => void
+  onTagToggle: (tagId: number) => void
+  onSolvedChange: (value: QuizSolvedFilter) => void
+  onApply: () => void
   onReset: () => void
 }
 
 export function QuizFilterPanel({
-  availableTags,
   search,
-  selectedTags,
-  timeLimitFilter,
+  selectedCategoryIds,
+  selectedTagIds,
+  solvedFilter,
+  availableCategories,
+  availableTags,
+  isLoading = false,
   onSearchChange,
+  onCategoryToggle,
   onTagToggle,
-  onTimeLimitChange,
+  onSolvedChange,
+  onApply,
   onReset,
 }: QuizFilterPanelProps) {
   const t = useTranslations('quizzes')
-
-  const hasActiveFilters = search.trim() !== '' || selectedTags.length > 0 || timeLimitFilter !== 'any'
 
   return (
     <aside className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">{t('filter.title')}</p>
-        {hasActiveFilters ? (
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onReset}>
-            {t('filter.reset')}
-          </Button>
-        ) : null}
       </div>
 
-      {/* Search */}
       <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">{t('catalog.searchPlaceholder')}</Label>
+        <Label className="text-xs text-muted-foreground">{t('filter.search')}</Label>
         <Input
-          placeholder={t('catalog.searchPlaceholder')}
+          placeholder={t('filter.searchPlaceholder')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              onApply()
+            }
+          }}
           className="h-8 text-sm"
         />
       </div>
 
       <Separator />
 
-      {/* Time limit */}
       <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">{t('filter.timeLimit')}</Label>
-        <Select value={timeLimitFilter} onValueChange={(v) => onTimeLimitChange(v as TimeLimitFilter)}>
+        <Label className="text-xs text-muted-foreground">{t('filter.solved')}</Label>
+        <Select value={solvedFilter} onValueChange={(v) => onSolvedChange(v as QuizSolvedFilter)}>
           <SelectTrigger className="h-8 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="any">{t('filter.timeLimitAny')}</SelectItem>
-            <SelectItem value="15">{t('filter.timeLimit15')}</SelectItem>
-            <SelectItem value="30">{t('filter.timeLimit30')}</SelectItem>
-            <SelectItem value="none">{t('filter.timeLimitNone')}</SelectItem>
+            <SelectItem value="all">{t('filter.solvedAll')}</SelectItem>
+            <SelectItem value="solved">{t('filter.solvedYes')}</SelectItem>
+            <SelectItem value="unsolved">{t('filter.solvedNo')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Tags */}
-      {availableTags.length > 0 ? (
+      {availableCategories.length > 0 ? (
         <>
           <Separator />
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">{t('filter.tags')}</Label>
+            <Label className="text-xs text-muted-foreground">{t('filter.category')}</Label>
             <div className="flex flex-wrap gap-1.5">
-              {availableTags.map((tag) => {
-                const active = selectedTags.includes(tag)
+              {availableCategories.map((cat) => {
+                const active = selectedCategoryIds.includes(cat.id)
                 return (
                   <button
-                    key={tag}
+                    key={cat.id}
                     type="button"
-                    onClick={() => onTagToggle(tag)}
-                    className="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+                    onClick={() => onCategoryToggle(cat.id)}
+                    className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <Badge
-                      variant={active ? 'default' : 'outline'}
-                      className="cursor-pointer text-xs transition-colors"
-                    >
-                      {tag}
+                    <Badge variant={active ? 'default' : 'outline'} className="cursor-pointer text-xs transition-colors">
+                      {cat.name}
                     </Badge>
                   </button>
                 )
@@ -110,6 +114,43 @@ export function QuizFilterPanel({
           </div>
         </>
       ) : null}
+
+      {availableTags.length > 0 ? (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">{t('filter.tags')}</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {availableTags.map((tag) => {
+                const active = selectedTagIds.includes(tag.id)
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => onTagToggle(tag.id)}
+                    className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Badge variant={active ? 'default' : 'outline'} className="cursor-pointer text-xs transition-colors">
+                      {tag.name}
+                    </Badge>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      <Separator />
+
+      <div className="flex gap-2">
+        <Button size="sm" className="flex-1" disabled={isLoading} onClick={onApply}>
+          {t('filter.apply')}
+        </Button>
+        <Button variant="outline" size="sm" disabled={isLoading} onClick={onReset}>
+          {t('filter.reset')}
+        </Button>
+      </div>
     </aside>
   )
 }

@@ -317,12 +317,36 @@
     "attemptCount": "Attempt count",
     "catalog": {
       "subtitle": "Browse published quizzes and start a practice session",
-      "searchPlaceholder": "Search quizzes..."
+      "searchPlaceholder": "Search quizzes...",
+      "pageOf": "Page {page} of {total}",
+      "previous": "Previous",
+      "next": "Next"
     },
     "detail": {
       "backToCatalog": "Back to quizzes",
       "startSession": "Start quiz session",
       "noProgress": "Not attempted yet"
+    },
+    "config": {
+      "title": "Practice settings",
+      "loading": "Loading settings...",
+      "randomQuestion": "Shuffle question order",
+      "randomOption": "Shuffle answer options",
+      "immediateFeedback": "Show result after each question",
+      "questionFilter": "Questions to practice",
+      "filter": {
+        "all": "All questions",
+        "unsolved": "Only not-yet-correct",
+        "solved": "Only already-correct (revision)"
+      },
+      "totalQuestions": "Number of questions",
+      "totalQuestionsHint": "0 = all questions",
+      "timeLimit": "Time limit (seconds)",
+      "timeLimitHint": "0 = no limit",
+      "save": "Save settings",
+      "saving": "Saving...",
+      "saved": "Settings saved",
+      "saveFailed": "Failed to save settings."
     },
     "labels": {
       "timeLimit": "Time limit",
@@ -344,7 +368,15 @@
       "timeLimitAny": "Any",
       "timeLimit15": "≤ 15 min",
       "timeLimit30": "≤ 30 min",
-      "timeLimitNone": "No limit"
+      "timeLimitNone": "No limit",
+      "search": "Search",
+      "searchPlaceholder": "Search quizzes...",
+      "solved": "Solved",
+      "solvedAll": "All",
+      "solvedYes": "Solved",
+      "solvedNo": "Unsolved",
+      "category": "Category",
+      "apply": "Apply"
     },
     "empty": {
       "noQuizzes": "No quizzes available.",
@@ -375,6 +407,12 @@
         "backToDetail": "Back to quiz",
         "tryAgain": "Try again"
       }
+    },
+    "explorer": {
+      "root": "Root",
+      "emptyFolder": "This folder is empty.",
+      "foldersHeading": "Folders",
+      "quizzesHeading": "Quizzes"
     }
   },
   "notifications": {
@@ -706,7 +744,9 @@
       "published": "Published",
       "archived": "Archived",
       "saving": "Saving...",
-      "saveSuccess": "Saved successfully."
+      "saveSuccess": "Saved successfully.",
+      "loadingTree": "Loading...",
+      "saved": "Saved."
     },
     "columns": {
       "title": "Title",
@@ -730,9 +770,13 @@
       "descriptionPlaceholder": "brief summary for this quiz",
       "statusLabel": "Status",
       "quizPointLabel": "Quiz points",
+      "quizPointHint": "Computed automatically as the sum of question scores.",
       "timeLimitLabel": "Time limit (seconds)",
       "timeLimitHint": "Use 0 for no time limit.",
-      "categoryTagInlineHint": "Category/Tag inline management is enabled when backend category-tag contracts are available."
+      "categoryTagInlineHint": "Category/Tag inline management is enabled when backend category-tag contracts are available.",
+      "categoryLabel": "Category",
+      "categoryNone": "No category",
+      "tagsLabel": "Tags"
     },
     "questions": {
       "title": "Question manager",
@@ -801,7 +845,8 @@
     },
     "empty": {
       "noResults": "No quizzes found.",
-      "noQuizSelected": "Quiz not found or unavailable."
+      "noQuizSelected": "Quiz not found or unavailable.",
+      "noTags": "No tags available yet."
     },
     "errors": {
       "unauthenticated": "Authentication is required.",
@@ -817,7 +862,84 @@
       "questionCreateFailed": "Failed to create question.",
       "questionUpdateFailed": "Failed to update question.",
       "questionDeleteFailed": "Failed to delete question.",
-      "reorderFailed": "Failed to reorder questions."
+      "reorderFailed": "Failed to reorder questions.",
+      "loadTreeFailed": "Failed to load the quiz tree.",
+      "loadTaxonomyFailed": "Failed to load categories/tags.",
+      "createFolderFailed": "Failed to create folder.",
+      "createNodeFailed": "Failed to create quiz.",
+      "moveNodeFailed": "Failed to move item.",
+      "deleteNodeFailed": "Failed to delete item.",
+      "createCategoryFailed": "Failed to create category.",
+      "updateCategoryFailed": "Failed to update category.",
+      "deleteCategoryFailed": "Failed to delete category.",
+      "createTagFailed": "Failed to create tag.",
+      "updateTagFailed": "Failed to update tag.",
+      "deleteTagFailed": "Failed to delete tag."
+    },
+    "tabs": {
+      "metadata": "Metadata",
+      "questions": "Questions"
+    },
+    "navigation": {
+      "backToExplorer": "Back to quiz explorer"
+    },
+    "taxonomy": {
+      "manageCategories": "Manage categories",
+      "manageTags": "Manage tags",
+      "categoryTitle": "Quiz categories",
+      "tagTitle": "Quiz tags",
+      "categoryDescription": "Create and manage quiz categories.",
+      "tagDescription": "Create and manage quiz tags.",
+      "createTitle": "Create",
+      "namePlaceholder": "Name",
+      "descriptionPlaceholder": "Description (optional)",
+      "columnName": "Name",
+      "columnDescription": "Description",
+      "emptyCategories": "No categories yet.",
+      "emptyTags": "No tags yet.",
+      "deleteConfirmTitle": "Delete item",
+      "deleteConfirmDescription": "Delete \"{name}\"? This cannot be undone."
+    },
+    "explorer": {
+      "root": "Root",
+      "back": "Back",
+      "newItem": "New",
+      "openFolder": "Open",
+      "createTitle": "Create item",
+      "createUnder": "Create inside: {parent}",
+      "kindLabel": "Type",
+      "kindFolder": "Folder",
+      "kindQuiz": "Quiz",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter a title",
+      "createQuizHint": "A draft quiz is created and you are taken straight to the editor.",
+      "searchPlaceholder": "Filter in this folder...",
+      "filterKindAll": "All types",
+      "filterKindFolder": "Folders",
+      "filterKindQuiz": "Quizzes",
+      "filterStatusAll": "All statuses",
+      "filterStatusDraft": "Draft",
+      "filterStatusPublished": "Published",
+      "emptyFolder": "This folder is empty.",
+      "noFilterMatch": "No items match the filter.",
+      "selectedCount": "{count} selected",
+      "moveSelected": "Move",
+      "deleteSelected": "Delete",
+      "clearSelection": "Clear",
+      "moveTitle": "Move items",
+      "moveDescription": "Choose a destination folder for {count} item(s).",
+      "moveDestination": "Destination: {destination}",
+      "moveHere": "Move here",
+      "noSubfolders": "No subfolders.",
+      "deleteConfirmTitle": "Delete selection",
+      "deleteConfirmDescription": "Delete {count} item(s)? This cannot be undone.",
+      "columns": {
+        "name": "Name",
+        "status": "Status",
+        "questions": "Questions",
+        "points": "Points",
+        "actions": "Actions"
+      }
     }
   },
   "adminNotifications": {

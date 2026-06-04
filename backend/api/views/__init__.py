@@ -25,7 +25,7 @@ from .courses import (
 from .leaderboard import LeaderboardViewSet
 from .notifications import AdminNotificationViewSet, NotificationViewSet
 from .permissions import PermissionViewSet
-from .quizzes import QuizNodeViewSet, QuizViewSet
+from .quizzes import QuizCategoryViewSet, QuizNodeViewSet, QuizTagViewSet, QuizViewSet
 from .roles import RoleViewSet
 from .system_config import SystemConfigViewSet
 from .users import UserViewSet
@@ -53,7 +53,9 @@ __all__ = [
     'AdminNotificationViewSet',
     'NotificationViewSet',
     'PermissionViewSet',
+    'QuizCategoryViewSet',
     'QuizNodeViewSet',
+    'QuizTagViewSet',
     'QuizViewSet',
     'RoleViewSet',
     'SystemConfigViewSet',

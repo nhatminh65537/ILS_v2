@@ -384,6 +384,7 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             'type': question.question_type,
             'content': question.content,
             'time_limit_sec': attempt.config.get('time_limit_sec', 0),
+            'immediate_feedback': attempt.config.get('immediate_feedback', True),
         }
 
         if question.question_type in ['single_choice', 'multi_choice']:
@@ -491,6 +492,8 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             'allow_review': config.allow_review,
             'allow_retry': config.allow_retry,
             'max_attempt': config.max_attempt,
+            'question_filter': config.question_filter,
+            'immediate_feedback': config.immediate_feedback,
         }
 
     @database_sync_to_async
@@ -513,13 +516,36 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def _get_attempt_questions(self, attempt: UserQuizAttempt):
-        """Get questions for this attempt (TASK-008 + TASK-010)."""
+        """Get questions for this attempt (TASK-008 + TASK-010).
+
+        Questions inherit visibility from the parent Quiz's status — there is no
+        per-question publish lifecycle (BUG fix: previously filtered on
+        ``status='published'`` which is always ``draft`` by default, yielding an
+        empty set and an instant finish).
+
+        Applies the per-user config snapshot:
+          - ``question_filter``: all / unsolved / solved relative to the user's
+            historically-correct questions for this quiz (across all attempts).
+          - ``random_question``: shuffle order.
+          - ``total_questions``: cap to first N after filtering/shuffling.
+        """
         questions = list(
-            QuizQuestion.objects.filter(
-                quiz=attempt.quiz,
-                status='published',
-            ).order_by('position', 'id')
+            QuizQuestion.objects.filter(quiz=attempt.quiz).order_by('position', 'id')
         )
+
+        question_filter = (attempt.config.get('question_filter') or 'all').strip().lower()
+        if question_filter in {'unsolved', 'solved'}:
+            solved_ids = set(
+                UserQuizAnswer.objects.filter(
+                    attempt__quiz=attempt.quiz,
+                    attempt__user_id=attempt.user_id,
+                    score_obtained__gt=0,
+                ).values_list('question_id', flat=True)
+            )
+            if question_filter == 'unsolved':
+                questions = [q for q in questions if q.id not in solved_ids]
+            else:
+                questions = [q for q in questions if q.id in solved_ids]
 
         if attempt.config.get('random_question'):
             random.shuffle(questions)

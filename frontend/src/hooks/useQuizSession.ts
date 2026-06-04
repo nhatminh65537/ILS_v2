@@ -20,6 +20,8 @@ interface SessionState {
   finishData: WsFinishEvent | null
   elapsedSec: number
   error: string | null
+  /** Mirror of the active question's immediate_feedback flag (defaults true). */
+  immediateFeedback: boolean
 }
 
 type SessionAction =
@@ -41,6 +43,7 @@ const initialState: SessionState = {
   finishData: null,
   elapsedSec: 0,
   error: null,
+  immediateFeedback: true,
 }
 
 function sessionReducer(state: SessionState, action: SessionAction): SessionState {
@@ -59,6 +62,7 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
         currentQuestion: action.question,
         progress: action.progress,
         answerResult: null,
+        immediateFeedback: action.question.immediate_feedback ?? true,
       }
     case 'ANSWER_RESULT':
       return {
@@ -156,10 +160,17 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
           break
 
         case 'answer_result':
-          dispatch({
-            type: 'ANSWER_RESULT',
-            result: msg as unknown as WsAnswerResultEvent,
-          })
+          // When the user disabled per-question feedback, skip the result card
+          // and advance immediately; the score is still recorded server-side and
+          // shown in the final summary.
+          if (stateRef.current.immediateFeedback === false) {
+            ws.send(JSON.stringify({ action: 'next' }))
+          } else {
+            dispatch({
+              type: 'ANSWER_RESULT',
+              result: msg as unknown as WsAnswerResultEvent,
+            })
+          }
           break
 
         case 'finish':

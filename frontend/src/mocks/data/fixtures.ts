@@ -7,7 +7,7 @@ import {
   type AdminBroadcastHistoryItem,
   type Notification,
 } from '@/types/notification.types'
-import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizQuestion, type QuizQuestionOption, type UserQuizProgress } from '@/types/quiz.types'
+import { ContentStatus as QuizStatus, QuestionType, type Quiz, type QuizCategory, type QuizNode, type QuizQuestion, type QuizQuestionOption, type QuizTag, type UserQuizProgress } from '@/types/quiz.types'
 import { type ActivityEvent, type AdminUserDto, type AuthSessionListItem, type User, type UserProfile } from '@/types/user.types'
 import type { AdminStatsOverviewDto, AdminStatsUserDetailDto } from '@/types/admin-stats.types'
 
@@ -466,12 +466,35 @@ export const challengeInstancesFixture: ChallengeInstance[] = [
 
 // ─── Quiz fixtures ────────────────────────────────────────────────────────────
 
+export const quizCategoriesFixture: QuizCategory[] = [
+  { id: 1, name: 'Web Security', description: 'Web security quizzes' },
+  { id: 2, name: 'Networking', description: 'Networking quizzes' },
+  { id: 3, name: 'Cryptography', description: 'Crypto quizzes' },
+  { id: 4, name: 'Cloud', description: 'Cloud security quizzes' },
+]
+
+export const quizTagsFixture: QuizTag[] = [
+  { id: 1, name: 'OWASP', description: 'OWASP-related' },
+  { id: 2, name: 'Beginner', description: 'Beginner friendly' },
+  { id: 3, name: 'Protocols', description: 'Network protocols' },
+  { id: 4, name: 'Hashing', description: 'Hashing and ciphers' },
+]
+
 export const quizzesFixture: Quiz[] = [
-  { id: 1, title: 'OWASP Basics Quiz', description: 'Quick OWASP check', status: QuizStatus.Published, quiz_point: 100, total_questions: 5, time_limit_sec: 900, updated_at: now },
-  { id: 2, title: 'Networking Essentials', description: 'Routing and protocols', status: QuizStatus.Published, quiz_point: 80, total_questions: 8, time_limit_sec: 1200, updated_at: now },
-  { id: 3, title: 'Crypto Warmup', description: 'Hashing and cipher basics', status: QuizStatus.Published, quiz_point: 60, total_questions: 4, time_limit_sec: 600, updated_at: now },
+  { id: 1, title: 'OWASP Basics Quiz', description: 'Quick OWASP check', status: QuizStatus.Published, category: 1, category_name: 'Web Security', tags: [{ id: 1, name: 'OWASP' }, { id: 2, name: 'Beginner' }], quiz_point: 100, total_questions: 5, time_limit_sec: 900, updated_at: now },
+  { id: 2, title: 'Networking Essentials', description: 'Routing and protocols', status: QuizStatus.Published, category: 2, category_name: 'Networking', tags: [{ id: 3, name: 'Protocols' }], quiz_point: 80, total_questions: 8, time_limit_sec: 1200, updated_at: now },
+  { id: 3, title: 'Crypto Warmup', description: 'Hashing and cipher basics', status: QuizStatus.Published, category: 3, category_name: 'Cryptography', tags: [{ id: 4, name: 'Hashing' }], quiz_point: 60, total_questions: 4, time_limit_sec: 600, updated_at: now },
   { id: 4, title: 'Forensics Basics', description: 'Evidence handling', status: QuizStatus.Draft, quiz_point: 120, total_questions: 10, time_limit_sec: 1200, updated_at: now },
-  { id: 5, title: 'Cloud Security Quiz', description: 'IAM and posture', status: QuizStatus.Published, quiz_point: 90, total_questions: 6, time_limit_sec: 1000, updated_at: now },
+  { id: 5, title: 'Cloud Security Quiz', description: 'IAM and posture', status: QuizStatus.Published, category: 4, category_name: 'Cloud', tags: [{ id: 2, name: 'Beginner' }], quiz_point: 90, total_questions: 6, time_limit_sec: 1000, updated_at: now },
+]
+
+export const quizNodesFixture: QuizNode[] = [
+  { id: 1, quiz: null, parent: null, path: '', position: 1, title: 'Web Security', is_item: false, has_children: true },
+  { id: 2, quiz: 1, parent: 1, path: '1', position: 1, title: 'OWASP Basics Quiz', is_item: true, has_children: false },
+  { id: 3, quiz: null, parent: null, path: '', position: 2, title: 'Networking', is_item: false, has_children: true },
+  { id: 4, quiz: 2, parent: 3, path: '3', position: 1, title: 'Networking Essentials', is_item: true, has_children: false },
+  { id: 5, quiz: 3, parent: null, path: '', position: 3, title: 'Crypto Warmup', is_item: true, has_children: false },
+  { id: 6, quiz: 5, parent: null, path: '', position: 4, title: 'Cloud Security Quiz', is_item: true, has_children: false },
 ]
 
 /**

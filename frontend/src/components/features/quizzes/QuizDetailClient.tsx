@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useQuizzes } from '@/hooks/useQuizzes'
 import { ContentStatus } from '@/types/quiz.types'
+import { QuizConfigForm } from './QuizConfigForm'
 
 type QuizDetailClientProps = {
   id: number
@@ -127,6 +128,10 @@ export function QuizDetailClient({ id, locale }: QuizDetailClientProps) {
           )}
         </CardContent>
       </Card>
+
+      {selectedQuiz.status === ContentStatus.Published ? (
+        <QuizConfigForm quizId={id} />
+      ) : null}
 
       <div>
         <Button asChild>

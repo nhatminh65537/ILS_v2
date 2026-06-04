@@ -140,6 +140,38 @@ async def test_start_empty_quiz_finishes_immediately():
     await communicator.disconnect()
 
 
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_draft_status_question_is_served():
+    """REGRESSION: questions default to status='draft' and were never published
+    by the editor UI. The consumer must serve them as long as the parent Quiz is
+    published (it no longer filters on question status). Previously this yielded
+    an empty set -> instant finish."""
+    user = await _create_user('dave', 'dave@example.com')
+    quiz = await _create_quiz('Quiz With Draft Q')
+
+    # Question left at the default 'draft' status (no status kwarg).
+    q = await _create_question(quiz, status='draft')
+
+    tokens = await database_sync_to_async(RefreshToken.for_user)(user)
+    access_token = str(tokens.access_token)
+
+    communicator = WebsocketCommunicator(_get_consumer_asgi(), f"/ws/quiz/{quiz.id}/")
+    await communicator.connect()
+
+    await communicator.send_json_to({"type": "auth", "token": access_token})
+    auth_resp = await communicator.receive_json_from()
+    assert auth_resp['type'] == 'auth_ok'
+
+    await communicator.send_json_to({"action": "start"})
+    resp = await communicator.receive_json_from()
+    # Must be a question, NOT an instant finish.
+    assert resp['type'] == 'question'
+    assert resp['question']['id'] == q.id
+
+    await communicator.disconnect()
+
+
 def _get_consumer_asgi():
     """Get ASGI application for consumer."""
     from realtime.consumers import QuizConsumer
@@ -159,14 +191,14 @@ def _create_quiz(title):
 
 
 @database_sync_to_async
-def _create_question(quiz):
+def _create_question(quiz, status='published'):
     question = QuizQuestion.objects.create(
         quiz=quiz,
         question_type='single_choice',
         content={'text': 'What?'},
         score=10,
         position=1,
-        status='published',
+        status=status,
     )
     QuizQuestionOption.objects.create(
         question=question,

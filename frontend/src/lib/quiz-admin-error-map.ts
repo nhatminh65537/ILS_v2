@@ -32,23 +32,34 @@ const extractErrorText = (error: unknown): string => {
   return ''
 }
 
+/**
+ * Returns a translation key relative to the `adminQuizzes` namespace.
+ * Consumers translate it with a translator scoped to `adminQuizzes`
+ * (e.g. `useTranslations('adminQuizzes')`), so keys must NOT be prefixed
+ * with `adminQuizzes.` or they resolve to a double namespace.
+ * The `fallbackKey` passed in must likewise be relative (e.g. `errors.createFailed`).
+ */
 export const mapQuizAdminErrorToMessageKey = (error: unknown, fallbackKey: string): string => {
   const text = extractErrorText(error)
 
   if (containsText(text, 'not authenticated') || containsText(text, 'authentication credentials')) {
-    return 'adminQuizzes.errors.unauthenticated'
+    return 'errors.unauthenticated'
   }
 
   if (containsText(text, 'permission denied') || containsText(text, 'forbidden')) {
-    return 'adminQuizzes.errors.forbidden'
+    return 'errors.forbidden'
   }
 
   if (containsText(text, 'not found')) {
-    return 'adminQuizzes.errors.notFound'
+    return 'errors.notFound'
   }
 
-  if (containsText(text, 'required')) {
-    return 'adminQuizzes.errors.validation'
+  if (containsText(text, 'cycle')) {
+    return 'errors.moveNodeFailed'
+  }
+
+  if (containsText(text, 'required') || containsText(text, 'invalid')) {
+    return 'errors.validation'
   }
 
   return fallbackKey

@@ -20,6 +20,7 @@ function buildSessionQuestion(q: (typeof quizQuestionsFixture)[number], position
       type: q.question_type,
       content: q.content,
       time_limit_sec: undefined,
+      immediate_feedback: true,
       options: q.options?.map((o) => ({ id: o.id, content: o.content, position: o.position })),
     },
     progress: { current: position, total },

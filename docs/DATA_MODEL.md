@@ -751,6 +751,8 @@ Per-user per-quiz attempt configuration (persisted, reusable).
 | `time_limit_sec` | INT | nullable |
 | `random_question` | BOOLEAN | DEFAULT TRUE |
 | `random_option` | BOOLEAN | DEFAULT TRUE |
+| `question_filter` | VARCHAR(20) | DEFAULT `'all'` — one of `all` / `unsolved` / `solved` |
+| `immediate_feedback` | BOOLEAN | DEFAULT TRUE |
 | `allow_review` | BOOLEAN | DEFAULT TRUE |
 | `allow_retry` | BOOLEAN | DEFAULT TRUE |
 | `max_attempt` | INT | nullable — NULL = unlimited |
@@ -759,7 +761,23 @@ Per-user per-quiz attempt configuration (persisted, reusable).
 | | | UNIQUE (`quiz_id`, `user_id`) |
 | *(audit fields)* | | |
 
-**Business rule:** One config per (user, quiz). Config is saved across sessions.
+**Business rule:** One config per (user, quiz). Config is saved across sessions and
+snapshotted into `user_quiz_attempt.config` when a session starts.
+
+- `question_filter`: `all` = every question; `unsolved` = only questions the user has
+  never answered correctly; `solved` = only already-correct questions (revision mode).
+  "Solved" is computed from `user_quiz_answer.score_obtained > 0` across all attempts.
+- `immediate_feedback`: when TRUE the WS session reveals correctness after each answer;
+  when FALSE the client auto-advances and shows results only at the finish screen.
+
+**Point/completion model (revised):**
+- `quiz.quiz_point` is **derived** = `SUM(quiz_question.score)` (kept in sync by a
+  `QuizQuestion` post_save/post_delete signal). It is read-only in the API.
+- `user_quiz_progress.completed_at` is set when the user has historically answered
+  **100%** of the quiz's current questions correctly (max score), not "best single score".
+- `user_profile.total_quiz_point` = sum of current scores of every question the user has
+  ever answered correctly, across all quizzes (each question counts once — re-solving adds
+  nothing, a later wrong answer never subtracts). Recomputed absolutely on each finish.
 
 ---
 

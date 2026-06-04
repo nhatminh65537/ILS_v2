@@ -1,13 +1,15 @@
 """Django signals for denormalized progress updates."""
 
 import logging
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from django.db.models import Max, F
+from django.db.models import Max
 
 from .models import (
     CourseNode,
     Notification,
+    Quiz,
+    QuizQuestion,
     UserChallengeProgress,
     UserLessonProgress,
     UserProfile,
@@ -16,8 +18,36 @@ from .models import (
 )
 from .services.learn_progress_service import LearnProgressService
 from .services.notification_service import NotificationService
+from .services.quiz_service import QuizService
 
 logger = logging.getLogger(__name__)
+
+
+def _sync_quiz_aggregates(quiz_id):
+    """Keep a quiz's denormalized ``total_questions`` + ``quiz_point`` in sync.
+
+    ``quiz_point`` is the maximum achievable score (sum of question scores), so it
+    must be recomputed whenever a question is added, edited (score change), or
+    deleted. ``total_questions`` mirrors the question count.
+    """
+    try:
+        quiz = Quiz.objects.get(id=quiz_id)
+    except Quiz.DoesNotExist:
+        return
+    QuizService.sync_total_questions(quiz)
+    QuizService.sync_quiz_point(quiz)
+
+
+@receiver(post_save, sender=QuizQuestion)
+def handle_quiz_question_saved(sender, instance, **kwargs):
+    """Resync parent quiz aggregates when a question is created/updated."""
+    _sync_quiz_aggregates(instance.quiz_id)
+
+
+@receiver(post_delete, sender=QuizQuestion)
+def handle_quiz_question_deleted(sender, instance, **kwargs):
+    """Resync parent quiz aggregates when a question is deleted."""
+    _sync_quiz_aggregates(instance.quiz_id)
 
 
 @receiver(post_save, sender=UserChallengeProgress)
@@ -178,17 +208,18 @@ def handle_quiz_attempt_finished(sender, instance, created, **kwargs):
         
         # Compute last_attempted_at: current attempt's started_at (most recent)
         last_attempted_at = instance.started_at
-        
-        # Compute completed_at: set only when perfect score achieved
-        # If best_score == quiz.quiz_point and not yet marked complete, set it
-        # If best_score < quiz.quiz_point but previously marked complete, clear it
-        if best_score >= instance.quiz.quiz_point and not progress.completed_at:
-            completed_at = instance.finished_at  # Use finish time as completion marker
-        elif best_score < instance.quiz.quiz_point and progress.completed_at:
-            completed_at = None  # Clear completion if score drops below perfect
+
+        # Completion = the user has historically answered 100% of the quiz's
+        # questions correctly (max score), not "best single-attempt score". This
+        # matches the cumulative point model where each question counts once.
+        is_completed = QuizService.is_quiz_completed(instance.quiz, instance.user)
+        if is_completed and not progress.completed_at:
+            completed_at = instance.finished_at  # mark first 100% moment
+        elif not is_completed and progress.completed_at:
+            completed_at = None  # questions added since → no longer 100%
         else:
-            completed_at = progress.completed_at  # Keep existing completion status
-        
+            completed_at = progress.completed_at  # keep existing status
+
         # Update progress record with computed values
         progress.best_score = best_score
         progress.attempt_count = attempt_count
@@ -197,15 +228,14 @@ def handle_quiz_attempt_finished(sender, instance, created, **kwargs):
         progress.completed_at = completed_at
         progress.save()
 
-        # Sync UserProfile counters only on first completion transition.
-        if previous_completed_at is None and completed_at is not None:
-            profile, _ = UserProfile.objects.get_or_create(user=instance.user)
-            quiz_point = instance.quiz.quiz_point or 0
-            UserProfile.objects.filter(pk=profile.pk).update(
-                quiz_completed=F('quiz_completed') + 1,
-                total_quiz_point=F('total_quiz_point') + quiz_point,
-            )
+        # Recompute cumulative profile points absolutely (idempotent, no
+        # double-count): total = sum of current scores of every question the user
+        # has ever answered correctly, across all quizzes.
+        QuizService.recompute_user_quiz_points(instance.user)
 
+        # Notify only on the first completion transition for this quiz.
+        if previous_completed_at is None and completed_at is not None:
+            quiz_point = QuizService.earned_quiz_point(instance.quiz, instance.user)
             _, created_notification = NotificationService.create_notification(
                 user=instance.user,
                 type=Notification.NotificationType.QUIZ,

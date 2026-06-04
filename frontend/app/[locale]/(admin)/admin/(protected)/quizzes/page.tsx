@@ -1,4 +1,4 @@
-import { AdminQuizListPageClient } from '@/components/features/quizzes/AdminQuizListPageClient'
+import { AdminQuizExplorerClient } from '@/components/features/quizzes/admin/AdminQuizExplorerClient'
 
 type AdminQuizzesPageProps = {
   params: Promise<{ locale: string }>
@@ -6,5 +6,5 @@ type AdminQuizzesPageProps = {
 
 export default async function AdminQuizzesPage({ params }: AdminQuizzesPageProps) {
   const { locale } = await params
-  return <AdminQuizListPageClient locale={locale} />
+  return <AdminQuizExplorerClient locale={locale} />
 }

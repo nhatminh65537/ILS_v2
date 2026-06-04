@@ -24,7 +24,9 @@ from .views import (
     ChallengeInstanceAdminView,
     ChallengeInstanceKillView,
     ChallengeProgressView,
+    QuizCategoryViewSet,
     QuizNodeViewSet,
+    QuizTagViewSet,
     QuizViewSet,
     NotificationViewSet,
     LeaderboardViewSet,
@@ -184,9 +186,39 @@ urlpatterns = [
         name='quiz-config',
     ),
     re_path(
+        r'^quiz/categories/$',
+        QuizCategoryViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='quiz-category-list',
+    ),
+    re_path(
+        r'^quiz/categories/(?P<pk>\d+)/$',
+        QuizCategoryViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='quiz-category-detail',
+    ),
+    re_path(
+        r'^quiz/tags/$',
+        QuizTagViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='quiz-tag-list',
+    ),
+    re_path(
+        r'^quiz/tags/(?P<pk>\d+)/$',
+        QuizTagViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='quiz-tag-detail',
+    ),
+    re_path(
         r'^quiz/nodes/$',
         QuizNodeViewSet.as_view({'get': 'list', 'post': 'create'}),
         name='quiz-node-list',
+    ),
+    re_path(
+        r'^quiz/nodes/explorer/$',
+        QuizNodeViewSet.as_view({'get': 'explorer_root'}),
+        name='quiz-node-explorer-root',
+    ),
+    re_path(
+        r'^quiz/nodes/(?P<pk>\d+)/explorer/$',
+        QuizNodeViewSet.as_view({'get': 'explorer_folder'}),
+        name='quiz-node-explorer-folder',
     ),
     re_path(
         r'^quiz/nodes/(?P<pk>\d+)/$',

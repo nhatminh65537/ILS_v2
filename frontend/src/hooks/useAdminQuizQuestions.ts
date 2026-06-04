@@ -75,7 +75,7 @@ export const useAdminQuizQuestions = () => {
       setQuestionsState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.questionsLoadFailed'),
+        errorMessageKey: mapQuizAdminErrorToMessageKey(error, 'errors.questionsLoadFailed'),
       }))
     }
   }, [])
@@ -92,7 +92,7 @@ export const useAdminQuizQuestions = () => {
       await loadQuestions(quizId)
       return true
     } catch (error) {
-      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.questionCreateFailed'))
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'errors.questionCreateFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -112,7 +112,7 @@ export const useAdminQuizQuestions = () => {
       await loadQuestions(quizId)
       return true
     } catch (error) {
-      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.questionUpdateFailed'))
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'errors.questionUpdateFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -128,7 +128,7 @@ export const useAdminQuizQuestions = () => {
       await loadQuestions(quizId)
       return true
     } catch (error) {
-      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.questionDeleteFailed'))
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'errors.questionDeleteFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -163,7 +163,7 @@ export const useAdminQuizQuestions = () => {
       await loadQuestions(quizId)
       return true
     } catch (error) {
-      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.reorderFailed'))
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'errors.reorderFailed'))
       return false
     } finally {
       setIsMutating(false)

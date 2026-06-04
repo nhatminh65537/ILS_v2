@@ -5,12 +5,28 @@ import { useRef } from 'react'
 import { mapQuizAdminErrorToMessageKey } from '@/lib/quiz-admin-error-map'
 import {
   createAdminQuiz,
+  createQuizCategory,
+  createQuizTag,
   deleteAdminQuiz,
+  deleteQuizCategory,
+  deleteQuizTag,
   getQuizById,
   listAdminQuizzes,
+  listQuizCategories,
+  listQuizTags,
   updateAdminQuiz,
+  updateQuizCategory,
+  updateQuizTag,
 } from '@/services/quizzes.service'
-import type { AdminQuizListParams, AdminQuizMutationPayload, Quiz } from '@/types/quiz.types'
+import type {
+  AdminQuizListParams,
+  AdminQuizMutationPayload,
+  Quiz,
+  QuizCategory,
+  QuizCategoryMutationPayload,
+  QuizTag,
+  QuizTagMutationPayload,
+} from '@/types/quiz.types'
 
 const PAGE_SIZE = 20
 
@@ -34,6 +50,13 @@ interface QuizPagination {
   hasPrevious: boolean
 }
 
+interface QuizTaxonomyState {
+  categories: QuizCategory[]
+  tags: QuizTag[]
+  isLoading: boolean
+  errorMessageKey: string | null
+}
+
 const EMPTY_LIST_STATE: QuizListState = {
   data: [],
   isLoading: false,
@@ -54,10 +77,18 @@ const EMPTY_PAGINATION: QuizPagination = {
   hasPrevious: false,
 }
 
+const EMPTY_TAXONOMY_STATE: QuizTaxonomyState = {
+  categories: [],
+  tags: [],
+  isLoading: false,
+  errorMessageKey: null,
+}
+
 export const useAdminQuizzes = () => {
   const [listState, setListState] = useState<QuizListState>(EMPTY_LIST_STATE)
   const [detailState, setDetailState] = useState<QuizDetailState>(EMPTY_DETAIL_STATE)
   const [paginationState, setPaginationState] = useState<QuizPagination>(EMPTY_PAGINATION)
+  const [taxonomyState, setTaxonomyState] = useState<QuizTaxonomyState>(EMPTY_TAXONOMY_STATE)
   const [, setActiveParams] = useState<AdminQuizListParams>({})
   const activeParamsRef = useRef<AdminQuizListParams>({})
   const [isMutating, setIsMutating] = useState(false)
@@ -89,7 +120,7 @@ export const useAdminQuizzes = () => {
       setListState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.loadFailed'),
+        errorMessageKey: mapQuizAdminErrorToMessageKey(error, 'errors.loadFailed'),
       }))
     }
   }, [])
@@ -109,7 +140,7 @@ export const useAdminQuizzes = () => {
       setDetailState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.detailLoadFailed'),
+        errorMessageKey: mapQuizAdminErrorToMessageKey(error, 'errors.detailLoadFailed'),
       }))
     }
   }, [])
@@ -123,7 +154,7 @@ export const useAdminQuizzes = () => {
       await loadList({ ...activeParamsRef.current })
       return created
     } catch (error) {
-      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.createFailed'))
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'errors.createFailed'))
       return null
     } finally {
       setIsMutating(false)
@@ -143,7 +174,7 @@ export const useAdminQuizzes = () => {
       await loadList({ ...activeParamsRef.current })
       return true
     } catch (error) {
-      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.updateFailed'))
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'errors.updateFailed'))
       return false
     } finally {
       setIsMutating(false)
@@ -159,24 +190,99 @@ export const useAdminQuizzes = () => {
       await loadList({ ...activeParamsRef.current })
       return true
     } catch (error) {
-      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'adminQuizzes.errors.deleteFailed'))
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, 'errors.deleteFailed'))
       return false
     } finally {
       setIsMutating(false)
     }
   }, [loadList])
 
+  // ── Taxonomy (categories + tags) ────────────────────────────────────────────
+
+  const loadTaxonomies = useCallback(async () => {
+    setTaxonomyState((s) => ({ ...s, isLoading: true, errorMessageKey: null }))
+
+    try {
+      const [categories, tags] = await Promise.all([listQuizCategories(), listQuizTags()])
+      setTaxonomyState({ categories, tags, isLoading: false, errorMessageKey: null })
+    } catch (error) {
+      setTaxonomyState((s) => ({
+        ...s,
+        isLoading: false,
+        errorMessageKey: mapQuizAdminErrorToMessageKey(error, 'errors.loadTaxonomyFailed'),
+      }))
+    }
+  }, [])
+
+  const runMutation = useCallback(async <T>(fn: () => Promise<T>, fallbackKey: string): Promise<T | null> => {
+    setIsMutating(true)
+    setMutationErrorKey(null)
+
+    try {
+      return await fn()
+    } catch (error) {
+      setMutationErrorKey(mapQuizAdminErrorToMessageKey(error, fallbackKey))
+      return null
+    } finally {
+      setIsMutating(false)
+    }
+  }, [])
+
+  const submitCreateCategory = useCallback(async (payload: QuizCategoryMutationPayload): Promise<boolean> => {
+    const ok = await runMutation(() => createQuizCategory(payload), 'errors.createCategoryFailed')
+    if (ok) await loadTaxonomies()
+    return Boolean(ok)
+  }, [loadTaxonomies, runMutation])
+
+  const submitUpdateCategory = useCallback(async (id: number, payload: QuizCategoryMutationPayload): Promise<boolean> => {
+    const ok = await runMutation(() => updateQuizCategory(id, payload), 'errors.updateCategoryFailed')
+    if (ok) await loadTaxonomies()
+    return Boolean(ok)
+  }, [loadTaxonomies, runMutation])
+
+  const submitDeleteCategory = useCallback(async (id: number): Promise<boolean> => {
+    const ok = await runMutation(async () => { await deleteQuizCategory(id) }, 'errors.deleteCategoryFailed')
+    if (ok !== null) await loadTaxonomies()
+    return ok !== null
+  }, [loadTaxonomies, runMutation])
+
+  const submitCreateTag = useCallback(async (payload: QuizTagMutationPayload): Promise<boolean> => {
+    const ok = await runMutation(() => createQuizTag(payload), 'errors.createTagFailed')
+    if (ok) await loadTaxonomies()
+    return Boolean(ok)
+  }, [loadTaxonomies, runMutation])
+
+  const submitUpdateTag = useCallback(async (id: number, payload: QuizTagMutationPayload): Promise<boolean> => {
+    const ok = await runMutation(() => updateQuizTag(id, payload), 'errors.updateTagFailed')
+    if (ok) await loadTaxonomies()
+    return Boolean(ok)
+  }, [loadTaxonomies, runMutation])
+
+  const submitDeleteTag = useCallback(async (id: number): Promise<boolean> => {
+    const ok = await runMutation(async () => { await deleteQuizTag(id) }, 'errors.deleteTagFailed')
+    if (ok !== null) await loadTaxonomies()
+    return ok !== null
+  }, [loadTaxonomies, runMutation])
+
   return {
     listState,
     detailState,
     paginationState,
+    taxonomyState,
     isMutating,
     mutationErrorKey,
     loadList,
     loadPage,
     loadDetail,
+    loadTaxonomies,
     submitCreate,
     submitUpdate,
     submitDelete,
+    submitCreateCategory,
+    submitUpdateCategory,
+    submitDeleteCategory,
+    submitCreateTag,
+    submitUpdateTag,
+    submitDeleteTag,
   }
 }

@@ -6,6 +6,15 @@ from api.models import Quiz, QuizCategory, QuizConfig, QuizNode, QuizQuestion, Q
 class QuizCategorySerializer(serializers.ModelSerializer):
     """Quiz category serializer"""
 
+    def validate_name(self, value):
+        normalized = value.strip()
+        queryset = QuizCategory.objects.filter(name__iexact=normalized)
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+        if queryset.exists():
+            raise serializers.ValidationError('Category name already exists.')
+        return normalized
+
     class Meta:
         model = QuizCategory
         fields = ['id', 'name', 'description']
@@ -14,51 +23,46 @@ class QuizCategorySerializer(serializers.ModelSerializer):
 class QuizTagSerializer(serializers.ModelSerializer):
     """Quiz tag serializer"""
 
+    def validate_name(self, value):
+        normalized = value.strip()
+        queryset = QuizTag.objects.filter(name__iexact=normalized)
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+        if queryset.exists():
+            raise serializers.ValidationError('Tag name already exists.')
+        return normalized
+
     class Meta:
         model = QuizTag
         fields = ['id', 'name', 'description']
 
 
 class QuizNodeSerializer(serializers.ModelSerializer):
-    """Quiz node serializer for tree CRUD endpoints (folder-only in MVP)."""
+    """Quiz node serializer for tree CRUD endpoints (folders + quiz items)."""
 
     has_children = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = QuizNode
         fields = ['id', 'parent', 'is_item', 'title', 'position', 'path', 'quiz', 'has_children']
-        read_only_fields = ['id', 'path', 'has_children']
-
-    def validate_is_item(self, value):
-        if value:
-            raise serializers.ValidationError('QuizNode item mode is not supported in MVP. Use folder nodes only.')
-        return value
-
-    def validate_quiz(self, value):
-        if value is not None:
-            raise serializers.ValidationError('Quiz linkage is not supported in Task 7.2. Use folder nodes only.')
-        return value
+        read_only_fields = ['id', 'path', 'quiz', 'has_children']
 
     def validate(self, attrs):
-        parent = attrs.get('parent')
         instance = getattr(self, 'instance', None)
+        parent = attrs.get('parent', instance.parent if instance else None)
 
         if parent and instance and parent.id == instance.id:
             raise serializers.ValidationError({'parent': 'Node cannot be parent of itself.'})
 
-        return attrs
+        if parent and parent.is_item:
+            raise serializers.ValidationError({'parent': 'Item nodes cannot have children.'})
 
-    def create(self, validated_data):
-        validated_data['is_item'] = False
-        validated_data['quiz'] = None
-        node = super().create(validated_data)
-        node.rebuild_path()
-        return node
+        return attrs
 
     def update(self, instance, validated_data):
         new_parent = validated_data.pop('parent', instance.parent)
-        validated_data['is_item'] = False
-        validated_data['quiz'] = None
+        # is_item / quiz linkage are immutable after creation (set by the service).
+        validated_data.pop('is_item', None)
 
         for key, value in validated_data.items():
             setattr(instance, key, value)
@@ -73,6 +77,56 @@ class QuizNodeSerializer(serializers.ModelSerializer):
 
     def get_has_children(self, obj):
         return obj.children.exists()
+
+
+class QuizNodeWriteSerializer(serializers.Serializer):
+    """Write serializer for atomic quiz node creation.
+
+    For folders (``is_item=false``) only ``title`` + ``parent_id`` are used.
+    For items (``is_item=true``) the backend auto-creates a draft Quiz from
+    ``title``; the client never supplies ``quiz`` or ``position``.
+    """
+
+    title = serializers.CharField()
+    parent_id = serializers.IntegerField(required=False, allow_null=True)
+    is_item = serializers.BooleanField(required=False, default=False)
+
+    def validate_title(self, value):
+        normalized = (value or '').strip()
+        if not normalized:
+            raise serializers.ValidationError('title is required.')
+        return normalized
+
+
+class QuizExplorerSerializer(serializers.ModelSerializer):
+    """Node serializer for the user/admin file-explorer (folders + quiz items)."""
+
+    quiz = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuizNode
+        fields = ['id', 'is_item', 'title', 'path', 'quiz']
+        read_only_fields = fields
+
+    def get_quiz(self, obj):
+        if not obj.is_item or obj.quiz is None:
+            return None
+        quiz = obj.quiz
+        solved_ids = self.context.get('solved_ids') or set()
+        return {
+            'id': quiz.id,
+            'title': quiz.title,
+            'status': quiz.status,
+            'quiz_point': quiz.quiz_point,
+            'total_questions': quiz.total_questions,
+            'time_limit_sec': quiz.time_limit_sec,
+            'category_name': quiz.category.name if quiz.category else None,
+            'tags': QuizTagSerializer(
+                [tm.tag for tm in quiz.tag_mappings.all()],
+                many=True,
+            ).data,
+            'is_solved': quiz.id in solved_ids,
+        }
 
 
 class QuizQuestionOptionSerializer(serializers.ModelSerializer):
@@ -223,23 +277,8 @@ class QuizListSerializer(serializers.ModelSerializer):
     """Quiz list serializer"""
 
     tags = serializers.SerializerMethodField()
-    quiz_point = serializers.IntegerField(min_value=0, required=False)
-
-    class Meta:
-        model = Quiz
-        fields = ['id', 'title', 'description', 'status', 'tags', 'quiz_point', 'total_questions', 'time_limit_sec', 'updated_at']
-        read_only_fields = ['id', 'updated_at']
-
-    def get_tags(self, obj):
-        return QuizTagSerializer([tm.tag for tm in obj.tag_mappings.select_related('tag').all()], many=True).data
-
-
-class QuizDetailSerializer(serializers.ModelSerializer):
-    """Quiz detail serializer with questions"""
-
-    questions = QuizQuestionSerializer(many=True, read_only=True)
-    tags = serializers.SerializerMethodField()
-    category = QuizCategorySerializer(read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True, default=None)
+    is_solved = serializers.SerializerMethodField()
 
     class Meta:
         model = Quiz
@@ -249,17 +288,113 @@ class QuizDetailSerializer(serializers.ModelSerializer):
             'description',
             'status',
             'category',
+            'category_name',
             'tags',
+            'quiz_point',
+            'total_questions',
+            'time_limit_sec',
+            'is_solved',
+            'updated_at',
+        ]
+        # quiz_point is derived (sum of question scores) — never client-writable.
+        read_only_fields = ['id', 'quiz_point', 'updated_at']
+
+    def get_tags(self, obj):
+        return QuizTagSerializer([tm.tag for tm in obj.tag_mappings.select_related('tag').all()], many=True).data
+
+    def get_is_solved(self, obj):
+        # ``solved_ids`` is injected once by the view to avoid per-row queries.
+        solved_ids = self.context.get('solved_ids')
+        if solved_ids is None:
+            return False
+        return obj.id in solved_ids
+
+
+class QuizDetailSerializer(serializers.ModelSerializer):
+    """Quiz detail serializer with questions + taxonomy writes."""
+
+    questions = QuizQuestionSerializer(many=True, read_only=True)
+    tags = serializers.SerializerMethodField()
+    category = QuizCategorySerializer(read_only=True)
+    category_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
+    tag_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+        write_only=True,
+    )
+
+    class Meta:
+        model = Quiz
+        fields = [
+            'id',
+            'title',
+            'description',
+            'status',
+            'category',
+            'category_id',
+            'tags',
+            'tag_ids',
             'quiz_point',
             'total_questions',
             'time_limit_sec',
             'updated_at',
             'questions',
         ]
-        read_only_fields = ['id', 'updated_at']
+        # quiz_point is derived (sum of question scores) — never client-writable.
+        read_only_fields = ['id', 'quiz_point', 'total_questions', 'updated_at']
 
     def get_tags(self, obj):
         return QuizTagSerializer([tm.tag for tm in obj.tag_mappings.select_related('tag').all()], many=True).data
+
+    def validate_category_id(self, value):
+        if value is None:
+            return value
+        if not QuizCategory.objects.filter(id=value).exists():
+            raise serializers.ValidationError('Invalid category_id.')
+        return value
+
+    def validate_tag_ids(self, value):
+        tag_ids = sorted(set(value or []))
+        if not tag_ids:
+            return tag_ids
+        found_ids = set(QuizTag.objects.filter(id__in=tag_ids).values_list('id', flat=True))
+        missing = [tid for tid in tag_ids if tid not in found_ids]
+        if missing:
+            raise serializers.ValidationError(f'Invalid tag_ids: {missing}')
+        return tag_ids
+
+    def create(self, validated_data):
+        from api.services.quiz_service import QuizService
+
+        category_id = validated_data.pop('category_id', None)
+        tag_ids = validated_data.pop('tag_ids', [])
+
+        if category_id is not None:
+            validated_data['category'] = QuizCategory.objects.get(id=category_id)
+
+        quiz = Quiz.objects.create(**validated_data)
+        QuizService.upsert_quiz_tags(quiz, tag_ids)
+        return quiz
+
+    def update(self, instance, validated_data):
+        from api.services.quiz_service import QuizService
+
+        category_id = validated_data.pop('category_id', serializers.empty)
+        tag_ids = validated_data.pop('tag_ids', serializers.empty)
+
+        if category_id is not serializers.empty:
+            instance.category = (
+                QuizCategory.objects.get(id=category_id) if category_id else None
+            )
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+
+        if tag_ids is not serializers.empty:
+            QuizService.upsert_quiz_tags(instance, tag_ids)
+
+        return instance
 
 
 class QuizConfigSerializer(serializers.ModelSerializer):
@@ -275,6 +410,8 @@ class QuizConfigSerializer(serializers.ModelSerializer):
             'time_limit_sec',
             'random_question',
             'random_option',
+            'question_filter',
+            'immediate_feedback',
             'allow_review',
             'allow_retry',
             'max_attempt',
