@@ -254,7 +254,6 @@ export const adminChallengesHandlers = [
     if (!challenge) return notFound('Challenge not found')
     const payload = (await request.json()) as {
       flag_value: string
-      flag_type?: string
       is_regex?: boolean
       is_case_sensitive?: boolean
       random_tail_length?: number
@@ -264,7 +263,6 @@ export const adminChallengesHandlers = [
       id: challengeFlagsFixture.length + 1,
       challenge_id: challenge.id,
       flag_value: payload.flag_value,
-      flag_type: (payload.flag_type ?? (payload.is_regex ? 'regex' : 'static')) as 'static' | 'regex' | 'instance',
       is_regex: payload.is_regex ?? false,
       is_case_sensitive: payload.is_case_sensitive ?? true,
       random_tail_length: payload.random_tail_length ?? 0,

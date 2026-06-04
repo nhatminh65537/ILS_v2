@@ -376,9 +376,10 @@ Injecting a filter panel through the layout would require prop drilling (`params
 |---|---|---|---|---|---|---|---|
 | `/vi/admin/challenges` `/en/admin/challenges` | Challenge list (editor) | Yes (Admin/Editor) | `[locale]/(admin)/admin/(protected)` | `challenges.store` | `challenges.listChallenges` (all statuses) | 6 | implemented |
 | `/vi/admin/challenges/new` `/en/admin/challenges/new` | Create challenge | Yes (Admin/Editor) | `[locale]/(admin)/admin/(protected)` | `challenges.store` | `challenges.createChallenge`, `challenges.listCategories`, `challenges.listTags` | 6 | implemented |
-| `/vi/admin/challenges/[slug]` `/en/admin/challenges/[slug]` | Challenge editor | Yes (Admin/Editor) | `[locale]/(admin)/admin/(protected)` | `challenges.store` | `challenges.getChallenge`, `challenges.updateChallenge`, `challenges.getNodes`, `challenges.createNode`, `challenges.updateNode`, `challenges.moveNode`, `challenges.syncGitLab` | 6 | implemented |
-| `/vi/admin/challenges/[slug]/flags` `/en/admin/challenges/[slug]/flags` | Flag management | Yes (Admin/Editor) | `[locale]/(admin)/admin/(protected)` | `challenges.store` | `challenges.getFlags`, `challenges.createFlag`, `challenges.updateFlag`, `challenges.deleteFlag` | 6 | implemented |
+| `/vi/admin/challenges/[slug]` `/en/admin/challenges/[slug]` | Challenge editor (Metadata + Flags tabs) | Yes (Admin/Editor) | `[locale]/(admin)/admin/(protected)` | `challenges.store` | `challenges.getChallenge`, `challenges.updateChallenge`, `challenges.getNodes`, `challenges.createNode`, `challenges.updateNode`, `challenges.moveNode`, `challenges.syncGitLab`, `challenges.getFlags`, `challenges.createFlag`, `challenges.updateFlag`, `challenges.deleteFlag` | 6 | implemented |
 | `/vi/admin/challenges/instances` `/en/admin/challenges/instances` | Instance management | Yes (Admin) | `[locale]/(admin)/admin/(protected)` | `challenges.store` | `challenges.listInstances`, `challenges.killInstance` | 6 | implemented |
+
+> **Flags management** is an inline **tab** inside the Challenge editor (`/admin/challenges/[slug]`), not a separate route. (The former `/admin/challenges/[slug]/flags` route was merged into the editor for better UX.)
 
 ---
 
@@ -457,8 +458,7 @@ frontend/app/
             ├── challenges/
             │   ├── page.tsx                          ✅ implemented (Task 6.7)
             │   ├── new/page.tsx                      ✅ implemented (Task 6.7)
-            │   ├── [slug]/page.tsx                   ✅ implemented (Task 6.7)
-            │   ├── [slug]/flags/page.tsx             ✅ implemented (Task 6.7)
+            │   ├── [slug]/page.tsx                   ✅ implemented (Task 6.7; Flags is an inline tab)
             │   └── instances/page.tsx                ✅ implemented (Task 6.7)
             └── quizzes/
                 ├── page.tsx                          ✅ implemented (Task 7.7)

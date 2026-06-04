@@ -10,6 +10,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAdminChallengeExplorer } from '@/hooks/useAdminChallengeExplorer'
 import type { ChallengeExplorerNode } from '@/types/challenge.types'
@@ -45,11 +53,19 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [prevFolderId, setPrevFolderId] = useState(folderId)
 
-  // Reset the selection when navigating to a different folder (adjust state
-  // during render — the recommended alternative to a setState-in-effect).
+  // Lightweight client-side filters scoped to the current folder's nodes.
+  const [searchText, setSearchText] = useState('')
+  const [kindFilter, setKindFilter] = useState<'all' | 'folder' | 'challenge'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
+
+  // Reset the selection and filters when navigating to a different folder
+  // (adjust state during render — the recommended alternative to setState-in-effect).
   if (folderId !== prevFolderId) {
     setPrevFolderId(folderId)
     setSelectedIds(new Set())
+    setSearchText('')
+    setKindFilter('all')
+    setStatusFilter('all')
   }
 
   useEffect(() => {
@@ -75,6 +91,20 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
 
   const selectedArray = useMemo(() => [...selectedIds], [selectedIds])
   const parentLabel = state.folder?.title ?? t('explorer.root')
+
+  const filteredNodes = useMemo(() => {
+    const query = searchText.trim().toLowerCase()
+    return state.nodes.filter((node) => {
+      if (query && !node.title.toLowerCase().includes(query)) return false
+      if (kindFilter === 'folder' && node.is_item) return false
+      if (kindFilter === 'challenge' && !node.is_item) return false
+      if (statusFilter !== 'all') {
+        // Status only applies to challenge nodes; folders are excluded when filtering.
+        if (!node.challenge || node.challenge.status !== statusFilter) return false
+      }
+      return true
+    })
+  }, [state.nodes, searchText, kindFilter, statusFilter])
 
   const handleCreate = async (kind: 'folder' | 'challenge', title: string): Promise<boolean> => {
     if (kind === 'folder') {
@@ -177,9 +207,9 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
         </div>
       </div>
 
-      {/* Selection action bar */}
+      {/* Selection action bar — floating so it never pushes the node grid down */}
       {selectedArray.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+        <div className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 shadow-lg">
           <span className="text-sm">{t('explorer.selectedCount', { count: selectedArray.length })}</span>
           <Button size="sm" variant="outline" disabled={isMutating} onClick={() => setMoveOpen(true)}>
             {t('explorer.moveSelected')}
@@ -193,6 +223,32 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
         </div>
       ) : null}
 
+      {/* Lightweight filter bar (scoped to current folder) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          className="h-9 w-full max-w-xs"
+          value={searchText}
+          placeholder={t('explorer.searchPlaceholder')}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+        <Select value={kindFilter} onValueChange={(v) => setKindFilter(v as typeof kindFilter)}>
+          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('explorer.filterKindAll')}</SelectItem>
+            <SelectItem value="folder">{t('explorer.filterKindFolder')}</SelectItem>
+            <SelectItem value="challenge">{t('explorer.filterKindChallenge')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('explorer.filterStatusAll')}</SelectItem>
+            <SelectItem value="draft">{t('explorer.filterStatusDraft')}</SelectItem>
+            <SelectItem value="published">{t('explorer.filterStatusPublished')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Contents */}
       {state.isLoading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -202,9 +258,11 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
         </div>
       ) : state.nodes.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('explorer.emptyFolder')}</p>
+      ) : filteredNodes.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t('explorer.noFilterMatch')}</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {state.nodes.map((node) => (
+          {filteredNodes.map((node) => (
             <ExplorerTile
               key={node.id}
               node={node}

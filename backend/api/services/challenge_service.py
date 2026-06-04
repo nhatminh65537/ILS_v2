@@ -413,17 +413,9 @@ class ChallengeService:
         profile.save()
         profile.update_leaderboard_rank()
 
-        from api.models import Notification
-        event_key = f'challenge_complete_{user.id}_{challenge.id}'
-        Notification.objects.get_or_create(
-            event_key=event_key,
-            defaults={
-                'user': user,
-                'type': Notification.NotificationType.CHALLENGE,
-                'title': 'Challenge Completed',
-                'message': f'You completed "{challenge.title}"!',
-            },
-        )
+        # Completion notification is emitted by the post_save signal on
+        # UserChallengeProgress (handle_challenge_progress_saved). Do NOT create
+        # one here too, or the user receives a duplicate notification.
 
     @staticmethod
     def get_running_instance(challenge, user):

@@ -432,9 +432,9 @@ export const challengeNodesFixture: ChallengeNode[] = [
 ]
 
 export const challengeFlagsFixture: ChallengeFlag[] = [
-  { id: 1, challenge_id: 1, flag_value: 'ILS{xss_is_fun}', flag_type: 'static', is_regex: false, is_case_sensitive: true, random_tail_length: 0, created_at: now },
-  { id: 2, challenge_id: 2, flag_value: 'ILS{sqli_master}', flag_type: 'static', is_regex: false, is_case_sensitive: true, random_tail_length: 0, created_at: now },
-  { id: 3, challenge_id: 3, flag_value: '^ILS\\{jwt_[a-z0-9_]+\\}$', flag_type: 'regex', is_regex: true, is_case_sensitive: false, random_tail_length: 0, created_at: now },
+  { id: 1, challenge_id: 1, flag_value: 'ILS{xss_is_fun}', is_regex: false, is_case_sensitive: true, random_tail_length: 0, created_at: now },
+  { id: 2, challenge_id: 2, flag_value: 'ILS{sqli_master}', is_regex: false, is_case_sensitive: true, random_tail_length: 0, created_at: now },
+  { id: 3, challenge_id: 3, flag_value: '^ILS\\{jwt_[a-z0-9_]+\\}$', is_regex: true, is_case_sensitive: false, random_tail_length: 0, created_at: now },
 ]
 
 export const challengeProgressFixture: UserChallengeProgress[] = [

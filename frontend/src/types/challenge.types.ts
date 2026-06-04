@@ -78,12 +78,24 @@ export interface ChallengeNode {
   readonly children?: readonly ChallengeNode[]
 }
 
+/**
+ * Derived flag "kind" label. The backend has no `flag_type` column — the kind
+ * is inferred from `is_regex` / `random_tail_length` (see DATA_MODEL.md).
+ */
+export type ChallengeFlagType = 'static' | 'regex' | 'instance'
+
+/** Infer a flag's display "kind" from its actual backend fields. */
+export function deriveFlagType(flag: Pick<ChallengeFlag, 'is_regex' | 'random_tail_length'>): ChallengeFlagType {
+  if (flag.is_regex) return 'regex'
+  if (flag.random_tail_length > 0) return 'instance'
+  return 'static'
+}
+
 /** Challenge flag (answer template) */
 export interface ChallengeFlag {
   readonly id: number
   readonly challenge_id: number
   readonly flag_value: string // NOT returned in GET for Members
-  readonly flag_type: 'static' | 'regex' | 'instance'
   readonly is_regex: boolean
   readonly is_case_sensitive: boolean
   readonly random_tail_length: number
@@ -226,7 +238,6 @@ export interface ChallengeTagMutationPayload {
 
 export interface ChallengeFlagMutationPayload {
   flag_value: string
-  flag_type?: 'static' | 'regex' | 'instance'
   is_regex?: boolean
   is_case_sensitive?: boolean
   random_tail_length?: number

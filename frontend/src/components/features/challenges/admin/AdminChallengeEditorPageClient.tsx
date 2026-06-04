@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAdminChallenges } from '@/hooks/useAdminChallenges'
 import type { UpdateChallengePayload } from '@/types/challenge.types'
 import { AdminChallengeMetadataTab } from './AdminChallengeMetadataTab'
+import { AdminChallengeFlagsTab } from './AdminChallengeFlagsTab'
 
 type AdminChallengeEditorPageClientProps = {
   locale: string
@@ -62,11 +63,7 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
             <Tabs defaultValue="metadata" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="metadata">{t('tabs.metadata')}</TabsTrigger>
-                <TabsTrigger value="flags" asChild>
-                  <Link href={`/${locale}/admin/challenges/${slug}/flags`}>
-                    {t('tabs.flags')}
-                  </Link>
-                </TabsTrigger>
+                <TabsTrigger value="flags">{t('tabs.flags')}</TabsTrigger>
               </TabsList>
               <TabsContent value="metadata" className="space-y-4">
                 <AdminChallengeMetadataTab
@@ -76,6 +73,9 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
                   isSubmitting={isMutating}
                   onSubmit={(payload) => submitUpdateChallenge(slug, payload as UpdateChallengePayload)}
                 />
+              </TabsContent>
+              <TabsContent value="flags" className="space-y-4">
+                <AdminChallengeFlagsTab slug={slug} />
               </TabsContent>
             </Tabs>
           ) : (
