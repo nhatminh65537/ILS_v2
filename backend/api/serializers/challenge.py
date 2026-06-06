@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
+from api.models import Challenge, ChallengeCategory, ChallengeFile, ChallengeFlag, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
 from api.services.challenge_service import ChallengeService
 
 
@@ -200,6 +200,7 @@ class ChallengeDetailSerializer(serializers.ModelSerializer):
 
     category = ChallengeCategorySerializer(read_only=True)
     tags = serializers.SerializerMethodField()
+    gitlab = serializers.SerializerMethodField()
 
     class Meta:
         model = Challenge
@@ -215,6 +216,7 @@ class ChallengeDetailSerializer(serializers.ModelSerializer):
             'source',
             'storage_path',
             'gitlab_path',
+            'gitlab',
             'challenge_point',
             'instance_required',
             'created_at',
@@ -227,6 +229,19 @@ class ChallengeDetailSerializer(serializers.ModelSerializer):
             [tm.tag for tm in obj.tag_mappings.select_related('tag').all()],
             many=True,
         ).data
+
+    def get_gitlab(self, obj):
+        """Sync metadata for gitlab-sourced challenges (None for manual)."""
+        info = getattr(obj, 'gitlab_info', None)
+        if info is None:
+            return None
+        return {
+            'project_id': info.project_id,
+            'project_url': info.project_url,
+            'default_branch': info.default_branch,
+            'last_commit_sha': info.last_commit_sha,
+            'last_synced_at': info.last_synced_at.isoformat() if info.last_synced_at else None,
+        }
 
 
 class ChallengeWriteSerializer(serializers.ModelSerializer):
@@ -336,6 +351,15 @@ class ChallengeWriteSerializer(serializers.ModelSerializer):
             ChallengeService.upsert_challenge_tags(instance, tag_ids)
 
         return instance
+
+
+class ChallengeFileSerializer(serializers.ModelSerializer):
+    """Read serializer for challenge attachment files (no media path leaked)."""
+
+    class Meta:
+        model = ChallengeFile
+        fields = ['id', 'filename', 'size', 'content_type', 'source', 'created_at']
+        read_only_fields = fields
 
 
 class ChallengeFlagSerializer(serializers.ModelSerializer):

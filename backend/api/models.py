@@ -306,6 +306,54 @@ class Challenge(FullAudit):
         return self.title
 
 
+class ChallengeFile(FullAudit):
+    """
+    Attachment file cho challenge (player-facing). Dùng chung cho cả challenge
+    tạo thủ công (upload) lẫn challenge import từ GitLab (download về media).
+    File vật lý lưu tại MEDIA_ROOT/<storage_key>; download đi qua endpoint có
+    kiểm soát quyền (không expose GitLab URL / absolute media path).
+    """
+    class Source(models.TextChoices):
+        UPLOAD = 'upload', 'Upload'
+        GITLAB = 'gitlab', 'GitLab'
+
+    challenge = models.ForeignKey(
+        Challenge,
+        on_delete=models.CASCADE,
+        related_name='files',
+        db_column='challenge_id',
+    )
+    filename = models.TextField(help_text="Tên file hiển thị cho người dùng")
+    storage_key = models.TextField(
+        help_text="Đường dẫn tương đối dưới MEDIA_ROOT (challenges/<slug>/<filename>)"
+    )
+    size = models.BigIntegerField(default=0, help_text="Kích thước file (bytes)")
+    content_type = models.TextField(
+        blank=True,
+        null=True,
+        help_text="MIME type suy ra từ filename"
+    )
+    source = models.CharField(
+        max_length=20,
+        choices=Source.choices,
+        default=Source.UPLOAD,
+    )
+    gitlab_path = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Đường dẫn file trong repo GitLab (nếu source là gitlab)"
+    )
+
+    class Meta:
+        db_table = 'challenge_file'
+        indexes = [
+            models.Index(fields=['challenge']),
+        ]
+
+    def __str__(self):
+        return f"{self.challenge_id}: {self.filename}"
+
+
 class ChallengeGitlab(FullAudit):
     """
     Thông tin GitLab cho challenge sync từ GitLab

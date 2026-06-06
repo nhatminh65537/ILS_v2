@@ -250,6 +250,8 @@
       "backToCatalog": "Back to challenges",
       "descriptionTitle": "Challenge Description",
       "noDescription": "No description provided.",
+      "attachmentsTitle": "Attachments",
+      "download": "Download",
       "progressTitle": "Your Progress",
       "infoTitle": "Info",
       "submitTitle": "Submit Flag",
@@ -1368,7 +1370,11 @@
       "moveUp": "Up",
       "moveDown": "Down",
       "move": "Move",
-      "rename": "Rename"
+      "rename": "Rename",
+      "uploadFile": "Upload file",
+      "download": "Download",
+      "syncGitlab": "Sync now",
+      "importGitlab": "Import"
     },
     "columns": {
       "title": "Title",
@@ -1391,7 +1397,9 @@
     "tabs": {
       "metadata": "Metadata",
       "tree": "Tree",
-      "flags": "Flags"
+      "flags": "Flags",
+      "files": "Files",
+      "gitlab": "GitLab"
     },
     "tree": {
       "createFolderTitle": "Create folder",
@@ -1445,6 +1453,36 @@
       },
       "deleteConfirmTitle": "Delete flag?"
     },
+    "files": {
+      "listTitle": "Attachment files",
+      "columns": {
+        "filename": "Filename",
+        "size": "Size",
+        "source": "Source"
+      },
+      "source": {
+        "upload": "Upload",
+        "gitlab": "GitLab"
+      },
+      "deleteConfirmTitle": "Delete file?",
+      "deleteConfirm": "This attachment will be permanently removed."
+    },
+    "gitlab": {
+      "syncTitle": "GitLab sync",
+      "syncing": "Syncing...",
+      "project": "Project",
+      "lastCommit": "Last commit",
+      "lastSynced": "Last synced",
+      "importTitle": "Import from GitLab",
+      "importHint": "Search a GitLab project and import it as a new challenge. README becomes the description; selected files become attachments.",
+      "searchPlaceholder": "Search projects...",
+      "search": "Search",
+      "searching": "Searching...",
+      "filesLabel": "Files to import",
+      "loadingFiles": "Loading files...",
+      "noFiles": "No files at the repository root.",
+      "importing": "Importing..."
+    },
     "instances": {
       "title": "Instance management",
       "subtitle": "Monitor and manage active challenge instances.",
@@ -1472,6 +1510,7 @@
       "noChallenges": "No challenges found.",
       "noChallenge": "Challenge not found.",
       "noFlags": "No flags configured.",
+      "noFiles": "No attachment files yet.",
       "noNodes": "No nodes yet.",
       "noCategories": "No categories yet.",
       "noTags": "No tags yet.",
@@ -1507,7 +1546,15 @@
       "createFlagFailed": "Failed to create flag.",
       "updateFlagFailed": "Failed to update flag.",
       "deleteFlagFailed": "Failed to delete flag.",
-      "loadInstancesFailed": "Failed to load instances."
+      "loadInstancesFailed": "Failed to load instances.",
+      "loadFilesFailed": "Failed to load attachment files.",
+      "uploadFileFailed": "Failed to upload the file.",
+      "downloadFileFailed": "Failed to download the file.",
+      "deleteFileFailed": "Failed to delete the file.",
+      "syncGitlabFailed": "Failed to sync with GitLab.",
+      "gitlabProjectsFailed": "Failed to list GitLab projects. Check the GitLab config.",
+      "gitlabFilesFailed": "Failed to list repository files.",
+      "gitlabImportFailed": "Failed to import the GitLab project."
     },
     "explorer": {
       "root": "Root",

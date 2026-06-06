@@ -1,4 +1,7 @@
-﻿from django.db import IntegrityError
+﻿import os
+
+from django.db import IntegrityError
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
@@ -10,10 +13,11 @@ from rest_framework.views import APIView
 from auth_app.constants import BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER
 from auth_app.permissions import HasJWTPermission, add_role_granted
 
-from api.models import Challenge, ChallengeCategory, ChallengeFlag, ChallengeInstance, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
+from api.models import Challenge, ChallengeCategory, ChallengeFile, ChallengeFlag, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
 from api.serializers import (
     ChallengeCategorySerializer,
     ChallengeDetailSerializer,
+    ChallengeFileSerializer,
     ChallengeFlagSerializer,
     ChallengeFlagSubmitSerializer,
     ChallengeFlagWriteSerializer,
@@ -24,6 +28,26 @@ from api.serializers import (
     UserChallengeProgressDetailSerializer,
 )
 from api.services.challenge_service import ChallengeService
+from api.services.gitlab_service import (
+    GitlabConfigError,
+    GitlabNotFoundError,
+    GitlabService,
+    GitlabUnavailableError,
+)
+
+
+def _gitlab_error_response(exc):
+    """Map a GitlabService exception to a DRF error Response.
+
+    - GitlabConfigError      -> 409 (integration disabled/misconfigured)
+    - GitlabNotFoundError    -> 404 (project/file gone)
+    - GitlabUnavailableError -> 503 (GitLab unreachable; old content preserved)
+    """
+    if isinstance(exc, GitlabConfigError):
+        return Response({'detail': str(exc)}, status=status.HTTP_409_CONFLICT)
+    if isinstance(exc, GitlabNotFoundError):
+        return Response({'detail': str(exc)}, status=status.HTTP_404_NOT_FOUND)
+    return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
@@ -263,6 +287,157 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         challenge = self.get_object()
         serializer = UserChallengeProgressDetailSerializer(challenge, request.user)
         return Response(serializer.data)
+
+    # ── Attachment files (Task 6.8 Phase 1) ──────────────────────────────────
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    def files(self, request, slug=None):
+        """GET list / POST multipart upload of challenge attachment files."""
+        challenge = self.get_object()
+        if request.method == 'GET':
+            qs = ChallengeService.list_files(challenge)
+            serializer = ChallengeFileSerializer(qs, many=True, context={'request': request})
+            return Response(serializer.data)
+
+        upload = request.FILES.get('file')
+        if upload is None:
+            return Response(
+                {'detail': "A multipart 'file' field is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        challenge_file = ChallengeService.save_uploaded_file(
+            challenge, upload, actor=request.user
+        )
+        return Response(
+            ChallengeFileSerializer(challenge_file, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    def file_detail(self, request, slug=None, file_id=None):
+        """DELETE an attachment file (row + media)."""
+        challenge = self.get_object()
+        challenge_file = get_object_or_404(ChallengeFile, id=file_id, challenge=challenge)
+        ChallengeService.delete_file(challenge_file)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
+    def file_download(self, request, slug=None, file_id=None):
+        """Stream attachment bytes from media (published-only for Members)."""
+        challenge = self.get_object()
+
+        # Members may only download from a published challenge; Admin/Editor (who
+        # can read drafts) may download regardless of status.
+        if challenge.status != Challenge.Status.PUBLISHED and not ChallengeService._can_read_draft(request.user):
+            raise Http404('Challenge not available.')
+
+        challenge_file = get_object_or_404(ChallengeFile, id=file_id, challenge=challenge)
+        abs_path = ChallengeService._absolute_media_path(challenge_file.storage_key)
+        if not os.path.isfile(abs_path):
+            raise Http404('File is no longer available.')
+
+        response = FileResponse(
+            open(abs_path, 'rb'),
+            as_attachment=True,
+            filename=challenge_file.filename,
+        )
+        if challenge_file.content_type:
+            response['Content-Type'] = challenge_file.content_type
+        return response
+
+    # ── GitLab sync (Task 6.8 Phase 2) ───────────────────────────────────────
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    def sync_gitlab(self, request, slug=None):
+        """POST .../sync-gitlab/ — re-pull README + files (503 preserves old)."""
+        challenge = self.get_object()
+        try:
+            ChallengeService.sync_gitlab(challenge=challenge, actor=request.user)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except (GitlabConfigError, GitlabNotFoundError, GitlabUnavailableError) as exc:
+            return _gitlab_error_response(exc)
+
+        challenge.refresh_from_db()
+        return Response(ChallengeDetailSerializer(challenge, context={'request': request}).data)
+
+
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+class ChallengeGitlabViewSet(viewsets.ViewSet):
+    """Browse GitLab projects + import as challenges (Task 6.8 Phase 2).
+
+    Read-only browse + import. Server-mediated: the GitLab token never leaves the
+    backend; the frontend only sees normalized project/file metadata.
+    """
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    def projects(self, request):
+        """GET /api/challenge/gitlab/projects/?search=&page= — list projects."""
+        search = (request.query_params.get('search') or '').strip()
+        try:
+            page = int(request.query_params.get('page') or 1)
+        except (TypeError, ValueError):
+            page = 1
+        try:
+            items = GitlabService.list_projects(search=search, page=page)
+        except (GitlabConfigError, GitlabNotFoundError, GitlabUnavailableError) as exc:
+            return _gitlab_error_response(exc)
+        return Response({'items': items})
+
+    def project_files(self, request, project_id=None):
+        """GET /api/challenge/gitlab/projects/{id}/files/ — root-tree files.
+
+        Annotates each file with ``default_checked`` for the import picker
+        (``attachment.zip`` + ``README.md`` are pre-selected).
+        """
+        try:
+            project = GitlabService.get_project(project_id)
+            tree = GitlabService.list_root_tree(project_id, project['default_branch'])
+        except (GitlabConfigError, GitlabNotFoundError, GitlabUnavailableError) as exc:
+            return _gitlab_error_response(exc)
+
+        defaults = {name.lower() for name in ChallengeService.DEFAULT_GITLAB_FILES}
+        files = [
+            {
+                'name': entry['name'],
+                'path': entry['path'],
+                'default_checked': entry['name'].lower() in defaults,
+            }
+            for entry in tree
+            if entry['type'] == 'blob'
+        ]
+        return Response({'project': project, 'files': files})
+
+    def import_project(self, request):
+        """POST /api/challenge/gitlab/import/ — create a gitlab-sourced challenge."""
+        project_id = request.data.get('project_id')
+        if project_id in (None, ''):
+            return Response({'detail': 'project_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        parent_node_id = request.data.get('parent_node_id')
+        if parent_node_id in (None, ''):
+            parent_node_id = None
+        selected_files = request.data.get('selected_files') or []
+        if not isinstance(selected_files, list):
+            return Response({'detail': 'selected_files must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            challenge = ChallengeService.import_from_gitlab(
+                project_id=project_id,
+                parent_node_id=parent_node_id,
+                selected_files=selected_files,
+                actor=request.user,
+            )
+        except ChallengeNode.DoesNotExist:
+            return Response({'detail': 'Invalid parent_node_id.'}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except (GitlabConfigError, GitlabNotFoundError, GitlabUnavailableError) as exc:
+            return _gitlab_error_response(exc)
+
+        return Response(
+            ChallengeDetailSerializer(challenge, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)

@@ -201,6 +201,14 @@ Routes in this subsection are legacy-flat paths kept for compatibility — see �
 | POST | `/api/challenge/challenges/{slug}/flags/` | Yes (Admin/Editor) | Stable | Create flag (static or regex). |
 | PUT/PATCH | `/api/challenge/challenges/{slug}/flags/{id}/` | Yes (Admin/Editor) | Stable | Update flag. |
 | DELETE | `/api/challenge/challenges/{slug}/flags/{id}/` | Yes (Admin/Editor) | Stable | Delete flag. |
+| GET | `/api/challenge/challenges/{slug}/files/` | Yes (Admin/Editor) | Stable | List attachment files: `{id, filename, size, content_type, source, created_at}`. Storage path never exposed. |
+| POST | `/api/challenge/challenges/{slug}/files/` | Yes (Admin/Editor) | Stable | Multipart `file` upload → `source='upload'` attachment. |
+| DELETE | `/api/challenge/challenges/{slug}/files/{id}/` | Yes (Admin/Editor) | Stable | Delete attachment (row + media). |
+| GET | `/api/challenge/challenges/{slug}/files/{id}/download/` | Yes | Stable | Stream bytes (FileResponse). Members only when challenge published; Admin/Editor may download drafts. `404` if hidden/missing. |
+| GET | `/api/challenge/gitlab/projects/` | Yes (Admin/Editor) | Stable | Server-mediated project browse: `?search=&page=` → `{items:[{id,name,path_with_namespace,web_url,default_branch}]}`. Disabled → 409, GitLab down → 503. |
+| GET | `/api/challenge/gitlab/projects/{id}/files/` | Yes (Admin/Editor) | Stable | Root-tree files: `{project, files:[{name,path,default_checked}]}` (`attachment.zip`+`README.md` pre-checked). |
+| POST | `/api/challenge/gitlab/import/` | Yes (Admin/Editor) | Stable | `{project_id, parent_node_id?, selected_files[]}` → creates a draft `source='gitlab'` Challenge + node + `challenge_gitlab`; README → description; selected files → attachments. |
+| POST | `/api/challenge/challenges/{slug}/sync-gitlab/` | Yes (Admin/Editor) | Stable | Re-pull README + gitlab-sourced files; updates `description`/`last_commit_sha`/`last_synced_at`. Not linked → 400; **GitLab failure → 503 with old content preserved**. |
 | POST | `/api/challenge/challenges/{slug}/submit/` | Yes | Stable | Payload `{flag}`; response `{correct}`. Server-side check; `flag_value` never returned. On first solve: updates progress, increments counters, triggers notification. |
 | GET | `/api/challenge/challenges/{slug}/progress/` | Yes | Stable | Per-challenge progress for current user: `{is_solved, attempt_count, completed_at}`. |
 | GET | `/api/challenge/progress/` | Yes | Stable | Aggregate for current user: `{solved_count, total_attempts}`. |
@@ -404,9 +412,13 @@ Deferred by decision `Q-INFRA-03` until email backend setup is finalized.
 
 ### 4.3 Slice 6 — Challenge (GitLab sync, Task 6.8)
 
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| POST | `/api/challenge/challenges/{slug}/sync-gitlab/` | Admin/Editor | Trigger GitLab sync. Reads `challenge.git.url` from `system_config`. Returns updated `ChallengeGitlab` record. |
+**Phase 1 (attachment files + GitLab import/sync) is now Stable — see §3.5 Challenges.**
+The file routes (`.../files/*`) and GitLab routes (`/api/challenge/gitlab/*`,
+`.../sync-gitlab/`) are implemented server-mediated like `OutlineService`
+(token never leaves the backend; fetch-first/write-after; 503 preserves old content).
+
+Deferred to Phase 2 (`plan/feature-challenge-task6-9-instance-deploy-server-1.md`):
+instance deployment against an external deploy server.
 
 ---
 

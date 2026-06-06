@@ -52,6 +52,8 @@ export interface Challenge {
   readonly source: ChallengeSource
   readonly storage_path: string
   readonly gitlab_path?: string
+  /** Sync metadata; present (non-null) only for gitlab-sourced challenges. */
+  readonly gitlab?: ChallengeGitlabInfo | null
   readonly challenge_point: number
   readonly instance_required: boolean
   readonly tags?: readonly ChallengeTag[]
@@ -59,6 +61,15 @@ export interface Challenge {
   readonly is_solved?: boolean
   readonly created_at: string
   readonly updated_at: string
+}
+
+/** GitLab sync metadata embedded in the challenge detail response. */
+export interface ChallengeGitlabInfo {
+  readonly project_id: number
+  readonly project_url: string
+  readonly default_branch: string
+  readonly last_commit_sha?: string | null
+  readonly last_synced_at?: string | null
 }
 
 /** Challenge tree node */
@@ -222,6 +233,48 @@ export interface ChallengeExplorerResponse {
 export interface GlobalChallengeProgressResponse {
   readonly solved_count: number
   readonly total_attempts: number
+}
+
+// ── Attachment files (Task 6.8 Phase 1) ───────────────────────────────────────
+
+/** Attachment file metadata (no media path exposed). */
+export interface ChallengeFile {
+  readonly id: number
+  readonly filename: string
+  readonly size: number
+  readonly content_type?: string | null
+  readonly source: 'upload' | 'gitlab'
+  readonly created_at: string
+}
+
+// ── GitLab import/sync (Task 6.8 Phase 2) ─────────────────────────────────────
+
+/** Normalized GitLab project from the server-mediated browse endpoint. */
+export interface GitlabProject {
+  readonly id: number
+  readonly name: string
+  readonly path_with_namespace: string
+  readonly web_url: string
+  readonly default_branch: string
+}
+
+/** A root-tree file offered in the import picker. */
+export interface GitlabRepoFile {
+  readonly name: string
+  readonly path: string
+  /** Pre-checked in the picker (attachment.zip + README.md). */
+  readonly default_checked: boolean
+}
+
+export interface GitlabProjectFilesResponse {
+  readonly project: GitlabProject
+  readonly files: readonly GitlabRepoFile[]
+}
+
+export interface GitlabImportPayload {
+  project_id: number
+  parent_node_id?: number | null
+  selected_files: string[]
 }
 
 // ── Admin payload types ───────────────────────────────────────────────────────

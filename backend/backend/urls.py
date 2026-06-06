@@ -14,6 +14,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
@@ -23,3 +25,9 @@ urlpatterns = [
     path('api/', include('api.urls')),
     # path('api/ai/', include('ai.urls')),  # DEFERRED — AI feature not yet active.
 ]
+
+# Serve user/GitLab media in development only. Permission-gated downloads go
+# through the API (challenges/.../files/{id}/download/); this direct mapping is a
+# dev convenience and MUST be handled by the vhost/CDN in production.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

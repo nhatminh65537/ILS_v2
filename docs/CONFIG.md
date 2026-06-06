@@ -161,9 +161,15 @@ GitLab is used to sync challenge metadata, README, and source files. Each CTF ch
 |-----|------|---------|----------|---------|---------|-------------|
 | `challenge.git.enabled` | bool | `false` | ✅ | ✅ | `true` | Enable GitLab challenge import and sync. |
 | `challenge.git.url` | string | `""` | ✅ | ❌ | `"https://gitlab.example.com"` | GitLab instance base URL (no trailing slash). |
-| `challenge.git.token` | secret | `""` | ✅ | ❌ | `"glpat-xxxxxxxxxxxx"` | GitLab personal access token with `read_api` and `read_repository` scopes. Stored encrypted. |
+| `challenge.git.token` | secret | `""` | ✅ | ❌ | `"glpat-xxxxxxxxxxxx"` | GitLab access token with `read_api` and `read_repository` scopes. Stored encrypted. Either a **Personal Access Token** or a **Group Access Token** works; a read-only Group Access Token scoped to the CTF group is recommended (least privilege, no human account tied to it). Sent server-side as the `PRIVATE-TOKEN` header — never exposed to the frontend. |
 
 > **Why no `username`/`password`?** GitLab deprecated HTTP basic auth for API access (removed in GitLab 15.0). Personal access tokens (PAT) are the correct authentication method for GitLab API v4. For git clone over HTTPS, use `oauth2:<token>@gitlab.example.com/...` format with the PAT.
+
+> **Group Access Token (recommended).** In GitLab: *Group → Settings → Access Tokens* → role `Reporter`, scopes `read_api` + `read_repository`. This token can read every project in the group, so a single token covers all CTF challenges without being bound to a person. The server-mediated `GitlabService` (Task 6.8) uses it for project browse, README/file download, and sync.
+
+> **Sourced from `.env` (like Outline).** `seed_config` reads `GITLAB_URL` + `GITLAB_TOKEN` from the environment (`.env`, loaded by `settings.py`); when both are present it fills `challenge.git.url` / `challenge.git.token` and sets `challenge.git.enabled=true`. On re-seed, a non-empty existing value is never clobbered by an empty env default. This keeps the token out of the repo — mirror of `OUTLINE_URL`/`OUTLINE_API_TOKEN`. See `.env.example`.
+
+> **Media storage (Task 6.8).** Downloaded/uploaded attachment files are stored on the local filesystem under `MEDIA_ROOT` (`backend/media/`, see `settings.py`) at `challenges/<slug>/<filename>` and served through permission-gated API endpoints, not a config key. In dev, `MEDIA_URL=/media/` is served by Django (`DEBUG` only); production must map it via the vhost/CDN.
 
 ---
 

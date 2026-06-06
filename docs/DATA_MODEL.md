@@ -292,6 +292,30 @@ Core challenge entity.
 
 ---
 
+#### `challenge_file`
+Player-facing attachment files for a challenge. Shared by both manual (`source='upload'`) and GitLab-imported (`source='gitlab'`) challenges. Physical bytes live under `MEDIA_ROOT/<storage_key>`; downloads are streamed through a permission-gated API endpoint (GitLab URLs / absolute media paths are never exposed).
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| `id` | BIGSERIAL | PK |
+| `challenge_id` | BIGINT | NOT NULL, FK → challenge(id) CASCADE |
+| `filename` | TEXT | NOT NULL — display name |
+| `storage_key` | TEXT | NOT NULL — relative path under MEDIA_ROOT (`challenges/<slug>/<filename>`) |
+| `size` | BIGINT | NOT NULL, DEFAULT 0 — bytes |
+| `content_type` | TEXT | nullable — MIME type guessed from filename |
+| `source` | challenge_file_source | NOT NULL, DEFAULT 'upload' — `upload` \| `gitlab` |
+| `gitlab_path` | TEXT | nullable — path inside the GitLab repo (gitlab-sourced only) |
+| *(audit fields)* | | |
+
+**Indexes:** `challenge_id`
+
+**Validation rules:**
+- `storage_key`: derived server-side as `challenges/<slug>/<filename>`; clients never supply it
+- Deleting a row also unlinks the physical media file
+- Download allowed only when the challenge is published (Admin/Editor may download drafts)
+
+---
+
 #### `challenge_gitlab`
 GitLab project metadata for gitlab-sourced challenges. One-to-one with challenge.
 

@@ -21,6 +21,7 @@ from .views import (
     LearnChallengeViewSet,
     LearnChallengeCategoryViewSet,
     LearnChallengeTagViewSet,
+    ChallengeGitlabViewSet,
     ChallengeNodeViewSet,
     ChallengeInstanceAdminView,
     ChallengeInstanceKillView,
@@ -299,6 +300,43 @@ urlpatterns = [
         r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/flags/(?P<flag_id>\d+)/$',
         LearnChallengeViewSet.as_view({'put': 'flag_detail', 'patch': 'flag_detail', 'delete': 'flag_detail'}),
         name='challenge-flag-detail',
+    ),
+    # Challenge attachment file routes (Slice 6 / Task 6.8 Phase 1)
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/files/$',
+        LearnChallengeViewSet.as_view({'get': 'files', 'post': 'files'}),
+        name='challenge-file-list',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/files/(?P<file_id>\d+)/$',
+        LearnChallengeViewSet.as_view({'delete': 'file_detail'}),
+        name='challenge-file-detail',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/files/(?P<file_id>\d+)/download/$',
+        LearnChallengeViewSet.as_view({'get': 'file_download'}),
+        name='challenge-file-download',
+    ),
+    # GitLab import/sync routes (Slice 6 / Task 6.8 Phase 2)
+    re_path(
+        r'^challenge/gitlab/projects/$',
+        ChallengeGitlabViewSet.as_view({'get': 'projects'}),
+        name='challenge-gitlab-projects',
+    ),
+    re_path(
+        r'^challenge/gitlab/projects/(?P<project_id>\d+)/files/$',
+        ChallengeGitlabViewSet.as_view({'get': 'project_files'}),
+        name='challenge-gitlab-project-files',
+    ),
+    re_path(
+        r'^challenge/gitlab/import/$',
+        ChallengeGitlabViewSet.as_view({'post': 'import_project'}),
+        name='challenge-gitlab-import',
+    ),
+    re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/sync-gitlab/$',
+        LearnChallengeViewSet.as_view({'post': 'sync_gitlab'}),
+        name='challenge-sync-gitlab',
     ),
     re_path(
         r'^challenge/nodes/$',

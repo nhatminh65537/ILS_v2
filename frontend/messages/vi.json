@@ -250,6 +250,8 @@
       "backToCatalog": "Quay lại danh sách",
       "descriptionTitle": "Mô tả thử thách",
       "noDescription": "Chưa có mô tả.",
+      "attachmentsTitle": "File đính kèm",
+      "download": "Tải xuống",
       "progressTitle": "Tiến độ của bạn",
       "infoTitle": "Thông tin",
       "submitTitle": "Nộp flag",
@@ -1368,7 +1370,11 @@
       "moveUp": "Lên",
       "moveDown": "Xuống",
       "move": "Di chuyển",
-      "rename": "Đổi tên"
+      "rename": "Đổi tên",
+      "uploadFile": "Tải file lên",
+      "download": "Tải xuống",
+      "syncGitlab": "Đồng bộ ngay",
+      "importGitlab": "Nhập"
     },
     "columns": {
       "title": "Tiêu đề",
@@ -1391,7 +1397,9 @@
     "tabs": {
       "metadata": "Metadata",
       "tree": "Cây nút",
-      "flags": "Flag"
+      "flags": "Flag",
+      "files": "File",
+      "gitlab": "GitLab"
     },
     "tree": {
       "createFolderTitle": "Tạo thư mục",
@@ -1445,6 +1453,36 @@
       },
       "deleteConfirmTitle": "Xóa flag?"
     },
+    "files": {
+      "listTitle": "File đính kèm",
+      "columns": {
+        "filename": "Tên file",
+        "size": "Kích thước",
+        "source": "Nguồn"
+      },
+      "source": {
+        "upload": "Tải lên",
+        "gitlab": "GitLab"
+      },
+      "deleteConfirmTitle": "Xóa file?",
+      "deleteConfirm": "File đính kèm này sẽ bị xóa vĩnh viễn."
+    },
+    "gitlab": {
+      "syncTitle": "Đồng bộ GitLab",
+      "syncing": "Đang đồng bộ...",
+      "project": "Dự án",
+      "lastCommit": "Commit gần nhất",
+      "lastSynced": "Đồng bộ gần nhất",
+      "importTitle": "Nhập từ GitLab",
+      "importHint": "Tìm dự án GitLab và nhập làm challenge mới. README trở thành mô tả; các file được chọn trở thành file đính kèm.",
+      "searchPlaceholder": "Tìm dự án...",
+      "search": "Tìm",
+      "searching": "Đang tìm...",
+      "filesLabel": "File cần nhập",
+      "loadingFiles": "Đang tải file...",
+      "noFiles": "Không có file ở thư mục gốc của repo.",
+      "importing": "Đang nhập..."
+    },
     "instances": {
       "title": "Quản lý instance",
       "subtitle": "Theo dõi và quản lý các instance challenge đang chạy.",
@@ -1472,6 +1510,7 @@
       "noChallenges": "Không tìm thấy challenge.",
       "noChallenge": "Challenge không tồn tại.",
       "noFlags": "Chưa có flag nào.",
+      "noFiles": "Chưa có file đính kèm nào.",
       "noNodes": "Chưa có nút nào.",
       "noCategories": "Chưa có danh mục nào.",
       "noTags": "Chưa có thẻ nào.",
@@ -1507,7 +1546,15 @@
       "createFlagFailed": "Tạo flag thất bại.",
       "updateFlagFailed": "Cập nhật flag thất bại.",
       "deleteFlagFailed": "Xóa flag thất bại.",
-      "loadInstancesFailed": "Tải instance thất bại."
+      "loadInstancesFailed": "Tải instance thất bại.",
+      "loadFilesFailed": "Tải file đính kèm thất bại.",
+      "uploadFileFailed": "Tải file lên thất bại.",
+      "downloadFileFailed": "Tải file xuống thất bại.",
+      "deleteFileFailed": "Xóa file thất bại.",
+      "syncGitlabFailed": "Đồng bộ GitLab thất bại.",
+      "gitlabProjectsFailed": "Không lấy được danh sách dự án GitLab. Kiểm tra cấu hình GitLab.",
+      "gitlabFilesFailed": "Không lấy được danh sách file của repo.",
+      "gitlabImportFailed": "Nhập dự án GitLab thất bại."
     },
     "explorer": {
       "root": "Gốc",

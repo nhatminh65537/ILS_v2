@@ -169,6 +169,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (user-uploaded + GitLab-synced challenge attachments).
+# Physical layout: MEDIA_ROOT/challenges/<slug>/<filename>. Served by Django only
+# in DEBUG (dev); in production a vhost/nginx rule serves MEDIA_URL directly.
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

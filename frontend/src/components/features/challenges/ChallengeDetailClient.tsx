@@ -1,16 +1,25 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useChallenges } from '@/hooks/useChallenges'
-import { ChallengeDifficulty } from '@/types/challenge.types'
+import { downloadChallengeFile, listChallengeFiles } from '@/services/challenges.service'
+import { ChallengeDifficulty, type ChallengeFile } from '@/types/challenge.types'
 import { ChallengeProgressCard } from './ChallengeProgressCard'
 import { ChallengeInstancePanel } from './ChallengeInstancePanel'
 import { FlagSubmitForm } from './FlagSubmitForm'
+
+const formatBytes = (bytes: number): string => {
+  if (!bytes) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+}
 
 type ChallengeDetailClientProps = {
   locale: string
@@ -43,6 +52,8 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
     stopInstance,
   } = useChallenges()
 
+  const [files, setFiles] = useState<readonly ChallengeFile[]>([])
+
   useEffect(() => {
     void Promise.all([
       loadChallengeDetail(slug),
@@ -50,6 +61,14 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
       loadInstanceStatus(slug),
     ])
   }, [loadChallengeDetail, loadChallengeProgress, loadInstanceStatus, slug])
+
+  useEffect(() => {
+    let active = true
+    listChallengeFiles(slug)
+      .then((data) => { if (active) setFiles(data) })
+      .catch(() => { if (active) setFiles([]) })
+    return () => { active = false }
+  }, [slug])
 
   if (isLoading && !selectedChallenge) {
     return (
@@ -119,6 +138,29 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
             )}
           </CardContent>
         </Card>
+
+        {files.length > 0 ? (
+          <Card className="lg:col-start-1">
+            <CardHeader>
+              <CardTitle className="text-base">{t('detail.attachmentsTitle')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {files.map((file) => (
+                  <li key={file.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono">{file.filename}</span>
+                      <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
+                    </span>
+                    <Button variant="outline" size="sm" onClick={() => { void downloadChallengeFile(slug, file) }}>
+                      {t('detail.download')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="space-y-4">
           {challengeProgress ? (

@@ -13,6 +13,14 @@ _OUTLINE_URL = (os.environ.get('OUTLINE_URL', '') or '').strip()
 _OUTLINE_API_TOKEN = (os.environ.get('OUTLINE_API_TOKEN', '') or '').strip()
 _OUTLINE_ENABLED = bool(_OUTLINE_URL and _OUTLINE_API_TOKEN)
 
+# GitLab challenge-sync values are likewise sourced from the environment (.env)
+# so the access token is never committed. When both URL and token are present,
+# the integration is enabled by default. Use a read-only Group Access Token
+# (scopes read_api + read_repository) — see docs/CONFIG.md §challenge.git.
+_GITLAB_URL = (os.environ.get('GITLAB_URL', '') or '').strip()
+_GITLAB_TOKEN = (os.environ.get('GITLAB_TOKEN', '') or '').strip()
+_GITLAB_ENABLED = bool(_GITLAB_URL and _GITLAB_TOKEN)
+
 
 DEFAULT_CONFIGS = [
     {
@@ -323,7 +331,7 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'challenge.git.enabled',
-        'value': False,
+        'value': _GITLAB_ENABLED,
         'value_type': SystemConfig.ConfigType.BOOL,
         'category': 'challenge',
         'description': 'Enable GitLab challenge sync.',
@@ -332,19 +340,19 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'challenge.git.url',
-        'value': '',
+        'value': _GITLAB_URL,
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'challenge',
-        'description': 'GitLab instance base URL.',
+        'description': 'GitLab instance base URL (no trailing slash).',
         'is_editable': True,
         'is_runtime': False,
     },
     {
         'key': 'challenge.git.token',
-        'value': '',
+        'value': _GITLAB_TOKEN,
         'value_type': SystemConfig.ConfigType.SECRET,
         'category': 'challenge',
-        'description': 'GitLab personal access token.',
+        'description': 'GitLab access token (PAT or read-only Group Access Token; scopes read_api + read_repository).',
         'is_editable': True,
         'is_runtime': False,
     },

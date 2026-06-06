@@ -10,6 +10,8 @@ import { useAdminChallenges } from '@/hooks/useAdminChallenges'
 import type { UpdateChallengePayload } from '@/types/challenge.types'
 import { AdminChallengeMetadataTab } from './AdminChallengeMetadataTab'
 import { AdminChallengeFlagsTab } from './AdminChallengeFlagsTab'
+import { AdminChallengeFilesTab } from './AdminChallengeFilesTab'
+import { AdminChallengeGitlabTab } from './AdminChallengeGitlabTab'
 
 type AdminChallengeEditorPageClientProps = {
   locale: string
@@ -64,6 +66,8 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
               <TabsList>
                 <TabsTrigger value="metadata">{t('tabs.metadata')}</TabsTrigger>
                 <TabsTrigger value="flags">{t('tabs.flags')}</TabsTrigger>
+                <TabsTrigger value="files">{t('tabs.files')}</TabsTrigger>
+                <TabsTrigger value="gitlab">{t('tabs.gitlab')}</TabsTrigger>
               </TabsList>
               <TabsContent value="metadata" className="space-y-4">
                 <AdminChallengeMetadataTab
@@ -76,6 +80,17 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
               </TabsContent>
               <TabsContent value="flags" className="space-y-4">
                 <AdminChallengeFlagsTab slug={slug} />
+              </TabsContent>
+              <TabsContent value="files" className="space-y-4">
+                <AdminChallengeFilesTab slug={slug} />
+              </TabsContent>
+              <TabsContent value="gitlab" className="space-y-4">
+                <AdminChallengeGitlabTab
+                  locale={locale}
+                  slug={slug}
+                  challenge={detailState.data}
+                  onSynced={() => void loadChallengeDetail(slug)}
+                />
               </TabsContent>
             </Tabs>
           ) : (

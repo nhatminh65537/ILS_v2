@@ -9,6 +9,7 @@ import type {
   ChallengeCategory,
   ChallengeCategoryMutationPayload,
   ChallengeExplorerResponse,
+  ChallengeFile,
   ChallengeFlag,
   ChallengeFlagMutationPayload,
   ChallengeInstance,
@@ -18,6 +19,9 @@ import type {
   ChallengeTagMutationPayload,
   CreateChallengePayload,
   FlagSubmissionResponse,
+  GitlabImportPayload,
+  GitlabProject,
+  GitlabProjectFilesResponse,
   GlobalChallengeProgressResponse,
   SubmitFlagPayload,
   UpdateChallengePayload,
@@ -198,6 +202,70 @@ export const updateChallengeFlag = async (slug: string, flagId: number, payload:
 
 export const deleteChallengeFlag = async (slug: string, flagId: number): Promise<void> => {
   await apiClient.delete(`/api/challenge/challenges/${slug}/flags/${flagId}/`)
+}
+
+// ── Attachment files (Task 6.8 Phase 1) ───────────────────────────────────────
+
+export const listChallengeFiles = async (slug: string): Promise<ChallengeFile[]> => {
+  const response = await apiClient.get(`/api/challenge/challenges/${slug}/files/`)
+  return response.data?.results ?? response.data
+}
+
+export const uploadChallengeFile = async (slug: string, file: File): Promise<ChallengeFile> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await apiClient.post(`/api/challenge/challenges/${slug}/files/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return response.data
+}
+
+export const deleteChallengeFile = async (slug: string, fileId: number): Promise<void> => {
+  await apiClient.delete(`/api/challenge/challenges/${slug}/files/${fileId}/`)
+}
+
+/**
+ * Download an attachment as a blob (the request interceptor attaches the Bearer
+ * token, so the permission-gated endpoint authenticates), then trigger a browser
+ * save. The raw media URL is never exposed.
+ */
+export const downloadChallengeFile = async (slug: string, file: ChallengeFile): Promise<void> => {
+  const response = await apiClient.get(
+    `/api/challenge/challenges/${slug}/files/${file.id}/download/`,
+    { responseType: 'blob' }
+  )
+  const url = window.URL.createObjectURL(response.data as Blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = file.filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
+
+// ── GitLab import/sync (Task 6.8 Phase 2) ─────────────────────────────────────
+
+export const listGitlabProjects = async (search?: string, page?: number): Promise<GitlabProject[]> => {
+  const response = await apiClient.get('/api/challenge/gitlab/projects/', {
+    params: { search: search || undefined, page: page || undefined },
+  })
+  return response.data?.items ?? []
+}
+
+export const listGitlabProjectFiles = async (projectId: number): Promise<GitlabProjectFilesResponse> => {
+  const response = await apiClient.get(`/api/challenge/gitlab/projects/${projectId}/files/`)
+  return response.data
+}
+
+export const importGitlabProject = async (payload: GitlabImportPayload): Promise<Challenge> => {
+  const response = await apiClient.post('/api/challenge/gitlab/import/', payload)
+  return response.data
+}
+
+export const syncChallengeGitlab = async (slug: string): Promise<Challenge> => {
+  const response = await apiClient.post(`/api/challenge/challenges/${slug}/sync-gitlab/`)
+  return response.data
 }
 
 // ── Admin: Instance management ────────────────────────────────────────────────
