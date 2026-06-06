@@ -1195,7 +1195,41 @@
       "notMiniQuiz": "Bài học này không phải loại mini-quiz."
     },
     "outline": {
-      "deferredMessage": "Chỉnh sửa nguồn Outline được hoãn sang Task 5.8."
+      "pickerHint": "Chọn một tài liệu Outline để nhập nội dung vào bài học này. Nội dung được máy chủ tải và lưu trữ.",
+      "syncHint": "Đồng bộ lại để lấy nội dung mới nhất từ Outline. Nếu không kết nối được Outline, nội dung hiện tại sẽ được giữ nguyên.",
+      "collectionLabel": "Bộ sưu tập",
+      "collectionPlaceholder": "Chọn bộ sưu tập…",
+      "documentLabel": "Tài liệu",
+      "noDocuments": "Bộ sưu tập này chưa có tài liệu nào.",
+      "untitledDocument": "(chưa đặt tên)",
+      "revShort": "phiên bản {revision}",
+      "linkedBadge": "Đã liên kết Outline",
+      "viewSource": "Xem nguồn trên Outline",
+      "docId": "Mã tài liệu",
+      "revision": "Phiên bản",
+      "lastSynced": "Đồng bộ lần cuối",
+      "neverSynced": "Chưa đồng bộ",
+      "actions": {
+        "linkAndImport": "Liên kết & nhập",
+        "syncNow": "Đồng bộ ngay",
+        "unlink": "Hủy liên kết",
+        "loadMore": "Tải thêm"
+      },
+      "confirm": {
+        "unlinkTitle": "Hủy liên kết Outline?",
+        "unlink": "Thao tác này tách bài học khỏi Outline. Nội dung hiện tại được giữ lại nhưng sẽ không còn đồng bộ nữa."
+      },
+      "errors": {
+        "disabled": "Tích hợp Outline đang tắt hoặc chưa được cấu hình. Hãy nhờ quản trị viên bật trong Cấu hình hệ thống.",
+        "unavailable": "Không kết nối được Outline. Nội dung trước đó được giữ nguyên.",
+        "notFound": "Không tìm thấy tài liệu Outline.",
+        "alreadyLinked": "Tài liệu Outline này đã được liên kết với một bài học khác.",
+        "selectDocument": "Hãy chọn một tài liệu Outline trước.",
+        "browseFailed": "Không tải được dữ liệu Outline.",
+        "linkFailed": "Không liên kết được tài liệu Outline.",
+        "syncFailed": "Không đồng bộ được từ Outline.",
+        "unlinkFailed": "Không hủy liên kết được Outline."
+      }
     },
     "errors": {
       "invalidLessonId": "ID bài học không hợp lệ.",

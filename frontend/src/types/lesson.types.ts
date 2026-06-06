@@ -1,6 +1,14 @@
 import { LessonType, LessonSource } from '@/types/course.types'
 import type { QuizQuestion } from '@/types/quiz.types'
 
+export interface LearnLessonOutlineInfo {
+  readonly outline_doc_id: string
+  /** Absolute viewer URL on the Outline instance (editor reference only). */
+  readonly outline_url: string
+  readonly last_synced_at: string | null
+  readonly revision: number | null
+}
+
 export interface LearnLessonDetail {
   readonly id: number
   readonly title: string
@@ -14,6 +22,29 @@ export interface LearnLessonDetail {
   /** Owning course, used for the admin breadcrumb back-link. */
   readonly course_slug?: string | null
   readonly course_title?: string | null
+  /** Present when the lesson is linked to an Outline document; null otherwise. */
+  readonly outline_info?: LearnLessonOutlineInfo | null
+}
+
+export interface OutlineCollection {
+  readonly id: string
+  readonly name: string
+}
+
+export interface OutlineDocument {
+  readonly id: string
+  readonly title: string
+  readonly url: string
+  readonly revision: number | null
+  readonly updated_at: string | null
+  readonly collection_id: string | null
+}
+
+export interface PaginatedOutline<T> {
+  readonly items: readonly T[]
+  readonly total: number
+  readonly offset: number
+  readonly limit: number
 }
 
 export interface LearnMiniQuizOption {

@@ -12,6 +12,7 @@ import { LessonType } from '@/types/course.types'
 import { AdminLearnLessonMarkdownTab } from './AdminLearnLessonMarkdownTab'
 import { AdminLearnLessonMetadataTab } from './AdminLearnLessonMetadataTab'
 import { AdminLearnLessonMiniQuizTab } from './AdminLearnLessonMiniQuizTab'
+import { AdminLearnLessonOutlineTab } from './AdminLearnLessonOutlineTab'
 import { AdminLearnLessonVideoTab } from './AdminLearnLessonVideoTab'
 
 type AdminLearnLessonEditorPageClientProps = {
@@ -37,6 +38,9 @@ export function AdminLearnLessonEditorPageClient({ locale, lessonId }: AdminLear
     submitAttachMapping,
     submitDeleteMapping,
     submitReorderMapping,
+    submitOutlineLink,
+    submitOutlineSync,
+    submitOutlineUnlink,
   } = useAdminLearnLessonEditor()
 
   useEffect(() => {
@@ -182,9 +186,14 @@ export function AdminLearnLessonEditorPageClient({ locale, lessonId }: AdminLear
               </TabsContent>
 
               <TabsContent value="outline">
-                <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                  {t('outline.deferredMessage')}
-                </div>
+                <AdminLearnLessonOutlineTab
+                  lessonId={lessonId}
+                  outlineInfo={lessonState.data.outline_info ?? null}
+                  isMutating={isMutating}
+                  onLink={submitOutlineLink}
+                  onSync={submitOutlineSync}
+                  onUnlink={submitOutlineUnlink}
+                />
               </TabsContent>
             </Tabs>
           ) : (

@@ -1195,7 +1195,41 @@
       "notMiniQuiz": "This lesson is not mini-quiz type."
     },
     "outline": {
-      "deferredMessage": "Outline source editing is deferred to Task 5.8."
+      "pickerHint": "Pick an Outline document to import its content into this lesson. The content is fetched and stored by the server.",
+      "syncHint": "Re-sync to pull the latest content from Outline. If Outline is unreachable, the current content is kept.",
+      "collectionLabel": "Collection",
+      "collectionPlaceholder": "Select a collection…",
+      "documentLabel": "Document",
+      "noDocuments": "No documents in this collection.",
+      "untitledDocument": "(untitled)",
+      "revShort": "rev {revision}",
+      "linkedBadge": "Linked to Outline",
+      "viewSource": "View source on Outline",
+      "docId": "Document ID",
+      "revision": "Revision",
+      "lastSynced": "Last synced",
+      "neverSynced": "Never synced",
+      "actions": {
+        "linkAndImport": "Link & import",
+        "syncNow": "Sync now",
+        "unlink": "Unlink",
+        "loadMore": "Load more"
+      },
+      "confirm": {
+        "unlinkTitle": "Unlink from Outline?",
+        "unlink": "This detaches the lesson from Outline. The current content is kept, but it will no longer sync."
+      },
+      "errors": {
+        "disabled": "Outline integration is disabled or not configured. Ask an admin to enable it in System Config.",
+        "unavailable": "Outline is unreachable. The previous content was kept unchanged.",
+        "notFound": "The Outline document could not be found.",
+        "alreadyLinked": "This Outline document is already linked to another lesson.",
+        "selectDocument": "Select an Outline document first.",
+        "browseFailed": "Failed to load Outline data.",
+        "linkFailed": "Failed to link the Outline document.",
+        "syncFailed": "Failed to sync from Outline.",
+        "unlinkFailed": "Failed to unlink from Outline."
+      }
     },
     "errors": {
       "invalidLessonId": "Invalid lesson id.",

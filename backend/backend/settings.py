@@ -10,10 +10,37 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Project root (one level above the Django ``backend/`` package) — where ``.env`` lives.
+PROJECT_ROOT = BASE_DIR.parent
+
+
+def _load_dotenv(path: Path) -> None:
+    """Minimal ``.env`` loader (stdlib only — no python-dotenv dependency).
+
+    Reads ``KEY=VALUE`` lines from ``path`` into ``os.environ`` without
+    overriding variables already set in the real environment. Blank lines and
+    ``#`` comments are ignored; surrounding quotes on values are stripped.
+    """
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_dotenv(PROJECT_ROOT / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -211,7 +238,6 @@ CHANNEL_LAYERS = {
 
 
 # ── Logging ──────────────────────────────────────────────────────────────────
-import os
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

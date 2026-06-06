@@ -707,24 +707,30 @@ app/[locale]/(admin)/admin/(protected)/learn/
 
 > Outline sync tab is part of Task 5.8 (deferrable).
 
-### Task 5.8 — Outline Sync 📋 PENDING (low priority)
+### Task 5.8 — Outline Sync ✅ DONE (2026-06-06)
 
 **Prerequisite:** Task 5.3 completed. `outline.enabled=true` in system_config.
 
-**Endpoints:**
+**Endpoints (all implemented):**
 ```
-GET  /api/learn/outline/documents/              → list Outline documents (requires outline.enabled=true)
-POST /api/learn/lessons/{id}/outline/           → create/update LessonOutline record (link doc)
-POST /api/learn/lessons/{id}/sync-outline/      → synchronous blocking sync from Outline API
+GET    /api/learn/outline/collections/            → list Outline collections (Admin/Editor)
+GET    /api/learn/outline/documents/?collection_id → list Outline documents (Admin/Editor)
+POST   /api/learn/lessons/{id}/outline/           → link doc + import content (Admin/Editor)
+POST   /api/learn/lessons/{id}/sync-outline/      → synchronous blocking re-sync (Admin/Editor)
+DELETE /api/learn/lessons/{id}/outline/           → unlink from Outline (Admin/Editor)
 ```
 
-**Behavior:** Synchronous blocking (MVP — no Celery). Backend calls Outline API using `outline.url` + `outline.api_token` from system_config, updates `lesson.content_md` and `lesson_outline.last_synced_at`/`revision`. On timeout/failure: return 503 with error detail; old content preserved intact.
+**Behavior:** Synchronous blocking (MVP — no Celery). `OutlineService` (`backend/api/services/outline_service.py`, stdlib `urllib`) calls the Outline RPC API (`collections.list`, `documents.list`, `documents.info`) using `outline.url` + `outline.api_token` from system_config, sends a non-default `User-Agent` (Outline's Cloudflare WAF blocks `Python-urllib` → 403/1010), and normalizes responses. `LessonService.link_outline/sync_outline/unlink_outline` update `lesson.content_md` + `lesson.source` and the `lesson_outline` record (`outline_doc_id`, `outline_url`, `revision`, `last_synced_at`). The document fetch happens **before** any DB write, so on Outline failure the exception propagates → **503** and old content is preserved intact. Exception→HTTP map: config disabled/missing → 409, doc not found → 404, unreachable/timeout → 503, dup-linked doc → 409.
 
+> Server-mediated per Q-LEARN-06: the API token never leaves the backend; the FE only sees normalized data + the editor-only `outline_url`.
 > Async via Celery is a future enhancement deferred until Celery is added to the stack (see Q-LEARN-10 revision).
 
-**Frontend:** Add "Outline sync tab" to lesson editor (`/admin/learn/lessons/[id]/page.tsx`):
-- Input Outline document URL or pick from list via `GET /api/learn/outline/documents/`
-- Trigger `POST /sync-outline/`; show `last_synced_at` + sync status
+**Frontend:** Outline tab in lesson editor (`AdminLearnLessonOutlineTab.tsx`):
+- Unlinked: pick collection → document picker (offset/limit "load more") → **Link & import**.
+- Linked: shows `last_synced_at`, `revision`, editor-only "View source on Outline" link; **Sync now** + **Unlink** (confirm). On 503 a dedicated "previous content kept" message is shown.
+- Wired through `useAdminLearnLessonEditor` (`submitOutlineLink/Sync/Unlink`); MSW handlers + i18n (en/vi) added.
+
+**Tests:** `backend/api/tests/test_outline_sync.py` (13 tests, mocked service: link/sync/unlink, 503-preserves-content, 404, 409 dup, disabled, member-forbidden). Live HTTP end-to-end verified against `collab.n3m3s1s.org`.
 
 ---
 

@@ -31,12 +31,33 @@ from api.serializers import (
     LearnLessonQuestionUpdateSerializer,
     LearnLessonUpdateSerializer,
     LessonSerializer,
+    OutlineLinkSerializer,
     UserCourseProgressSerializer,
     UserLessonProgressSerializer,
 )
 from api.services.course_service import CourseService
 from api.services.learn_progress_service import LearnProgressService
 from api.services.lesson_service import LessonService
+from api.services.outline_service import (
+    OutlineConfigError,
+    OutlineNotFoundError,
+    OutlineService,
+    OutlineUnavailableError,
+)
+
+
+def _outline_error_response(exc):
+    """Map an OutlineService exception to a DRF error Response.
+
+    - OutlineConfigError      -> 409 (integration disabled/misconfigured)
+    - OutlineNotFoundError    -> 404 (document/collection gone)
+    - OutlineUnavailableError -> 503 (Outline unreachable; old content preserved)
+    """
+    if isinstance(exc, OutlineConfigError):
+        return Response({'detail': str(exc)}, status=status.HTTP_409_CONFLICT)
+    if isinstance(exc, OutlineNotFoundError):
+        return Response({'detail': str(exc)}, status=status.HTTP_404_NOT_FOUND)
+    return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
@@ -507,6 +528,99 @@ class LearnLessonViewSet(viewsets.ViewSet):
             return Response({'detail': str(exc)}, status=status.HTTP_409_CONFLICT)
 
         return Response(LearnLessonQuestionSerializer(mapping).data, status=status.HTTP_201_CREATED)
+
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    def link_outline(self, request, pk=None):
+        """POST /learn/lessons/{id}/outline/ — link an Outline doc + import content."""
+        lesson = self._get_lesson_or_404(pk, request.user)
+        serializer = OutlineLinkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            LessonService.link_outline(
+                lesson=lesson,
+                outline_doc_id=serializer.validated_data['outline_doc_id'],
+                actor=request.user,
+            )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_409_CONFLICT)
+        except (OutlineConfigError, OutlineNotFoundError, OutlineUnavailableError) as exc:
+            return _outline_error_response(exc)
+
+        lesson.refresh_from_db()
+        return Response(LearnLessonDetailSerializer(lesson).data)
+
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    def sync_outline(self, request, pk=None):
+        """POST /learn/lessons/{id}/sync-outline/ — re-pull content (503 preserves old)."""
+        lesson = self._get_lesson_or_404(pk, request.user)
+        try:
+            LessonService.sync_outline(lesson=lesson, actor=request.user)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except (OutlineConfigError, OutlineNotFoundError, OutlineUnavailableError) as exc:
+            return _outline_error_response(exc)
+
+        lesson.refresh_from_db()
+        return Response(LearnLessonDetailSerializer(lesson).data)
+
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    def unlink_outline(self, request, pk=None):
+        """DELETE /learn/lessons/{id}/outline/ — detach from Outline."""
+        lesson = self._get_lesson_or_404(pk, request.user)
+        try:
+            LessonService.unlink_outline(lesson=lesson, actor=request.user)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        lesson.refresh_from_db()
+        return Response(LearnLessonDetailSerializer(lesson).data)
+
+
+@add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+class LearnOutlineViewSet(viewsets.ViewSet):
+    """Browse Outline collections/documents for the lesson-editor picker (Task 5.8).
+
+    Read-only, Admin/Editor only. Server-mediated: the Outline token never leaves
+    the backend (see docs/DECISIONS.md Q-LEARN-06).
+    """
+
+    permission_classes = [IsAuthenticated, HasJWTPermission]
+
+    @staticmethod
+    def _pagination_params(request):
+        def _int(name, default):
+            raw = request.query_params.get(name)
+            try:
+                value = int(raw)
+            except (TypeError, ValueError):
+                return default
+            return max(value, 0)
+
+        offset = _int('offset', 0)
+        limit = _int('limit', 25)
+        # Outline caps page size at 100; keep our own sane upper bound.
+        limit = min(limit or 25, 100)
+        return offset, limit
+
+    def collections(self, request):
+        offset, limit = self._pagination_params(request)
+        try:
+            payload = OutlineService.list_collections(offset=offset, limit=limit)
+        except (OutlineConfigError, OutlineNotFoundError, OutlineUnavailableError) as exc:
+            return _outline_error_response(exc)
+        return Response(payload)
+
+    def documents(self, request):
+        offset, limit = self._pagination_params(request)
+        collection_id = (request.query_params.get('collection_id') or '').strip() or None
+        try:
+            payload = OutlineService.list_documents(
+                collection_id=collection_id, offset=offset, limit=limit
+            )
+        except (OutlineConfigError, OutlineNotFoundError, OutlineUnavailableError) as exc:
+            return _outline_error_response(exc)
+        return Response(payload)
 
 
 @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)

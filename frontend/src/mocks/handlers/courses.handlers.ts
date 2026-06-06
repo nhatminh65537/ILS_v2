@@ -917,6 +917,98 @@ export const coursesHandlers = [
     return HttpResponse.json(nextProgress)
   }),
 
+  // ── Outline sync (Task 5.8) ────────────────────────────────────────────────
+  http.get('*/api/learn/outline/collections/', () =>
+    HttpResponse.json({
+      items: [
+        { id: 'col-training', name: '1. Training' },
+        { id: 'col-overview', name: '0. Overview' },
+      ],
+      total: 2,
+      offset: 0,
+      limit: 25,
+    })
+  ),
+
+  http.get('*/api/learn/outline/documents/', ({ request }) => {
+    const url = new URL(request.url)
+    const collectionId = url.searchParams.get('collection_id') ?? 'col-training'
+    const items = [
+      {
+        id: `${collectionId}-doc-1`,
+        title: 'Forensics 101',
+        url: 'https://collab.example.org/doc/forensics-101',
+        revision: 4,
+        updated_at: new Date().toISOString(),
+        collection_id: collectionId,
+      },
+      {
+        id: `${collectionId}-doc-2`,
+        title: 'Tools Cheatsheet',
+        url: 'https://collab.example.org/doc/tools-cheatsheet',
+        revision: 13,
+        updated_at: new Date().toISOString(),
+        collection_id: collectionId,
+      },
+    ]
+    return HttpResponse.json({ items, total: items.length, offset: 0, limit: 25 })
+  }),
+
+  http.post('*/api/learn/lessons/:id/outline/', async ({ params, request }) => {
+    const lessonId = parseNumericId(String(params.id))
+    if (!lessonId || !learnLessonsFixture[lessonId]) {
+      return notFound('Lesson not found')
+    }
+    const payload = (await request.json()) as { outline_doc_id?: string }
+    const docId = payload.outline_doc_id ?? 'doc-1'
+    const updated = {
+      ...learnLessonsFixture[lessonId],
+      source: LessonSource.Outline,
+      content_md: `# Imported from Outline\n\nDocument ${docId} content (mock).`,
+      outline_info: {
+        outline_doc_id: docId,
+        outline_url: `https://collab.example.org/doc/${docId}`,
+        last_synced_at: new Date().toISOString(),
+        revision: 4,
+      },
+    }
+    learnLessonsFixture[lessonId] = updated
+    return HttpResponse.json(updated)
+  }),
+
+  http.post('*/api/learn/lessons/:id/sync-outline/', ({ params }) => {
+    const lessonId = parseNumericId(String(params.id))
+    const lesson = lessonId ? learnLessonsFixture[lessonId] : undefined
+    if (!lesson) {
+      return notFound('Lesson not found')
+    }
+    if (!lesson.outline_info) {
+      return badRequest('Lesson is not linked to Outline.')
+    }
+    const updated = {
+      ...lesson,
+      content_md: `${lesson.content_md ?? ''}\n\n_synced ${new Date().toISOString()}_`,
+      outline_info: {
+        ...lesson.outline_info,
+        last_synced_at: new Date().toISOString(),
+        revision: (lesson.outline_info.revision ?? 0) + 1,
+      },
+    }
+    learnLessonsFixture[lessonId as number] = updated
+    return HttpResponse.json(updated)
+  }),
+
+  http.delete('*/api/learn/lessons/:id/outline/', ({ params }) => {
+    const lessonId = parseNumericId(String(params.id))
+    const lesson = lessonId ? learnLessonsFixture[lessonId] : undefined
+    if (!lesson) {
+      return notFound('Lesson not found')
+    }
+    const updated = { ...lesson, source: LessonSource.Manual, outline_info: null }
+    learnLessonsFixture[lessonId as number] = updated
+    return HttpResponse.json(updated)
+  }),
+
   http.get('*/api/learn/categories/', ({ request }) => {
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? '10')

@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson, LessonQuestion, UserCourseProgress, UserLessonProgress
+from api.models import Course, CourseCategory, CourseNode, CourseTag, Lesson, LessonOutline, LessonQuestion, UserCourseProgress, UserLessonProgress
 from api.serializers.quiz import QuizQuestionSerializer
 
 
@@ -295,11 +295,32 @@ class LessonSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class LessonOutlineInfoSerializer(serializers.ModelSerializer):
+    """Read-only Outline link metadata exposed on the lesson detail."""
+
+    class Meta:
+        model = LessonOutline
+        fields = [
+            'outline_doc_id',
+            'outline_url',
+            'last_synced_at',
+            'revision',
+        ]
+        read_only_fields = fields
+
+
+class OutlineLinkSerializer(serializers.Serializer):
+    """Request body for linking a lesson to an Outline document."""
+
+    outline_doc_id = serializers.CharField(allow_blank=False, trim_whitespace=True)
+
+
 class LearnLessonDetailSerializer(serializers.ModelSerializer):
     """Lesson detail serializer for canonical /api/learn/lessons/{id}/ endpoints."""
 
     course_slug = serializers.SerializerMethodField(read_only=True)
     course_title = serializers.SerializerMethodField(read_only=True)
+    outline_info = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Lesson
@@ -315,8 +336,17 @@ class LearnLessonDetailSerializer(serializers.ModelSerializer):
             'learning_time',
             'course_slug',
             'course_title',
+            'outline_info',
         ]
         read_only_fields = fields
+
+    def get_outline_info(self, obj):
+        # Reverse O2O ``outline_info`` raises DoesNotExist when unlinked.
+        try:
+            outline = obj.outline_info
+        except LessonOutline.DoesNotExist:
+            return None
+        return LessonOutlineInfoSerializer(outline).data
 
     def _course(self, obj):
         # Lesson <-> CourseNode is a reverse O2O exposed as ``node``; the node

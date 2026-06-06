@@ -6,6 +6,9 @@ import type {
   LearnLessonDetail,
   LearnLessonProgress,
   LearnLessonQuestionMapping,
+  OutlineCollection,
+  OutlineDocument,
+  PaginatedOutline,
 } from '@/types/lesson.types'
 
 /**
@@ -78,4 +81,68 @@ export const updateLearnLessonQuestion = async (
  */
 export const deleteLearnLessonQuestion = async (mappingId: number): Promise<void> => {
   await apiClient.delete(`/api/learn/lesson-questions/${mappingId}/`)
+}
+
+// ── Outline sync (Task 5.8) ──────────────────────────────────────────────────
+
+/**
+ * GET /api/learn/outline/collections/ — browse Outline collections (Admin/Editor).
+ */
+export const listOutlineCollections = async (
+  params: { offset?: number; limit?: number } = {}
+): Promise<PaginatedOutline<OutlineCollection>> => {
+  const response = await apiClient.get<PaginatedOutline<OutlineCollection>>(
+    '/api/learn/outline/collections/',
+    { params }
+  )
+  return response.data
+}
+
+/**
+ * GET /api/learn/outline/documents/ — browse Outline documents, optionally
+ * filtered by collection (Admin/Editor).
+ */
+export const listOutlineDocuments = async (
+  params: { collectionId?: string; offset?: number; limit?: number } = {}
+): Promise<PaginatedOutline<OutlineDocument>> => {
+  const { collectionId, ...rest } = params
+  const response = await apiClient.get<PaginatedOutline<OutlineDocument>>(
+    '/api/learn/outline/documents/',
+    { params: { ...rest, ...(collectionId ? { collection_id: collectionId } : {}) } }
+  )
+  return response.data
+}
+
+/**
+ * POST /api/learn/lessons/{id}/outline/ — link a doc + import its markdown.
+ */
+export const linkLessonOutline = async (
+  lessonId: number,
+  outlineDocId: string
+): Promise<LearnLessonDetail> => {
+  const response = await apiClient.post<LearnLessonDetail>(
+    `/api/learn/lessons/${lessonId}/outline/`,
+    { outline_doc_id: outlineDocId }
+  )
+  return response.data
+}
+
+/**
+ * POST /api/learn/lessons/{id}/sync-outline/ — re-pull content (503 keeps old content).
+ */
+export const syncLessonOutline = async (lessonId: number): Promise<LearnLessonDetail> => {
+  const response = await apiClient.post<LearnLessonDetail>(
+    `/api/learn/lessons/${lessonId}/sync-outline/`
+  )
+  return response.data
+}
+
+/**
+ * DELETE /api/learn/lessons/{id}/outline/ — detach from Outline.
+ */
+export const unlinkLessonOutline = async (lessonId: number): Promise<LearnLessonDetail> => {
+  const response = await apiClient.delete<LearnLessonDetail>(
+    `/api/learn/lessons/${lessonId}/outline/`
+  )
+  return response.data
 }

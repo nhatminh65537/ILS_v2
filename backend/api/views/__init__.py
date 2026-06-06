@@ -20,6 +20,7 @@ from .courses import (
     LearnCourseNodeViewSet,
     LearnCourseTagViewSet,
     LearnCourseViewSet,
+    LearnOutlineViewSet,
     LessonViewSet,
 )
 from .leaderboard import LeaderboardViewSet
@@ -49,6 +50,7 @@ __all__ = [
     'LearnCourseNodeViewSet',
     'LearnCourseTagViewSet',
     'LearnCourseViewSet',
+    'LearnOutlineViewSet',
     'LessonViewSet',
     'AdminNotificationViewSet',
     'NotificationViewSet',

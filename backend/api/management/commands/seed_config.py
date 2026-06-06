@@ -1,7 +1,17 @@
+import os
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from api.models import SystemConfig
+
+
+# Outline integration values are sourced from the environment (.env) so secrets
+# are never committed to the repo. When both URL and token are present, the
+# integration is enabled by default.
+_OUTLINE_URL = (os.environ.get('OUTLINE_URL', '') or '').strip()
+_OUTLINE_API_TOKEN = (os.environ.get('OUTLINE_API_TOKEN', '') or '').strip()
+_OUTLINE_ENABLED = bool(_OUTLINE_URL and _OUTLINE_API_TOKEN)
 
 
 DEFAULT_CONFIGS = [
@@ -223,7 +233,7 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'outline.enabled',
-        'value': False,
+        'value': _OUTLINE_ENABLED,
         'value_type': SystemConfig.ConfigType.BOOL,
         'category': 'outline',
         'description': 'Enable Outline integration.',
@@ -232,7 +242,7 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'outline.url',
-        'value': '',
+        'value': _OUTLINE_URL,
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'outline',
         'description': 'Outline base URL.',
@@ -241,7 +251,7 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'outline.api_token',
-        'value': '',
+        'value': _OUTLINE_API_TOKEN,
         'value_type': SystemConfig.ConfigType.SECRET,
         'category': 'outline',
         'description': 'Outline API token.',
@@ -435,6 +445,11 @@ class Command(BaseCommand):
 
             changed_fields = []
             for field in SYNC_FIELDS:
+                # Never clobber an already-configured value with an empty seed
+                # default (e.g. Outline url/token left out of the environment on a
+                # re-seed). Metadata fields still sync normally.
+                if field == 'value' and config[field] in ('', None) and obj.value not in ('', None):
+                    continue
                 if getattr(obj, field) != config[field]:
                     setattr(obj, field, config[field])
                     changed_fields.append(field)

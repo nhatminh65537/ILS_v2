@@ -17,6 +17,7 @@ from .views import (
     LearnCourseNodeViewSet,
     LearnCourseTagViewSet,
     LearnCourseViewSet,
+    LearnOutlineViewSet,
     LearnChallengeViewSet,
     LearnChallengeCategoryViewSet,
     LearnChallengeTagViewSet,
@@ -128,11 +129,33 @@ urlpatterns = [
         name='learn-tag-detail',
     ),
 
+    # Canonical namespaced Outline browse routes (Slice 5 / Task 5.8)
+    re_path(
+        r'^learn/outline/collections/$',
+        LearnOutlineViewSet.as_view({'get': 'collections'}),
+        name='learn-outline-collections',
+    ),
+    re_path(
+        r'^learn/outline/documents/$',
+        LearnOutlineViewSet.as_view({'get': 'documents'}),
+        name='learn-outline-documents',
+    ),
+
     # Canonical namespaced learn lesson routes (Slice 5 / Task 5.3)
     re_path(
         r'^learn/lessons/(?P<pk>\d+)/$',
         LearnLessonViewSet.as_view({'get': 'retrieve', 'put': 'update'}),
         name='learn-lesson-detail',
+    ),
+    re_path(
+        r'^learn/lessons/(?P<pk>\d+)/outline/$',
+        LearnLessonViewSet.as_view({'post': 'link_outline', 'delete': 'unlink_outline'}),
+        name='learn-lesson-outline',
+    ),
+    re_path(
+        r'^learn/lessons/(?P<pk>\d+)/sync-outline/$',
+        LearnLessonViewSet.as_view({'post': 'sync_outline'}),
+        name='learn-lesson-sync-outline',
     ),
     re_path(
         r'^learn/lessons/(?P<pk>\d+)/progress/start/$',

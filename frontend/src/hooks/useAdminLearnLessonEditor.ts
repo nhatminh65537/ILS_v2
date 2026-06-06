@@ -6,7 +6,10 @@ import {
   attachLearnLessonQuestion,
   deleteLearnLessonQuestion,
   getLearnLessonById,
+  linkLessonOutline,
   listLearnLessonQuestions,
+  syncLessonOutline,
+  unlinkLessonOutline,
   updateLearnLesson,
   updateLearnLessonQuestion,
 } from '@/services/lessons.service'
@@ -80,6 +83,33 @@ const normalizeQuizStatus = (
   }
 
   return 'all'
+}
+
+/**
+ * Map an Outline endpoint error to a precise i18n key. The axios interceptor
+ * drops the HTTP status, so we key off the backend `detail` text (which is
+ * stable and produced by OutlineService).
+ */
+const mapOutlineErrorToMessageKey = (error: unknown, fallbackKey: string): string => {
+  const detail =
+    typeof error === 'object' && error !== null && 'detail' in error
+      ? String((error as { detail?: unknown }).detail ?? '')
+      : ''
+  const text = detail.toLowerCase()
+
+  if (text.includes('disabled') || text.includes('missing outline')) {
+    return 'outline.errors.disabled'
+  }
+  if (text.includes('failed to reach') || text.includes('unreachable') || text.includes('invalid json') || text.includes('returned an error')) {
+    return 'outline.errors.unavailable'
+  }
+  if (text.includes('not found')) {
+    return 'outline.errors.notFound'
+  }
+  if (text.includes('already linked')) {
+    return 'outline.errors.alreadyLinked'
+  }
+  return fallbackKey
 }
 
 export const useAdminLearnLessonEditor = () => {
@@ -270,6 +300,64 @@ export const useAdminLearnLessonEditor = () => {
     }
   }, [loadLessonMappings, mappingsState.data])
 
+  const submitOutlineLink = useCallback(async (
+    lessonId: number,
+    outlineDocId: string
+  ): Promise<boolean> => {
+    if (!outlineDocId) {
+      setMutationErrorKey('outline.errors.selectDocument')
+      return false
+    }
+
+    setIsMutating(true)
+    setMutationErrorKey(null)
+
+    try {
+      const updated = await linkLessonOutline(lessonId, outlineDocId)
+      setLessonState({ data: updated, isLoading: false, errorMessageKey: null })
+      return true
+    } catch (error) {
+      setMutationErrorKey(mapOutlineErrorToMessageKey(error, 'outline.errors.linkFailed'))
+      return false
+    } finally {
+      setIsMutating(false)
+    }
+  }, [])
+
+  const submitOutlineSync = useCallback(async (lessonId: number): Promise<boolean> => {
+    setIsMutating(true)
+    setMutationErrorKey(null)
+
+    try {
+      const updated = await syncLessonOutline(lessonId)
+      setLessonState({ data: updated, isLoading: false, errorMessageKey: null })
+      return true
+    } catch (error) {
+      // On 503 the backend preserves old content; the dedicated message tells the
+      // user nothing was lost.
+      setMutationErrorKey(mapOutlineErrorToMessageKey(error, 'outline.errors.syncFailed'))
+      return false
+    } finally {
+      setIsMutating(false)
+    }
+  }, [])
+
+  const submitOutlineUnlink = useCallback(async (lessonId: number): Promise<boolean> => {
+    setIsMutating(true)
+    setMutationErrorKey(null)
+
+    try {
+      const updated = await unlinkLessonOutline(lessonId)
+      setLessonState({ data: updated, isLoading: false, errorMessageKey: null })
+      return true
+    } catch (error) {
+      setMutationErrorKey(mapOutlineErrorToMessageKey(error, 'outline.errors.unlinkFailed'))
+      return false
+    } finally {
+      setIsMutating(false)
+    }
+  }, [])
+
   return {
     lessonState,
     mappingsState,
@@ -286,5 +374,8 @@ export const useAdminLearnLessonEditor = () => {
     submitAttachMapping,
     submitDeleteMapping,
     submitReorderMapping,
+    submitOutlineLink,
+    submitOutlineSync,
+    submitOutlineUnlink,
   }
 }

@@ -130,7 +130,7 @@ Contract notes:
 | GET | `/api/learn/tags/{id}/` | Yes | Partial | Tag detail. |
 | PUT | `/api/learn/tags/{id}/` | Yes | Partial | Update; permission-gated (admin/editor). |
 | DELETE | `/api/learn/tags/{id}/` | Yes | Partial | Delete; permission-gated (admin/editor). |
-| GET | `/api/learn/lessons/{id}/` | Yes | Partial | Member visibility restricted to lessons whose owning course is `published`. |
+| GET | `/api/learn/lessons/{id}/` | Yes | Partial | Member visibility restricted to lessons whose owning course is `published`. Detail includes `outline_info` (null unless linked to Outline). |
 | PUT | `/api/learn/lessons/{id}/` | Yes | Partial | Editor/admin only. |
 | POST | `/api/learn/lessons/{id}/progress/start/` | Yes | Partial | Idempotent upsert of `user_lesson_progress.started_at`. |
 | POST | `/api/learn/lessons/{id}/progress/complete/` | Yes | Partial | Idempotent completion; triggers course/profile aggregate updates via signal chain. |
@@ -139,6 +139,11 @@ Contract notes:
 | GET | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Mini-quiz mapping detail; member visibility restricted to published courses. |
 | PUT | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Update mapping position; editor/admin only. |
 | DELETE | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Delete mapping; editor/admin only. |
+| GET | `/api/learn/outline/collections/` | Yes (Admin/Editor) | Stable | Browse Outline collections (`?offset`, `?limit`). Server-mediated; requires `outline.enabled` + `outline.url`/`outline.api_token` (else 409). Outline unreachable → 503. |
+| GET | `/api/learn/outline/documents/` | Yes (Admin/Editor) | Stable | Browse Outline documents (`?collection_id`, `?offset`, `?limit`); `text` omitted from list payload. |
+| POST | `/api/learn/lessons/{id}/outline/` | Yes (Admin/Editor) | Stable | Body `{outline_doc_id}`. Links the lesson + imports markdown into `content_md`, sets `source=outline`, upserts `lesson_outline`. Doc already linked to another lesson → 409; doc missing → 404; Outline down → 503. Returns lesson detail. |
+| POST | `/api/learn/lessons/{id}/sync-outline/` | Yes (Admin/Editor) | Stable | Re-pull from the linked Outline doc; updates `content_md` + `revision`/`last_synced_at`. Not linked → 400; Outline failure → **503 with old content preserved**. |
+| DELETE | `/api/learn/lessons/{id}/outline/` | Yes (Admin/Editor) | Stable | Detach from Outline; resets `source=manual`, keeps `content_md`. Not linked → 400. |
 
 Legacy flat routes (retained during migration — see §6 Route Migration):
 
