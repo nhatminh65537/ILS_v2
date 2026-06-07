@@ -219,6 +219,7 @@ class ChallengeDetailSerializer(serializers.ModelSerializer):
             'gitlab',
             'challenge_point',
             'instance_required',
+            'deploy_source_ref',
             'created_at',
             'updated_at',
         ]
@@ -278,6 +279,7 @@ class ChallengeWriteSerializer(serializers.ModelSerializer):
             'gitlab_path',
             'challenge_point',
             'instance_required',
+            'deploy_source_ref',
             'created_at',
             'updated_at',
         ]
@@ -433,25 +435,70 @@ class ChallengeFlagSubmitSerializer(serializers.Serializer):
 
 
 class ChallengeInstanceSerializer(serializers.ModelSerializer):
-    """Challenge instance serializer. flag_value is never exposed."""
+    """Challenge instance serializer. flag_value is never exposed.
+
+    Bao gồm các convenience field cho admin instance-list (user_username,
+    challenge_slug, *_id) để khớp AdminChallengeInstanceDto của frontend, đồng
+    thời giữ ``challenge``/``user`` (id thô) cho member panel hiện có.
+    """
 
     challenge_title = serializers.CharField(source='challenge.title', read_only=True)
+    challenge_slug = serializers.CharField(source='challenge.slug', read_only=True)
+    challenge_id = serializers.IntegerField(source='challenge.id', read_only=True)
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    user_username = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = ChallengeInstance
         fields = [
             'id',
             'challenge',
+            'challenge_id',
             'challenge_title',
+            'challenge_slug',
             'user',
+            'user_id',
+            'user_username',
             'challenge_flag',
             'instance_info',
             'status',
             'expires_at',
             'created_at',
+            'updated_at',
             'terminated_at',
         ]
-        read_only_fields = ['id', 'instance_info', 'created_at', 'terminated_at', 'expires_at']
+        read_only_fields = [
+            'id', 'instance_info', 'created_at', 'updated_at', 'terminated_at', 'expires_at',
+        ]
+
+
+class AdminChallengeInstanceSerializer(ChallengeInstanceSerializer):
+    """Admin-only instance serializer — additionally exposes the resolved instance
+    flag and details, for the admin instances management page. Must NOT be used on
+    member-facing endpoints (flag_value is the answer).
+    """
+
+    flag_value = serializers.CharField(read_only=True)
+    challenge_flag_template = serializers.SerializerMethodField()
+
+    class Meta(ChallengeInstanceSerializer.Meta):
+        fields = ChallengeInstanceSerializer.Meta.fields + [
+            'flag_value',
+            'challenge_flag_template',
+        ]
+
+    def get_challenge_flag_template(self, obj):
+        """The base flag template used to generate this instance's flag (or None)."""
+        flag = obj.challenge_flag
+        if flag is None:
+            return None
+        return {
+            'id': flag.id,
+            'flag_value': flag.flag_value,
+            'is_regex': flag.is_regex,
+            'is_case_sensitive': flag.is_case_sensitive,
+            'random_tail_length': flag.random_tail_length,
+        }
 
 
 class UserChallengeProgressSerializer(serializers.ModelSerializer):

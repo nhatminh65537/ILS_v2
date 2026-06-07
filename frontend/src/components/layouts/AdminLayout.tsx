@@ -18,6 +18,7 @@ type AdminLayoutProps = {
   quizzesLabel: string
   coursesLabel: string
   challengesLabel: string
+  instancesLabel: string
   notificationsLabel: string
   statisticsLabel: string
   userPortalLabel: string
@@ -38,6 +39,7 @@ export function AdminLayout({
   quizzesLabel,
   coursesLabel,
   challengesLabel,
+  instancesLabel,
   notificationsLabel,
   statisticsLabel,
   userPortalLabel,
@@ -52,6 +54,7 @@ export function AdminLayout({
   const quizzesHref = `/${locale}/admin/quizzes`
   const coursesHref = `/${locale}/admin/learn/courses`
   const challengesHref = `/${locale}/admin/challenges`
+  const instancesHref = `/${locale}/admin/challenges/instances`
   const notificationsHref = `/${locale}/admin/notifications`
   const statisticsHref = `/${locale}/admin/statistics`
   const userDashboardHref = `/${locale}/dashboard`
@@ -64,6 +67,7 @@ export function AdminLayout({
     { href: quizzesHref, label: quizzesLabel, section: 'quizzes' },
     { href: coursesHref, label: coursesLabel, section: 'learn' },
     { href: challengesHref, label: challengesLabel, section: 'challenges' },
+    { href: instancesHref, label: instancesLabel, section: 'challenges' },
     { href: notificationsHref, label: notificationsLabel, section: 'notifications' },
     { href: statisticsHref, label: statisticsLabel, section: 'statistics' },
   ]

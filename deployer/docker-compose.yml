@@ -1,0 +1,17 @@
+# Run the deployer as a daemon on a Docker host.
+# SECURITY: the port is bound to 127.0.0.1 only — do not expose publicly (no auth).
+services:
+  deployer:
+    build: .
+    restart: unless-stopped
+    # Mount the host Docker socket so the deployer can spawn sibling containers.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "127.0.0.1:9100:9100"
+    # Registry host + token and the rest of the knobs live in .env (not committed).
+    env_file:
+      - .env
+    environment:
+      # Inside the container we listen on all interfaces; the host maps 127.0.0.1 only.
+      DEPLOY_BIND_ADDR: "0.0.0.0"

@@ -1,0 +1,20 @@
+# Challenge metadata (documentation-only in MVP — ILS does NOT parse this yet).
+# Kept as a convention so challenge authors record the deploy contract in one place.
+# See docs/integrations/challenge-repo-format.md.
+
+title: Baby File Reader
+category: Web
+difficulty: easy
+
+# Instance deployment: the deploy server runs this image and injects FLAG.
+deploy:
+  exposed_port: 5000        # must match EXPOSE in the Dockerfile
+  # image is built+pushed by .gitlab-ci.yml to $CI_REGISTRY_IMAGE:latest
+
+# Flag template (configure the matching ChallengeFlag in ILS):
+#   flag_value:        "ILS{baby_file_reader_"   (base; the app appends nothing — ILS
+#                       generates the per-user value and passes it as FLAG)
+#   random_tail_length: 12                       (per-user random suffix → instance flag)
+flag:
+  base: "ILS{baby_file_reader_"
+  random_tail_length: 12

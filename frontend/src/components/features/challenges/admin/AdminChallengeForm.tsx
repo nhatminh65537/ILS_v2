@@ -43,6 +43,27 @@ type FormState = {
   tagIds: number[]
   challengePoint: number
   instanceRequired: boolean
+  deploySourceRef: string
+}
+
+/** Best-effort default image ref for a gitlab-sourced challenge.
+ *  Derives the registry host from the project URL host (commonly the
+ *  `gitlab.` subdomain is replaced by `registry.`) and appends `:latest`.
+ *  The admin can edit/override; empty when no gitlab info is available.
+ */
+const suggestDeploySourceRef = (challenge?: Challenge | null): string => {
+  if (!challenge?.gitlab_path) return ''
+  let registryHost = ''
+  const projectUrl = challenge.gitlab?.project_url
+  if (projectUrl) {
+    try {
+      const host = new URL(projectUrl).host
+      registryHost = host.startsWith('gitlab.') ? `registry.${host.slice('gitlab.'.length)}` : `registry.${host}`
+    } catch {
+      registryHost = ''
+    }
+  }
+  return registryHost ? `${registryHost}/${challenge.gitlab_path}:latest` : `${challenge.gitlab_path}:latest`
 }
 
 const normalizeSlug = (value: string): string =>
@@ -60,6 +81,7 @@ const buildInitialState = (challenge?: Challenge | null): FormState => {
       tagIds: [],
       challengePoint: 100,
       instanceRequired: false,
+      deploySourceRef: '',
     }
   }
 
@@ -76,6 +98,7 @@ const buildInitialState = (challenge?: Challenge | null): FormState => {
     tagIds: challenge.tags?.map((t) => t.id) ?? [],
     challengePoint: challenge.challenge_point,
     instanceRequired: challenge.instance_required,
+    deploySourceRef: challenge.deploy_source_ref ?? suggestDeploySourceRef(challenge),
   }
 }
 
@@ -113,6 +136,7 @@ export function AdminChallengeForm({
         source: ChallengeSource.Manual,
         challenge_point: Math.max(0, Number(form.challengePoint || 0)),
         instance_required: form.instanceRequired,
+        deploy_source_ref: form.instanceRequired ? form.deploySourceRef.trim() || null : null,
       }
       await onSubmit(payload)
     } else {
@@ -125,6 +149,7 @@ export function AdminChallengeForm({
         tag_ids: form.tagIds,
         challenge_point: Math.max(0, Number(form.challengePoint || 0)),
         instance_required: form.instanceRequired,
+        deploy_source_ref: form.instanceRequired ? form.deploySourceRef.trim() || null : null,
       }
       await onSubmit(payload)
     }
@@ -232,6 +257,21 @@ export function AdminChallengeForm({
           </label>
         </div>
       </div>
+
+      {form.instanceRequired ? (
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor="deploy-source-ref">
+            {t('form.deploySourceRefLabel')}
+          </label>
+          <Input
+            id="deploy-source-ref"
+            value={form.deploySourceRef}
+            placeholder="registry.example.org/challenges/my-challenge:latest"
+            onChange={(e) => setForm((prev) => ({ ...prev, deploySourceRef: e.target.value }))}
+          />
+          <p className="text-xs text-muted-foreground">{t('form.deploySourceRefHint')}</p>
+        </div>
+      ) : null}
 
       <div className="space-y-2 rounded-md border border-border p-3">
         <p className="text-sm font-medium">{t('form.tagsLabel')}</p>

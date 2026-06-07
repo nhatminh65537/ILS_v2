@@ -516,11 +516,24 @@ class ChallengeService:
 
     @staticmethod
     def get_running_instance(challenge, user):
-        return ChallengeInstance.objects.filter(
+        instance = ChallengeInstance.objects.filter(
             user=user,
             challenge=challenge,
             status=ChallengeInstance.InstanceStatus.RUNNING,
         ).first()
+        # Lazy expiry: instance quá hạn TTL coi như đã chết. Đánh dấu terminated
+        # tại chỗ (giải phóng partial-unique-index) và trả None để caller xử lý
+        # như không có instance đang chạy. Container thật do reaper deploy-server
+        # dọn — đây chỉ là đồng bộ trạng thái DB phía ILS.
+        if instance is not None and instance.expires_at is not None:
+            from django.utils import timezone
+            if instance.expires_at <= timezone.now():
+                instance.status = ChallengeInstance.InstanceStatus.TERMINATED
+                instance.terminated_at = timezone.now()
+                instance.save(update_fields=['status', 'terminated_at', 'updated_at'])
+                instance.log("Instance expired (TTL)")
+                return None
+        return instance
 
     @staticmethod
     def create_instance(challenge, user):

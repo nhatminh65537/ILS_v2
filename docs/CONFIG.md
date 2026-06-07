@@ -137,7 +137,8 @@ Changes apply to **newly issued tokens only**. Existing tokens retain their orig
 | Key | Type | Default | Editable | Runtime | Example | Description |
 |-----|------|---------|----------|---------|---------|-------------|
 | `challenge.upload_path` | string | `"uploads/challenges"` | ✅ | ❌ | `"/var/ils/uploads/challenges"` | Filesystem path for manually uploaded challenge attachment files. Relative to Django `MEDIA_ROOT` or absolute. |
-| `challenge.instance_ttl_minutes` | int | `60` | ✅ | ✅ | `120` | How long a deployed challenge instance lives before the deploy server auto-tears it down. |
+| `challenge.instance_ttl_minutes` | int | `60` | ✅ | ✅ | `120` | How long a deployed challenge instance lives before the deploy server auto-tears it down. Also the increment added on each extend. |
+| `challenge.instance_extend_threshold_minutes` | int | `10` | ✅ | ✅ | `15` | A user may only extend a running instance when its remaining time is below this threshold (minutes). Naturally rate-limits extend spam. |
 
 ---
 
@@ -145,11 +146,15 @@ Changes apply to **newly issued tokens only**. Existing tokens retain their orig
 
 Deployable challenges allow each user to spin up their own isolated instance (e.g., a Docker container with a vulnerable service).
 
+ILS never spawns containers (REQUIREMENTS §2.4, DECISIONS R-ARCH-12). It sends commands to an external **deploy server** over a TCP socket; the deploy server owns Docker. Switching from mock to real deployment is a `provider` flip — no code/serializer/frontend change. Wire contract: `docs/integrations/deploy-socket-protocol.md`.
+
 | Key | Type | Default | Editable | Runtime | Example | Description |
 |-----|------|---------|----------|---------|---------|-------------|
-| `challenge.deploy.enabled` | bool | `false` | ✅ | ✅ | `true` | Enable the deployable challenge feature. When disabled, the "Launch Instance" button is hidden. |
-| `challenge.deploy.api_url` | string | `""` | ✅ | ❌ | `"https://deploy.example.com"` | Base URL of the external instance deployment API (no trailing slash). |
-| `challenge.deploy.api_token` | secret | `""` | ✅ | ❌ | `"<deploy-token>"` | API token for authenticating with the deployment server. Stored encrypted. |
+| `challenge.deploy.enabled` | bool | `false` | ✅ | ✅ | `true` | Enable the deployable challenge feature. When disabled, `instance/start` returns 403 (AC-CHAL-07). |
+| `challenge.deploy.provider` | string | `"mock"` | ✅ | ✅ | `"socket"` | Deployment backend: `mock` (fake connection info, no container) or `socket` (talk to the real deploy server). |
+| `challenge.deploy.api_url` | string | `""` | ✅ | ✅ | `"localhost:9100"` | Deploy-server address as `host:port`. Used only when `provider=socket`. The deploy server binds privately and has **no auth** — keep it off the public internet. |
+
+> **Removed:** `challenge.deploy.api_token` — the deploy server has no auth in this phase (it binds to a private interface only). The key is no longer seeded; any pre-existing row is unused.
 
 ---
 

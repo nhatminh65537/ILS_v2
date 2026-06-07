@@ -110,6 +110,11 @@ export const stopInstance = async (slug: string): Promise<void> => {
   await apiClient.post(`/api/challenge/challenges/${slug}/instance/stop/`)
 }
 
+export const extendInstance = async (slug: string): Promise<ChallengeInstance> => {
+  const response = await apiClient.post(`/api/challenge/challenges/${slug}/instance/extend/`)
+  return response.data
+}
+
 export const getInstanceStatus = async (slug: string): Promise<ChallengeInstance | { status: 'none' }> => {
   const response = await apiClient.get(`/api/challenge/challenges/${slug}/instance/status/`)
   return response.data

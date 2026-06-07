@@ -285,6 +285,18 @@ DEFAULT_CONFIGS = [
         'is_runtime': True,
     },
     {
+        'key': 'challenge.instance_extend_threshold_minutes',
+        'value': 10,
+        'value_type': SystemConfig.ConfigType.INT,
+        'category': 'challenge',
+        'description': (
+            'Chỉ cho phép gia hạn (extend) instance khi thời gian còn lại '
+            'dưới ngưỡng này (phút). Tự nhiên giới hạn việc spam extend.'
+        ),
+        'is_editable': True,
+        'is_runtime': True,
+    },
+    {
         'key': 'challenge.max_tree_depth',
         'value': 5,
         'value_type': SystemConfig.ConfigType.INT,
@@ -312,22 +324,29 @@ DEFAULT_CONFIGS = [
         'is_runtime': True,
     },
     {
+        'key': 'challenge.deploy.provider',
+        'value': 'mock',
+        'value_type': SystemConfig.ConfigType.STRING,
+        'category': 'challenge',
+        'description': (
+            "Deployment backend provider: 'mock' (fake connection info, no "
+            "container) hoặc 'socket' (gọi deploy-server qua TCP). Đổi sang "
+            "'socket' để deploy thật."
+        ),
+        'is_editable': True,
+        'is_runtime': True,
+    },
+    {
         'key': 'challenge.deploy.api_url',
         'value': '',
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'challenge',
-        'description': 'Deployment API base URL.',
+        'description': (
+            "Địa chỉ deploy-server dạng host:port (vd localhost:9100). "
+            "Chỉ dùng khi provider='socket'. Deploy-server bind nội bộ, không auth."
+        ),
         'is_editable': True,
-        'is_runtime': False,
-    },
-    {
-        'key': 'challenge.deploy.api_token',
-        'value': '',
-        'value_type': SystemConfig.ConfigType.SECRET,
-        'category': 'challenge',
-        'description': 'Deployment API token.',
-        'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'challenge.git.enabled',

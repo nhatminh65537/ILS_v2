@@ -1182,6 +1182,13 @@ Custom user model via `AUTH_USER_MODEL` setting, extending `AbstractBaseUser`. P
 
 Instance deployment uses Strategy pattern with a `Protocol` class (`InstanceDeploymentBackend`). Current implementation: `SocketDeploymentBackend` (required for university course). Replaceable with HTTP/gRPC backends later. Instance management is a **separate project** — ILS only calls the interface.
 
+**Follow-up (2026-06-07, Task 6.9 implemented):**
+- `InstanceDeploymentBackend` now has four methods: `deploy / stop / terminate / extend`. Backend is selected at runtime by `system_config[challenge.deploy.provider]` (`mock` | `socket`) — flipping it is the only change needed to go live (CON-001 holds).
+- Wire contract: `docs/integrations/deploy-socket-protocol.md` — newline-delimited JSON over TCP. The `deploy` message carries the ILS-generated per-user `flag` so the deploy server injects it as the container env `FLAG`.
+- **No socket auth in this phase** — the deploy server binds to a private interface only (`challenge.deploy.api_token` removed). Reintroduce a token if the server must be exposed.
+- The external deploy server lives at `deployer/` (in-repo, own venv, loads `deployer/.env` for registry host+token); `docker` (docker-py) stays out of `backend/requirements.txt` (CON-002). It reads the container port from the image `EXPOSE` and publishes a random host port; a label-based reaper enforces TTL.
+- Challenge image provenance: `Challenge.deploy_source_ref` (prefilled from `gitlab_path`); repo format in `docs/integrations/challenge-repo-format.md`; template in `examples/challenge-template/`.
+
 ---
 
 ### R-DATA-07: Status on Lesson and Quiz Question
