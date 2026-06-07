@@ -56,6 +56,8 @@ export interface Challenge {
   readonly gitlab?: ChallengeGitlabInfo | null
   readonly challenge_point: number
   readonly instance_required: boolean
+  /** Image ref the deploy server pulls to run instances (prefilled from gitlab_path). */
+  readonly deploy_source_ref?: string | null
   readonly tags?: readonly ChallengeTag[]
   /** Present on the flat-search list serializer; true when the requester solved it. */
   readonly is_solved?: boolean
@@ -160,6 +162,7 @@ export interface CreateChallengePayload {
   source: ChallengeSource
   challenge_point?: number
   instance_required?: boolean
+  deploy_source_ref?: string | null
 }
 
 export interface UpdateChallengePayload {
@@ -171,6 +174,7 @@ export interface UpdateChallengePayload {
   tag_ids?: number[]
   challenge_point?: number
   instance_required?: boolean
+  deploy_source_ref?: string | null
 }
 
 export interface SubmitFlagPayload {
@@ -311,6 +315,15 @@ export interface AdminChallengeNodeMovePayload {
   parent_id: number | null
 }
 
+/** Base flag template used to generate an instance flag (admin detail only). */
+export interface AdminChallengeFlagTemplateDto {
+  readonly id: number
+  readonly flag_value: string
+  readonly is_regex: boolean
+  readonly is_case_sensitive: boolean
+  readonly random_tail_length: number
+}
+
 /** Admin-facing instance with user/challenge display names */
 export interface AdminChallengeInstanceDto {
   readonly id: number
@@ -324,4 +337,8 @@ export interface AdminChallengeInstanceDto {
   readonly expires_at?: string
   readonly created_at: string
   readonly updated_at: string
+  /** Admin-only: resolved per-instance flag (the answer) — never shown to members. */
+  readonly flag_value?: string | null
+  /** Admin-only: base flag template this instance's flag was generated from. */
+  readonly challenge_flag_template?: AdminChallengeFlagTemplateDto | null
 }

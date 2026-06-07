@@ -86,7 +86,6 @@ export function AdminChallengeEditorPageClient({ locale, slug }: AdminChallengeE
               </TabsContent>
               <TabsContent value="gitlab" className="space-y-4">
                 <AdminChallengeGitlabTab
-                  locale={locale}
                   slug={slug}
                   challenge={detailState.data}
                   onSynced={() => void loadChallengeDetail(slug)}

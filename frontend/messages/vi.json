@@ -297,7 +297,9 @@
       "noInstance": "Chưa có instance.",
       "start": "Khởi động",
       "stop": "Dừng",
-      "restart": "Khởi động lại"
+      "restart": "Khởi động lại",
+      "timeLeft": "Thời gian còn lại",
+      "extend": "Gia hạn"
     },
     "errors": {
       "detailLoadFailed": "Không thể tải thông tin thử thách.",
@@ -448,6 +450,7 @@
     "quizzes": "Quiz",
     "courses": "Khóa học",
     "challenges": "Challenges",
+    "instances": "Instances",
     "notifications": "Thông báo",
     "statistics": "Thống kê",
     "roles": "Vai trò",
@@ -1308,6 +1311,8 @@
       "categoryNone": "Không có danh mục",
       "challengePointLabel": "Điểm thưởng",
       "instanceRequiredLabel": "Yêu cầu instance",
+      "deploySourceRefLabel": "Image ref deploy",
+      "deploySourceRefHint": "Image container mà deploy server pull để chạy instance. Tự điền từ repo GitLab; sửa nếu đường dẫn registry khác.",
       "tagsLabel": "Thẻ"
     },
     "status": {
@@ -1469,6 +1474,7 @@
     },
     "gitlab": {
       "syncTitle": "Đồng bộ GitLab",
+      "notLinkedHint": "Thử thách này không liên kết với GitLab. Dùng nút \"Nhập từ GitLab\" ở trang danh sách để tạo thử thách từ một dự án GitLab.",
       "syncing": "Đang đồng bộ...",
       "project": "Dự án",
       "lastCommit": "Commit gần nhất",
@@ -1488,6 +1494,7 @@
       "subtitle": "Theo dõi và quản lý các instance challenge đang chạy.",
       "listTitle": "Danh sách instance",
       "kill": "Dừng",
+      "viewDetails": "Chi tiết",
       "killConfirm": "Dừng instance của người dùng {user}?",
       "filters": {
         "user": "Lọc theo username",
@@ -1503,6 +1510,16 @@
         "running": "Đang chạy",
         "stopped": "Đã dừng",
         "terminated": "Đã kết thúc"
+      },
+      "details": {
+        "title": "Chi tiết instance",
+        "status": "Trạng thái",
+        "flag": "Flag instance",
+        "noFlag": "(không có flag inject)",
+        "flagTemplate": "Mẫu flag",
+        "randomChars": "ký tự ngẫu nhiên",
+        "connection": "Kết nối",
+        "expiresAt": "Hết hạn lúc"
       },
       "killConfirmTitle": "Dừng instance?"
     },
@@ -1560,6 +1577,7 @@
       "root": "Gốc",
       "back": "Quay lại",
       "newItem": "Tạo mới",
+      "importFromGitlab": "Nhập từ GitLab",
       "createTitle": "Tạo thư mục hoặc thử thách",
       "createUnder": "Tạo trong: {parent}",
       "kindLabel": "Loại",

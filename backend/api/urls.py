@@ -396,6 +396,11 @@ urlpatterns = [
         name='challenge-instance-stop',
     ),
     re_path(
+        r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/instance/extend/$',
+        LearnChallengeViewSet.as_view({'post': 'instance_extend'}),
+        name='challenge-instance-extend',
+    ),
+    re_path(
         r'^challenge/challenges/(?P<slug>[a-z0-9-]+)/instance/status/$',
         LearnChallengeViewSet.as_view({'get': 'instance_status'}),
         name='challenge-instance-status',

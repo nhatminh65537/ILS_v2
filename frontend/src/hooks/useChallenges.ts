@@ -8,6 +8,7 @@ import {
   submitFlag as submitFlagApi,
   startInstance as startInstanceApi,
   stopInstance as stopInstanceApi,
+  extendInstance as extendInstanceApi,
   getInstanceStatus as getInstanceStatusApi,
 } from '@/services/challenges.service'
 import { useChallengesStore } from '@/stores/challenges.store'
@@ -144,6 +145,23 @@ export function useChallenges() {
     [setInstanceLoading, setInstanceStatus, setError]
   )
 
+  const extendInstance = useCallback(
+    async (slug: string) => {
+      setInstanceLoading(true)
+      try {
+        const instance = await extendInstanceApi(slug)
+        setInstanceStatus(instance)
+        return instance
+      } catch {
+        setError('Failed to extend instance')
+        return null
+      } finally {
+        setInstanceLoading(false)
+      }
+    },
+    [setInstanceLoading, setInstanceStatus, setError]
+  )
+
   return {
     challenges,
     selectedChallenge,
@@ -161,5 +179,6 @@ export function useChallenges() {
     submitFlag,
     startInstance,
     stopInstance,
+    extendInstance,
   }
 }

@@ -33,7 +33,7 @@ export const useAdminChallengeFlags = () => {
       setFlagsState((s) => ({
         ...s,
         isLoading: false,
-        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'adminChallenges.errors.loadFlagsFailed'),
+        errorMessageKey: mapChallengeAdminErrorToMessageKey(error, 'errors.loadFlagsFailed'),
       }))
     }
   }, [])
@@ -55,15 +55,15 @@ export const useAdminChallengeFlags = () => {
   }, [loadFlags])
 
   const submitCreateFlag = useCallback(async (slug: string, payload: ChallengeFlagMutationPayload): Promise<boolean> => {
-    return runMutation(slug, async () => { await createChallengeFlag(slug, payload) }, 'adminChallenges.errors.createFlagFailed')
+    return runMutation(slug, async () => { await createChallengeFlag(slug, payload) }, 'errors.createFlagFailed')
   }, [runMutation])
 
   const submitUpdateFlag = useCallback(async (slug: string, flagId: number, payload: ChallengeFlagMutationPayload): Promise<boolean> => {
-    return runMutation(slug, async () => { await updateChallengeFlag(slug, flagId, payload) }, 'adminChallenges.errors.updateFlagFailed')
+    return runMutation(slug, async () => { await updateChallengeFlag(slug, flagId, payload) }, 'errors.updateFlagFailed')
   }, [runMutation])
 
   const submitDeleteFlag = useCallback(async (slug: string, flagId: number): Promise<boolean> => {
-    return runMutation(slug, async () => { await deleteChallengeFlag(slug, flagId) }, 'adminChallenges.errors.deleteFlagFailed')
+    return runMutation(slug, async () => { await deleteChallengeFlag(slug, flagId) }, 'errors.deleteFlagFailed')
   }, [runMutation])
 
   return {

@@ -281,6 +281,7 @@ Core challenge entity.
 | `gitlab_path` | TEXT | nullable — only for gitlab-sourced challenges |
 | `challenge_point` | INTEGER | NOT NULL, DEFAULT 0 |
 | `instance_required` | BOOLEAN | NOT NULL, DEFAULT FALSE |
+| `deploy_source_ref` | TEXT | NULL |
 | *(audit fields)* | | |
 
 **Indexes:** `slug`, `title`, `category_id`, `status`, `difficulty`, `source`
@@ -289,6 +290,7 @@ Core challenge entity.
 - `slug`: URL-safe, unique, required
 - `storage_path`: required even for gitlab challenges (local cache/mirror path)
 - `instance_required`: if TRUE, user must start an instance before flag submission
+- `deploy_source_ref`: image ref the deploy server pulls to run instances (e.g. `registry.example/grp/chal:latest`). Prefilled in the admin form from `gitlab_path` for gitlab-sourced challenges; editable. NULL when deploy is not configured.
 
 ---
 

@@ -290,6 +290,15 @@ class Challenge(FullAudit):
         default=False,
         help_text="Challenge có cần instance để chạy không"
     )
+    deploy_source_ref = models.TextField(
+        blank=True,
+        null=True,
+        help_text=(
+            "Image ref để deploy instance (vd registry.gitlab.example/grp/chal:latest). "
+            "Khi tạo challenge từ GitLab, form prefill từ gitlab_path; admin sửa được. "
+            "Deploy server pull image này. Rỗng = challenge chưa cấu hình deploy."
+        )
+    )
 
     class Meta:
         db_table = 'challenge'
@@ -520,12 +529,19 @@ class ChallengeInstance(FullAudit):
         if self.status == self.InstanceStatus.TERMINATED:
             raise ValueError("Cannot start terminated instance")
 
+        from datetime import timedelta
+        from .utils import get_config
         from .services.instance_service import get_deployment_backend
         instance_info = get_deployment_backend().deploy(self)
 
+        # G2: set TTL từ system_config tại deploy time. ttl<=0 => unlimited (giữ null).
+        ttl_minutes = get_config('challenge.instance_ttl_minutes', 60)
+        if ttl_minutes and ttl_minutes > 0:
+            self.expires_at = timezone.now() + timedelta(minutes=ttl_minutes)
+
         self.status = self.InstanceStatus.RUNNING
         self.instance_info = instance_info
-        self.save(update_fields=['status', 'instance_info', 'updated_at'])
+        self.save(update_fields=['status', 'instance_info', 'expires_at', 'updated_at'])
         self.log("Instance started")
 
     def stop(self):
@@ -547,7 +563,26 @@ class ChallengeInstance(FullAudit):
         self.terminated_at = timezone.now()
         self.save(update_fields=['status', 'terminated_at', 'updated_at'])
         self.log("Instance terminated")
-    
+
+    def extend(self, ttl_minutes):
+        """Gia hạn TTL của instance đang chạy thêm ``ttl_minutes`` phút.
+
+        Đồng bộ hạn mới xuống deploy backend (label container) trước, rồi cập
+        nhật ``expires_at``. Caller (view) chịu trách nhiệm kiểm tra ngưỡng cho
+        phép gia hạn.
+        """
+        if self.status != self.InstanceStatus.RUNNING:
+            raise ValueError("Cannot extend a non-running instance")
+
+        from datetime import timedelta
+        from .services.instance_service import get_deployment_backend
+        get_deployment_backend().extend(self, ttl_minutes)
+
+        base = self.expires_at or timezone.now()
+        self.expires_at = base + timedelta(minutes=ttl_minutes)
+        self.save(update_fields=['expires_at', 'updated_at'])
+        self.log(f"Instance extended by {ttl_minutes} minutes")
+
     def log(self, message):
         """Add log entry for this instance"""
         ChallengeInstanceLog.objects.create(

@@ -15,6 +15,7 @@ from auth_app.permissions import HasJWTPermission, add_role_granted
 
 from api.models import Challenge, ChallengeCategory, ChallengeFile, ChallengeFlag, ChallengeInstance, ChallengeNode, ChallengeTag, UserChallengeProgress, UserChallengeSubmit
 from api.serializers import (
+    AdminChallengeInstanceSerializer,
     ChallengeCategorySerializer,
     ChallengeDetailSerializer,
     ChallengeFileSerializer,
@@ -34,6 +35,8 @@ from api.services.gitlab_service import (
     GitlabService,
     GitlabUnavailableError,
 )
+from api.services.instance_service import DeployError
+from api.utils import get_config
 
 
 def _gitlab_error_response(exc):
@@ -238,6 +241,12 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
     @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def instance_start(self, request, slug=None):
         challenge = self.get_object()
+        # G1: cổng deploy.enabled (AC-CHAL-07).
+        if not get_config('challenge.deploy.enabled', False):
+            return Response(
+                {'detail': 'Instance deployment is disabled.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if not challenge.instance_required:
             return Response(
                 {'detail': 'This challenge does not require an instance.'},
@@ -248,17 +257,55 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         if existing:
             return Response(ChallengeInstanceSerializer(existing, context={'request': request}).data)
 
-        instance = ChallengeService.create_instance(challenge, request.user)
+        instance = None
         try:
+            instance = ChallengeService.create_instance(challenge, request.user)
             instance.start()
+        except IntegrityError:
+            # G4: race với partial-unique-index uq_challenge_instance_active.
+            return Response(
+                {'detail': 'Instance already running.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        except DeployError as exc:
+            # Deploy-server down/timeout/rejected/misconfig -> 503; dọn record.
+            if instance is not None and instance.pk:
+                instance.delete()
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except Exception as exc:
-            instance.delete()
+            if instance is not None and instance.pk:
+                instance.delete()
             return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(
             ChallengeInstanceSerializer(instance, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
+    def instance_extend(self, request, slug=None):
+        challenge = self.get_object()
+        running = ChallengeService.get_running_instance(challenge, request.user)
+        if running is None:
+            return Response({'detail': 'No running instance found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        from django.utils import timezone
+        threshold = get_config('challenge.instance_extend_threshold_minutes', 10)
+        ttl = get_config('challenge.instance_ttl_minutes', 60)
+        if running.expires_at is not None:
+            remaining = (running.expires_at - timezone.now()).total_seconds() / 60
+            if remaining >= threshold:
+                return Response(
+                    {'detail': f'Chỉ có thể gia hạn khi còn dưới {threshold} phút.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        try:
+            running.extend(ttl)
+        except DeployError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        return Response(ChallengeInstanceSerializer(running, context={'request': request}).data)
 
     @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def instance_stop(self, request, slug=None):
@@ -272,6 +319,8 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
     @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def instance_status(self, request, slug=None):
         challenge = self.get_object()
+        # Apply lazy TTL expiry: marks a running-but-expired instance terminated.
+        ChallengeService.get_running_instance(challenge, request.user)
         instance = (
             ChallengeInstance.objects
             .filter(user=request.user, challenge=challenge)
@@ -457,8 +506,14 @@ class ChallengeInstanceAdminView(APIView):
             qs = qs.filter(user_id=user_id)
         if instance_status:
             qs = qs.filter(status=instance_status)
-        serializer = ChallengeInstanceSerializer(qs.order_by('-created_at'), many=True, context={'request': request})
-        return Response(serializer.data)
+        qs = qs.order_by('-created_at')
+
+        # Return a paginated envelope ({count, results, ...}) like the other admin
+        # list endpoints — the frontend consumes result.results.
+        paginator = LimitOffsetPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        serializer = AdminChallengeInstanceSerializer(page, many=True, context={'request': request})
+        return paginator.get_paginated_response(serializer.data)
 
 
 @add_role_granted(BUILTIN_ROLE_ADMIN)

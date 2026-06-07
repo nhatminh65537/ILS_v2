@@ -297,7 +297,9 @@
       "noInstance": "No instance running.",
       "start": "Start Instance",
       "stop": "Stop Instance",
-      "restart": "Restart Instance"
+      "restart": "Restart Instance",
+      "timeLeft": "Time left",
+      "extend": "Extend Time"
     },
     "errors": {
       "detailLoadFailed": "Failed to load challenge details.",
@@ -448,6 +450,7 @@
     "quizzes": "Quizzes",
     "courses": "Courses",
     "challenges": "Challenges",
+    "instances": "Instances",
     "notifications": "Notifications",
     "statistics": "Statistics",
     "roles": "Roles",
@@ -1308,6 +1311,8 @@
       "categoryNone": "No category",
       "challengePointLabel": "Challenge points",
       "instanceRequiredLabel": "Instance required",
+      "deploySourceRefLabel": "Deploy image ref",
+      "deploySourceRefHint": "Container image the deploy server pulls to run instances. Prefilled from the GitLab repo; edit if your registry path differs.",
       "tagsLabel": "Tags"
     },
     "status": {
@@ -1469,6 +1474,7 @@
     },
     "gitlab": {
       "syncTitle": "GitLab sync",
+      "notLinkedHint": "This challenge is not linked to GitLab. Use the \"Import from GitLab\" button on the explorer to create a challenge from a GitLab project.",
       "syncing": "Syncing...",
       "project": "Project",
       "lastCommit": "Last commit",
@@ -1488,6 +1494,7 @@
       "subtitle": "Monitor and manage active challenge instances.",
       "listTitle": "Instance list",
       "kill": "Kill",
+      "viewDetails": "Details",
       "killConfirm": "Kill instance for user {user}?",
       "filters": {
         "user": "Filter by username",
@@ -1503,6 +1510,16 @@
         "running": "Running",
         "stopped": "Stopped",
         "terminated": "Terminated"
+      },
+      "details": {
+        "title": "Instance details",
+        "status": "Status",
+        "flag": "Instance flag",
+        "noFlag": "(no flag injected)",
+        "flagTemplate": "Flag template",
+        "randomChars": "random chars",
+        "connection": "Connection",
+        "expiresAt": "Expires at"
       },
       "killConfirmTitle": "Kill instance?"
     },
@@ -1560,6 +1577,7 @@
       "root": "Root",
       "back": "Back",
       "newItem": "New",
+      "importFromGitlab": "Import from GitLab",
       "createTitle": "Create folder or challenge",
       "createUnder": "Creating under: {parent}",
       "kindLabel": "Type",

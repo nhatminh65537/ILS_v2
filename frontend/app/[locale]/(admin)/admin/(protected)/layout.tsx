@@ -23,6 +23,7 @@ export default async function AdminProtectedLayout({
         adminHomeLabel={tSurface('admin.homeLabel')}
         brandLabel={tCommon('appName')}
         challengesLabel={tAdmin('challenges')}
+        instancesLabel={tAdmin('instances')}
         configLabel={tAdmin('config')}
         coursesLabel={tAdmin('courses')}
         dashboardLabel={tAdmin('dashboard')}

@@ -50,6 +50,7 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
     submitFlag,
     startInstance,
     stopInstance,
+    extendInstance,
   } = useChallenges()
 
   const [files, setFiles] = useState<readonly ChallengeFile[]>([])
@@ -179,6 +180,7 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
               isInstanceLoading={isInstanceLoading}
               onStart={() => { void startInstance(slug) }}
               onStop={() => { void stopInstance(slug) }}
+              onExtend={() => { void extendInstance(slug) }}
             />
           ) : null}
 

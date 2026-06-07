@@ -1,0 +1,22 @@
+# Build the challenge image and push it to the project's GitLab Container Registry.
+# The deploy server then `docker pull`s $CI_REGISTRY_IMAGE:latest to spawn instances.
+#
+# Result image ref = registry.<gitlab-host>/<group>/<project>:latest
+# which matches what ILS prefills into Challenge.deploy_source_ref from gitlab_path.
+
+build-image:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    # docker-in-docker WITHOUT TLS — simplest config that works on a plain runner.
+    # Empty DOCKER_TLS_CERTDIR disables TLS so the client talks plain tcp:2375.
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build -t "$CI_REGISTRY_IMAGE:latest" .
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
