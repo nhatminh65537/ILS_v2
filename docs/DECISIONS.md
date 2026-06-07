@@ -363,7 +363,9 @@ The password reset flow sends an HMAC-signed link via email (1-hour expiry). No 
 
 **Decision:** Originally chose Option C (defer) so Slice 1 core auth could proceed.
 
-**Update (2026-06-07 — Task 1.4B implemented):** Password reset is now built using a **hybrid of Option A + Option B**. The `EmailService` resolves SMTP settings from **env vars first** (`EMAIL_HOST`, etc.), then **runtime `auth.email.*` `system_config` rows**, and **falls back to Django's console backend** when no host is configured (dev: reset links print to the server console). SMTP credentials therefore live in **both** `.env` (env wins) **and** `system_config` (runtime-editable via admin) — env takes precedence. This satisfies the sub-questions: credentials can be supplied either way, and email-based reset is now available without blocking dev. See R-AUTH-02 for the stateless token mechanism and its replay caveat.
+**Update (2026-06-07 — Task 1.4B implemented):** Password reset uses Option A (Django SMTP backend) with **centralized config management**. At runtime `EmailService` reads SMTP settings **exclusively from the `auth.email.*` `system_config` rows** (all `is_runtime=true`) — env is NOT consulted while serving. `.env` is **bootstrap-only**: `seed_config` copies `EMAIL_*` into the config rows while they're still empty (never overwriting an admin's edit). When `auth.email.host` is empty, email is treated as not-configured — reset requests still return 200 (anti-enumeration) but no mail is sent and a warning is logged (no console-backend fallback). `FRONTEND_URL` stays in env/settings (deployment infra, not business config). See R-AUTH-02 for the single-use token mechanism.
+
+> **Design note (2026-06-07):** an earlier iteration this session let env vars win over config and fell back to the console backend. That was changed at the user's request to a single-source-of-truth model (config only at runtime; env bootstraps via `seed_config`), matching how Outline/GitLab secrets are seeded.
 
 ---
 

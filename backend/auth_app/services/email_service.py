@@ -1,5 +1,4 @@
 import logging
-import os
 
 from django.core.mail import EmailMultiAlternatives, get_connection
 
@@ -8,18 +7,9 @@ from api.utils import get_config
 
 LOGGER = logging.getLogger(__name__)
 
-CONSOLE_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 SMTP_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 DEFAULT_SENDER_NAME = 'ILS Platform'
-
-
-def _env_or_config(env_key: str, config_key: str, default=None):
-    """Env wins over runtime ``system_config``; empty env string is ignored."""
-    raw = os.environ.get(env_key)
-    if raw is not None and raw != '':
-        return raw
-    return get_config(config_key, default)
 
 
 def _as_bool(value, default: bool = True) -> bool:
@@ -33,43 +23,41 @@ def _as_bool(value, default: bool = True) -> bool:
 
 
 class EmailService:
-    """Send transactional email via a dynamically-built backend.
+    """Send transactional email using SMTP settings from ``system_config``.
 
-    SMTP settings are resolved fresh on every send (env first, then runtime
-    ``auth.email.*`` config). When no SMTP host is configured the service falls
-    back to Django's console backend so the dev flow still works (the message,
-    including reset links, prints to the server console).
+    Configuration lives **exclusively** in the ``auth.email.*`` config rows
+    (centralized management — env is not consulted at runtime; `.env` only
+    bootstraps those rows via ``seed_config``). Settings are read fresh on every
+    send so admin edits take effect immediately. When no SMTP host is configured
+    the service does NOT send (and does not fall back to a console backend);
+    callers treat that as "email not configured".
     """
 
     def _resolve_smtp_settings(self):
-        host = _env_or_config('EMAIL_HOST', 'auth.email.host', '')
+        host = (get_config('auth.email.host', '') or '').strip()
         if not host:
             return None
 
-        port_raw = _env_or_config('EMAIL_PORT', 'auth.email.port', 587)
         try:
-            port = int(port_raw)
+            port = int(get_config('auth.email.port', 587) or 587)
         except (TypeError, ValueError):
             port = 587
 
-        sender_address = _env_or_config('EMAIL_SENDER_ADDRESS', 'auth.email.sender_address', '')
-        username = _env_or_config('EMAIL_HOST_USER', 'auth.email.username', '')
+        username = (get_config('auth.email.username', '') or '').strip()
+        sender_address = (get_config('auth.email.sender_address', '') or '').strip()
 
         return {
             'host': host,
             'port': port,
-            'use_tls': _as_bool(_env_or_config('EMAIL_USE_TLS', 'auth.email.use_tls', True), True),
+            'use_tls': _as_bool(get_config('auth.email.use_tls', True), True),
             'username': username,
-            'password': _env_or_config('EMAIL_HOST_PASSWORD', 'auth.email.password', '') or '',
+            'password': get_config('auth.email.password', '') or '',
             'sender_address': sender_address or username,
             'sender_name': get_config('auth.email.sender_name', DEFAULT_SENDER_NAME) or DEFAULT_SENDER_NAME,
         }
 
     def _build_connection(self, smtp):
-        if smtp is None:
-            return get_connection(CONSOLE_BACKEND), None
-
-        connection = get_connection(
+        return get_connection(
             SMTP_BACKEND,
             host=smtp['host'],
             port=smtp['port'],
@@ -77,19 +65,29 @@ class EmailService:
             password=smtp['password'] or None,
             use_tls=smtp['use_tls'],
         )
-        return connection, smtp
 
     def _from_email(self, smtp) -> str:
-        name = (smtp or {}).get('sender_name', DEFAULT_SENDER_NAME)
-        address = (smtp or {}).get('sender_address', '') or 'noreply@localhost'
+        name = smtp.get('sender_name', DEFAULT_SENDER_NAME)
+        address = smtp.get('sender_address', '') or 'noreply@localhost'
         return f'{name} <{address}>'
 
     def send_password_reset_email(self, user, reset_link: str) -> bool:
-        """Send a reset link to ``user.email``. Never raises — returns success bool."""
+        """Send a reset link to ``user.email``. Never raises — returns success bool.
+
+        Returns ``False`` (and logs) when email is not configured or the send
+        fails, so the caller's request flow is never broken.
+        """
         if not user.email:
             return False
 
         smtp = self._resolve_smtp_settings()
+        if smtp is None:
+            LOGGER.warning(
+                'Password reset email NOT sent for user_id=%s: SMTP is not configured '
+                '(auth.email.host is empty in system_config).',
+                user.pk,
+            )
+            return False
 
         subject = 'Reset your ILS password'
         text_body = (
@@ -109,7 +107,7 @@ class EmailService:
         )
 
         try:
-            connection, smtp = self._build_connection(smtp)
+            connection = self._build_connection(smtp)
             message = EmailMultiAlternatives(
                 subject=subject,
                 body=text_body,

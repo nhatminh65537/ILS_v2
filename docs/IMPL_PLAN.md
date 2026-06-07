@@ -331,7 +331,7 @@ DELETE /api/auth/sessions/{id}/    → revoke one owned active session
 
 ### Task 1.4B — Password reset (email token) ✅ COMPLETED (2026-06-07)
 
-> **Status note:** Previously deferred per [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset); now implemented. The email backend resolves SMTP settings from env first, then runtime `auth.email.*` config, falling back to Django's console backend when no host is configured (dev: reset links print to the server console).
+> **Status note:** Previously deferred per [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset); now implemented. The email backend reads SMTP settings **exclusively from `auth.email.*` `system_config`** (single source of truth, all runtime-editable). `.env` only bootstraps those rows via `seed_config` (fills while empty, never overwrites admin edits). No SMTP host configured ⇒ no send (reset still returns 200 anti-enum; warning logged) — no console fallback.
 
 **Endpoints:**
 ```

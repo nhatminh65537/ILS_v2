@@ -46,7 +46,7 @@
 |-----|------|---------|----------|---------|---------|-------------|
 | `auth.local_login_enabled` | bool | `true` | ✅ | ✅ | `true` | Enable native username/password login. Set to `false` to force SSO-only. |
 | `auth.registration_enabled` | bool | `true` | ✅ | ✅ | `false` | Allow new users to self-register via the local sign-up form. Disable for invite-only orgs. |
-| `auth.password_reset_enabled` | bool | `true` | ✅ | ✅ | `true` | Allow users to request a password reset email (Task 1.4B). When `false`, both `POST /api/auth/password/reset/` and `/reset/confirm/` return 403. Falls back to Django's console backend when no SMTP host is configured. |
+| `auth.password_reset_enabled` | bool | `true` | ✅ | ✅ | `true` | Allow users to request a password reset email (Task 1.4B). When `false`, both `POST /api/auth/password/reset/` and `/reset/confirm/` return 403. Requires SMTP configured via `auth.email.*`; if unconfigured, requests still return 200 (anti-enum) but no mail is sent. |
 | `auth.sso_enabled` | bool | `false` | ✅ | ✅ | `true` | Enable SSO login via Authentik (OAuth2). |
 | `auth.sso_base_url` | string | `""` | ✅ | ❌ | `"https://auth.example.com"` | Authentik instance base URL (no trailing slash). |
 | `auth.sso_client_id` | string | `""` | ✅ | ❌ | `"ils-app"` | OAuth2 client ID registered in Authentik. |
@@ -79,23 +79,32 @@ Validated on registration and password change. Does not retroactively enforce on
 
 ### `auth.email` — SMTP / Email
 
-Used for password reset emails (Task 1.4B) and future notification emails. The
-`EmailService` reads these at send time, but **env vars take precedence** over
-these config rows: `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`,
-`EMAIL_HOST_PASSWORD`, `EMAIL_SENDER_ADDRESS`. If no host resolves from either
-source, sending falls back to Django's console backend (dev). Also note
-`FRONTEND_URL` (env, default `http://localhost:4000`) is used to build the reset
-link target. All fields are optional until password reset is actually used.
+Used for password reset emails (Task 1.4B) and future notification emails.
+**`system_config` is the single source of truth** — at runtime `EmailService`
+reads these rows **only** (env is not consulted). All `auth.email.*` keys are
+`is_runtime=true`, so admin edits via the config UI take effect on the next send.
+
+`.env` is **bootstrap-only**: `python manage.py seed_config` copies `EMAIL_HOST`,
+`EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`,
+`EMAIL_SENDER_ADDRESS` into these rows **while the rows are still empty** — it
+never overwrites a value an admin has set. After the first seed, manage SMTP
+centrally in the admin UI.
+
+If `auth.email.host` is empty, password-reset requests still return 200
+(anti-enumeration) but **no email is sent** (a warning is logged) — there is no
+console-backend fallback. `FRONTEND_URL` (env/settings, default
+`http://localhost:4000`) is deployment infrastructure and stays outside config;
+it is used to build the reset-link target.
 
 | Key | Type | Default | Editable | Runtime | Example | Description |
 |-----|------|---------|----------|---------|---------|-------------|
-| `auth.email.host` | string | `""` | ✅ | ❌ | `"smtp.gmail.com"` | SMTP server hostname. |
-| `auth.email.port` | int | `587` | ✅ | ❌ | `587` | SMTP server port. Common values: 25, 465 (SSL), 587 (STARTTLS). |
-| `auth.email.use_tls` | bool | `true` | ✅ | ❌ | `true` | Use STARTTLS when connecting to SMTP server. Set `false` for plain port 25 or implicit SSL on 465. |
-| `auth.email.username` | string | `""` | ✅ | ❌ | `"noreply@example.com"` | SMTP authentication username. |
-| `auth.email.password` | secret | `""` | ✅ | ❌ | `"<smtp-password>"` | SMTP authentication password. Stored encrypted. |
-| `auth.email.sender_name` | string | `"ILS Platform"` | ✅ | ❌ | `"Cybersec Team"` | Display name in the From field of outgoing emails. |
-| `auth.email.sender_address` | string | `""` | ✅ | ❌ | `"noreply@example.com"` | From email address. Combined with `sender_name` as `"ILS Platform <noreply@example.com>"`. |
+| `auth.email.host` | string | `""` | ✅ | ✅ | `"smtp.gmail.com"` | SMTP server hostname. Empty ⇒ email disabled (no send). |
+| `auth.email.port` | int | `587` | ✅ | ✅ | `587` | SMTP server port. Common values: 25, 465 (SSL), 587 (STARTTLS). |
+| `auth.email.use_tls` | bool | `true` | ✅ | ✅ | `true` | Use STARTTLS when connecting to SMTP server. Set `false` for plain port 25 or implicit SSL on 465. |
+| `auth.email.username` | string | `""` | ✅ | ✅ | `"noreply@example.com"` | SMTP authentication username. |
+| `auth.email.password` | secret | `""` | ✅ | ✅ | `"<smtp-password>"` | SMTP authentication password (Gmail: App Password). |
+| `auth.email.sender_name` | string | `"ILS Platform"` | ✅ | ✅ | `"Cybersec Team"` | Display name in the From field of outgoing emails. |
+| `auth.email.sender_address` | string | `""` | ✅ | ✅ | `"noreply@example.com"` | From email address. Combined with `sender_name` as `"ILS Platform <noreply@example.com>"`. Falls back to `username` if empty. |
 
 > **Why individual fields instead of a JSON blob?** Each field has its own type and validation rule. Splitting them allows type-safe validation per field and selective update (e.g., change only the password without resending the hostname).
 

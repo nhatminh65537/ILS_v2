@@ -29,17 +29,27 @@ def _set_config(key, value, value_type=SystemConfig.ConfigType.BOOL):
     )
 
 
+def _configure_smtp():
+    """Seed minimal SMTP config so EmailService._resolve_smtp_settings() is active."""
+    _set_config('auth.email.host', 'smtp.test.local', SystemConfig.ConfigType.STRING)
+    _set_config('auth.email.sender_address', 'noreply@test.local', SystemConfig.ConfigType.STRING)
+
+
 @pytest.fixture
 def capture_email(monkeypatch):
     """Route EmailService through Django's locmem backend so ``mail.outbox`` fills.
 
-    EmailService builds its connection explicitly (console/SMTP), ignoring the
-    ``EMAIL_BACKEND`` setting, so override_settings alone wouldn't capture sends.
+    EmailService builds an SMTP connection explicitly (ignoring ``EMAIL_BACKEND``),
+    so we patch ``_build_connection`` to a locmem backend. SMTP is also seeded into
+    system_config so ``_resolve_smtp_settings`` returns a non-None config (the
+    service no longer reads env or falls back to a console backend).
     """
     from auth_app.services import email_service
 
+    _configure_smtp()
+
     def _locmem(self, smtp):
-        return get_connection(LOCMEM_BACKEND), (smtp or {})
+        return get_connection(LOCMEM_BACKEND)
 
     monkeypatch.setattr(email_service.EmailService, '_build_connection', _locmem)
     mail.outbox = []
@@ -86,6 +96,18 @@ class TestPasswordResetRequest:
 
         assert response.status_code == 200
         assert len(capture_email) == 0
+
+    def test_no_smtp_config_still_returns_200_without_sending(self, api_client, reset_user, monkeypatch):
+        # No SMTP seeded → EmailService can't send; request must still return the
+        # generic 200 (anti-enumeration) and simply not deliver mail.
+        from auth_app.services import email_service
+        sent = email_service.EmailService().send_password_reset_email(reset_user, 'http://x/reset?token=t')
+        assert sent is False  # confirms "not configured" path
+
+        mail.outbox = []
+        response = api_client.post(REQUEST_URL, {'email': reset_user.email}, format='json')
+        assert response.status_code == 200
+        assert len(mail.outbox) == 0
 
     def test_rate_limit_blocks_after_max_per_hour(self, api_client, reset_user, capture_email):
         for _ in range(DEFAULT_PASSWORD_RESET_MAX_PER_HOUR):

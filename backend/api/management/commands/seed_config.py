@@ -21,6 +21,22 @@ _GITLAB_URL = (os.environ.get('GITLAB_URL', '') or '').strip()
 _GITLAB_TOKEN = (os.environ.get('GITLAB_TOKEN', '') or '').strip()
 _GITLAB_ENABLED = bool(_GITLAB_URL and _GITLAB_TOKEN)
 
+# SMTP / email values are sourced from the environment (.env) ONLY to bootstrap
+# the `auth.email.*` config rows on first seed — the App Password is never
+# committed. At runtime, EmailService reads exclusively from system_config (env
+# is not consulted). The seed never clobbers a non-empty existing value, so once
+# an admin edits SMTP via the UI, re-seeding leaves it untouched.
+_EMAIL_HOST = (os.environ.get('EMAIL_HOST', '') or '').strip()
+_EMAIL_PORT_RAW = (os.environ.get('EMAIL_PORT', '') or '').strip()
+try:
+    _EMAIL_PORT = int(_EMAIL_PORT_RAW) if _EMAIL_PORT_RAW else 587
+except ValueError:
+    _EMAIL_PORT = 587
+_EMAIL_USE_TLS = (os.environ.get('EMAIL_USE_TLS', 'True') or 'True').strip().lower() in {'1', 'true', 'yes', 'on'}
+_EMAIL_HOST_USER = (os.environ.get('EMAIL_HOST_USER', '') or '').strip()
+_EMAIL_HOST_PASSWORD = (os.environ.get('EMAIL_HOST_PASSWORD', '') or '').strip()
+_EMAIL_SENDER_ADDRESS = (os.environ.get('EMAIL_SENDER_ADDRESS', '') or '').strip()
+
 
 DEFAULT_CONFIGS = [
     {
@@ -142,48 +158,48 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'auth.email.host',
-        'value': '',
+        'value': _EMAIL_HOST,
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'auth',
         'description': 'SMTP host name.',
         'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'auth.email.port',
-        'value': 587,
+        'value': _EMAIL_PORT,
         'value_type': SystemConfig.ConfigType.INT,
         'category': 'auth',
         'description': 'SMTP port.',
         'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'auth.email.use_tls',
-        'value': True,
+        'value': _EMAIL_USE_TLS,
         'value_type': SystemConfig.ConfigType.BOOL,
         'category': 'auth',
         'description': 'Use STARTTLS for SMTP connection.',
         'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'auth.email.username',
-        'value': '',
+        'value': _EMAIL_HOST_USER,
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'auth',
         'description': 'SMTP authentication username.',
         'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'auth.email.password',
-        'value': '',
+        'value': _EMAIL_HOST_PASSWORD,
         'value_type': SystemConfig.ConfigType.SECRET,
         'category': 'auth',
         'description': 'SMTP authentication password.',
         'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'auth.email.sender_name',
@@ -192,16 +208,16 @@ DEFAULT_CONFIGS = [
         'category': 'auth',
         'description': 'From display name for outgoing emails.',
         'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'auth.email.sender_address',
-        'value': '',
+        'value': _EMAIL_SENDER_ADDRESS,
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'auth',
         'description': 'From email address for outgoing emails.',
         'is_editable': True,
-        'is_runtime': False,
+        'is_runtime': True,
     },
     {
         'key': 'auth.token.access_ttl',
@@ -450,6 +466,22 @@ SYNC_FIELDS = (
     'is_runtime',
 )
 
+# Keys whose `value` is bootstrapped from .env on first seed and must NEVER be
+# overwritten on a re-seed — otherwise an admin's UI edit (or a deliberately
+# cleared field) would be clobbered by the env-derived value. Metadata fields
+# (type/description/runtime/...) still sync normally. The empty-value guard in
+# SYNC_FIELDS handles the string/secret keys; this set additionally protects the
+# non-empty-default keys (port/use_tls/sender_name) which that guard can't.
+_VALUE_CREATE_ONLY_KEYS = {
+    'auth.email.host',
+    'auth.email.port',
+    'auth.email.use_tls',
+    'auth.email.username',
+    'auth.email.password',
+    'auth.email.sender_name',
+    'auth.email.sender_address',
+}
+
 
 class Command(BaseCommand):
     help = 'Seed canonical system configuration keys into system_config table.'
@@ -476,6 +508,16 @@ class Command(BaseCommand):
                 # default (e.g. Outline url/token left out of the environment on a
                 # re-seed). Metadata fields still sync normally.
                 if field == 'value' and config[field] in ('', None) and obj.value not in ('', None):
+                    continue
+                # Env-bootstrapped values (SMTP): fill the row from .env only while
+                # it's still empty; once it holds a value (admin edit, or a prior
+                # bootstrap), never overwrite it on re-seed. Covers non-empty-default
+                # keys (port/use_tls/sender_name) the empty-value guard above can't.
+                if (
+                    field == 'value'
+                    and config['key'] in _VALUE_CREATE_ONLY_KEYS
+                    and obj.value not in ('', None)
+                ):
                     continue
                 if getattr(obj, field) != config[field]:
                     setattr(obj, field, config[field])

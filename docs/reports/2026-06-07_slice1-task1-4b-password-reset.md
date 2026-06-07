@@ -7,9 +7,10 @@
 
 Implemented the previously-deferred password-reset flow (Task 1.4B) end-to-end and
 wired the already-built change-password backend into the frontend. Password reset
-uses stateless `itsdangerous` tokens (R-AUTH-02, 1-hour expiry, no DB), an
+uses stateless single-use `itsdangerous` tokens (R-AUTH-02, 1-hour expiry, no DB), an
 anti-enumeration request endpoint, per-email rate limiting, and a new `EmailService`
-that resolves SMTP from env → `auth.email.*` config → console fallback. The
+that reads SMTP **only from `auth.email.*` system_config** (`.env` bootstraps those
+rows via `seed_config`). The
 frontend now has working forgot-password / reset-password pages and a change-password
 form in profile settings (replacing the old "coming soon" placeholder), all localized
 in English and Vietnamese.
@@ -19,7 +20,7 @@ in English and Vietnamese.
 - Shared `validate_password_policy` helper extracted; change-password serializer refactored to use it.
 - Reset constants (cache key, 3/hour rate limit, token max-age, signer salt).
 - `PasswordResetService` (sign/verify stateless token, build reset link).
-- `EmailService` (dynamic backend per send: env → config → console; never raises).
+- `EmailService` (config-only SMTP per send: reads `auth.email.*` system_config, no env/console; never raises). `seed_config` bootstraps the rows from `.env`.
 - `PasswordResetRequestSerializer` + `PasswordResetConfirmSerializer`.
 - `PasswordResetRequestView` + `PasswordResetConfirmView` + URL routes.
 - `DJANGO_SECRET_KEY` and `FRONTEND_URL` wired from env in `settings.py`; `.env.example` email section.
@@ -50,11 +51,14 @@ in English and Vietnamese.
 
 > **Note (post-review):** an earlier iteration this session used a `pk`-only payload, which made tokens replayable within the 1h window. That was upgraded to the fingerprint-bound single-use scheme above at the user's request.
 
-### EmailService dynamic backend
+### EmailService (config-only)
 
-1. `_resolve_smtp_settings` reads each field from env first, then `auth.email.*` config; returns `None` when no host resolves.
-2. `_build_connection` → console backend when `None`, else SMTP backend built with the resolved host/port/credentials/TLS (fresh per send, since config is runtime-editable).
-3. `send_password_reset_email` composes a text+HTML message and wraps `.send()` in try/except — logs and returns `False` on failure so an SMTP outage never 500s the request.
+1. `_resolve_smtp_settings` reads the `auth.email.*` rows from `system_config` only (env not consulted); returns `None` when `auth.email.host` is empty.
+2. `_build_connection` builds the Django SMTP backend from the resolved host/port/credentials/TLS, fresh per send (rows are `is_runtime=true`, so admin edits apply immediately).
+3. `send_password_reset_email` returns `False` (and logs a warning) when SMTP is unconfigured, and wraps `.send()` in try/except so an SMTP outage never 500s the request. There is no console-backend fallback.
+4. `.env` bootstraps the config rows via `seed_config` (fills while empty, never overwrites admin edits — `_VALUE_CREATE_ONLY_KEYS`). `FRONTEND_URL` stays in env/settings.
+
+> **Design note (post-review):** the EmailService initially read env→config→console. At the user's request it was changed to a single-source-of-truth model (config only at runtime; `.env` bootstraps via `seed_config`), matching the Outline/GitLab seeding pattern.
 
 ### Reset confirm
 
@@ -75,7 +79,8 @@ Change-password and reset-confirm both revoke all sessions server-side. `ChangeP
 | `backend/auth_app/serializers.py` | Refactor change serializer to helper; add reset request/confirm serializers. |
 | `backend/auth_app/constants.py` | Add reset cache key, rate-limit, token max-age, signer salt. |
 | `backend/auth_app/services/password_reset_service.py` | **New** — stateless token service. |
-| `backend/auth_app/services/email_service.py` | **New** — dynamic email backend. |
+| `backend/auth_app/services/email_service.py` | **New** — config-only SMTP email service (no env, no console fallback). |
+| `backend/api/management/commands/seed_config.py` | Bootstrap `auth.email.*` rows from `EMAIL_*` env (fill-while-empty, create-only guard); email keys → `is_runtime=true`. |
 | `backend/auth_app/views.py` | Add `PasswordResetRequestView` / `PasswordResetConfirmView` (+ imports). |
 | `backend/auth_app/urls.py` | Add `password/reset/` and `password/reset/confirm/` routes. |
 | `backend/backend/settings.py` | Read `DJANGO_SECRET_KEY` from env; add `FRONTEND_URL`. |
@@ -100,4 +105,4 @@ Change-password and reset-confirm both revoke all sessions server-side. `ChangeP
 - **SECRET_KEY rotation** intentionally invalidates all outstanding reset links.
 - **SSO-only users** (`password=''`) are silently skipped — `has_usable_password()` alone is insufficient (Django treats empty string as usable), so the view also checks `user.password` is non-blank.
 - **Change-password wrong-password 401** triggers one extra token refresh in the axios interceptor before surfacing the error (the endpoint isn't in the refresh skip-list). Behavior is still correct; left as-is to avoid breaking legit token refresh on the profile page.
-- **Dev verification without SMTP:** leave `EMAIL_HOST` empty → reset links print to the Django console.
+- **SMTP is config-only at runtime:** set `EMAIL_*` in `.env`, run `seed_config` once to bootstrap the `auth.email.*` rows, then manage centrally in the admin UI. Unconfigured ⇒ no send (reset still 200, warning logged).
