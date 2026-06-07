@@ -19,12 +19,19 @@ export default async function LoginPage({ params }: LoginPageProps) {
 
       <LoginForm locale={locale} />
 
-      <p className="text-sm text-muted-foreground">
-        {t('noAccount')}{' '}
-        <Link className="text-foreground underline" href={`/${locale}/register`}>
-          {t('registerLink')}
-        </Link>
-      </p>
+      <div className="space-y-1 text-sm text-muted-foreground">
+        <p>
+          <Link className="text-foreground underline" href={`/${locale}/forgot-password`}>
+            {t('forgotPasswordLink')}
+          </Link>
+        </p>
+        <p>
+          {t('noAccount')}{' '}
+          <Link className="text-foreground underline" href={`/${locale}/register`}>
+            {t('registerLink')}
+          </Link>
+        </p>
+      </div>
     </section>
   )
 }

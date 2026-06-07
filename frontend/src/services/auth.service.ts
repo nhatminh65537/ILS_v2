@@ -15,6 +15,11 @@ import type {
   SsoCallbackPayload,
   LinkIdentityPayload,
   LinkIdentityResponse,
+  ChangePasswordPayload,
+  PasswordChangeResponse,
+  PasswordResetRequestPayload,
+  PasswordResetConfirmPayload,
+  DetailResponse,
 } from '@/types/user.types'
 
 /**
@@ -59,6 +64,39 @@ export const logout = async (payload: LogoutPayload): Promise<void> => {
  */
 export const logoutAll = async (): Promise<void> => {
   await apiClient.post('/api/auth/logout-all/')
+}
+
+/**
+ * POST /api/auth/password/change/
+ * Verifies current password, sets new one, revokes ALL sessions (forces re-login)
+ */
+export const changePassword = async (
+  payload: ChangePasswordPayload
+): Promise<PasswordChangeResponse> => {
+  const response = await apiClient.post('/api/auth/password/change/', payload)
+  return response.data
+}
+
+/**
+ * POST /api/auth/password/reset/
+ * Requests a reset link. Always succeeds (anti-enumeration) when email exists.
+ */
+export const requestPasswordReset = async (
+  payload: PasswordResetRequestPayload
+): Promise<DetailResponse> => {
+  const response = await apiClient.post('/api/auth/password/reset/', payload)
+  return response.data
+}
+
+/**
+ * POST /api/auth/password/reset/confirm/
+ * Verifies the signed token, sets the new password, revokes all sessions
+ */
+export const confirmPasswordReset = async (
+  payload: PasswordResetConfirmPayload
+): Promise<PasswordChangeResponse> => {
+  const response = await apiClient.post('/api/auth/password/reset/confirm/', payload)
+  return response.data
 }
 
 /**

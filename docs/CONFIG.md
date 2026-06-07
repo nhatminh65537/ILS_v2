@@ -46,8 +46,7 @@
 |-----|------|---------|----------|---------|---------|-------------|
 | `auth.local_login_enabled` | bool | `true` | ✅ | ✅ | `true` | Enable native username/password login. Set to `false` to force SSO-only. |
 | `auth.registration_enabled` | bool | `true` | ✅ | ✅ | `false` | Allow new users to self-register via the local sign-up form. Disable for invite-only orgs. |
-| `auth.password_reset_enabled` | bool | `true` | ✅ | ✅ | `true` | Allow users to request a password reset email. Requires SMTP configured. |
-| | | | | | | > **Note:** Reserved — backend password reset endpoint not yet implemented (frontend page is a "Coming soon" stub). Honor this flag when the feature is built. |
+| `auth.password_reset_enabled` | bool | `true` | ✅ | ✅ | `true` | Allow users to request a password reset email (Task 1.4B). When `false`, both `POST /api/auth/password/reset/` and `/reset/confirm/` return 403. Falls back to Django's console backend when no SMTP host is configured. |
 | `auth.sso_enabled` | bool | `false` | ✅ | ✅ | `true` | Enable SSO login via Authentik (OAuth2). |
 | `auth.sso_base_url` | string | `""` | ✅ | ❌ | `"https://auth.example.com"` | Authentik instance base URL (no trailing slash). |
 | `auth.sso_client_id` | string | `""` | ✅ | ❌ | `"ils-app"` | OAuth2 client ID registered in Authentik. |
@@ -80,7 +79,13 @@ Validated on registration and password change. Does not retroactively enforce on
 
 ### `auth.email` — SMTP / Email
 
-Used for password reset emails and future notification emails. All fields are optional until password reset is enabled.
+Used for password reset emails (Task 1.4B) and future notification emails. The
+`EmailService` reads these at send time, but **env vars take precedence** over
+these config rows: `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`,
+`EMAIL_HOST_PASSWORD`, `EMAIL_SENDER_ADDRESS`. If no host resolves from either
+source, sending falls back to Django's console backend (dev). Also note
+`FRONTEND_URL` (env, default `http://localhost:4000`) is used to build the reset
+link target. All fields are optional until password reset is actually used.
 
 | Key | Type | Default | Editable | Runtime | Example | Description |
 |-----|------|---------|----------|---------|---------|-------------|

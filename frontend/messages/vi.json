@@ -92,6 +92,17 @@
     "loginLink": "Đăng nhập",
     "logout": "Đăng xuất",
     "sessionExpired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.",
+    "forgotPasswordLink": "Quên mật khẩu?",
+    "forgotPasswordTitle": "Quên mật khẩu",
+    "forgotPasswordSubtitle": "Nhập email của bạn, chúng tôi sẽ gửi liên kết đặt lại mật khẩu.",
+    "forgotPasswordSubmit": "Gửi liên kết đặt lại",
+    "forgotPasswordSent": "Nếu email tồn tại trong hệ thống, liên kết đặt lại đã được gửi. Vui lòng kiểm tra hộp thư.",
+    "backToLogin": "Quay lại đăng nhập",
+    "resetPasswordTitle": "Đặt lại mật khẩu",
+    "resetPasswordSubtitle": "Chọn mật khẩu mới cho tài khoản của bạn.",
+    "resetPasswordSubmit": "Đặt lại mật khẩu",
+    "resetPasswordSuccess": "Mật khẩu đã được đặt lại. Đang chuyển đến trang đăng nhập…",
+    "newPassword": "Mật khẩu mới",
     "validation": {
       "usernameRequired": "Vui lòng nhập tên đăng nhập.",
       "passwordRequired": "Vui lòng nhập mật khẩu.",
@@ -108,7 +119,12 @@
       "loginFailed": "Đăng nhập thất bại.",
       "registerFailed": "Đăng ký thất bại.",
       "usernameTaken": "Tên đăng nhập đã được sử dụng.",
-      "emailTaken": "Email đã được sử dụng."
+      "emailTaken": "Email đã được sử dụng.",
+      "currentPasswordIncorrect": "Mật khẩu hiện tại không đúng.",
+      "resetRequestFailed": "Không thể gửi liên kết đặt lại. Vui lòng thử lại.",
+      "resetConfirmFailed": "Không thể đặt lại mật khẩu. Vui lòng thử lại.",
+      "resetTokenInvalid": "Liên kết đặt lại không hợp lệ hoặc đã hết hạn.",
+      "resetDisabled": "Chức năng đặt lại mật khẩu hiện đang bị tắt."
     }
   },
   "adminAuth": {
@@ -1638,7 +1654,11 @@
       "confirm": "Lưu và đăng xuất"
     },
     "passwordSection": "Đổi mật khẩu",
-    "passwordPending": "Tính năng đổi mật khẩu sẽ có trong cập nhật tiếp theo.",
+    "passwordSubtitle": "Đổi mật khẩu sẽ đăng xuất bạn khỏi tất cả thiết bị.",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmNewPassword": "Xác nhận mật khẩu mới",
+    "changePassword": "Đổi mật khẩu",
     "ssoSection": "Liên kết SSO",
     "ssoPending": "Quản lý liên kết SSO sẽ có trong cập nhật tiếp theo.",
     "sessions": {
@@ -1708,7 +1728,11 @@
       "notFound": "Không tìm thấy người dùng này.",
       "backToHome": "Quay lại trang chủ",
       "usernameConflict": "Tên đăng nhập đã tồn tại.",
-      "emailConflict": "Email đã được sử dụng."
+      "emailConflict": "Email đã được sử dụng.",
+      "changePasswordFailed": "Không thể đổi mật khẩu. Vui lòng thử lại.",
+      "passwordTooShort": "Mật khẩu phải có ít nhất 8 ký tự.",
+      "passwordMismatch": "Mật khẩu xác nhận không khớp.",
+      "sameAsCurrent": "Mật khẩu mới phải khác mật khẩu hiện tại."
     }
   },
   "adminStats": {

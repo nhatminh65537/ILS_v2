@@ -47,12 +47,20 @@ _load_dotenv(PROJECT_ROOT / '.env')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-cq3$&7zm=^sphg0*oqdskx5a+4j*8-0%dqz=yoh64yuehyvn7)'
+# Read from env so the key is stable across restarts — password-reset tokens are
+# signed with it (see PasswordResetService); a changing key invalidates them.
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-cq3$&7zm=^sphg0*oqdskx5a+4j*8-0%dqz=yoh64yuehyvn7)',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+# Public base URL of the frontend, used to build password-reset links.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:4000')
 
 
 # Application definition

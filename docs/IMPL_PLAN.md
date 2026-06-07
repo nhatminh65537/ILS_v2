@@ -329,23 +329,28 @@ GET    /api/auth/sessions/         → list active sessions (revoked_at=null and
 DELETE /api/auth/sessions/{id}/    → revoke one owned active session
 ```
 
-### Task 1.4B — Password reset (email token) ⏸️ DEFERRED
+### Task 1.4B — Password reset (email token) ✅ COMPLETED (2026-06-07)
 
-> **Status note:** Deferred per [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset) until email backend decision and infrastructure are finalized.
+> **Status note:** Previously deferred per [Q-INFRA-03](DECISIONS.md#q-infra-03-email-backend-for-password-reset); now implemented. The email backend resolves SMTP settings from env first, then runtime `auth.email.*` config, falling back to Django's console backend when no host is configured (dev: reset links print to the server console).
 
-**Deferred endpoints:**
+**Endpoints:**
 ```
-POST /api/auth/password/reset/         → send HMAC-signed link via email (1hr expiry)
+POST /api/auth/password/reset/         → send HMAC-signed link via email (1hr expiry); always 200 (anti-enumeration)
 POST /api/auth/password/reset/confirm/ → verify token, update password, revoke all sessions
 ```
 
-**Password reset token (no DB storage):**
+**Password reset token (no DB storage, single-use):**
 ```python
-# Use itsdangerous TimestampSigner
-signer = TimestampSigner(settings.SECRET_KEY)
-token = signer.sign(str(user.id))
-# Verify: signer.unsign(token, max_age=3600)
+# itsdangerous TimestampSigner, salted (PASSWORD_RESET_SIGNER_SALT)
+signer = TimestampSigner(settings.SECRET_KEY, salt='auth.password-reset')
+fp = hmac_sha256(SECRET_KEY, user.password)[:16]   # binds token to current password
+token = signer.sign(f'{user.id}:{fp}')
+# Verify: signer.unsign(token, max_age=3600) → recompute fp → compare_digest
 ```
+
+**Key files:** `backend/auth_app/services/password_reset_service.py`, `backend/auth_app/services/email_service.py`, `backend/auth_app/validators.py` (shared password-policy helper), `backend/auth_app/views.py` (`PasswordResetRequestView`, `PasswordResetConfirmView`). FE: `frontend/app/[locale]/(auth)/forgot-password|reset-password` pages + `ForgotPasswordForm`/`ResetPasswordForm`.
+
+**Notes:** SECRET_KEY is read from `DJANGO_SECRET_KEY` env so tokens survive restarts (rotation intentionally invalidates outstanding links). Tokens are stateless but **single-use** — the password-hash fingerprint in the payload kills the token once the password changes (Django `PasswordResetTokenGenerator` approach). SSO-only accounts (blank password) are skipped silently.
 
 ### Task 1.5 — Frontend: Login/Register UI ✅ COMPLETED (2026-04-01)
 

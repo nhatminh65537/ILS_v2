@@ -3,7 +3,7 @@ from rest_framework import exceptions
 from rest_framework import serializers
 
 from api.models import UserSession
-from api.utils import get_config
+from auth_app.validators import validate_password_policy
 
 
 User = get_user_model()
@@ -89,25 +89,24 @@ class PasswordChangeRequestSerializer(serializers.Serializer):
         return value
 
     def validate_new_password(self, value):
-        min_length = int(get_config('auth.password.min_length', 8) or 8)
-        if len(value) < min_length:
-            raise serializers.ValidationError(f'Password must be at least {min_length} characters long.')
-
-        if bool(get_config('auth.password.require_uppercase', False)) and not any(ch.isupper() for ch in value):
-            raise serializers.ValidationError('Password must contain at least one uppercase letter.')
-
-        if bool(get_config('auth.password.require_number', False)) and not any(ch.isdigit() for ch in value):
-            raise serializers.ValidationError('Password must contain at least one number.')
-
-        if bool(get_config('auth.password.require_special', False)) and not any(not ch.isalnum() for ch in value):
-            raise serializers.ValidationError('Password must contain at least one special character.')
-
-        return value
+        return validate_password_policy(value)
 
     def validate(self, attrs):
         if attrs['new_password'] == attrs['current_password']:
             raise serializers.ValidationError({'new_password': 'New password must be different from current password.'})
         return attrs
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        return validate_password_policy(value)
 
 
 class SessionListItemSerializer(serializers.ModelSerializer):

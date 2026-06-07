@@ -74,6 +74,8 @@ Legend:
 | POST | `/api/auth/logout/` | Yes | Stable | Revokes current session by refresh token hash. |
 | POST | `/api/auth/logout-all/` | Yes | Stable | Revokes all active sessions for authenticated user. |
 | POST | `/api/auth/password/change/` | Yes | Stable | Verifies `current_password`, enforces password policy from `auth.password.*` config, updates password hash, revokes all active user sessions. |
+| POST | `/api/auth/password/reset/` | No | Stable | Requests a reset link by `email`. Honors `auth.password_reset_enabled` (403 if off) and `auth.local_login_enabled`. Rate-limited per email (3/hour → 429). **Always returns 200** with a generic detail regardless of whether the email exists (anti-enumeration); only sends mail when a matching active account with a local password exists (SSO-only accounts skipped). |
+| POST | `/api/auth/password/reset/confirm/` | No | Stable | Verifies the signed token (`itsdangerous`, 1-hour expiry, no DB row, **single-use** — bound to the current password hash; see R-AUTH-02), enforces password policy, sets new password, revokes all sessions. `400` if token is invalid/expired/already used. Returns `{detail, revoked_count}`. |
 | GET | `/api/auth/sessions/` | Yes | Stable | Lists active sessions for authenticated user only; excludes `refresh_token_hash`. |
 | DELETE | `/api/auth/sessions/{id}/` | Yes | Stable | Revokes one owned active session; `204` on success, `404` if not found or not owned. |
 | GET | `/api/auth/sso/redirect/` | No | Stable | Builds OIDC authorization URL from system config and returns HTTP redirect to Authentik. Used as browser navigation target, not JSON API. |
@@ -401,10 +403,9 @@ These contracts are planned but are not active in the current backend routing.
 
 ### 4.1 Slice 1 — Authentication
 
-- `POST /api/auth/password/reset/`
-- `POST /api/auth/password/reset/confirm/`
-
-Deferred by decision `Q-INFRA-03` until email backend setup is finalized.
+_All Slice 1 auth endpoints are now Stable._ Password reset
+(`POST /api/auth/password/reset/` and `/password/reset/confirm/`) was implemented
+in Task 1.4B (formerly deferred by `Q-INFRA-03`) and is documented in §3.1.
 
 ### 4.2 Slice 5 — Learn (frontend delivery beyond Task 5.4)
 

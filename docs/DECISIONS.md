@@ -361,7 +361,9 @@ The password reset flow sends an HMAC-signed link via email (1-hour expiry). No 
   (Current CONFIG.md does not list any `email.*` keys.)
 - Is email-based reset required for initial launch?
 
-**Decision:** Choose Option C for current phase: defer password reset email flow (Task 1.4) to a follow-up session so Slice 1 core auth can proceed. SMTP configuration decision is postponed with Task 1.4.
+**Decision:** Originally chose Option C (defer) so Slice 1 core auth could proceed.
+
+**Update (2026-06-07 — Task 1.4B implemented):** Password reset is now built using a **hybrid of Option A + Option B**. The `EmailService` resolves SMTP settings from **env vars first** (`EMAIL_HOST`, etc.), then **runtime `auth.email.*` `system_config` rows**, and **falls back to Django's console backend** when no host is configured (dev: reset links print to the server console). SMTP credentials therefore live in **both** `.env` (env wins) **and** `system_config` (runtime-editable via admin) — env takes precedence. This satisfies the sub-questions: credentials can be supplied either way, and email-based reset is now available without blocking dev. See R-AUTH-02 for the stateless token mechanism and its replay caveat.
 
 ---
 
@@ -942,7 +944,12 @@ Join tables (tag maps, role_permission) use `CreateAudit` only — no `updated_a
 **Decision date:** Pre-project
 **Source:** `docs/IMPL_PLAN.md §Task 1.4`
 
-No DB storage for reset tokens. Uses `itsdangerous.TimestampSigner(settings.SECRET_KEY)`. Token expires in 3600 seconds.
+No DB storage for reset tokens. Uses `itsdangerous.TimestampSigner(settings.SECRET_KEY, salt='auth.password-reset')`. Token expires in 3600 seconds.
+
+**Implemented 2026-06-07 (Task 1.4B).** Notes from implementation:
+- `SECRET_KEY` is now read from the `DJANGO_SECRET_KEY` env var (`backend/backend/settings.py`) so tokens survive process restarts. Rotating the key intentionally invalidates all outstanding reset links.
+- **Single-use (still no DB).** The signed payload is `"{pk}:{fingerprint}"` where `fingerprint = HMAC(SECRET_KEY, user.password)[:16]` — the same idea as Django's `PasswordResetTokenGenerator`. Because the fingerprint is derived from the current password hash, the moment the password changes (a successful reset, a normal change, or an admin reset) every previously-issued token stops verifying. `verify_token` recomputes the fingerprint and `hmac.compare_digest`-checks it, so a confirmed link cannot be replayed and stale links die automatically. (Updated 2026-06-07 — earlier in the session tokens were replayable within the 1h window; that limitation was removed.)
+- SSO-only accounts (blank/unusable local password) are skipped — a reset link is never sent for them, preserving the anti-enumeration generic 200.
 
 ---
 

@@ -58,6 +58,18 @@ export const mapAuthErrorToMessageKey = (
     return 'auth.errors.usernameTaken'
   }
 
+  if (containsText(text, 'current password') && containsText(text, 'incorrect')) {
+    return 'auth.errors.currentPasswordIncorrect'
+  }
+
+  if (containsText(text, 'reset link') || containsText(text, 'invalid or has expired')) {
+    return 'auth.errors.resetTokenInvalid'
+  }
+
+  if (containsText(text, 'password reset') && containsText(text, 'disabled')) {
+    return 'auth.errors.resetDisabled'
+  }
+
   if (containsText(text, 'no active account') || containsText(text, 'invalid')) {
     return 'auth.errors.invalidCredentials'
   }

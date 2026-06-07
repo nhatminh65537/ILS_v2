@@ -176,6 +176,32 @@ export interface LinkIdentityResponse {
   readonly created: boolean
 }
 
+/** Payload for POST /api/auth/password/change/ */
+export interface ChangePasswordPayload {
+  current_password: string
+  new_password: string
+}
+
+/** Payload for POST /api/auth/password/reset/ */
+export interface PasswordResetRequestPayload {
+  email: string
+}
+
+/** Payload for POST /api/auth/password/reset/confirm/ */
+export interface PasswordResetConfirmPayload {
+  token: string
+  new_password: string
+}
+
+export interface DetailResponse {
+  readonly detail: string
+}
+
+export interface PasswordChangeResponse {
+  readonly detail: string
+  readonly revoked_count: number
+}
+
 export interface UpdateProfilePayload {
   display_name?: string
   avatar_url?: string

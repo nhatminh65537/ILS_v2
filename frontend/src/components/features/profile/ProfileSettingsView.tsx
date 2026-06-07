@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import type { UserProfile } from '@/types/user.types'
 import { AccountForm } from './AccountForm'
 import { AppSettingsForm } from './AppSettingsForm'
+import { ChangePasswordForm } from './ChangePasswordForm'
 import { ProfileEditForm } from './ProfileEditForm'
 
 type ProfileSettingsViewProps = {
@@ -110,12 +111,15 @@ export function ProfileSettingsView({ locale }: ProfileSettingsViewProps) {
         </CardContent>
       </Card>
 
-      {/* Password change — pending Task 1.4 */}
-      <Card className="opacity-60">
+      {/* Password change */}
+      <Card>
         <CardHeader>
           <CardTitle>{t('passwordSection')}</CardTitle>
-          <CardDescription>{t('passwordPending')}</CardDescription>
+          <CardDescription>{t('passwordSubtitle')}</CardDescription>
         </CardHeader>
+        <CardContent>
+          <ChangePasswordForm locale={locale} />
+        </CardContent>
       </Card>
 
       {/* SSO identity — deferred */}

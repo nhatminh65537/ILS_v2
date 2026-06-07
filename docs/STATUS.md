@@ -85,6 +85,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 1 / Task 1.3 (2026-03-30) | SSO/AuthentiK backend endpoints implemented: `GET /api/auth/sso/redirect/`, `GET /api/auth/sso/callback/`, `POST /api/auth/identity/link/`; callback validates state/nonce with cache TTL, auto-links by `provider+external_id` and email fallback when linking is enabled, creates JWT session via existing TokenService flow, and adds auth test coverage (`22 passed`) |
 | Slice 1 / Task 1.4A (2026-04-13) | Password change + session management APIs implemented: `POST /api/auth/password/change/`, `GET /api/auth/sessions/`, `DELETE /api/auth/sessions/{id}/`; password change validates current password and runtime policy (`auth.password.*`), then revokes all active sessions; session listing enforces active-session filter and hides token hash; revoke-by-id enforces ownership; focused auth test suite passes including new coverage. |
 | Slice 1 / Task 1.5 (2026-04-01) | Frontend auth UI completed for locale routes (`/vi/login`, `/en/login`, `/vi/register`, `/en/register`) with interactive forms, auth service/hook integration, localized validation + API error mapping, SSO direct redirect flow, axios refresh-loop guard on auth endpoints, and style alignment with shared UI primitives. |
+| Slice 1 / Task 1.4B (2026-06-07) | Password reset (BE+FE) implemented: `POST /api/auth/password/reset/` (anti-enumeration, always 200, per-email rate limit 3/h, SSO-only skipped) + `/reset/confirm/` (stateless `itsdangerous` token, 1h, revokes all sessions). New `EmailService` (env→`auth.email.*` config→console fallback), `PasswordResetService`, shared `validators.validate_password_policy`, `DJANGO_SECRET_KEY`+`FRONTEND_URL` wired. FE: `forgot-password`/`reset-password` pages + forms, login "Forgot password?" link, `ChangePasswordForm` wired into profile settings (replacing placeholder). Tests: `auth_app/tests/test_password_reset.py` (11 cases) — full auth suite passes. |
 | Slice 2 / Task 2.1 (2026-03-30) | Permission auto-discovery implemented at startup via `auth_app.services.permission_discovery.discover_permissions()` with idempotent sync (`is_active` reset/reactivate), built-in role mapping from `@add_role_granted`, and normalized permission naming (`{app_label}.{resource_name}.{handler_method_name}` lowercase); tests added and passing in `auth_app/tests.py` |
 | Slice 2 / Task 2.2 (2026-03-31) | Role/Permission CRUD API completed with canonical admin RBAC routes (`/api/admin/permissions/`, `/api/admin/roles/*`, `/api/users/{id}/roles/*`), admin-only access guards, action-level JWT permission-key checks when JWT auth context is present, and deterministic permission-cache invalidation for affected users on role-permission/user-role mutations; RBAC endpoint tests passing (`16 passed`). |
 | Slice 2 / Task 2.3 + Handler Grants (2026-03-31) | Implemented permission bitmap cache + JWT claims (`permissions` base64 bitmap, `pv`), refactored `PermissionService` to flat ID-based compute and cache lifecycle, wired `TokenService` stub to live cache, added explicit handler-level role grants with precedence over class-level grants in discovery, and verified with auth test suites (now under `backend/auth_app/tests/`) passing. |
@@ -148,6 +149,7 @@ Four critical questions from Slice 1 planning were resolved and no longer block 
 | Slice 1 / Task 1.2 (2026-03-27) | `docs/reports/2026-03-27_slice1-task1-2-jwt-refresh.md` |
 | Slice 1 / Task 1.3 (2026-03-30) | `docs/reports/2026-03-30_slice1-task1-3-sso-implementation.md` |
 | Slice 1 / Task 1.4A (2026-04-13) | `docs/reports/2026-04-13_slice1-task1-4a-password-session.md` |
+| Slice 1 / Task 1.4B (2026-06-07) | `docs/reports/2026-06-07_slice1-task1-4b-password-reset.md` |
 | Slice 1 / Task 1.5 (2026-04-01) | `docs/reports/2026-04-01_slice1-task1-5-frontend-auth-ui.md` |
 | Slice 2 / Task 2.1 (2026-03-30) | `docs/reports/2026-03-30_slice2-task2-1-permission-discovery.md` |
 | Slice 3 / Task 3.1 (2026-03-30) | `docs/reports/2026-03-30_slice3-task3-1-system-config-api.md` |
@@ -222,7 +224,7 @@ Note: several domain endpoints in `backend/api/views/` are currently scaffolded 
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Password reset email flow (Task 1.4B) | Medium | `POST /api/auth/password/reset/`, `POST /api/auth/password/reset/confirm/` remain deferred by `Q-INFRA-03` |
+| *(No pending task)* | — | Slice 1 auth tasks complete; Task 1.4B (password reset) implemented 2026-06-07 |
 
 ### Slice 2 — Authorization / RBAC
 

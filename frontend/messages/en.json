@@ -92,6 +92,17 @@
     "loginLink": "Login",
     "logout": "Logout",
     "sessionExpired": "Your session expired. Please log in again.",
+    "forgotPasswordLink": "Forgot password?",
+    "forgotPasswordTitle": "Forgot password",
+    "forgotPasswordSubtitle": "Enter your email and we'll send you a link to reset your password.",
+    "forgotPasswordSubmit": "Send reset link",
+    "forgotPasswordSent": "If an account with that email exists, a reset link has been sent. Please check your inbox.",
+    "backToLogin": "Back to login",
+    "resetPasswordTitle": "Reset password",
+    "resetPasswordSubtitle": "Choose a new password for your account.",
+    "resetPasswordSubmit": "Reset password",
+    "resetPasswordSuccess": "Your password has been reset. Redirecting to login…",
+    "newPassword": "New password",
     "validation": {
       "usernameRequired": "Username is required.",
       "passwordRequired": "Password is required.",
@@ -108,7 +119,12 @@
       "loginFailed": "Login failed.",
       "registerFailed": "Registration failed.",
       "usernameTaken": "This username is already taken.",
-      "emailTaken": "This email is already registered."
+      "emailTaken": "This email is already registered.",
+      "currentPasswordIncorrect": "Current password is incorrect.",
+      "resetRequestFailed": "Could not send the reset link. Please try again.",
+      "resetConfirmFailed": "Could not reset your password. Please try again.",
+      "resetTokenInvalid": "This reset link is invalid or has expired.",
+      "resetDisabled": "Password reset is currently disabled."
     }
   },
   "adminAuth": {
@@ -1638,7 +1654,11 @@
       "confirm": "Save and sign out"
     },
     "passwordSection": "Change password",
-    "passwordPending": "Password change will be available in a future update.",
+    "passwordSubtitle": "Changing your password signs you out of all devices.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "changePassword": "Change password",
     "ssoSection": "SSO Identity",
     "ssoPending": "SSO identity management will be available in a future update.",
     "sessions": {
@@ -1708,7 +1728,11 @@
       "notFound": "User not found.",
       "backToHome": "Back to home",
       "usernameConflict": "Username already taken.",
-      "emailConflict": "Email already in use."
+      "emailConflict": "Email already in use.",
+      "changePasswordFailed": "Could not change your password. Please try again.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "passwordMismatch": "Password confirmation does not match.",
+      "sameAsCurrent": "New password must be different from the current one."
     }
   },
   "adminStats": {
