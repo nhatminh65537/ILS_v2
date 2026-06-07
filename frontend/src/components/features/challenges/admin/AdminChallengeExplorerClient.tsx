@@ -23,6 +23,7 @@ import { useAdminChallengeExplorer } from '@/hooks/useAdminChallengeExplorer'
 import type { ChallengeExplorerNode } from '@/types/challenge.types'
 import { AdminChallengeNodeCreateDialog } from './AdminChallengeNodeCreateDialog'
 import { AdminChallengeMoveDialog } from './AdminChallengeMoveDialog'
+import { AdminChallengeGitlabImportDialog } from './AdminChallengeGitlabImportDialog'
 
 type AdminChallengeExplorerClientProps = {
   locale: string
@@ -49,6 +50,7 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [moveOpen, setMoveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [prevFolderId, setPrevFolderId] = useState(folderId)
@@ -201,6 +203,9 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
               {t('explorer.back')}
             </Button>
           ) : null}
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} disabled={isMutating}>
+            {t('explorer.importFromGitlab')}
+          </Button>
           <Button size="sm" onClick={() => setCreateOpen(true)} disabled={isMutating}>
             {t('explorer.newItem')}
           </Button>
@@ -282,6 +287,13 @@ export function AdminChallengeExplorerClient({ locale }: AdminChallengeExplorerC
         isSubmitting={isMutating}
         onOpenChange={setCreateOpen}
         onCreate={handleCreate}
+      />
+
+      <AdminChallengeGitlabImportDialog
+        open={importOpen}
+        locale={locale}
+        parentNodeId={folderId}
+        onOpenChange={setImportOpen}
       />
 
       <AdminChallengeMoveDialog
