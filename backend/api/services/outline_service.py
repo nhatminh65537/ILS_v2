@@ -24,9 +24,29 @@ import json
 import re
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from api.utils import get_config
+
+
+class _StripAuthRedirectHandler(HTTPRedirectHandler):
+    """Drop credential headers when following a redirect to another host.
+
+    ``attachments.redirect`` 302-redirects to a presigned storage (S3/MinIO) URL
+    whose signature lives in the query string. urllib otherwise re-sends our
+    ``Authorization: Bearer`` header to the storage host, which then sees two
+    auth mechanisms and rejects the request ("request has multiple authentication
+    types") — surfacing as an upstream HTTP 400. Stripping the Outline-only
+    headers on redirect lets the presigned URL authenticate on its own.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new_request = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new_request is not None:
+            for header in ('Authorization', 'Content-Type', 'Content-type'):
+                new_request.headers.pop(header, None)
+                new_request.unredirected_hdrs.pop(header, None)
+        return new_request
 
 
 class OutlineConfigError(Exception):
@@ -224,8 +244,11 @@ class OutlineService:
     def download_attachment(cls, attachment_id: str) -> tuple[bytes, str]:
         """Fetch attachment bytes from Outline (token stays server-side).
 
-        Hits ``attachments.redirect`` with Bearer auth; urllib follows the 302 to
-        the signed blob URL and returns the body. Returns ``(content, content_type)``.
+        Hits ``attachments.redirect`` with Bearer auth; the 302 to the presigned
+        storage URL is followed by an opener that strips our credential headers
+        (see ``_StripAuthRedirectHandler``) so the storage host does not reject
+        the request for carrying two auth mechanisms. Returns
+        ``(content, content_type)``.
 
         Raises the standard service exception hierarchy (404 -> NotFound, other ->
         Unavailable), matching the rest of OutlineService.
@@ -243,8 +266,9 @@ class OutlineService:
             },
             method='POST',
         )
+        opener = build_opener(_StripAuthRedirectHandler())
         try:
-            with urlopen(request, timeout=cls.REQUEST_TIMEOUT) as response:
+            with opener.open(request, timeout=cls.REQUEST_TIMEOUT) as response:
                 content = response.read()
                 content_type = response.headers.get('Content-Type') or 'application/octet-stream'
         except HTTPError as exc:

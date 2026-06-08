@@ -320,3 +320,44 @@ def test_link_outline_rewrites_image_urls(editor_client, editor_user, draft_cour
     lesson.refresh_from_db()
     assert f'/api/learn/lessons/{lesson.id}/outline-attachment/?id=33333333-3333-3333-3333-333333333333' in lesson.content_md
     assert 'attachments.redirect' not in lesson.content_md
+
+
+# ── attachment (image) download / redirect ───────────────────────────────────
+def test_download_attachment_strips_credentials_on_storage_redirect():
+    """``attachments.redirect`` 302s to a presigned storage URL. Following that
+    redirect with our Outline ``Authorization`` header still attached makes the
+    storage host reject the request ("multiple authentication types" → 400),
+    which previously surfaced as a 503 and a blank image. The redirect handler
+    must drop the credential headers so the presigned URL authenticates alone.
+    """
+    from urllib.request import Request
+
+    from api.services.outline_service import _StripAuthRedirectHandler
+
+    original = Request(
+        'https://collab.example.com/api/attachments.redirect',
+        data=b'{}',
+        headers={
+            'Authorization': 'Bearer secret-token',
+            'Content-Type': 'application/json',
+            'User-Agent': 'ILS-Outline-Sync/1.0',
+        },
+        method='POST',
+    )
+
+    redirected = _StripAuthRedirectHandler().redirect_request(
+        original,
+        fp=None,
+        code=302,
+        msg='Found',
+        headers={},
+        newurl='https://s3.example.com/uploads/img.png?X-Amz-Signature=abc',
+    )
+
+    assert redirected is not None
+    # Credential / body headers are gone; the presigned URL stands on its own.
+    assert 'Authorization' not in redirected.headers
+    assert 'Content-type' not in redirected.headers
+    assert redirected.unredirected_hdrs.get('Authorization') is None
+    # The neutral product UA is harmless and may be carried along.
+    assert redirected.full_url.startswith('https://s3.example.com/')
