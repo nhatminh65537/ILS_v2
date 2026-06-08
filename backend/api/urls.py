@@ -159,6 +159,11 @@ urlpatterns = [
         name='learn-lesson-sync-outline',
     ),
     re_path(
+        r'^learn/lessons/(?P<pk>\d+)/outline-attachment/$',
+        LearnLessonViewSet.as_view({'get': 'outline_attachment'}),
+        name='learn-lesson-outline-attachment',
+    ),
+    re_path(
         r'^learn/lessons/(?P<pk>\d+)/progress/start/$',
         LearnLessonViewSet.as_view({'post': 'start_progress'}),
         name='learn-lesson-progress-start',

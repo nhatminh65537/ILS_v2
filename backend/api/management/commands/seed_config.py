@@ -259,7 +259,7 @@ DEFAULT_CONFIGS = [
         'key': 'outline.enabled',
         'value': _OUTLINE_ENABLED,
         'value_type': SystemConfig.ConfigType.BOOL,
-        'category': 'outline',
+        'category': 'learn',
         'description': 'Enable Outline integration.',
         'is_editable': True,
         'is_runtime': True,
@@ -268,7 +268,7 @@ DEFAULT_CONFIGS = [
         'key': 'outline.url',
         'value': _OUTLINE_URL,
         'value_type': SystemConfig.ConfigType.STRING,
-        'category': 'outline',
+        'category': 'learn',
         'description': 'Outline base URL.',
         'is_editable': True,
         'is_runtime': False,
@@ -277,7 +277,7 @@ DEFAULT_CONFIGS = [
         'key': 'outline.api_token',
         'value': _OUTLINE_API_TOKEN,
         'value_type': SystemConfig.ConfigType.SECRET,
-        'category': 'outline',
+        'category': 'learn',
         'description': 'Outline API token.',
         'is_editable': True,
         'is_runtime': False,
@@ -332,7 +332,7 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'challenge.deploy.enabled',
-        'value': False,
+        'value': True,
         'value_type': SystemConfig.ConfigType.BOOL,
         'category': 'challenge',
         'description': 'Enable deployable challenge feature.',
@@ -341,13 +341,14 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'challenge.deploy.provider',
-        'value': 'mock',
+        'value': 'socket',
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'challenge',
         'description': (
-            "Deployment backend provider: 'mock' (fake connection info, no "
-            "container) hoặc 'socket' (gọi deploy-server qua TCP). Đổi sang "
-            "'socket' để deploy thật."
+            "Deployment backend provider: 'socket' (gọi deploy-server thật qua "
+            "TCP — mặc định) hoặc 'mock' (fake connection info, không container, "
+            "dùng cho dev). Khi 'socket' phải đặt challenge.deploy.api_url "
+            "(+ api_token nếu cần) và challenge phải có deploy_source_ref (image ref)."
         ),
         'is_editable': True,
         'is_runtime': True,

@@ -1,5 +1,6 @@
 ﻿from django.db import IntegrityError, transaction
 from django.db.models import Count
+from django.http import HttpResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
@@ -575,6 +576,35 @@ class LearnLessonViewSet(viewsets.ViewSet):
 
         lesson.refresh_from_db()
         return Response(LearnLessonDetailSerializer(lesson).data)
+
+    def outline_attachment(self, request, pk=None):
+        """GET /learn/lessons/{id}/outline-attachment/?id=<uuid>
+
+        Server-mediated image proxy: streams an Outline attachment's bytes so
+        lesson images render in the browser without ever exposing the Outline
+        token. Visibility inherits from the lesson (Members only see published
+        lessons via ``_get_lesson_or_404``). Imported/synced markdown points its
+        image URLs here (see OutlineService.rewrite_attachment_urls).
+        """
+        # Authorize by lesson visibility (raises 404 if not visible to this user).
+        self._get_lesson_or_404(pk, request.user)
+
+        attachment_id = (request.query_params.get('id') or '').strip()
+        if not attachment_id:
+            return Response(
+                {'detail': "Query param 'id' is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            content, content_type = OutlineService.download_attachment(attachment_id)
+        except (OutlineConfigError, OutlineNotFoundError, OutlineUnavailableError) as exc:
+            return _outline_error_response(exc)
+
+        response = HttpResponse(content, content_type=content_type)
+        # Allow the browser to cache the image briefly (private — auth required).
+        response['Cache-Control'] = 'private, max-age=300'
+        return response
 
 
 @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)

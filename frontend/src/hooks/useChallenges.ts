@@ -12,6 +12,18 @@ import {
   getInstanceStatus as getInstanceStatusApi,
 } from '@/services/challenges.service'
 import { useChallengesStore } from '@/stores/challenges.store'
+import type { ApiError } from '@/types/api'
+
+/** Pull a human-readable message out of a normalized ApiError, else fallback. */
+const errorDetail = (error: unknown, fallback: string): string => {
+  if (error && typeof error === 'object') {
+    const detail = (error as ApiError).detail
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail
+    }
+  }
+  return fallback
+}
 
 export function useChallenges() {
   const challenges = useChallengesStore((s) => s.challenges)
@@ -115,12 +127,13 @@ export function useChallenges() {
   const startInstance = useCallback(
     async (slug: string) => {
       setInstanceLoading(true)
+      setError(null)
       try {
         const instance = await startInstanceApi(slug)
         setInstanceStatus(instance)
         return instance
-      } catch {
-        setError('Failed to start instance')
+      } catch (error) {
+        setError(errorDetail(error, 'Failed to start instance'))
         return null
       } finally {
         setInstanceLoading(false)
@@ -132,6 +145,7 @@ export function useChallenges() {
   const stopInstance = useCallback(
     async (slug: string) => {
       setInstanceLoading(true)
+      setError(null)
       try {
         await stopInstanceApi(slug)
         const status = await getInstanceStatusApi(slug)
@@ -148,12 +162,13 @@ export function useChallenges() {
   const extendInstance = useCallback(
     async (slug: string) => {
       setInstanceLoading(true)
+      setError(null)
       try {
         const instance = await extendInstanceApi(slug)
         setInstanceStatus(instance)
         return instance
-      } catch {
-        setError('Failed to extend instance')
+      } catch (error) {
+        setError(errorDetail(error, 'Failed to extend instance'))
         return null
       } finally {
         setInstanceLoading(false)

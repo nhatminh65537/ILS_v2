@@ -1,9 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import rehypeHighlight from 'rehype-highlight'
-import remarkGfm from 'remark-gfm'
+import { MarkdownContent } from '@/components/ui/markdown-content'
 import { deriveMarkdownSignal } from '@/lib/lesson-completion'
 import type { LessonCompletionSignal } from '@/types/lesson.types'
 
@@ -45,11 +43,5 @@ export function LessonMarkdownContent({ content, onSignalChange }: LessonMarkdow
     }
   }, [content])
 
-  return (
-    <article className="prose prose-lesson max-w-none">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-        {content}
-      </ReactMarkdown>
-    </article>
-  )
+  return <MarkdownContent content={content} />
 }

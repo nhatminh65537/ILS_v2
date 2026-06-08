@@ -146,9 +146,23 @@ def test_member_cannot_upload(member_client, member_user, published_challenge):
     assert resp.status_code == 403
 
 
-def test_member_cannot_list_files(member_client, member_user, published_challenge):
+def test_member_can_list_files_of_published_challenge(member_client, member_user, published_challenge):
+    """Members must be able to LIST attachments of a published challenge so they
+    can discover what to download (parity with file_download). Upload stays 403
+    (see test_member_cannot_upload)."""
     _assign_role(member_user, 'Member')
-    assert member_client.get(_files_url(published_challenge.slug)).status_code == 403
+    ChallengeService.store_bytes(
+        published_challenge, 'handout.pdf', b'bytes', source=ChallengeFile.Source.UPLOAD, actor=member_user
+    )
+    resp = member_client.get(_files_url(published_challenge.slug))
+    assert resp.status_code == 200
+    assert any(f['filename'] == 'handout.pdf' for f in resp.data)
+
+
+def test_member_cannot_list_files_of_draft_challenge(member_client, member_user, draft_challenge):
+    """A draft challenge is invisible to Members, so listing its files 404s."""
+    _assign_role(member_user, 'Member')
+    assert member_client.get(_files_url(draft_challenge.slug)).status_code == 404
 
 
 # ---------------------------------------------------------------------------

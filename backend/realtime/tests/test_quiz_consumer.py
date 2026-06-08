@@ -16,7 +16,7 @@ from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from api.models import Quiz, QuizQuestion, QuizQuestionOption
+from api.models import Quiz, QuizConfig, QuizQuestion, QuizQuestionOption
 
 User = get_user_model()
 
@@ -172,12 +172,96 @@ async def test_draft_status_question_is_served():
     await communicator.disconnect()
 
 
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_immediate_feedback_true_returns_full_result():
+    """immediate_feedback=True → answer_result includes correctness + answer."""
+    user = await _create_user('erin', 'erin@example.com')
+    quiz = await _create_quiz('Feedback On Quiz')
+    q = await _create_question(quiz)
+    await _set_quiz_config(quiz, user, immediate_feedback=True)
+    opt_id = await _correct_option_id(q)
+
+    tokens = await database_sync_to_async(RefreshToken.for_user)(user)
+    access_token = str(tokens.access_token)
+
+    communicator = WebsocketCommunicator(_get_consumer_asgi(), f"/ws/quiz/{quiz.id}/")
+    await communicator.connect()
+    await communicator.send_json_to({"type": "auth", "token": access_token})
+    assert (await communicator.receive_json_from())['type'] == 'auth_ok'
+
+    await communicator.send_json_to({"action": "start"})
+    assert (await communicator.receive_json_from())['type'] == 'question'
+
+    await communicator.send_json_to(
+        {"action": "answer", "question_id": q.id, "answer_data": {"option_id": opt_id}}
+    )
+    result = await communicator.receive_json_from()
+    assert result['type'] == 'answer_result'
+    assert result['immediate_feedback'] is True
+    assert result['is_correct'] is True
+    assert 'correct_answer' in result
+    assert 'explanation' in result
+
+    await communicator.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_immediate_feedback_false_suppresses_answer():
+    """immediate_feedback=False → answer_result is a bare ack; it must NOT leak
+    correctness, score, explanation, or the correct answer over the wire."""
+    user = await _create_user('frank', 'frank@example.com')
+    quiz = await _create_quiz('Feedback Off Quiz')
+    q = await _create_question(quiz)
+    await _set_quiz_config(quiz, user, immediate_feedback=False)
+    opt_id = await _correct_option_id(q)
+
+    tokens = await database_sync_to_async(RefreshToken.for_user)(user)
+    access_token = str(tokens.access_token)
+
+    communicator = WebsocketCommunicator(_get_consumer_asgi(), f"/ws/quiz/{quiz.id}/")
+    await communicator.connect()
+    await communicator.send_json_to({"type": "auth", "token": access_token})
+    assert (await communicator.receive_json_from())['type'] == 'auth_ok'
+
+    await communicator.send_json_to({"action": "start"})
+    assert (await communicator.receive_json_from())['type'] == 'question'
+
+    await communicator.send_json_to(
+        {"action": "answer", "question_id": q.id, "answer_data": {"option_id": opt_id}}
+    )
+    result = await communicator.receive_json_from()
+    assert result['type'] == 'answer_result'
+    assert result['immediate_feedback'] is False
+    assert result.get('recorded') is True
+    # Leak guard: none of the correctness/answer fields may be present.
+    for leaked in ('is_correct', 'score_obtained', 'explanation', 'correct_answer'):
+        assert leaked not in result, f'{leaked} must not be sent when feedback is off'
+
+    await communicator.disconnect()
+
+
 def _get_consumer_asgi():
     """Get ASGI application for consumer."""
     from realtime.consumers import QuizConsumer
     return URLRouter([
         path('ws/quiz/<int:quiz_id>/', QuizConsumer.as_asgi()),
     ])
+
+
+@database_sync_to_async
+def _set_quiz_config(quiz, user, **fields):
+    config, _ = QuizConfig.objects.get_or_create(quiz=quiz, user=user)
+    for key, value in fields.items():
+        setattr(config, key, value)
+    config.save()
+    return config
+
+
+@database_sync_to_async
+def _correct_option_id(question):
+    return question.options.filter(is_correct=True).first().id
 
 
 @database_sync_to_async

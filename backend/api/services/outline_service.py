@@ -21,7 +21,9 @@ Document ``url`` is relative (e.g. ``/doc/tools-xCsVaoS7os``); the full viewer U
 """
 
 import json
+import re
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from api.utils import get_config
@@ -180,3 +182,78 @@ class OutlineService:
         normalized = cls._normalize_document(doc, base_url)
         normalized['text'] = doc.get('text') or ''
         return normalized
+
+    # ── attachment (image) proxy ──────────────────────────────────────────────
+    # Outline markdown references images via ``attachments.redirect`` (an auth'd
+    # RPC that 302-redirects to a signed blob URL). The browser cannot follow
+    # those without the Outline Bearer token, so images come up blank. We:
+    #   1) on import/sync, rewrite each Outline attachment URL in the markdown to
+    #      a lesson-scoped ILS proxy URL (``rewrite_attachment_urls``); and
+    #   2) stream the bytes server-side on demand (``download_attachment``), with
+    #      the token kept on the server.
+
+    # Matches an Outline attachment id inside an attachments.redirect URL, whether
+    # relative (``/api/attachments.redirect?id=<uuid>``) or absolute
+    # (``https://outline.example.com/api/attachments.redirect?id=<uuid>``).
+    _ATTACHMENT_URL_RE = re.compile(
+        r'(?P<url>(?:https?://[^\s)]+)?/api/attachments\.redirect\?id=(?P<id>[0-9a-fA-F-]+))'
+    )
+
+    @classmethod
+    def rewrite_attachment_urls(cls, text: str, lesson_id: int) -> str:
+        """Rewrite Outline attachment URLs in markdown to the ILS proxy.
+
+        Every ``.../api/attachments.redirect?id=<uuid>`` (relative or absolute) is
+        replaced with ``/api/learn/lessons/<lesson_id>/outline-attachment/?id=<uuid>``
+        so the browser loads images through our authenticated, server-mediated
+        proxy. Called for BOTH import (link_outline) and sync (sync_outline).
+        """
+        if not text:
+            return text
+
+        def _replace(match: 're.Match') -> str:
+            attachment_id = match.group('id')
+            return (
+                f'/api/learn/lessons/{lesson_id}/outline-attachment/'
+                f'?id={quote(attachment_id)}'
+            )
+
+        return cls._ATTACHMENT_URL_RE.sub(_replace, text)
+
+    @classmethod
+    def download_attachment(cls, attachment_id: str) -> tuple[bytes, str]:
+        """Fetch attachment bytes from Outline (token stays server-side).
+
+        Hits ``attachments.redirect`` with Bearer auth; urllib follows the 302 to
+        the signed blob URL and returns the body. Returns ``(content, content_type)``.
+
+        Raises the standard service exception hierarchy (404 -> NotFound, other ->
+        Unavailable), matching the rest of OutlineService.
+        """
+        config = cls._get_config()
+        url = f"{config['base_url']}/api/attachments.redirect"
+        payload = json.dumps({'id': attachment_id}).encode('utf-8')
+        request = Request(
+            url,
+            data=payload,
+            headers={
+                'Authorization': f"Bearer {config['api_token']}",
+                'Content-Type': 'application/json',
+                'User-Agent': cls.USER_AGENT,
+            },
+            method='POST',
+        )
+        try:
+            with urlopen(request, timeout=cls.REQUEST_TIMEOUT) as response:
+                content = response.read()
+                content_type = response.headers.get('Content-Type') or 'application/octet-stream'
+        except HTTPError as exc:
+            if exc.code == 404:
+                raise OutlineNotFoundError('Outline attachment not found.') from exc
+            raise OutlineUnavailableError(
+                f'Outline returned an error (HTTP {exc.code}).'
+            ) from exc
+        except (URLError, TimeoutError) as exc:
+            raise OutlineUnavailableError('Failed to reach Outline.') from exc
+
+        return content, content_type

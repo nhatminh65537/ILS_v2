@@ -282,22 +282,35 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             # TASK-012: Reuse domain scoring logic
             is_correct = await self._validate_answer(question, answer_data)
             score_obtained = await self._score_answer(question, answer_data, is_correct)
-            
+
             # Persist answer
             answer_record = await self._create_quiz_answer(
                 attempt, question, answer_data, is_correct, score_obtained
             )
-            
-            # Send result with explanation
-            correct_answer = await self._get_correct_answer_display(question)
-            await self.send_json({
-                'type': 'answer_result',
-                'is_correct': is_correct,
-                'score_obtained': score_obtained,
-                'explanation': question.explanation or '',
-                'correct_answer': correct_answer,
-            })
-            
+
+            # Respect the per-user ``immediate_feedback`` config (snapshot on the
+            # attempt). When disabled, we MUST NOT leak correctness/explanation/
+            # correct_answer over the wire — the client only needs an ack to
+            # advance; the score is still recorded and revealed in the final
+            # summary/review. When enabled, send the full result card.
+            immediate_feedback = bool(attempt.config.get('immediate_feedback', True))
+            if immediate_feedback:
+                correct_answer = await self._get_correct_answer_display(question)
+                await self.send_json({
+                    'type': 'answer_result',
+                    'immediate_feedback': True,
+                    'is_correct': is_correct,
+                    'score_obtained': score_obtained,
+                    'explanation': question.explanation or '',
+                    'correct_answer': correct_answer,
+                })
+            else:
+                await self.send_json({
+                    'type': 'answer_result',
+                    'immediate_feedback': False,
+                    'recorded': True,
+                })
+
             logger.info(f"Answer recorded for attempt {attempt.id}, question {question.id}: {is_correct}")
             
         except Exception as e:
@@ -470,19 +483,17 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def _get_config_snapshot(self, quiz_id: int, user_id: int) -> Dict[str, Any]:
-        """Get or create config and return as snapshot dict."""
+        """Get or create config and return as snapshot dict.
+
+        When auto-creating a config here we leave all fields to the model
+        defaults (do NOT pass an explicit ``defaults`` that contradicts them) so
+        a config created during play behaves identically to one created via the
+        config API — e.g. ``random_question``/``random_option`` default to True,
+        ``question_filter='all'``, ``immediate_feedback=True``.
+        """
         config, _ = QuizConfig.objects.get_or_create(
             quiz_id=quiz_id,
             user_id=user_id,
-            defaults={
-                'total_questions': None,
-                'time_limit_sec': None,
-                'random_question': False,
-                'random_option': False,
-                'allow_review': True,
-                'allow_retry': True,
-                'max_attempt': None,
-            },
         )
         return {
             'total_questions': config.total_questions or 0,

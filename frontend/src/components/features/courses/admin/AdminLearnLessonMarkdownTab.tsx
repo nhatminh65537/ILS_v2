@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import rehypeHighlight from 'rehype-highlight'
-import remarkGfm from 'remark-gfm'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
+import { MarkdownContent } from '@/components/ui/markdown-content'
 
 type AdminLearnLessonMarkdownTabProps = {
   initialContent: string
@@ -38,11 +36,7 @@ export function AdminLearnLessonMarkdownTab({
       {showPreview ? (
         <div className="min-h-72 rounded-md border border-border p-3">
           {content ? (
-            <article className="prose prose-lesson max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                {content}
-              </ReactMarkdown>
-            </article>
+            <MarkdownContent content={content} />
           ) : (
             <p className="text-sm text-muted-foreground">{t('lesson.previewEmpty')}</p>
           )}

@@ -50,14 +50,12 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
     loadCourseList,
     loadCoursePage,
     loadTaxonomies,
-    submitArchiveCourse,
     submitPurgeCourse,
     submitStatusToggle,
   } = useAdminLearnCourses()
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [archiveTarget, setArchiveTarget] = useState<Course | null>(null)
   const [purgeTarget, setPurgeTarget] = useState<Course | null>(null)
 
   useEffect(() => {
@@ -67,16 +65,6 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
 
   const handleRefresh = async () => {
     await loadCourseList({ search: search.trim(), status: statusFilter })
-  }
-
-  const handleArchiveConfirm = async () => {
-    if (!archiveTarget) {
-      return
-    }
-    const ok = await submitArchiveCourse(archiveTarget.slug)
-    if (ok) {
-      setArchiveTarget(null)
-    }
   }
 
   const handlePurgeConfirm = async () => {
@@ -217,11 +205,6 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        {course.status !== ContentStatus.Archived ? (
-                          <Button variant="outline" size="sm" disabled={isMutating} onClick={() => setArchiveTarget(course)}>
-                            {t('actions.archive')}
-                          </Button>
-                        ) : null}
                         <Button variant="destructive" size="sm" disabled={isMutating} onClick={() => setPurgeTarget(course)}>
                           {t('actions.purge')}
                         </Button>
@@ -259,17 +242,6 @@ export function AdminLearnCourseListPageClient({ locale }: AdminLearnCourseListP
           ) : null}
         </CardContent>
       </Card>
-
-      <ConfirmDialog
-        open={archiveTarget !== null}
-        title={t('confirm.archiveTitle')}
-        description={archiveTarget ? t('confirm.archiveCourse', { title: archiveTarget.title }) : undefined}
-        confirmLabel={t('actions.archive')}
-        cancelLabel={t('actions.cancel')}
-        isLoading={isMutating}
-        onConfirm={handleArchiveConfirm}
-        onOpenChange={(open) => !open && setArchiveTarget(null)}
-      />
 
       <ConfirmDialog
         open={purgeTarget !== null}

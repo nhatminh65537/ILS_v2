@@ -151,7 +151,11 @@ class LessonService:
                 outline_info.created_at = now
                 outline_info.save(update_fields=['created_by', 'created_at'])
 
-            lesson.content_md = document['text']
+            # Rewrite Outline attachment (image) URLs to the ILS proxy so images
+            # render in the browser without leaking the Outline token.
+            lesson.content_md = OutlineService.rewrite_attachment_urls(
+                document['text'], lesson.id
+            )
             lesson.source = Lesson.Source.OUTLINE
             lesson.updated_by = actor
             lesson.updated_at = now
@@ -186,7 +190,11 @@ class LessonService:
                 update_fields=['outline_url', 'revision', 'last_synced_at', 'updated_by', 'updated_at']
             )
 
-            lesson.content_md = document['text']
+            # Same attachment-URL rewrite as import so re-synced content keeps
+            # working images through the ILS proxy.
+            lesson.content_md = OutlineService.rewrite_attachment_urls(
+                document['text'], lesson.id
+            )
             lesson.source = Lesson.Source.OUTLINE
             lesson.updated_by = actor
             lesson.updated_at = now

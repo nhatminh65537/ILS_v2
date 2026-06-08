@@ -516,7 +516,12 @@
       "systemRole": "Hệ thống",
       "customRole": "Tùy chỉnh",
       "selectPermission": "Chọn quyền",
-      "selectRole": "Chọn vai trò"
+      "selectRole": "Chọn vai trò",
+      "searchPermissions": "Tìm quyền…",
+      "namespace": "Nhóm",
+      "allNamespaces": "Tất cả nhóm",
+      "selectedCount": "Đã chọn {count}",
+      "selectAllVisible": "Chọn tất cả đang hiển thị"
     },
     "actions": {
       "createRole": "Tạo vai trò",
@@ -526,7 +531,9 @@
       "assign": "Gán",
       "revoke": "Gỡ",
       "save": "Lưu",
-      "cancel": "Hủy"
+      "cancel": "Hủy",
+      "reset": "Đặt lại",
+      "saveChanges": "Lưu thay đổi ({count})"
     },
     "status": {
       "loadingRoles": "Đang tải danh sách vai trò...",
@@ -706,7 +713,8 @@
     "actions": {
       "manageRoles": "Quản lý vai trò",
       "activate": "Kích hoạt",
-      "deactivate": "Vô hiệu hoá"
+      "deactivate": "Vô hiệu hoá",
+      "detail": "Chi tiết"
     },
     "confirmation": {
       "deactivateTitle": "Vô hiệu hoá người dùng?",
@@ -740,6 +748,16 @@
       "loadFailed": "Tải danh sách người dùng thất bại.",
       "toggleFailed": "Cập nhật trạng thái người dùng thất bại.",
       "createFailed": "Tạo người dùng thất bại."
+    },
+    "detail": {
+      "title": "Chi tiết người dùng",
+      "fullName": "Họ tên",
+      "roles": "Vai trò",
+      "staff": "Staff",
+      "superuser": "Superuser",
+      "lastLogin": "Đăng nhập gần nhất",
+      "yes": "Có",
+      "no": "Không"
     }
   },
   "adminQuizzes": {

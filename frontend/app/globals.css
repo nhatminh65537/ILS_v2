@@ -164,4 +164,33 @@
   .prose-lesson :where(code):not(:where(pre code))::after {
     content: '';
   }
+
+  /* Tighten Tailwind Typography's long-form spacing for lesson / challenge
+     content. The defaults are tuned for articles and feel too airy here,
+     especially in lists. These trim line-height and vertical rhythm without
+     making the text cramped. */
+  .prose-lesson {
+    line-height: 1.65;
+  }
+
+  .prose-lesson :where(p) {
+    margin-top: 0.85em;
+    margin-bottom: 0.85em;
+  }
+
+  .prose-lesson :where(ul, ol) {
+    margin-top: 0.85em;
+    margin-bottom: 0.85em;
+  }
+
+  .prose-lesson :where(li) {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+  }
+
+  /* Paragraphs nested in list items shouldn't add a second layer of spacing. */
+  .prose-lesson :where(li > p) {
+    margin-top: 0.35em;
+    margin-bottom: 0.35em;
+  }
 }

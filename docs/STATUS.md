@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-06-04 (Challenge file-explorer refactor — parity với Learn; F46; xem `docs/reports/2026-06-04_challenge-file-explorer-refactor.md`)
+> Last updated: 2026-06-08 (Bugfix batch — markdown/math, Outline image proxy, quiz immediate_feedback leak, instance TTL reaping + deploy backend notify, deploy provider→socket default, outline config→learn group, admin UX: user detail dialog / Archive button removal / TruncatedCell / RBAC multi-select; xem `docs/reports/2026-06-08_bugfix-batch-markdown-outline-rbac-instance.md`)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.

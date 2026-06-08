@@ -278,3 +278,45 @@ def test_member_cannot_browse_outline(member_client, member_user, db):
     response = member_client.get('/api/learn/outline/collections/')
 
     assert response.status_code == 403
+
+
+# ── attachment (image) URL rewrite ────────────────────────────────────────────
+def test_rewrite_attachment_urls_relative_and_absolute():
+    """Both relative and absolute Outline attachment URLs are rewritten to the
+    lesson-scoped ILS proxy; non-attachment links are left untouched."""
+    from api.services.outline_service import OutlineService
+
+    text = (
+        '# Title\n'
+        '![rel](/api/attachments.redirect?id=11111111-1111-1111-1111-111111111111)\n'
+        '![abs](https://wiki.example.com/api/attachments.redirect?id=22222222-2222-2222-2222-222222222222)\n'
+        '[doc link](https://wiki.example.com/doc/keep-me)\n'
+    )
+    out = OutlineService.rewrite_attachment_urls(text, lesson_id=42)
+
+    assert '/api/learn/lessons/42/outline-attachment/?id=11111111-1111-1111-1111-111111111111' in out
+    assert '/api/learn/lessons/42/outline-attachment/?id=22222222-2222-2222-2222-222222222222' in out
+    # The original Outline attachment URLs must be gone.
+    assert 'attachments.redirect' not in out
+    # Non-attachment links are preserved.
+    assert 'https://wiki.example.com/doc/keep-me' in out
+
+
+def test_link_outline_rewrites_image_urls(editor_client, editor_user, draft_course):
+    """Importing a doc whose markdown has an Outline image rewrites that image
+    URL to the ILS proxy so the browser can load it without the Outline token."""
+    _assign_role(editor_user, 'Editor')
+    lesson = _make_lesson(draft_course)
+    body = '![pic](/api/attachments.redirect?id=33333333-3333-3333-3333-333333333333)'
+
+    with patch(f'{SERVICE}.get_document', return_value=_doc(text=body)):
+        response = editor_client.post(
+            f'/api/learn/lessons/{lesson.id}/outline/',
+            {'outline_doc_id': 'doc-1'},
+            format='json',
+        )
+
+    assert response.status_code == 200
+    lesson.refresh_from_db()
+    assert f'/api/learn/lessons/{lesson.id}/outline-attachment/?id=33333333-3333-3333-3333-333333333333' in lesson.content_md
+    assert 'attachments.redirect' not in lesson.content_md

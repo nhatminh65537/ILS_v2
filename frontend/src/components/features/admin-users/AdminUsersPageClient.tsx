@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { TruncatedCell } from '@/components/ui/truncated-cell'
 import { useAdminUsers } from '@/hooks/useAdminUsers'
 import type { AdminUserCreatePayload, AdminUserDto } from '@/types/user.types'
 
@@ -58,6 +59,7 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [deactivatingUser, setDeactivatingUser] = useState<AdminUserDto | null>(null)
+  const [detailUser, setDetailUser] = useState<AdminUserDto | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ username: '', email: '', password: '' })
 
@@ -123,6 +125,17 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
       month: 'short',
       day: 'numeric',
     })
+
+  const formatDateTime = (iso: string | null | undefined) =>
+    iso
+      ? new Date(iso).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '—'
 
   return (
     <div className="space-y-6 p-6">
@@ -204,7 +217,9 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{user.email}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      <TruncatedCell value={user.email} className="max-w-55" dialogTitle={user.username} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {user.roles.length === 0 ? (
@@ -226,6 +241,9 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
                     <TableCell className="text-sm">{formatDate(user.date_joined)}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setDetailUser(user)}>
+                          {t('actions.detail')}
+                        </Button>
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/${locale}/admin/rbac/users/${user.id}/roles`}>
                             {t('actions.manageRoles')}
@@ -301,6 +319,60 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
         </DialogContent>
       </Dialog>
 
+      {/* User detail dialog */}
+      <Dialog open={detailUser !== null} onOpenChange={(open) => !open && setDetailUser(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('detail.title')}</DialogTitle>
+            <DialogDescription>{detailUser?.username ?? ''}</DialogDescription>
+          </DialogHeader>
+          {detailUser ? (
+            <dl className="space-y-2 text-sm">
+              <DetailRow label={t('columns.username')}>{detailUser.username}</DetailRow>
+              <DetailRow label={t('columns.email')}>{detailUser.email || '—'}</DetailRow>
+              <DetailRow label={t('detail.fullName')}>
+                {[detailUser.first_name, detailUser.last_name].filter(Boolean).join(' ') || '—'}
+              </DetailRow>
+              <DetailRow label={t('columns.status')}>
+                <Badge variant={detailUser.is_active ? 'default' : 'outline'}>
+                  {detailUser.is_active ? t('status.active') : t('status.inactive')}
+                </Badge>
+              </DetailRow>
+              <DetailRow label={t('detail.roles')}>
+                {detailUser.roles.length === 0 ? (
+                  <span className="text-muted-foreground">—</span>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {detailUser.roles.map((role) => (
+                      <Badge key={role.id} variant="secondary" className="text-xs">
+                        {role.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </DetailRow>
+              <DetailRow label={t('detail.staff')}>
+                {detailUser.is_staff ? t('detail.yes') : t('detail.no')}
+              </DetailRow>
+              <DetailRow label={t('detail.superuser')}>
+                {detailUser.is_superuser ? t('detail.yes') : t('detail.no')}
+              </DetailRow>
+              <DetailRow label={t('columns.dateJoined')}>
+                {formatDateTime(detailUser.date_joined)}
+              </DetailRow>
+              <DetailRow label={t('detail.lastLogin')}>
+                {formatDateTime(detailUser.last_login)}
+              </DetailRow>
+            </dl>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailUser(null)}>
+              {t('confirmation.cancel')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Create user dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
@@ -352,6 +424,15 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <dt className="text-muted-foreground shrink-0">{label}</dt>
+      <dd className="text-right font-medium">{children}</dd>
     </div>
   )
 }

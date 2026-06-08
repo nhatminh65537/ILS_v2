@@ -14,6 +14,16 @@ function isRunning(state: InstanceState): state is ChallengeInstance & { status:
   return state !== null && 'id' in state && state.status === InstanceStatus.Running
 }
 
+/**
+ * Internal instance_info keys that must never be shown to the player (deploy
+ * server bookkeeping). The API intentionally still returns them for admins.
+ */
+const HIDDEN_INSTANCE_INFO_KEYS = new Set(['deploy_instance_id'])
+
+function visibleInstanceInfo(info: Record<string, unknown>): [string, unknown][] {
+  return Object.entries(info).filter(([key]) => !HIDDEN_INSTANCE_INFO_KEYS.has(key))
+}
+
 /** Live countdown to expires_at. Returns remaining seconds (0 once expired). */
 function useRemainingSeconds(expiresAt?: string): number | null {
   const [now, setNow] = useState(() => Date.now())
@@ -35,8 +45,8 @@ function formatRemaining(seconds: number): string {
 type ChallengeInstancePanelProps = {
   instanceStatus: InstanceState
   isInstanceLoading: boolean
-  /** Only allow extend when remaining time is below this many minutes (config). */
-  extendThresholdMinutes?: number
+  /** Inline error/detail from the last instance action (e.g. BE extend 400). */
+  error?: string | null
   onStart: () => void
   onStop: () => void
   onExtend?: () => void
@@ -45,7 +55,7 @@ type ChallengeInstancePanelProps = {
 export function ChallengeInstancePanel({
   instanceStatus,
   isInstanceLoading,
-  extendThresholdMinutes = 10,
+  error,
   onStart,
   onStop,
   onExtend,
@@ -55,8 +65,9 @@ export function ChallengeInstancePanel({
   const running = isRunning(instanceStatus)
   const expiresAt = running ? instanceStatus.expires_at : undefined
   const remaining = useRemainingSeconds(expiresAt)
-  const canExtend =
-    running && onExtend !== undefined && remaining !== null && remaining < extendThresholdMinutes * 60
+  // Extend is always offered while running; the backend is the source of truth
+  // and rejects (HTTP 400 with a detail message) when it is still too early.
+  const canExtend = running && onExtend !== undefined
   const noInstance = instanceStatus === null || (instanceStatus !== null && 'status' in instanceStatus && instanceStatus.status === 'none')
 
   return (
@@ -68,6 +79,9 @@ export function ChallengeInstancePanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {error ? (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+        ) : null}
         {isInstanceLoading ? (
           <Skeleton className="h-8 w-full" />
         ) : running ? (
@@ -78,7 +92,7 @@ export function ChallengeInstancePanel({
             </div>
             {instanceStatus.instance_info ? (
               <div className="rounded-md bg-muted px-3 py-2 font-mono text-xs">
-                {Object.entries(instanceStatus.instance_info).map(([k, v]) => (
+                {visibleInstanceInfo(instanceStatus.instance_info).map(([k, v]) => (
                   <div key={k}>
                     <span className="text-muted-foreground">{k}: </span>
                     <span>{String(v)}</span>

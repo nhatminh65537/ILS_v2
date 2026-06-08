@@ -5,22 +5,8 @@ import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import type { RoleDto, UserRoleMappingDto } from '@/types/rbac.types'
 
 type UserRoleAssignmentPanelProps = {
@@ -34,6 +20,13 @@ type UserRoleAssignmentPanelProps = {
   onRevokeRole: (userId: number, roleId: number) => Promise<void>
 }
 
+/**
+ * Single-panel, multi-select role editor for a user.
+ *
+ * Replaces the old two-card "pick one + Assign" flow with a searchable checkbox
+ * list (checked = assigned). Toggle several, then "Save changes" diffs against
+ * the original assignments and applies each add/remove via the single-item API.
+ */
 export function UserRoleAssignmentPanel({
   allRoles,
   assignedUserRoles,
@@ -46,143 +39,132 @@ export function UserRoleAssignmentPanel({
 }: UserRoleAssignmentPanelProps) {
   const t = useTranslations('adminRbac')
 
-  const assignedRoleIds = useMemo(
+  const originalIds = useMemo(
     () => new Set(assignedUserRoles.map((mapping) => mapping.role)),
     [assignedUserRoles]
   )
 
-  const availableRoles = useMemo(
-    () => allRoles.filter((role) => !assignedRoleIds.has(role.id)),
-    [allRoles, assignedRoleIds]
+  // Reset the working selection when the assignments change (adjusting state
+  // during render — preferred over setState-in-effect), keyed off a signature.
+  const assignmentSignature = useMemo(
+    () => [...originalIds].sort((a, b) => a - b).join(','),
+    [originalIds]
   )
-
-  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(availableRoles[0]?.id ?? null)
-
-  const handleAssign = async () => {
-    if (selectedRoleId === null) {
-      return
-    }
-
-    await onAssignRole(userId, selectedRoleId)
-    setSelectedRoleId(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set(originalIds))
+  const [syncedSignature, setSyncedSignature] = useState(assignmentSignature)
+  if (syncedSignature !== assignmentSignature) {
+    setSyncedSignature(assignmentSignature)
+    setSelectedIds(new Set(originalIds))
   }
 
+  const [search, setSearch] = useState('')
+
+  const visibleRoles = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return allRoles
+    return allRoles.filter((r) => r.name.toLowerCase().includes(q))
+  }, [allRoles, search])
+
+  const editable = canAssign || canRevoke
+
+  const toggle = (id: number, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  const toAdd = useMemo(
+    () => (canAssign ? [...selectedIds].filter((id) => !originalIds.has(id)) : []),
+    [selectedIds, originalIds, canAssign]
+  )
+  const toRemove = useMemo(
+    () => (canRevoke ? [...originalIds].filter((id) => !selectedIds.has(id)) : []),
+    [selectedIds, originalIds, canRevoke]
+  )
+  const dirtyCount = toAdd.length + toRemove.length
+
+  const handleSave = async () => {
+    for (const id of toRemove) await onRevokeRole(userId, id)
+    for (const id of toAdd) await onAssignRole(userId, id)
+  }
+
+  const handleReset = () => setSelectedIds(new Set(originalIds))
+
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('sections.assignedRoles')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('labels.role')}</TableHead>
-                <TableHead>{t('labels.roleId')}</TableHead>
-                <TableHead>{t('labels.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assignedUserRoles.length === 0 ? (
-                <TableRow>
-                  <TableCell className="text-muted-foreground" colSpan={3}>
-                    {t('empty.assignedRoles')}
-                  </TableCell>
-                </TableRow>
-              ) : null}
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('sections.roles')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            className="max-w-xs"
+            placeholder={t('labels.selectRole')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <span className="text-muted-foreground text-xs">
+            {t('labels.selectedCount', { count: selectedIds.size })}
+          </span>
+        </div>
 
-              {assignedUserRoles.map((mapping) => (
-                <TableRow key={mapping.id}>
-                  <TableCell>
-                    <Badge variant="outline">{mapping.role_name}</Badge>
-                  </TableCell>
-                  <TableCell>{mapping.role}</TableCell>
-                  <TableCell>
-                    {canRevoke ? (
-                      <Button
-                        disabled={isMutating}
-                        onClick={() => onRevokeRole(userId, mapping.role)}
-                        size="xs"
-                        type="button"
-                        variant="destructive"
-                      >
-                        {t('actions.revoke')}
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{t('status.readOnly')}</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        {!editable ? (
+          <p className="text-muted-foreground text-xs">{t('status.readOnly')}</p>
+        ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('sections.availableRoles')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {canAssign ? (
-            <div className="space-y-2">
-              <Label htmlFor="assign-role-select">{t('labels.role')}</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={selectedRoleId !== null ? String(selectedRoleId) : ''}
-                  onValueChange={(v) => setSelectedRoleId(v ? Number(v) : null)}
-                >
-                  <SelectTrigger id="assign-role-select" className="h-8 text-xs">
-                    <SelectValue placeholder={t('labels.selectRole')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRoles.map((role) => (
-                      <SelectItem key={role.id} value={String(role.id)}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  disabled={isMutating || selectedRoleId === null}
-                  onClick={handleAssign}
-                  size="sm"
-                  type="button"
-                >
-                  {t('actions.assign')}
-                </Button>
-              </div>
-            </div>
+        <div className="max-h-96 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+          {visibleRoles.length === 0 ? (
+            <p className="text-muted-foreground p-2 text-sm">{t('empty.roles')}</p>
           ) : (
-            <p className="text-xs text-muted-foreground">{t('status.readOnly')}</p>
+            visibleRoles.map((role) => {
+              const checked = selectedIds.has(role.id)
+              return (
+                <label
+                  key={role.id}
+                  className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5"
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(c) => toggle(role.id, c === true)}
+                    disabled={isMutating || !editable}
+                  />
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Badge variant="outline">{role.name}</Badge>
+                    <span className="text-muted-foreground text-xs">
+                      {role.is_system ? t('labels.systemRole') : t('labels.customRole')}
+                    </span>
+                  </span>
+                </label>
+              )
+            })
           )}
+        </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('labels.role')}</TableHead>
-                <TableHead>{t('labels.type')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {availableRoles.length === 0 ? (
-                <TableRow>
-                  <TableCell className="text-muted-foreground" colSpan={2}>
-                    {t('empty.availableRoles')}
-                  </TableCell>
-                </TableRow>
-              ) : null}
-
-              {availableRoles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell>{role.name}</TableCell>
-                  <TableCell>{role.is_system ? t('labels.systemRole') : t('labels.customRole')}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+        {editable ? (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              disabled={isMutating || dirtyCount === 0}
+            >
+              {t('actions.reset')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSave}
+              disabled={isMutating || dirtyCount === 0}
+            >
+              {t('actions.saveChanges', { count: dirtyCount })}
+            </Button>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

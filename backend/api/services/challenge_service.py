@@ -536,6 +536,55 @@ class ChallengeService:
         return instance
 
     @staticmethod
+    def reap_expired_instances():
+        """Terminate every running instance past its TTL (active sweep).
+
+        Unlike the lazy expiry in ``get_running_instance`` (which only fires when
+        a specific user touches their instance), this reconciles the WHOLE table
+        on demand — used by the ``reap_instances`` command (OS cron) and by the
+        admin instance list so it never shows stale 'running' rows.
+
+        Each instance is terminated via ``instance.terminate()`` so the deploy
+        backend is asked to remove the real container too (no-op for Mock). One
+        instance's deploy failure must NOT block the rest: on error we still flip
+        the DB row to terminated and log it, then continue.
+
+        Returns ``(terminated_count, error_count)``.
+        """
+        import logging
+        from django.utils import timezone
+
+        logger = logging.getLogger(__name__)
+        now = timezone.now()
+        expired = ChallengeInstance.objects.filter(
+            status=ChallengeInstance.InstanceStatus.RUNNING,
+            expires_at__isnull=False,
+            expires_at__lte=now,
+        )
+
+        terminated = 0
+        errors = 0
+        for instance in expired:
+            try:
+                instance.terminate()
+            except Exception as exc:  # deploy-server down/timeout/etc.
+                errors += 1
+                logger.warning(
+                    'reap_expired_instances: deploy terminate failed for instance %s: %s',
+                    instance.pk, exc,
+                )
+                # Still mark the DB row terminated so the index frees and the UI
+                # is accurate; the deploy-server's own reaper handles the container.
+                instance.status = ChallengeInstance.InstanceStatus.TERMINATED
+                instance.terminated_at = timezone.now()
+                instance.save(update_fields=['status', 'terminated_at', 'updated_at'])
+                instance.log('Instance expired (TTL); deploy terminate failed, DB marked terminated')
+            else:
+                terminated += 1
+                instance.log('Instance expired (TTL, reap sweep)')
+        return terminated, errors
+
+    @staticmethod
     def create_instance(challenge, user):
         return ChallengeInstance.objects.create(user=user, challenge=challenge)
 

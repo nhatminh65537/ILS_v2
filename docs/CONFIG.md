@@ -128,11 +128,9 @@ Changes apply to **newly issued tokens only**. Existing tokens retain their orig
 | `learn.max_tree_depth` | int | `5` | ✅ | ✅ | `5` | Maximum folder nesting depth in a course tree. Enforced on node create. Root = depth 0. |
 | `learn.max_nodes_per_course` | int | `500` | ✅ | ✅ | `500` | Maximum total nodes (folders + lessons) per course. Prevents runaway content trees. |
 
----
+#### Outline Integration (Learn group)
 
-### `outline` — Outline Integration
-
-[Outline](https://github.com/outline/outline) is a self-hosted wiki used as the lesson content editor and storage backend.
+[Outline](https://github.com/outline/outline) is a self-hosted wiki used as the lesson content editor and storage backend. The `outline.*` keys belong to the **`learn`** config group (they are part of lesson authoring), so they appear under Learn in the admin config UI.
 
 | Key | Type | Default | Editable | Runtime | Example | Description |
 |-----|------|---------|----------|---------|---------|-------------|
@@ -142,7 +140,7 @@ Changes apply to **newly issued tokens only**. Existing tokens retain their orig
 
 > **Why no `outline.username`/`outline.password`?** Outline's REST API authenticates exclusively via Bearer token. Username/password is not supported by the Outline API.
 >
-> **Integration rule:** Frontend does not call Outline directly. Backend calls Outline and returns normalized lesson content to frontend.
+> **Integration rule:** Frontend does not call Outline directly. Backend calls Outline and returns normalized lesson content to frontend. Lesson images are streamed through a backend attachment proxy (`/api/learn/lessons/{id}/outline-attachment/...`) so the Outline token never reaches the browser; image URLs in imported/synced markdown are rewritten to that proxy.
 
 ---
 
@@ -164,11 +162,17 @@ ILS never spawns containers (REQUIREMENTS §2.4, DECISIONS R-ARCH-12). It sends 
 
 | Key | Type | Default | Editable | Runtime | Example | Description |
 |-----|------|---------|----------|---------|---------|-------------|
-| `challenge.deploy.enabled` | bool | `false` | ✅ | ✅ | `true` | Enable the deployable challenge feature. When disabled, `instance/start` returns 403 (AC-CHAL-07). |
-| `challenge.deploy.provider` | string | `"mock"` | ✅ | ✅ | `"socket"` | Deployment backend: `mock` (fake connection info, no container) or `socket` (talk to the real deploy server). |
+| `challenge.deploy.enabled` | bool | `true` | ✅ | ✅ | `true` | Enable the deployable challenge feature. When disabled, `instance/start` returns 403 (AC-CHAL-07). |
+| `challenge.deploy.provider` | string | `"socket"` | ✅ | ✅ | `"socket"` | Deployment backend: `socket` (talk to the real deploy server over TCP — **default**) or `mock` (fake connection info, no container; for dev). When `socket`, set `challenge.deploy.api_url` and ensure each deployable challenge has a `deploy_source_ref` (image ref). |
 | `challenge.deploy.api_url` | string | `""` | ✅ | ✅ | `"localhost:9100"` | Deploy-server address as `host:port`. Used only when `provider=socket`. The deploy server binds privately and has **no auth** — keep it off the public internet. |
 
-> **Removed:** `challenge.deploy.api_token` — the deploy server has no auth in this phase (it binds to a private interface only). The key is no longer seeded; any pre-existing row is unused.
+> **Default is `socket` + `enabled=true`.** A fresh install / migration (`0015_config_outline_learn_and_deploy_socket`) sets these; the operator must still fill in `challenge.deploy.api_url` for a working deploy. For local dev without a deploy server, flip `provider` back to `mock`.
+>
+> **Removed:** `challenge.deploy.api_token` — the deploy server has no auth in this phase (it binds to a private interface only). The key is not seeded; any pre-existing row is unused.
+
+#### Reaping expired instances (TTL sweep)
+
+Instances are marked `terminated` two ways: **lazily** when their owner next touches them, and via an **active sweep** (`python manage.py reap_instances`) that reconciles the whole table and asks the deploy backend to remove the real container. The admin instance list also runs the sweep on read. Schedule the command from the OS (cron / Task Scheduler) at an interval below `challenge.deploy` ... `instance_extend_threshold_minutes`; or run `reap_instances --loop --interval 60` in a single-process dev setup.
 
 ---
 

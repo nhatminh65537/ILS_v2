@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { MarkdownContent } from '@/components/ui/markdown-content'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useChallenges } from '@/hooks/useChallenges'
 import { downloadChallengeFile, listChallengeFiles } from '@/services/challenges.service'
@@ -87,7 +88,10 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
     )
   }
 
-  if (error || !selectedChallenge) {
+  // Only treat a missing challenge as a fatal load failure. Transient instance
+  // action errors (e.g. extend 400) live in the same `error` field but must NOT
+  // blow away the whole page — they are surfaced inline in ChallengeInstancePanel.
+  if (!selectedChallenge) {
     return (
       <section className="space-y-4">
         <Link href={`/${locale}/challenges`} className="text-sm text-muted-foreground hover:underline">
@@ -133,7 +137,7 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
           </CardHeader>
           <CardContent>
             {challenge.description ? (
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{challenge.description}</p>
+              <MarkdownContent content={challenge.description} className="prose-sm" />
             ) : (
               <p className="text-sm text-muted-foreground">{t('detail.noDescription')}</p>
             )}
@@ -178,6 +182,7 @@ export function ChallengeDetailClient({ locale, slug }: ChallengeDetailClientPro
             <ChallengeInstancePanel
               instanceStatus={instanceStatus}
               isInstanceLoading={isInstanceLoading}
+              error={error}
               onStart={() => { void startInstance(slug) }}
               onStop={() => { void stopInstance(slug) }}
               onExtend={() => { void extendInstance(slug) }}

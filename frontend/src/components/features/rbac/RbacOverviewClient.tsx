@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { TruncatedCell } from '@/components/ui/truncated-cell'
 import { useRbac } from '@/hooks/useRbac'
 import type { RoleDto } from '@/types/rbac.types'
 import { RbacActionToolbar } from './RbacActionToolbar'
@@ -216,7 +217,13 @@ export function RbacOverviewClient({ locale }: RbacOverviewClientProps) {
                 ? filteredPermissions.map((permission) => (
                     <TableRow key={permission.id}>
                       <TableCell>{permission.name}</TableCell>
-                      <TableCell className="max-w-105 truncate">{permission.description}</TableCell>
+                      <TableCell>
+                        <TruncatedCell
+                          value={permission.description}
+                          className="max-w-105"
+                          dialogTitle={permission.name}
+                        />
+                      </TableCell>
                       <TableCell>{permission.is_active ? t('labels.activeYes') : t('labels.activeNo')}</TableCell>
                     </TableRow>
                   ))

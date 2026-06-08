@@ -338,14 +338,30 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     # ── Attachment files (Task 6.8 Phase 1) ──────────────────────────────────
-    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
+    @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
     def files(self, request, slug=None):
-        """GET list / POST multipart upload of challenge attachment files."""
+        """GET list / POST multipart upload of challenge attachment files.
+
+        GET is readable by Members (so they can discover downloadable attachments
+        on a published challenge — parity with ``file_download``). POST (upload)
+        stays Admin/Editor only, enforced here since both verbs share this action.
+        """
         challenge = self.get_object()
         if request.method == 'GET':
+            # Members may only list files of a published challenge; draft readers
+            # (Admin/Editor) may list regardless of status.
+            if challenge.status != Challenge.Status.PUBLISHED and not ChallengeService._can_read_draft(request.user):
+                raise Http404('Challenge not available.')
             qs = ChallengeService.list_files(challenge)
             serializer = ChallengeFileSerializer(qs, many=True, context={'request': request})
             return Response(serializer.data)
+
+        # POST (upload) is content-management — restrict to draft readers.
+        if not ChallengeService._can_read_draft(request.user):
+            return Response(
+                {'detail': 'You do not have permission to upload challenge files.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         upload = request.FILES.get('file')
         if upload is None:
@@ -496,6 +512,10 @@ class ChallengeInstanceAdminView(APIView):
     permission_classes = [IsAuthenticated, HasJWTPermission]
 
     def get(self, request):
+        # Reconcile expired-but-still-'running' rows before listing so the admin
+        # UI never shows stale instances (active sweep; deploy backend notified).
+        ChallengeService.reap_expired_instances()
+
         qs = ChallengeInstance.objects.select_related('challenge', 'user').all()
         challenge_id = request.query_params.get('challenge')
         user_id = request.query_params.get('user')

@@ -516,7 +516,12 @@
       "systemRole": "System",
       "customRole": "Custom",
       "selectPermission": "Select permission",
-      "selectRole": "Select role"
+      "selectRole": "Select role",
+      "searchPermissions": "Search permissions…",
+      "namespace": "Namespace",
+      "allNamespaces": "All namespaces",
+      "selectedCount": "{count} selected",
+      "selectAllVisible": "Select all shown"
     },
     "actions": {
       "createRole": "Create role",
@@ -526,7 +531,9 @@
       "assign": "Assign",
       "revoke": "Revoke",
       "save": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "saveChanges": "Save changes ({count})"
     },
     "status": {
       "loadingRoles": "Loading roles...",
@@ -706,7 +713,8 @@
     "actions": {
       "manageRoles": "Manage roles",
       "activate": "Activate",
-      "deactivate": "Deactivate"
+      "deactivate": "Deactivate",
+      "detail": "Detail"
     },
     "confirmation": {
       "deactivateTitle": "Deactivate user?",
@@ -740,6 +748,16 @@
       "loadFailed": "Failed to load users.",
       "toggleFailed": "Failed to update user status.",
       "createFailed": "Failed to create user."
+    },
+    "detail": {
+      "title": "User details",
+      "fullName": "Full name",
+      "roles": "Roles",
+      "staff": "Staff",
+      "superuser": "Superuser",
+      "lastLogin": "Last login",
+      "yes": "Yes",
+      "no": "No"
     }
   },
   "adminQuizzes": {
