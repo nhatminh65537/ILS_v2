@@ -35,11 +35,17 @@ class FlagValidationService:
     @classmethod
     def generate_instance_flag(cls, base_flag: str, random_tail_length: int) -> str:
         """
-        Append a random alphanumeric suffix to base_flag to produce an instance-specific flag.
+        Insert a random alphanumeric suffix into base_flag to produce an instance-specific flag.
         The result is stored plaintext in ChallengeInstance.flag_value.
+
+        The tail is inserted INSIDE the flag wrapper, immediately before the trailing ``}``
+        (e.g. ``ILS{base}`` → ``ILS{base<tail>}``), so the instance flag keeps a valid
+        ``ILS{...}`` shape. If the base flag does not end with ``}``, the tail is appended.
         """
         if random_tail_length <= 0:
             return base_flag
         alphabet = string.ascii_letters + string.digits
         tail = ''.join(secrets.choice(alphabet) for _ in range(random_tail_length))
+        if base_flag.endswith('}'):
+            return base_flag[:-1] + tail + '}'
         return base_flag + tail
