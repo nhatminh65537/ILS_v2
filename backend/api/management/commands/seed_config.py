@@ -21,6 +21,13 @@ _GITLAB_URL = (os.environ.get('GITLAB_URL', '') or '').strip()
 _GITLAB_TOKEN = (os.environ.get('GITLAB_TOKEN', '') or '').strip()
 _GITLAB_ENABLED = bool(_GITLAB_URL and _GITLAB_TOKEN)
 
+# Deploy-server address (host:port) for the socket deployment backend. Sourced from
+# the environment (.env / compose) so the backend auto-points at the deployer service
+# (e.g. DEPLOY_API_URL=deployer:9100) without a manual admin step. Empty = unchanged
+# (admin must set challenge.deploy.api_url via the UI). Bootstrap-only: protected from
+# re-seed clobber via _VALUE_CREATE_ONLY_KEYS below.
+_DEPLOY_API_URL = (os.environ.get('DEPLOY_API_URL', '') or '').strip()
+
 # SMTP / email values are sourced from the environment (.env) ONLY to bootstrap
 # the `auth.email.*` config rows on first seed — the App Password is never
 # committed. At runtime, EmailService reads exclusively from system_config (env
@@ -355,7 +362,7 @@ DEFAULT_CONFIGS = [
     },
     {
         'key': 'challenge.deploy.api_url',
-        'value': '',
+        'value': _DEPLOY_API_URL,
         'value_type': SystemConfig.ConfigType.STRING,
         'category': 'challenge',
         'description': (
@@ -481,6 +488,9 @@ _VALUE_CREATE_ONLY_KEYS = {
     'auth.email.password',
     'auth.email.sender_name',
     'auth.email.sender_address',
+    # Deploy address is env-bootstrapped (DEPLOY_API_URL) but admin-editable; once
+    # set, a re-seed must not overwrite an admin's UI change.
+    'challenge.deploy.api_url',
 }
 
 

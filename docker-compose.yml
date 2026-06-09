@@ -1,0 +1,113 @@
+# ILS v2 — local-first stack. Bring everything up with:
+#
+#   docker compose up --build
+#
+# Exposed on the host: frontend (4000) and backend (8000) only.
+# Internal-only (NO host ports): db (Postgres) and deployer — reachable just by the
+# backend over the private `internal` network.
+#
+# Compose interpolates ${POSTGRES_*} from the sibling .env (see .env.example). The
+# backend/deployer integration secrets live in backend/.env and deployer/.env.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ils}
+      POSTGRES_USER: ${POSTGRES_USER:-ils}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ils_dev_password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ils} -d ${POSTGRES_DB:-ils}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+    # No `ports:` — Postgres is reachable only inside the `internal` network.
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    # Integration secrets (Outline / GitLab / SMTP) come from backend/.env; the
+    # compose `environment` below overrides infra wiring for the containerised run.
+    env_file:
+      - backend/.env
+    environment:
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "backend,localhost,127.0.0.1"
+      CORS_ALLOWED_ORIGINS: "http://localhost:4000,http://127.0.0.1:4000"
+      FRONTEND_URL: "http://localhost:4000"
+      # Postgres (matches the `db` service).
+      DB_ENGINE: "django.db.backends.postgresql"
+      DB_NAME: ${POSTGRES_DB:-ils}
+      DB_USER: ${POSTGRES_USER:-ils}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-ils_dev_password}
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      # Auto-point the socket deploy backend at the in-network deployer service.
+      DEPLOY_API_URL: "deployer:9100"
+      # Bootstrap a first admin on first boot (idempotent). Change the password!
+      SEED_ADMIN: "true"
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - public     # browser/API on the host
+      - internal   # db + deployer
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # BUILD-TIME, browser-reachable URLs (the browser runs on the host).
+        NEXT_PUBLIC_API_URL: "http://localhost:8000"
+        NEXT_PUBLIC_WS_URL: "ws://localhost:8000/ws"
+        NEXT_PUBLIC_ENABLE_MSW: "false"
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    depends_on:
+      - backend
+    networks:
+      - public
+
+  deployer:
+    build:
+      context: ./deployer
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Registry host + token and other knobs live in deployer/.env (not committed).
+    env_file:
+      - deployer/.env
+    environment:
+      # Listen on all interfaces inside the container; reachable only in-network.
+      DEPLOY_BIND_ADDR: "0.0.0.0"
+      DEPLOY_LISTEN_PORT: "9100"
+    # Mount the host Docker socket so the deployer can spawn sibling challenge
+    # containers. SECURITY: there is NO auth on the deploy socket — it is reachable
+    # only from inside the `internal` network (no host port published).
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - internal
+    # No `ports:` — the deploy socket is private to the `internal` network.
+
+volumes:
+  pgdata:
+
+networks:
+  public:
+    driver: bridge
+  internal:
+    driver: bridge
