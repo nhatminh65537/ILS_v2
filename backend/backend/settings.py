@@ -72,7 +72,12 @@ SECRET_KEY = os.environ.get(
 DEBUG = _env_bool('DJANGO_DEBUG', True)
 
 # Comma-separated hosts. Defaults to localhost; compose passes "backend,localhost,127.0.0.1".
-ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
+# When DEBUG=True, allow all hosts (standard dev pattern — avoids Docker IP issues).
+ALLOWED_HOSTS = (
+    ['*']
+    if DEBUG
+    else _env_list('DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
+)
 
 # Public base URL of the frontend, used to build password-reset links.
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:4000')

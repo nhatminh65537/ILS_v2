@@ -527,19 +527,38 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def _get_attempt_questions(self, attempt: UserQuizAttempt):
-        """Get questions for this attempt (TASK-008 + TASK-010).
+        """Get the fixed, ordered question set for this attempt (TASK-008 + TASK-010).
 
         Questions inherit visibility from the parent Quiz's status — there is no
         per-question publish lifecycle (BUG fix: previously filtered on
         ``status='published'`` which is always ``draft`` by default, yielding an
         empty set and an instant finish).
 
-        Applies the per-user config snapshot:
+        The selected set + order are **snapshotted onto the attempt** on first
+        computation (``config['question_ids']``) and reused for every subsequent
+        call. This is required for correctness: the selection applies
+        ``random_question`` (shuffle) and ``total_questions`` (cap to N). If it
+        were recomputed on each ``next`` call, the random subset would differ
+        every time, so ``total`` (= len of the capped set) would stay N while
+        ``current`` (= answered + 1) kept climbing past N — producing the
+        "3 of 2", "4 of 2" progress bug.
+
+        Selection (only on first call, when no snapshot exists yet):
           - ``question_filter``: all / unsolved / solved relative to the user's
             historically-correct questions for this quiz (across all attempts).
           - ``random_question``: shuffle order.
           - ``total_questions``: cap to first N after filtering/shuffling.
         """
+        # Reuse the snapshot if it was already taken for this attempt.
+        snapshot_ids = (attempt.config or {}).get('question_ids')
+        if snapshot_ids is not None:
+            by_id = {
+                q.id: q
+                for q in QuizQuestion.objects.filter(quiz=attempt.quiz, id__in=snapshot_ids)
+            }
+            # Preserve snapshot order; drop any question deleted since selection.
+            return [by_id[qid] for qid in snapshot_ids if qid in by_id]
+
         questions = list(
             QuizQuestion.objects.filter(quiz=attempt.quiz).order_by('position', 'id')
         )
@@ -564,6 +583,10 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
         total_limit = attempt.config.get('total_questions', 0)
         if total_limit > 0 and len(questions) > total_limit:
             questions = questions[:total_limit]
+
+        # Persist the selected set/order so future calls (next, finish) are stable.
+        attempt.config = {**(attempt.config or {}), 'question_ids': [q.id for q in questions]}
+        attempt.save(update_fields=['config'])
 
         return questions
 

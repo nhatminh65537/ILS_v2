@@ -242,6 +242,69 @@ async def test_immediate_feedback_false_suppresses_answer():
     await communicator.disconnect()
 
 
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_total_questions_cap_is_stable_across_next():
+    """REGRESSION: with total_questions=2 on a 4-question quiz, the selected set
+    must be snapshotted on the attempt. Previously the set was re-shuffled/re-capped
+    on every ``next`` call, so ``total`` stayed 2 while ``current`` climbed past it
+    ("3 of 2", "4 of 2"). After two answers the session must finish — not serve a
+    third question."""
+    user = await _create_user('grace', 'grace@example.com')
+    quiz = await _create_quiz('Capped Quiz')
+    # 4 distinct questions; random_question on to exercise the shuffle path.
+    for pos in range(1, 5):
+        await _create_question(quiz, position=pos)
+    await _set_quiz_config(quiz, user, total_questions=2, random_question=True)
+
+    tokens = await database_sync_to_async(RefreshToken.for_user)(user)
+    access_token = str(tokens.access_token)
+
+    communicator = WebsocketCommunicator(_get_consumer_asgi(), f"/ws/quiz/{quiz.id}/")
+    await communicator.connect()
+    await communicator.send_json_to({"type": "auth", "token": access_token})
+    assert (await communicator.receive_json_from())['type'] == 'auth_ok'
+
+    await communicator.send_json_to({"action": "start"})
+
+    served_question_ids = []
+    expected_current = 1
+    while True:
+        resp = await communicator.receive_json_from()
+        if resp['type'] == 'finish':
+            break
+        assert resp['type'] == 'question'
+        # total is always the capped size; current must never exceed it.
+        assert resp['progress']['total'] == 2
+        assert resp['progress']['current'] == expected_current
+        assert resp['progress']['current'] <= resp['progress']['total']
+        qid = resp['question']['id']
+        served_question_ids.append(qid)
+
+        opt_id = await _correct_option_id_for(qid)
+        await communicator.send_json_to(
+            {"action": "answer", "question_id": qid, "answer_data": {"option_id": opt_id}}
+        )
+        assert (await communicator.receive_json_from())['type'] == 'answer_result'
+        await communicator.send_json_to({"action": "next"})
+        expected_current += 1
+
+    # Exactly 2 distinct questions were served before finishing.
+    assert len(served_question_ids) == 2
+    assert len(set(served_question_ids)) == 2
+
+    await communicator.disconnect()
+
+
+@database_sync_to_async
+def _correct_option_id_for(question_id):
+    return (
+        QuizQuestionOption.objects.filter(question_id=question_id, is_correct=True)
+        .first()
+        .id
+    )
+
+
 def _get_consumer_asgi():
     """Get ASGI application for consumer."""
     from realtime.consumers import QuizConsumer
@@ -275,13 +338,13 @@ def _create_quiz(title):
 
 
 @database_sync_to_async
-def _create_question(quiz, status='published'):
+def _create_question(quiz, status='published', position=1):
     question = QuizQuestion.objects.create(
         quiz=quiz,
         question_type='single_choice',
         content={'text': 'What?'},
         score=10,
-        position=1,
+        position=position,
         status=status,
     )
     QuizQuestionOption.objects.create(
