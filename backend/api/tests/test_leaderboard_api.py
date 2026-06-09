@@ -3,7 +3,18 @@ import pytest
 from api.models import UserProfile
 
 
-def create_profile(user, *, learning=0, challenge=0, quiz=0, display_name=None, avatar_url=None):
+def create_profile(
+    user,
+    *,
+    learning=0,
+    challenge=0,
+    quiz=0,
+    course_completed=0,
+    challenge_completed=0,
+    quiz_completed=0,
+    display_name=None,
+    avatar_url=None,
+):
     return UserProfile.objects.create(
         user=user,
         display_name=display_name,
@@ -11,6 +22,9 @@ def create_profile(user, *, learning=0, challenge=0, quiz=0, display_name=None, 
         total_learning_point=learning,
         total_challenge_point=challenge,
         total_quiz_point=quiz,
+        course_completed=course_completed,
+        challenge_completed=challenge_completed,
+        quiz_completed=quiz_completed,
     )
 
 
@@ -116,6 +130,32 @@ class TestLeaderboardTask11_1API:
         assert response.data['page_size'] == 1
         assert response.data['results'][0]['user']['username'] == 'leader_second'
         assert response.data['entries'] == response.data['results']
+
+    def test_entry_completed_count_matches_board_type(self, member_client, member_user):
+        create_profile(
+            member_user,
+            learning=10,
+            challenge=20,
+            quiz=30,
+            course_completed=3,
+            challenge_completed=5,
+            quiz_completed=7,
+            display_name='Counter Member',
+        )
+
+        challenge_response = member_client.get('/api/stats/leaderboard/?type=challenge&page=1')
+        assert challenge_response.status_code == 200
+        assert challenge_response.data['results'][0]['completed'] == 5
+
+        quiz_response = member_client.get('/api/stats/leaderboard/?type=quiz&page=1')
+        assert quiz_response.data['results'][0]['completed'] == 7
+
+        course_response = member_client.get('/api/stats/leaderboard/?type=course&page=1')
+        assert course_response.data['results'][0]['completed'] == 3
+
+        overall_response = member_client.get('/api/stats/leaderboard/?type=overall&page=1')
+        # overall = course + challenge + quiz completed = 3 + 5 + 7
+        assert overall_response.data['results'][0]['completed'] == 15
 
     def test_invalid_type_returns_400(self, member_client, member_user):
         create_profile(member_user, learning=10, challenge=10, quiz=10)

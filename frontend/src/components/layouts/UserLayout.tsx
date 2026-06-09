@@ -11,6 +11,7 @@ type UserLayoutProps = {
   coursesLabel: string
   challengesLabel: string
   quizzesLabel: string
+  leaderboardLabel: string
   profileLabel: string
   adminPortalLabel: string
   footerText: string
@@ -28,6 +29,7 @@ export function UserLayout({
   coursesLabel,
   challengesLabel,
   quizzesLabel,
+  leaderboardLabel,
   profileLabel,
   adminPortalLabel,
   footerText,
@@ -39,6 +41,7 @@ export function UserLayout({
   const coursesHref = `/${locale}/courses`
   const challengesHref = `/${locale}/challenges`
   const quizzesHref = `/${locale}/quizzes`
+  const leaderboardHref = `/${locale}/leaderboard`
   const profileHref = `/${locale}/profile/settings`
   const adminLoginHref = `/${locale}/admin/login`
 
@@ -54,6 +57,7 @@ export function UserLayout({
         { href: coursesHref, label: coursesLabel },
         { href: challengesHref, label: challengesLabel },
         { href: quizzesHref, label: quizzesLabel },
+        { href: leaderboardHref, label: leaderboardLabel },
         { href: profileHref, label: profileLabel },
         { href: homeHref, label: homeLabel },
         { href: adminLoginHref, label: adminPortalLabel },
@@ -66,6 +70,7 @@ export function UserLayout({
         { href: coursesHref, label: coursesLabel },
         { href: challengesHref, label: challengesLabel },
         { href: quizzesHref, label: quizzesLabel },
+        { href: leaderboardHref, label: leaderboardLabel },
       ]}
     >
       {children}

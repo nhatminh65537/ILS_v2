@@ -27,6 +27,15 @@ export const leaderboardHandlers = [
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0
     const safePage = Number.isFinite(page) && page > 0 ? page : 1
     const pageOffset = safeOffset > 0 ? safeOffset : (safePage - 1) * safeLimit
+    const completedFor = (entry: (typeof leaderboardFixture)[number]): number =>
+      canonicalType === 'course'
+        ? entry.course_completed
+        : canonicalType === 'challenge'
+          ? entry.challenge_completed
+          : canonicalType === 'quiz'
+            ? entry.quiz_completed
+            : entry.course_completed + entry.challenge_completed + entry.quiz_completed
+
     const entries = sorted.slice(pageOffset, pageOffset + safeLimit).map((entry, index) => ({
       rank: pageOffset + index + 1,
       user: entry.user,
@@ -38,6 +47,7 @@ export const leaderboardHandlers = [
             : canonicalType === 'quiz'
               ? entry.total_quiz_point
               : entry.total_points,
+      completed: completedFor(entry),
       delta: (() => {
         const nextEntry = sorted[pageOffset + index + 1]
         if (!nextEntry) {

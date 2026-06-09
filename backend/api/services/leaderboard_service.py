@@ -42,6 +42,13 @@ class LeaderboardService:
         'quiz': ('total_quiz_point',),
     }
 
+    COMPLETED_FIELD_MAP = {
+        'overall': ('course_completed', 'challenge_completed', 'quiz_completed'),
+        'course': ('course_completed',),
+        'challenge': ('challenge_completed',),
+        'quiz': ('quiz_completed',),
+    }
+
     @classmethod
     def normalize_board_type(cls, board_type):
         value = str(board_type or 'overall').strip().lower()
@@ -120,7 +127,12 @@ class LeaderboardService:
         return profile.avatar_url
 
     @classmethod
-    def _serialize_entry(cls, row, next_score=None):
+    def _resolve_completed(cls, profile, board_type):
+        fields = cls.COMPLETED_FIELD_MAP.get(board_type, ())
+        return sum(int(getattr(profile, field, 0) or 0) for field in fields)
+
+    @classmethod
+    def _serialize_entry(cls, row, board_type, next_score=None):
         profile = row['profile']
         avatar_url = cls._resolve_avatar_url(profile)
         score = row['score']
@@ -137,6 +149,7 @@ class LeaderboardService:
             },
             'score': score,
             'delta': delta,
+            'completed': cls._resolve_completed(profile, board_type),
         }
 
     @staticmethod
@@ -177,7 +190,7 @@ class LeaderboardService:
         results = []
         for index, row in enumerate(current_page_rows):
             next_score = current_page_rows[index + 1]['score'] if index + 1 < len(current_page_rows) else None
-            results.append(cls._serialize_entry(row, next_score=next_score))
+            results.append(cls._serialize_entry(row, canonical_type, next_score=next_score))
 
         user_id = getattr(user, 'id', None)
         my_rank = cls._resolve_rank_for_user(ranked_rows, user_id)

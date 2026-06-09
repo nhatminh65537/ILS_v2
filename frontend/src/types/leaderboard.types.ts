@@ -19,6 +19,8 @@ export interface LeaderboardEntry {
   readonly user: LeaderboardUser
   readonly score: number
   readonly delta: number
+  /** Completed item count for the active board type (course/challenge/quiz; overall = sum). */
+  readonly completed?: number
 }
 
 /** Request payloads */

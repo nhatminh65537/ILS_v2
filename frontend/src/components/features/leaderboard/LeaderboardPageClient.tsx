@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -49,6 +49,85 @@ function getInitials(label: string): string {
   return `${tokens[0][0]}${tokens[tokens.length - 1][0]}`.toUpperCase()
 }
 
+// Medal styling per podium rank (1 = gold, 2 = silver, 3 = bronze).
+const PODIUM_MEDAL = {
+  1: { ring: 'ring-2 ring-yellow-400', badge: 'bg-yellow-400 text-yellow-950', emoji: '🥇' },
+  2: { ring: 'ring-2 ring-zinc-300', badge: 'bg-zinc-300 text-zinc-900', emoji: '🥈' },
+  3: { ring: 'ring-2 ring-amber-600', badge: 'bg-amber-600 text-amber-50', emoji: '🥉' },
+} as const
+
+type PodiumPlace = keyof typeof PODIUM_MEDAL
+
+type LeaderboardPodiumProps = {
+  locale: string
+  entries: readonly LeaderboardEntry[]
+  currentUserId: number | null
+  scoreLabel: string
+  currentUserLabel: string
+}
+
+function LeaderboardPodium({
+  locale,
+  entries,
+  currentUserId,
+  scoreLabel,
+  currentUserLabel,
+}: LeaderboardPodiumProps) {
+  // Display order: 2nd (left), 1st (center, raised), 3rd (right).
+  const byRank = new Map<number, LeaderboardEntry>()
+  for (const entry of entries) {
+    if (entry.rank >= 1 && entry.rank <= 3 && !byRank.has(entry.rank)) {
+      byRank.set(entry.rank, entry)
+    }
+  }
+
+  const order: PodiumPlace[] = [2, 1, 3]
+  const visible = order.filter((place) => byRank.has(place))
+
+  if (visible.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {visible.map((place) => {
+        const entry = byRank.get(place)!
+        const medal = PODIUM_MEDAL[place]
+        const displayName = getDisplayLabel(entry)
+        const isCurrentUser = entry.user.id === currentUserId
+
+        return (
+          <Card
+            key={entry.user.id}
+            className={`rounded-none ${medal.ring} ${place === 1 ? 'sm:-mt-4' : ''} ${
+              isCurrentUser ? 'bg-primary/5' : ''
+            }`}
+          >
+            <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
+              <span className="text-3xl" aria-hidden>
+                {medal.emoji}
+              </span>
+              <Avatar size="lg" className={medal.ring}>
+                <AvatarImage src={entry.user.avatar_url ?? undefined} alt={displayName} />
+                <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-foreground">{displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  @{entry.user.username} {isCurrentUser ? `· ${currentUserLabel}` : ''}
+                </p>
+              </div>
+              <Badge className={`${medal.badge} min-w-12 justify-center`}>#{place}</Badge>
+              <p className="text-lg font-semibold">{formatNumber(locale, entry.score)}</p>
+              <p className="text-xs text-muted-foreground">{scoreLabel}</p>
+            </CardContent>
+          </Card>
+        )
+      })}
+    </div>
+  )
+}
+
 export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
   const t = useTranslations('leaderboard')
   const currentUserId = useAuthStore((state) => state.user?.id ?? null)
@@ -58,6 +137,10 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
   const [response, setResponse] = useState<LeaderboardResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorKey, setErrorKey] = useState<string | null>(null)
+
+  // Row ref + a flag so we scroll to the current user only after a "Go to my rank" click.
+  const currentUserRowRef = useRef<HTMLTableRowElement | null>(null)
+  const [scrollToMeRequested, setScrollToMeRequested] = useState(false)
 
   useEffect(() => {
     let ignore = false
@@ -101,6 +184,19 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
   const myRank = response?.my_rank ?? null
 
   const currentUserRow = rows.find((row) => row.user.id === currentUserId) ?? null
+  const showPodium = page === 1 && rows.length > 0
+
+  // Scroll to the current user's row once the page that contains them has loaded.
+  useEffect(() => {
+    if (!scrollToMeRequested) {
+      return
+    }
+
+    if (currentUserRow && currentUserRowRef.current) {
+      currentUserRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setScrollToMeRequested(false)
+    }
+  }, [scrollToMeRequested, currentUserRow])
 
   const handleTabChange = (value: string): void => {
     if (!BOARD_TYPES.includes(value as LeaderboardType)) {
@@ -117,6 +213,20 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
 
   const handleNextPage = (): void => {
     setPage((current) => Math.min(totalPages, current + 1))
+  }
+
+  const handleGoToMyRank = (): void => {
+    if (myRank == null) {
+      return
+    }
+
+    const targetPage = Math.max(1, Math.ceil(myRank / pageSize))
+    setScrollToMeRequested(true)
+    // If already on the right page, the scroll effect fires on the existing rows;
+    // otherwise it fires after the new page loads.
+    if (targetPage !== page) {
+      setPage(targetPage)
+    }
   }
 
   return (
@@ -161,6 +271,14 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
             ) : (
               <p>{t('states.myRankUnavailable')}</p>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={myRank == null}
+              onClick={handleGoToMyRank}
+            >
+              {t('goToMyRank')}
+            </Button>
           </CardContent>
         </Card>
 
@@ -181,6 +299,19 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
           </CardContent>
         </Card>
       </section>
+
+      {showPodium ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">{t('podium.title')}</h2>
+          <LeaderboardPodium
+            locale={locale}
+            entries={rows}
+            currentUserId={currentUserId}
+            scoreLabel={t('columns.score')}
+            currentUserLabel={t('currentUser')}
+          />
+        </section>
+      ) : null}
 
       <Card className="rounded-none">
         <CardHeader className="space-y-1">
@@ -205,6 +336,7 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
                   <TableHead className="w-24">{t('columns.rank')}</TableHead>
                   <TableHead>{t('columns.user')}</TableHead>
                   <TableHead className="w-32 text-right">{t('columns.score')}</TableHead>
+                  <TableHead className="w-32 text-right">{t('columns.completed')}</TableHead>
                   <TableHead className="w-32 text-right">{t('columns.delta')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -214,7 +346,11 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
                   const displayName = getDisplayLabel(row)
 
                   return (
-                    <TableRow key={row.user.id} className={isCurrentUser ? 'bg-primary/5' : undefined}>
+                    <TableRow
+                      key={row.user.id}
+                      ref={isCurrentUser ? currentUserRowRef : undefined}
+                      className={isCurrentUser ? 'bg-primary/5' : undefined}
+                    >
                       <TableCell>
                         <Badge variant={row.rank === 1 ? 'default' : 'outline'} className="min-w-12 justify-center">
                           #{formatNumber(locale, row.rank)}
@@ -235,6 +371,9 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium">{formatNumber(locale, row.score)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatNumber(locale, row.completed ?? 0)}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Badge variant={row.delta === 0 ? 'outline' : 'secondary'}>
                           {row.delta === 0 ? '0' : `+${formatNumber(locale, row.delta)}`}

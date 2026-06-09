@@ -350,6 +350,8 @@ WebSocket:
 
 Pagination: leaderboard uses a dedicated page size default of **10** (`limit` query param overrides; see `backend/api/services/leaderboard_service.py:DEFAULT_PAGE_SIZE`). This differs from the project-wide DRF `PAGE_SIZE=20`.
 
+Entry shape: each `results[]` item is `{ rank, user{ id, username, display_name, avatar_url, avatar }, score, delta, completed }`. `completed` is the completed-item count for the active board type (`course_completed` / `challenge_completed` / `quiz_completed`; `overall` = sum of the three), sourced from the denormalized counters on `UserProfile`.
+
 ### 3.9 System Config
 
 | Method | Path | Auth | Status | Notes |

@@ -689,6 +689,9 @@ type LeaderboardFixtureRow = LeaderboardEntry & {
   readonly total_challenge_point: number
   readonly total_quiz_point: number
   readonly total_points: number
+  readonly course_completed: number
+  readonly challenge_completed: number
+  readonly quiz_completed: number
 }
 
 export const leaderboardFixture: LeaderboardFixtureRow[] = Array.from({ length: 10 }, (_, index) => {
@@ -702,6 +705,10 @@ export const leaderboardFixture: LeaderboardFixtureRow[] = Array.from({ length: 
   const totalQuizPoint = 180 - index * 8
   const totalPoints = totalLearningPoint + totalChallengePoint + totalQuizPoint
 
+  const courseCompleted = Math.max(0, 12 - index)
+  const challengeCompleted = Math.max(0, 14 - index)
+  const quizCompleted = Math.max(0, 9 - index)
+
   return {
     rank: index + 1,
     user: {
@@ -713,10 +720,14 @@ export const leaderboardFixture: LeaderboardFixtureRow[] = Array.from({ length: 
     },
     score: totalPoints,
     delta: index === 0 ? 0 : 30,
+    completed: courseCompleted + challengeCompleted + quizCompleted,
     total_learning_point: totalLearningPoint,
     total_challenge_point: totalChallengePoint,
     total_quiz_point: totalQuizPoint,
     total_points: totalPoints,
+    course_completed: courseCompleted,
+    challenge_completed: challengeCompleted,
+    quiz_completed: quizCompleted,
   }
 })
 

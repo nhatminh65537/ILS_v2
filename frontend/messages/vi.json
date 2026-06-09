@@ -19,6 +19,7 @@
     "courses": "Khoá học",
     "challenges": "Thử thách",
     "quizzes": "Bài quiz",
+    "leaderboard": "Bảng xếp hạng",
     "notifications": "Thông báo",
     "admin": "Quản trị",
     "adminLogin": "Đăng nhập quản trị",
@@ -40,11 +41,16 @@
     "myRank": "Thứ hạng của bạn",
     "totalUsers": "Tổng người dùng",
     "currentUser": "Bạn",
+    "goToMyRank": "Tới hạng của tôi",
+    "podium": {
+      "title": "Top 3"
+    },
     "columns": {
       "rank": "Hạng",
       "user": "Người dùng",
       "score": "Điểm",
-      "delta": "Khoảng cách"
+      "delta": "Khoảng cách",
+      "completed": "Hoàn thành"
     },
     "states": {
       "loading": "Đang tải bảng xếp hạng...",

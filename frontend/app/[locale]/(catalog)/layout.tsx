@@ -29,6 +29,7 @@ export default async function CatalogSurfaceLayout({ children, params }: Catalog
         dashboardLabel={tNav('dashboard')}
         footerText={tSurface('footerText')}
         homeLabel={tNav('home')}
+        leaderboardLabel={tNav('leaderboard')}
         locale={locale}
         profileLabel={tNav('profile')}
         quizzesLabel={tNav('quizzes')}

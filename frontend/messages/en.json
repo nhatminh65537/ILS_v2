@@ -19,6 +19,7 @@
     "courses": "Courses",
     "challenges": "Challenges",
     "quizzes": "Quizzes",
+    "leaderboard": "Leaderboard",
     "notifications": "Notifications",
     "admin": "Admin",
     "adminLogin": "Admin login",
@@ -40,11 +41,16 @@
     "myRank": "Your rank",
     "totalUsers": "Total users",
     "currentUser": "You",
+    "goToMyRank": "Go to my rank",
+    "podium": {
+      "title": "Top 3"
+    },
     "columns": {
       "rank": "Rank",
       "user": "User",
       "score": "Score",
-      "delta": "Gap"
+      "delta": "Gap",
+      "completed": "Completed"
     },
     "states": {
       "loading": "Loading leaderboard...",

@@ -18,6 +18,7 @@ class LeaderboardEntrySerializer(serializers.Serializer):
     user = LeaderboardUserSerializer()
     score = serializers.IntegerField()
     delta = serializers.IntegerField(min_value=0)
+    completed = serializers.IntegerField(min_value=0, required=False)
 
 
 class LeaderboardResponseSerializer(serializers.Serializer):
