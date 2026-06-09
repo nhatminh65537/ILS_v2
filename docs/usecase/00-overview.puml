@@ -1,0 +1,78 @@
+@startuml 00-overview
+' ====================================================================
+'  ILS v2 — USE CASE DIAGRAM TỔNG QUAN
+'  Tóm lược các nhóm use case chính của toàn hệ thống.
+'  Actor: Guest < Member < Editor < Admin (generalization).
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Guest as guest
+actor Member as member
+actor Editor as editor
+actor Admin as admin
+
+guest <|-- member
+member <|-- editor
+editor <|-- admin
+
+rectangle "ILS — Hệ thống học an ninh mạng" {
+  usecase UC_REG   as "Đăng ký"
+  usecase UC_LOGIN as "Đăng nhập\n(native / SSO)"
+
+  usecase UC_PROFILE as "Quản lý thông tin\ncá nhân"
+  usecase UC_LEARN   as "Học và luyện tập"
+  usecase UC_CHAL    as "Làm thử thách"
+  usecase UC_QUIZ    as "Luyện tập Quiz"
+  usecase UC_RANK    as "Xem bảng xếp hạng"
+  usecase UC_NOTIF   as "Nhận thông báo"
+
+  usecase UC_MLEARN  as "Quản lý module\nhọc tập"
+  usecase UC_MCHAL   as "Quản lý thử thách"
+  usecase UC_MQUIZ   as "Quản lý quiz"
+
+  usecase UC_USERS   as "Quản lý người dùng"
+  usecase UC_RBAC    as "Quản lý vai trò\n& phân quyền"
+  usecase UC_CONFIG  as "Cấu hình hệ thống\n& tích hợp"
+}
+
+' --- Guest ---
+guest --> UC_REG
+guest --> UC_LOGIN
+
+' --- Member (người dùng đã đăng nhập) ---
+member --> UC_PROFILE
+member --> UC_LEARN
+member --> UC_CHAL
+member --> UC_QUIZ
+member --> UC_RANK
+member --> UC_NOTIF
+
+' --- Editor (quản lý nội dung) ---
+editor --> UC_MLEARN
+editor --> UC_MCHAL
+editor --> UC_MQUIZ
+
+' --- Admin (quản trị hệ thống) ---
+admin --> UC_USERS
+admin --> UC_RBAC
+admin --> UC_CONFIG
+
+' --- include: mọi tính năng cần xác thực đều include Đăng nhập ---
+UC_PROFILE ..> UC_LOGIN : <<include>>
+UC_LEARN   ..> UC_LOGIN : <<include>>
+UC_CHAL    ..> UC_LOGIN : <<include>>
+UC_QUIZ    ..> UC_LOGIN : <<include>>
+UC_RANK    ..> UC_LOGIN : <<include>>
+UC_NOTIF   ..> UC_LOGIN : <<include>>
+UC_MLEARN  ..> UC_LOGIN : <<include>>
+UC_MCHAL   ..> UC_LOGIN : <<include>>
+UC_MQUIZ   ..> UC_LOGIN : <<include>>
+UC_USERS   ..> UC_LOGIN : <<include>>
+UC_RBAC    ..> UC_LOGIN : <<include>>
+UC_CONFIG  ..> UC_LOGIN : <<include>>
+@enduml

@@ -1,0 +1,47 @@
+@startuml 03-learn-consume
+' ====================================================================
+'  Phân rã: HỌC VÀ LUYỆN TẬP (người học)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Member as member
+
+rectangle "Học và luyện tập" {
+  usecase UC_LIST   as "Xem danh sách\nmodule học tập"
+  usecase UC_DETAIL as "Xem chi tiết\nkhóa học"
+  usecase UC_TREE   as "Duyệt cây nội dung\n(lazy-load)"
+  usecase UC_VIEW   as "Học bài học\n(markdown / video)"
+  usecase UC_MINI   as "Làm mini-quiz\ntrong bài"
+  usecase UC_START  as "Đánh dấu bắt đầu"
+  usecase UC_DONE   as "Đánh dấu hoàn thành"
+  usecase UC_PROG   as "Xem tiến độ\nhọc tập"
+
+  usecase UC_UPDPROG as "Cập nhật tiến độ"
+  usecase UC_REWARD  as "Nhận điểm thưởng\n(khi hoàn thành khóa)"
+}
+
+member --> UC_LIST
+member --> UC_DETAIL
+member --> UC_TREE
+member --> UC_VIEW
+member --> UC_MINI
+member --> UC_START
+member --> UC_DONE
+member --> UC_PROG
+
+' include / extend
+UC_DONE ..> UC_UPDPROG : <<include>>
+UC_UPDPROG ..> UC_REWARD : <<include>>
+UC_VIEW <.. UC_DONE : <<extend>>
+UC_VIEW <.. UC_MINI : <<extend>>
+
+note bottom of UC_REWARD
+  Hoàn thành tất cả bài học → tự
+  cộng learning_point (Django signal)
+end note
+@enduml

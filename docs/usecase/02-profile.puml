@@ -1,0 +1,45 @@
+@startuml 02-profile
+' ====================================================================
+'  Phân rã: QUẢN LÝ THÔNG TIN CÁ NHÂN
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Guest as guest
+actor Member as member
+guest <|-- member
+
+rectangle "Quản lý thông tin cá nhân" {
+  usecase UC_VIEWME  as "Xem hồ sơ của mình\n(+ thống kê điểm)"
+  usecase UC_EDIT    as "Chỉnh sửa hồ sơ\n(tên, avatar, bio,\nvị trí, website)"
+  usecase UC_ACC     as "Đổi thông tin tài khoản\n(username / email)"
+  usecase UC_SET     as "Đổi cài đặt\n(ngôn ngữ / theme / timezone)"
+  usecase UC_ACT     as "Xem hoạt động\ngần đây"
+  usecase UC_CHGPW   as "Đổi mật khẩu"
+
+  usecase UC_PUB     as "Xem hồ sơ công khai\nngười khác"
+  usecase UC_PUBACT  as "Xem hoạt động\ncông khai"
+}
+
+member --> UC_VIEWME
+member --> UC_EDIT
+member --> UC_ACC
+member --> UC_SET
+member --> UC_ACT
+member --> UC_CHGPW
+member --> UC_PUB
+member --> UC_PUBACT
+
+' Hồ sơ/hoạt động công khai không cần đăng nhập
+guest --> UC_PUB
+guest --> UC_PUBACT
+
+note bottom of UC_CHGPW
+  Đổi mật khẩu → thu hồi
+  tất cả phiên (xem 01-auth)
+end note
+@enduml

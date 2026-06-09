@@ -1,0 +1,53 @@
+@startuml 05-challenge-play
+' ====================================================================
+'  Phân rã: LÀM THỬ THÁCH (CTF — người chơi)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Member as member
+
+rectangle "Làm thử thách" {
+  usecase UC_LIST   as "Xem danh sách\nthử thách"
+  usecase UC_DETAIL as "Xem chi tiết\nthử thách"
+  usecase UC_EXPL   as "Duyệt explorer / cây\nthử thách"
+  usecase UC_PROG   as "Xem tiến độ"
+  usecase UC_DL     as "Tải file đính kèm"
+
+  usecase UC_SUBMIT as "Submit flag"
+  usecase UC_CHECK  as "Kiểm tra flag\n(static / regex / instance)"
+  usecase UC_RECORD as "Ghi nhận lần nộp"
+  usecase UC_REWARD as "Nhận điểm + thông báo\n(lần giải đầu)"
+
+  ' --- Instance (challenge cần deploy) ---
+  usecase UC_INST_START  as "Khởi tạo instance"
+  usecase UC_INST_STATUS as "Xem trạng thái\ninstance"
+  usecase UC_INST_EXT    as "Gia hạn instance (TTL)"
+  usecase UC_INST_STOP   as "Dừng instance"
+}
+
+member --> UC_LIST
+member --> UC_DETAIL
+member --> UC_EXPL
+member --> UC_PROG
+member --> UC_DL
+member --> UC_SUBMIT
+member --> UC_INST_START
+member --> UC_INST_STATUS
+member --> UC_INST_EXT
+member --> UC_INST_STOP
+
+UC_SUBMIT ..> UC_CHECK  : <<include>>
+UC_SUBMIT ..> UC_RECORD : <<include>>
+UC_CHECK  ..> UC_REWARD : <<include>>
+UC_SUBMIT <.. UC_INST_START : <<extend>>
+
+note bottom of UC_CHECK
+  Flag chỉ kiểm tra phía server,
+  không bao giờ trả flag_value về client.
+end note
+@enduml

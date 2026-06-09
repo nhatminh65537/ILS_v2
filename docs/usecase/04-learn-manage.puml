@@ -1,0 +1,55 @@
+@startuml 04-learn-manage
+' ====================================================================
+'  Phân rã: QUẢN LÝ MODULE HỌC TẬP (Editor / Admin)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Editor as editor
+actor Admin as admin
+editor <|-- admin
+
+rectangle "Quản lý module học tập" {
+  usecase UC_COURSE as "Tạo / sửa / xóa\nkhóa học"
+  usecase UC_FOLDER as "Tạo / sửa / xóa\nfolder (node)"
+  usecase UC_LESSON as "Tạo / sửa / xóa lesson\n(markdown / video / mini-quiz)"
+  usecase UC_MOVE   as "Di chuyển / sắp xếp\nnode"
+  usecase UC_TAG    as "Tạo / sửa / xóa\ncourse tag"
+  usecase UC_CAT    as "Tạo / sửa / xóa\ncourse category"
+  usecase UC_ATTACH as "Gắn quiz vào lesson\n(mini-quiz)"
+
+  ' --- Outline integration ---
+  usecase UC_OL_BROWSE as "Duyệt tài liệu\nOutline"
+  usecase UC_OL_LINK   as "Liên kết lesson ↔\nOutline (import)"
+  usecase UC_OL_SYNC   as "Đồng bộ Outline"
+  usecase UC_OL_UNLINK as "Hủy liên kết Outline"
+
+  usecase UC_PURGE  as "Xóa vĩnh viễn\n(purge) khóa học"
+}
+
+editor --> UC_COURSE
+editor --> UC_FOLDER
+editor --> UC_LESSON
+editor --> UC_MOVE
+editor --> UC_TAG
+editor --> UC_CAT
+editor --> UC_ATTACH
+editor --> UC_OL_BROWSE
+editor --> UC_OL_LINK
+editor --> UC_OL_SYNC
+editor --> UC_OL_UNLINK
+
+admin --> UC_PURGE
+admin --> UC_CAT : "(quản trị)"
+
+UC_LESSON <.. UC_OL_LINK : <<extend>>
+
+note bottom of UC_OL_SYNC
+  Server-mediated: token không lộ ra FE.
+  503 (Outline down) → giữ nội dung cũ.
+end note
+@enduml

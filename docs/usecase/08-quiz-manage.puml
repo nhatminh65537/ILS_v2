@@ -1,0 +1,42 @@
+@startuml 08-quiz-manage
+' ====================================================================
+'  Phân rã: QUẢN LÝ QUIZ (Editor / Admin)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Editor as editor
+actor Admin as admin
+editor <|-- admin
+
+rectangle "Quản lý quiz" {
+  usecase UC_QUIZ as "Tạo / sửa / xóa quiz"
+  usecase UC_NODE as "Tạo / sửa / xóa node\n(folder / item)"
+  usecase UC_MOVE as "Di chuyển node"
+  usecase UC_Q    as "Tạo / sửa / xóa câu hỏi\n(single / multi / fill-blank)"
+  usecase UC_OPT  as "Quản lý đáp án &\nđộ phân biệt hoa-thường"
+  usecase UC_EXPL as "Thêm giải thích\ncho câu hỏi"
+  usecase UC_TAG  as "Tạo / sửa / xóa\ncategory & tag"
+}
+
+editor --> UC_QUIZ
+editor --> UC_NODE
+editor --> UC_MOVE
+editor --> UC_Q
+editor --> UC_OPT
+editor --> UC_EXPL
+editor --> UC_TAG
+
+UC_Q ..> UC_OPT  : <<include>>
+UC_Q <.. UC_EXPL : <<extend>>
+
+note bottom of UC_QUIZ
+  quiz_point là read-only =
+  tổng điểm các câu hỏi
+  (tự đồng bộ khi sửa câu hỏi).
+end note
+@enduml

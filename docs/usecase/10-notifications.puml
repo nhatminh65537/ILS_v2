@@ -1,0 +1,53 @@
+@startuml 10-notifications
+' ====================================================================
+'  Phân rã: THÔNG BÁO
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Member as member
+actor Admin as admin
+actor System as system
+member <|-- admin
+
+rectangle "Thông báo" {
+  ' --- Member ---
+  usecase UC_LIST  as "Liệt kê thông báo"
+  usecase UC_VIEW  as "Xem chi tiết\nthông báo"
+  usecase UC_READ  as "Đánh dấu đã đọc\n(một)"
+  usecase UC_READA as "Đánh dấu đã đọc\n(tất cả)"
+  usecase UC_COUNT as "Đếm chưa đọc"
+  usecase UC_WS    as "Nhận realtime\n(WebSocket)"
+
+  ' --- Admin ---
+  usecase UC_CAST  as "Broadcast thông báo"
+  usecase UC_HIST  as "Xem lịch sử broadcast"
+
+  ' --- System (auto) ---
+  usecase UC_AUTO  as "Tự gửi thông báo\nkhi hoàn thành\ncourse / challenge / quiz"
+}
+
+member --> UC_LIST
+member --> UC_VIEW
+member --> UC_READ
+member --> UC_READA
+member --> UC_COUNT
+member --> UC_WS
+
+admin --> UC_CAST
+admin --> UC_HIST
+
+system --> UC_AUTO
+
+UC_AUTO ..> UC_WS : <<include>>
+UC_CAST ..> UC_WS : <<include>>
+
+note bottom of UC_AUTO
+  Idempotent qua event_key
+  để tránh trùng thông báo.
+end note
+@enduml

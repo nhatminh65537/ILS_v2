@@ -1,0 +1,42 @@
+@startuml 11-rbac
+' ====================================================================
+'  Phân rã: QUẢN LÝ VAI TRÒ & PHÂN QUYỀN (RBAC — Admin)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Admin as admin
+
+rectangle "Quản lý vai trò & phân quyền" {
+  usecase UC_PERMS  as "Liệt kê permission"
+  usecase UC_ROLES  as "Liệt kê vai trò"
+  usecase UC_CRUD   as "Tạo / sửa / xóa\nvai trò tùy chỉnh"
+  usecase UC_RPERM  as "Xem permission\ncủa vai trò"
+  usecase UC_GRANT  as "Gán permission\ncho vai trò"
+  usecase UC_REVOKE as "Thu hồi permission\nkhỏi vai trò"
+  usecase UC_UROLES as "Liệt kê vai trò\ncủa người dùng"
+  usecase UC_ASSIGN as "Gán vai trò\ncho người dùng"
+  usecase UC_UNASS  as "Gỡ vai trò\nkhỏi người dùng"
+}
+
+admin --> UC_PERMS
+admin --> UC_ROLES
+admin --> UC_CRUD
+admin --> UC_RPERM
+admin --> UC_GRANT
+admin --> UC_REVOKE
+admin --> UC_UROLES
+admin --> UC_ASSIGN
+admin --> UC_UNASS
+
+note bottom of UC_CRUD
+  Vai trò built-in (Admin / Editor / Member)
+  là read-only: không xóa, không đổi tên.
+  Đổi quyền của user → tăng permission_version
+  (làm mới claim trong JWT).
+end note
+@enduml

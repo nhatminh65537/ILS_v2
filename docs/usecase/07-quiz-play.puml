@@ -1,0 +1,53 @@
+@startuml 07-quiz-play
+' ====================================================================
+'  Phân rã: LUYỆN TẬP QUIZ (WebSocket — người chơi)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Member as member
+
+rectangle "Luyện tập Quiz" {
+  usecase UC_LIST   as "Xem danh sách quiz"
+  usecase UC_DETAIL as "Xem chi tiết quiz"
+  usecase UC_EXPL   as "Duyệt explorer quiz"
+  usecase UC_PROG   as "Xem tiến độ\n(best score)"
+  usecase UC_CONFIG as "Cấu hình phiên luyện\n(số câu, filter,\nfeedback tức thì)"
+
+  usecase UC_CONNECT as "Kết nối WebSocket"
+  usecase UC_AUTHWS  as "Xác thực WebSocket\n(JWT - tin nhắn đầu)"
+  usecase UC_START   as "Bắt đầu phiên"
+  usecase UC_ANSWER  as "Trả lời câu hỏi"
+  usecase UC_SCORE   as "Chấm điểm câu trả lời"
+  usecase UC_RESULT  as "Nhận kết quả\n+ giải thích"
+  usecase UC_NEXT    as "Câu kế tiếp"
+  usecase UC_FINISH  as "Kết thúc phiên"
+}
+
+member --> UC_LIST
+member --> UC_DETAIL
+member --> UC_EXPL
+member --> UC_PROG
+member --> UC_CONFIG
+member --> UC_CONNECT
+member --> UC_START
+member --> UC_ANSWER
+member --> UC_NEXT
+member --> UC_FINISH
+
+UC_CONNECT ..> UC_AUTHWS : <<include>>
+UC_START   ..> UC_AUTHWS : <<include>>
+UC_ANSWER  ..> UC_SCORE  : <<include>>
+UC_ANSWER  ..> UC_RESULT : <<include>>
+UC_START   <.. UC_CONFIG : <<extend>>
+
+note bottom of UC_SCORE
+  Single/Multi-choice: đúng toàn bộ
+  mới có điểm (không tính từng phần).
+  Fill-blank: khớp đáp án (theo case-sensitive).
+end note
+@enduml

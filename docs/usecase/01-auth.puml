@@ -1,0 +1,57 @@
+@startuml 01-auth
+' ====================================================================
+'  Phân rã: XÁC THỰC & QUẢN LÝ PHIÊN
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Guest as guest
+actor Member as member
+guest <|-- member
+
+rectangle "Xác thực & quản lý phiên" {
+  ' --- Guest ---
+  usecase UC_REG    as "Đăng ký tài khoản"
+  usecase UC_LOGIN  as "Đăng nhập (native)"
+  usecase UC_FORGOT as "Quên mật khẩu\n(gửi email reset)"
+  usecase UC_RESET  as "Đặt lại mật khẩu\n(token 1 lần, hết hạn 1h)"
+  usecase UC_SSO_R  as "Đăng nhập SSO\n(redirect Authentik)"
+  usecase UC_SSO_C  as "SSO callback\n(đổi code → JWT)"
+  usecase UC_IDENT  as "Tự tạo / liên kết\nidentity"
+
+  ' --- Member ---
+  usecase UC_CHG    as "Đổi mật khẩu"
+  usecase UC_LOGOUT as "Đăng xuất"
+  usecase UC_LOGOUTA as "Đăng xuất\ntất cả phiên"
+  usecase UC_SESS   as "Xem phiên\nđang hoạt động"
+  usecase UC_REVOKE as "Thu hồi một phiên"
+  usecase UC_REFRESH as "Làm mới access token"
+  usecase UC_LINK   as "Liên kết tài khoản SSO"
+
+  usecase UC_REVOKEALL as "Thu hồi tất cả phiên"
+}
+
+guest --> UC_REG
+guest --> UC_LOGIN
+guest --> UC_FORGOT
+guest --> UC_RESET
+guest --> UC_SSO_R
+
+member --> UC_CHG
+member --> UC_LOGOUT
+member --> UC_LOGOUTA
+member --> UC_SESS
+member --> UC_REVOKE
+member --> UC_REFRESH
+member --> UC_LINK
+
+UC_SSO_R ..> UC_SSO_C : <<include>>
+UC_SSO_C ..> UC_IDENT : <<include>>
+UC_CHG   ..> UC_REVOKEALL : <<include>>
+UC_RESET ..> UC_REVOKEALL : <<include>>
+UC_LOGOUTA ..> UC_REVOKEALL : <<include>>
+@enduml

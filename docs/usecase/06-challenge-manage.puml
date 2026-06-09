@@ -1,0 +1,57 @@
+@startuml 06-challenge-manage
+' ====================================================================
+'  Phân rã: QUẢN LÝ THỬ THÁCH (Editor / Admin)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Editor as editor
+actor Admin as admin
+editor <|-- admin
+
+rectangle "Quản lý thử thách" {
+  usecase UC_CHAL  as "Tạo / sửa / xóa\nthử thách"
+  usecase UC_NODE  as "Tạo / sửa / xóa node\n(folder / item)"
+  usecase UC_MOVE  as "Di chuyển node"
+  usecase UC_FLAG  as "Tạo / sửa / xóa flag\n(static / regex)"
+  usecase UC_FILE  as "Upload / liệt kê / xóa\nfile đính kèm"
+  usecase UC_TAG   as "Tạo / sửa / xóa\ncategory & tag"
+
+  ' --- GitLab integration ---
+  usecase UC_GL_PROJ  as "Duyệt project GitLab"
+  usecase UC_GL_FILES as "Duyệt file project"
+  usecase UC_GL_IMP   as "Import từ GitLab"
+  usecase UC_GL_SYNC  as "Đồng bộ GitLab"
+
+  ' --- Admin ---
+  usecase UC_PURGE    as "Xóa vĩnh viễn (purge)"
+  usecase UC_INST_LIST as "Liệt kê instance"
+  usecase UC_INST_KILL as "Force-terminate\ninstance"
+}
+
+editor --> UC_CHAL
+editor --> UC_NODE
+editor --> UC_MOVE
+editor --> UC_FLAG
+editor --> UC_FILE
+editor --> UC_TAG
+editor --> UC_GL_PROJ
+editor --> UC_GL_FILES
+editor --> UC_GL_IMP
+editor --> UC_GL_SYNC
+
+admin --> UC_PURGE
+admin --> UC_INST_LIST
+admin --> UC_INST_KILL
+
+UC_CHAL <.. UC_GL_IMP : <<extend>>
+
+note bottom of UC_GL_SYNC
+  Server-mediated (PRIVATE-TOKEN).
+  503 (GitLab down) → giữ nội dung cũ.
+end note
+@enduml

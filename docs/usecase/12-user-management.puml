@@ -1,0 +1,40 @@
+@startuml 12-user-management
+' ====================================================================
+'  Phân rã: QUẢN LÝ NGƯỜI DÙNG (Admin)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Admin as admin
+
+rectangle "Quản lý người dùng" {
+  usecase UC_LIST   as "Liệt kê người dùng\n(+ bộ lọc)"
+  usecase UC_CREATE as "Tạo người dùng"
+  usecase UC_DETAIL as "Xem chi tiết\nngười dùng"
+  usecase UC_EDIT   as "Sửa người dùng"
+  usecase UC_DISABLE as "Vô hiệu hóa\nngười dùng"
+  usecase UC_DELETE as "Xóa người dùng"
+  usecase UC_STAT   as "Xem thống kê\nngười dùng"
+
+  usecase UC_REVOKE as "Thu hồi tất cả\nphiên đăng nhập"
+}
+
+admin --> UC_LIST
+admin --> UC_CREATE
+admin --> UC_DETAIL
+admin --> UC_EDIT
+admin --> UC_DISABLE
+admin --> UC_DELETE
+admin --> UC_STAT
+
+UC_DISABLE ..> UC_REVOKE : <<include>>
+
+note bottom of UC_CREATE
+  Không truyền mật khẩu → hệ thống tự sinh.
+  Không truyền role → mặc định gán Member.
+end note
+@enduml

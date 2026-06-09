@@ -1,0 +1,51 @@
+@startuml 13-system-config
+' ====================================================================
+'  Phân rã: CẤU HÌNH HỆ THỐNG & TÍCH HỢP (Admin)
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Admin as admin
+
+rectangle "Cấu hình hệ thống & tích hợp" {
+  ' --- Config CRUD ---
+  usecase UC_LIST   as "Liệt kê config\n(theo nhóm)"
+  usecase UC_VIEW   as "Xem chi tiết key"
+  usecase UC_UPDATE as "Cập nhật value\n(kiểm tra kiểu)"
+  usecase UC_REVEAL as "Reveal secret\n(cần permission riêng)"
+
+  ' --- Tích hợp ---
+  usecase UC_SSO    as "Cấu hình SSO\n(Authentik)"
+  usecase UC_OUTLINE as "Cấu hình Outline"
+  usecase UC_GITLAB as "Cấu hình GitLab"
+  usecase UC_DEPLOY as "Cấu hình deploy backend\n(provider / api_url / token)"
+  usecase UC_TOGGLE as "Bật / tắt feature\n(toggles)"
+}
+
+admin --> UC_LIST
+admin --> UC_VIEW
+admin --> UC_UPDATE
+admin --> UC_REVEAL
+admin --> UC_SSO
+admin --> UC_OUTLINE
+admin --> UC_GITLAB
+admin --> UC_DEPLOY
+admin --> UC_TOGGLE
+
+' Cấu hình tích hợp/toggle đều thực hiện qua cập nhật value
+UC_SSO     ..> UC_UPDATE : <<include>>
+UC_OUTLINE ..> UC_UPDATE : <<include>>
+UC_GITLAB  ..> UC_UPDATE : <<include>>
+UC_DEPLOY  ..> UC_UPDATE : <<include>>
+UC_TOGGLE  ..> UC_UPDATE : <<include>>
+
+note bottom of UC_REVEAL
+  Secret mặc định mask "***".
+  Chỉ reveal khi có permission
+  system.config.read_secret.
+end note
+@enduml

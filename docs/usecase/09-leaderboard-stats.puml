@@ -1,0 +1,38 @@
+@startuml 09-leaderboard-stats
+' ====================================================================
+'  Phân rã: BẢNG XẾP HẠNG & THỐNG KÊ
+' ====================================================================
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam actorStyle awesome
+
+actor Member as member
+actor Admin as admin
+member <|-- admin
+
+rectangle "Bảng xếp hạng & thống kê" {
+  ' --- Member ---
+  usecase UC_BOARD as "Xem bảng xếp hạng\n(overall / challenge /\nquiz / course)"
+  usecase UC_RANK  as "Xem thứ hạng\ncá nhân"
+
+  ' --- Admin ---
+  usecase UC_DASH  as "Xem dashboard\nthống kê hệ thống"
+  usecase UC_USTAT as "Xem thống kê\ntheo người dùng"
+  usecase UC_CSTAT as "Xem thống kê\nthử thách / hoạt động"
+}
+
+member --> UC_BOARD
+member --> UC_RANK
+
+admin --> UC_DASH
+admin --> UC_USTAT
+admin --> UC_CSTAT
+
+note bottom of UC_BOARD
+  Xếp hạng dùng DENSE_RANK
+  (đồng hạng khi bằng điểm).
+end note
+@enduml
