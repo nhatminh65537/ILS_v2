@@ -1,0 +1,18 @@
+# Frontend build context (./frontend). Keep it lean; deps come from package-lock.
+node_modules/
+.next/
+out/
+
+# Local env (NEXT_PUBLIC_* are passed as build args, not baked from .env files)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Tooling / tests / VCS
+.git/
+**/__pycache__/
+playwright-report/
+test-results/
+*.tsbuildinfo
+tsconfig.tsbuildinfo

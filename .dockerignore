@@ -1,0 +1,38 @@
+# Applies to builds whose context is the repo root (the backend image).
+# Keep the build context small and never ship local state or secrets layers.
+
+# Local virtualenvs / caches
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+
+# VCS / editor / agent
+.git/
+.github/
+.vscode/
+.claude/
+CLAUDE.md
+
+# Other components (built from their own contexts, not the backend image)
+frontend/
+deployer/
+node_modules/
+
+# Local DB + collected/uploaded artifacts (regenerated in-container)
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+
+# Docs / planning / examples — not needed at runtime
+docs/
+design/
+plan/
+examples/
+integration-test/
+
+# Env files are provided via env_file/secrets, never baked into the image layer
+**/.env
+**/.env.local

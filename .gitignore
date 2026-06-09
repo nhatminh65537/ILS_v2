@@ -3,6 +3,8 @@ CLAUDE.md
 .claude/
 
 # ── Environment / Secrets ─────────────────────────────────────────────────────
+# Repo-wide globs: these also cover backend/.env and deployer/.env (the backend
+# env now lives at backend/.env, loaded by backend/backend/settings.py).
 .env
 .env.local
 .env.*.local

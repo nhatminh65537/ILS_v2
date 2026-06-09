@@ -14,10 +14,8 @@ import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+# BASE_DIR is the ``backend/`` directory (the Django project root) — where ``.env`` lives.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Project root (one level above the Django ``backend/`` package) — where ``.env`` lives.
-PROJECT_ROOT = BASE_DIR.parent
 
 
 def _load_dotenv(path: Path) -> None:
@@ -40,7 +38,23 @@ def _load_dotenv(path: Path) -> None:
             os.environ[key] = value
 
 
-_load_dotenv(PROJECT_ROOT / '.env')
+_load_dotenv(BASE_DIR / '.env')
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    """Parse a truthy/falsey env var (1/true/yes/on). Returns ``default`` if unset."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _env_list(name: str, default: list[str]) -> list[str]:
+    """Parse a comma-separated env var into a stripped, non-empty list."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return [item.strip() for item in raw.split(',') if item.strip()]
 
 
 # Quick-start development settings - unsuitable for production
@@ -55,9 +69,10 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = _env_bool('DJANGO_DEBUG', True)
 
-ALLOWED_HOSTS = []
+# Comma-separated hosts. Defaults to localhost; compose passes "backend,localhost,127.0.0.1".
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
 
 # Public base URL of the frontend, used to build password-reset links.
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:4000')
@@ -122,23 +137,26 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# When DB_ENGINE is set (e.g. via Docker compose), use that backend (PostgreSQL).
+# Otherwise fall back to SQLite — the zero-config default for local, non-Docker dev.
+if os.environ.get('DB_ENGINE'):
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ['DB_ENGINE'],
+            'NAME': os.environ.get('DB_NAME', 'ils'),
+            'USER': os.environ.get('DB_USER', 'ils'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
     }
-}
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'ils_test_db',
-#         'USER': 'ils_test_user',
-#         'PASSWORD': 'ils_test_strong_password',
-#         'HOST': 'rougitsune.top',
-#         'PORT': '5432',
-#     }
-# }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -176,6 +194,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Destination for ``collectstatic`` (run in the Docker image build/entrypoint).
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (user-uploaded + GitLab-synced challenge attachments).
 # Physical layout: MEDIA_ROOT/challenges/<slug>/<filename>. Served by Django only
@@ -233,10 +254,11 @@ SIMPLE_JWT = {
 
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:4000',
-    'http://127.0.0.1:4000',
-]
+# Comma-separated origins; defaults to the local Next.js dev origins.
+CORS_ALLOWED_ORIGINS = _env_list(
+    'CORS_ALLOWED_ORIGINS',
+    ['http://localhost:4000', 'http://127.0.0.1:4000'],
+)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -244,11 +266,23 @@ CORS_ALLOW_CREDENTIALS = True
 # ── Django Channels ──────────────────────────────────────────────────────────
 ASGI_APPLICATION = 'backend.asgi.application'
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+# Use Redis as the channel layer when REDIS_URL is set; otherwise fall back to the
+# in-memory layer. InMemory is fine for a single backend process (this project does
+# not target horizontal scaling), but does not work across multiple processes.
+_REDIS_URL = (os.environ.get('REDIS_URL', '') or '').strip()
+if _REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {'hosts': [_REDIS_URL]},
+        }
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
 
 
 # ── Logging ──────────────────────────────────────────────────────────────────
