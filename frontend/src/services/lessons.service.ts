@@ -6,6 +6,7 @@ import type {
   LearnLessonDetail,
   LearnLessonProgress,
   LearnLessonQuestionMapping,
+  LearnLessonQuestionReveal,
   OutlineCollection,
   OutlineDocument,
   PaginatedOutline,
@@ -25,6 +26,20 @@ export const getLearnLessonById = async (lessonId: number): Promise<LearnLessonD
 export const listLearnLessonQuestions = async (lessonId: number): Promise<LearnLessonQuestionMapping[]> => {
   const response = await apiClient.get<readonly LearnLessonQuestionMapping[]>(`/api/learn/lessons/${lessonId}/questions/`)
   return [...response.data]
+}
+
+/**
+ * GET /api/learn/lessons/{id}/questions/{qid}/reveal/
+ * Correct answer for a mini-quiz question, resolved server-side on reveal.
+ */
+export const revealLearnLessonQuestion = async (
+  lessonId: number,
+  questionId: number
+): Promise<LearnLessonQuestionReveal> => {
+  const response = await apiClient.get<LearnLessonQuestionReveal>(
+    `/api/learn/lessons/${lessonId}/questions/${questionId}/reveal/`
+  )
+  return response.data
 }
 
 /**

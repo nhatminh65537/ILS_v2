@@ -16,7 +16,7 @@ All PostgreSQL ENUMs map to Django `TextChoices`.
 | `content_status` | `draft`, `published`, `archived` |
 | `challenge_difficulty` | `easy`, `medium`, `hard`, `insane` |
 | `challenge_source` | `manual`, `gitlab` |
-| `instance_status` | `running`, `stopped`, `terminated` |
+| `instance_status` | `running`, `terminated` (`stopped` DEPRECATED — no longer produced; user "Stop" now terminates; legacy rows migrated to `terminated` in migration `0016`) |
 | `lesson_type` | `markdown`, `video`, `miniquiz` |
 | `lesson_source` | `manual`, `outline` |
 | `question_type` | `single_choice`, `multi_choice`, `fill_blank` |

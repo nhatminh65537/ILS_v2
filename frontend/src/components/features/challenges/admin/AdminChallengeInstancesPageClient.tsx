@@ -54,8 +54,7 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
   const [pageState, setPageState] = useState<PageState>({ data: [], isLoading: false, error: null })
   const [isKilling, setIsKilling] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
-  const [userFilter, setUserFilter] = useState('')
-  const [challengeFilter, setChallengeFilter] = useState('')
+  const [searchFilter, setSearchFilter] = useState('')
   const [killTarget, setKillTarget] = useState<AdminChallengeInstanceDto | null>(null)
   const [detailTarget, setDetailTarget] = useState<AdminChallengeInstanceDto | null>(null)
 
@@ -64,8 +63,7 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
     try {
       const params: Record<string, string> = {}
       if (statusFilter !== 'all') params.status = statusFilter
-      if (userFilter.trim()) params.user = userFilter.trim()
-      if (challengeFilter.trim()) params.challenge = challengeFilter.trim()
+      if (searchFilter.trim()) params.search = searchFilter.trim()
       const result = await listAdminChallengeInstances(params)
       const rows = (Array.isArray(result) ? result : result?.results) ?? []
       setPageState({ data: rows as AdminChallengeInstanceDto[], isLoading: false, error: null })
@@ -74,10 +72,13 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
     }
   }
 
+  // Reload on mount and whenever the status filter changes; free-text search is
+  // applied on Enter / Refresh (see the search input below) to avoid a request
+  // per keystroke.
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [statusFilter])
 
   const handleKillConfirm = async () => {
     if (!killTarget) return
@@ -111,22 +112,18 @@ export function AdminChallengeInstancesPageClient({ locale: _locale }: AdminChal
           <div className="flex flex-wrap gap-2">
             <Input
               className="h-9 w-full max-w-xs"
-              value={userFilter}
-              placeholder={t('instances.filters.user')}
-              onChange={(e) => setUserFilter(e.target.value)}
-            />
-            <Input
-              className="h-9 w-full max-w-xs"
-              value={challengeFilter}
-              placeholder={t('instances.filters.challenge')}
-              onChange={(e) => setChallengeFilter(e.target.value)}
+              value={searchFilter}
+              placeholder={t('instances.filters.search')}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void load()
+              }}
             />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('toolbar.statusAll')}</SelectItem>
                 <SelectItem value="running">{t('instances.status.running')}</SelectItem>
-                <SelectItem value="stopped">{t('instances.status.stopped')}</SelectItem>
                 <SelectItem value="terminated">{t('instances.status.terminated')}</SelectItem>
               </SelectContent>
             </Select>

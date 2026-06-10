@@ -458,6 +458,9 @@ class ChallengeInstance(FullAudit):
     """
     class InstanceStatus(models.TextChoices):
         RUNNING = 'running', 'Running'
+        # DEPRECATED: STOPPED was a half-dead middle state and is no longer
+        # produced — the user "Stop" action now terminates. Kept only so legacy
+        # rows still validate; treat STOPPED the same as TERMINATED everywhere.
         STOPPED = 'stopped', 'Stopped'
         TERMINATED = 'terminated', 'Terminated'
 
@@ -545,6 +548,9 @@ class ChallengeInstance(FullAudit):
         self.log("Instance started")
 
     def stop(self):
+        # DEPRECATED: no longer called by the API (the user "Stop" action now
+        # terminates — see ChallengeInstanceViewSet.instance_stop). Retained for
+        # the deployment-backend interface only; do not introduce new callers.
         if self.status == self.InstanceStatus.TERMINATED:
             raise ValueError("Cannot stop terminated instance")
 

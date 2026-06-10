@@ -70,6 +70,16 @@ export interface LearnLessonQuestionMapping {
   readonly position: number
 }
 
+/** Correct answer for a mini-quiz question, resolved server-side on reveal. */
+export interface LearnLessonQuestionReveal {
+  readonly question_id: number
+  readonly question_type: string
+  readonly explanation: string
+  readonly correct_option_ids: readonly number[]
+  readonly correct_options: readonly { readonly id: number; readonly content: string }[]
+  readonly accepted_answers: readonly string[]
+}
+
 export interface LearnLessonProgress {
   readonly id: number
   readonly user: number

@@ -50,6 +50,7 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
     pagination,
     isMutating,
     mutationErrorKey,
+    mutationErrorText,
     loadUsers,
     loadPage,
     submitToggleActive,
@@ -148,10 +149,10 @@ export function AdminUsersPageClient({ locale }: AdminUsersPageClientProps) {
         <Button onClick={() => setCreateDialogOpen(true)}>{t('createButton')}</Button>
       </div>
 
-      {/* Mutation error banner */}
-      {mutationErrorKey && (
+      {/* Mutation error banner — prefer the exact server message when present. */}
+      {(mutationErrorText || mutationErrorKey) && (
         <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">
-          {t(mutationErrorKey as Parameters<typeof t>[0])}
+          {mutationErrorText ?? t(mutationErrorKey as Parameters<typeof t>[0])}
         </div>
       )}
 

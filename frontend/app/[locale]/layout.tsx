@@ -2,6 +2,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { PermissionErrorDialog } from '@/components/feedback/PermissionErrorDialog'
+import { LocaleHtmlLang } from '@/components/providers/LocaleHtmlLang'
 import { routing } from '@/i18n/routing'
 
 type LocaleLayoutProps = {
@@ -28,6 +29,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
+      <LocaleHtmlLang locale={locale} />
       {children}
       <PermissionErrorDialog />
     </NextIntlClientProvider>

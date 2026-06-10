@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NotificationBell } from '@/components/features/notifications/NotificationBell'
+import { LocaleToggle } from '@/components/layouts/LocaleToggle'
+import { ThemeToggle } from '@/components/layouts/ThemeToggle'
 import { useAuth } from '@/hooks/useAuth'
 
 type SessionNavControlsProps = {
@@ -44,7 +46,9 @@ export function SessionNavControls({ locale }: SessionNavControlsProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        <LocaleToggle />
+        <ThemeToggle />
         <Button asChild size="sm" variant="ghost">
           <Link href={`/${locale}/login`}>{tNav('login')}</Link>
         </Button>
@@ -57,6 +61,8 @@ export function SessionNavControls({ locale }: SessionNavControlsProps) {
 
   return (
     <div className="flex items-center gap-1">
+      <LocaleToggle />
+      <ThemeToggle />
       <NotificationBell locale={locale} />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

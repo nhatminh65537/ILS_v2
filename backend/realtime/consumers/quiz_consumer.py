@@ -271,9 +271,17 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             if not question:
                 await self._send_error('question_not_found', 'Question not found')
                 return
-            
-            # TASK-011: Prevent duplicate answers
+
             attempt = await self._get_attempt(self.attempt_id)
+
+            # Server-authoritative time limit: reject the late answer and finish
+            # the attempt (scores accumulated so far are kept).
+            if self._is_time_expired(attempt):
+                await self._send_error('time_expired', 'Time limit reached')
+                await self._handle_finish(attempt)
+                return
+
+            # TASK-011: Prevent duplicate answers
             existing = await self._get_user_quiz_answer(attempt, question)
             if existing:
                 await self._send_error('already_answered', 'Question already answered')
@@ -332,7 +340,12 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             if not attempt:
                 await self._send_error('attempt_not_found', 'Attempt not found')
                 return
-            
+
+            # Time's up → finish immediately instead of serving more questions.
+            if self._is_time_expired(attempt):
+                await self._handle_finish(attempt)
+                return
+
             # Get all questions for this attempt
             questions = await self._get_attempt_questions(attempt)
             if not questions:
@@ -363,6 +376,21 @@ class QuizConsumer(AsyncJsonWebsocketConsumer):
             if question.id not in answered_ids:
                 return question
         return None
+
+    @staticmethod
+    def _is_time_expired(attempt: UserQuizAttempt) -> bool:
+        """True when the attempt's whole-quiz time limit has elapsed.
+
+        ``time_limit_sec`` is snapshotted on ``attempt.config`` at start; <= 0
+        means unlimited. The server is authoritative: the client also auto-
+        submits at the limit for UX, but we enforce here so a stalled or
+        tampered client cannot keep answering past time.
+        """
+        time_limit_sec = attempt.config.get('time_limit_sec') or 0
+        if time_limit_sec <= 0 or attempt.started_at is None:
+            return False
+        elapsed = (timezone.now() - attempt.started_at).total_seconds()
+        return elapsed > time_limit_sec
 
     async def _send_error(self, code: str, message: str):
         """Send error event to client."""

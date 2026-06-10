@@ -6,6 +6,7 @@ import {
   listAdminUsers,
   updateAdminUser,
 } from '@/services/users.service'
+import { extractAdminUserErrorText } from '@/lib/admin-user-error-map'
 import type {
   AdminUserCreatePayload,
   AdminUserDto,
@@ -48,6 +49,9 @@ export const useAdminUsers = () => {
   const [pagination, setPagination] = useState<AdminUsersPagination>(EMPTY_PAGINATION)
   const [isMutating, setIsMutating] = useState(false)
   const [mutationErrorKey, setMutationErrorKey] = useState<string | null>(null)
+  // Exact server-provided message (e.g. "This password is too common.") shown
+  // verbatim when present; falls back to the translated mutationErrorKey.
+  const [mutationErrorText, setMutationErrorText] = useState<string | null>(null)
   // Persisted filter params so re-fetches after mutations use same filters
   const [activeParams, setActiveParams] = useState<AdminUserListParams>({})
 
@@ -87,6 +91,7 @@ export const useAdminUsers = () => {
     async (user: AdminUserDto): Promise<boolean> => {
       setIsMutating(true)
       setMutationErrorKey(null)
+      setMutationErrorText(null)
       try {
         const payload: AdminUserUpdatePayload = { is_active: !user.is_active }
         await updateAdminUser(user.id, payload)
@@ -107,12 +112,20 @@ export const useAdminUsers = () => {
     async (payload: AdminUserCreatePayload): Promise<boolean> => {
       setIsMutating(true)
       setMutationErrorKey(null)
+      setMutationErrorText(null)
       try {
         await createAdminUser(payload)
         await loadUsers({ ...activeParams })
         return true
-      } catch {
-        setMutationErrorKey('errors.createFailed')
+      } catch (error) {
+        // Surface the exact server reason (weak/duplicate password, taken
+        // username/email, …) so the admin knows why the 400 happened.
+        const text = extractAdminUserErrorText(error)
+        if (text) {
+          setMutationErrorText(text)
+        } else {
+          setMutationErrorKey('errors.createFailed')
+        }
         return false
       } finally {
         setIsMutating(false)
@@ -126,6 +139,7 @@ export const useAdminUsers = () => {
     pagination,
     isMutating,
     mutationErrorKey,
+    mutationErrorText,
     loadUsers,
     loadPage,
     submitToggleActive,

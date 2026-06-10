@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { MswProvider } from "@/components/providers/MswProvider";
+import { ThemeProvider, ThemeNoFlashScript } from "@/components/providers/ThemeProvider";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -27,11 +28,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={cn("font-sans", inter.variable)}>
+    // lang defaults to the app default locale; the per-locale layout corrects
+    // <html lang> to the active locale (see LocaleHtmlLang). suppressHydrationWarning
+    // because the no-flash script mutates the class before hydration.
+    <html lang="vi" className={cn("font-sans", inter.variable)} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <MswProvider>{children}</MswProvider>
+        <ThemeNoFlashScript />
+        <ThemeProvider>
+          <MswProvider>{children}</MswProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

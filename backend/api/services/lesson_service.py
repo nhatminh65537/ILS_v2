@@ -54,6 +54,45 @@ class LessonService:
             .order_by('position', 'id')
         )
 
+    @staticmethod
+    def reveal_question(lesson: Lesson, question_id: int) -> dict:
+        """Return the correct answer for a mini-quiz question, server-side only.
+
+        Correctness data (``is_correct`` options, accepted fill-blank answers) is
+        deliberately never sent in the question list payload — it is revealed
+        only through this endpoint, after the learner asks. Mirrors the project
+        rule that answers/flags are resolved on the server.
+
+        Raises ``LessonQuestion.DoesNotExist`` when the question is not part of
+        this lesson's mini-quiz.
+        """
+        mapping = (
+            LessonQuestion.objects.select_related('question')
+            .prefetch_related('question__options', 'question__answers')
+            .get(lesson=lesson, question_id=question_id)
+        )
+        question = mapping.question
+
+        payload = {
+            'question_id': question.id,
+            'question_type': question.question_type,
+            'explanation': question.explanation or '',
+            'correct_option_ids': [],
+            'correct_options': [],
+            'accepted_answers': [],
+        }
+
+        if question.question_type in ('single_choice', 'multi_choice'):
+            correct = [opt for opt in question.options.all() if opt.is_correct]
+            payload['correct_option_ids'] = [opt.id for opt in correct]
+            payload['correct_options'] = [
+                {'id': opt.id, 'content': opt.content} for opt in correct
+            ]
+        elif question.question_type == 'fill_blank':
+            payload['accepted_answers'] = [a.answer for a in question.answers.all()]
+
+        return payload
+
     @classmethod
     def attach_question(
         cls,

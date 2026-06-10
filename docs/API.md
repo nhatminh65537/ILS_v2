@@ -136,7 +136,8 @@ Contract notes:
 | PUT | `/api/learn/lessons/{id}/` | Yes | Partial | Editor/admin only. |
 | POST | `/api/learn/lessons/{id}/progress/start/` | Yes | Partial | Idempotent upsert of `user_lesson_progress.started_at`. |
 | POST | `/api/learn/lessons/{id}/progress/complete/` | Yes | Partial | Idempotent completion; triggers course/profile aggregate updates via signal chain. |
-| GET | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Mini-quiz lesson question mapping list; requires `lesson_type=miniquiz` (otherwise 400). |
+| GET | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Mini-quiz lesson question mapping list; requires `lesson_type=miniquiz` (otherwise 400). Correctness (`is_correct`, fill-blank answers) intentionally omitted. |
+| GET | `/api/learn/lessons/{id}/questions/{qid}/reveal/` | Yes | Stable | Reveal the correct answer for a mini-quiz question (server-side): `{correct_option_ids, correct_options, accepted_answers, explanation}`. 404 if question not in this lesson. |
 | POST | `/api/learn/lessons/{id}/questions/` | Yes | Partial | Attach existing `QuizQuestion`; editor/admin only; duplicate attach returns 409. |
 | GET | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Mini-quiz mapping detail; member visibility restricted to published courses. |
 | PUT | `/api/learn/lesson-questions/{id}/` | Yes | Partial | Update mapping position; editor/admin only. |
@@ -215,9 +216,9 @@ Routes in this subsection are legacy-flat paths kept for compatibility — see �
 | GET | `/api/challenge/challenges/{slug}/progress/` | Yes | Stable | Per-challenge progress for current user: `{is_solved, attempt_count, completed_at}`. |
 | GET | `/api/challenge/progress/` | Yes | Stable | Aggregate for current user: `{solved_count, total_attempts}`. |
 | POST | `/api/challenge/challenges/{slug}/instance/start/` | Yes | Stable | Start instance. Idempotent if running instance exists. `400` if challenge is not `instance_required`. |
-| POST | `/api/challenge/challenges/{slug}/instance/stop/` | Yes | Stable | Stop running instance. `404` if no running instance. |
+| POST | `/api/challenge/challenges/{slug}/instance/stop/` | Yes | Stable | End the running instance (terminates it — STOPPED state dropped). `404` if no running instance. |
 | GET | `/api/challenge/challenges/{slug}/instance/status/` | Yes | Stable | Returns latest instance for user, or `{status: "none"}`. |
-| GET | `/api/challenge/instances/` | Yes (Admin/Editor) | Stable | List instances; filterable by `challenge`, `user`, `status`. |
+| GET | `/api/challenge/instances/` | Yes (Admin/Editor) | Stable | List instances; filterable by `challenge` (id), `user` (id), `status`, and `search` (free-text on user username/email + challenge title/slug). |
 | POST | `/api/challenge/instances/{id}/kill/` | Yes (Admin) | Stable | Force-terminate any instance. |
 
 Notes:

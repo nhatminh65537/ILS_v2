@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -73,25 +74,23 @@ function LeaderboardPodium({
   scoreLabel,
   currentUserLabel,
 }: LeaderboardPodiumProps) {
-  // Display order: 2nd (left), 1st (center, raised), 3rd (right).
-  const byRank = new Map<number, LeaderboardEntry>()
-  for (const entry of entries) {
-    if (entry.rank >= 1 && entry.rank <= 3 && !byRank.has(entry.rank)) {
-      byRank.set(entry.rank, entry)
-    }
-  }
+  // Take the top three *entries* (already rank-sorted, with user_id as the
+  // deterministic tiebreaker) — keyed by user.id so tied users are never
+  // overwritten. The medal reflects each entry's actual rank (ties → same rank).
+  const top = entries.slice(0, 3)
 
-  const order: PodiumPlace[] = [2, 1, 3]
-  const visible = order.filter((place) => byRank.has(place))
-
-  if (visible.length === 0) {
+  if (top.length === 0) {
     return null
   }
 
+  // Visual arrangement: 2nd (left), 1st (center, raised), 3rd (right).
+  const visualOrder = [1, 0, 2].filter((index) => index < top.length)
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      {visible.map((place) => {
-        const entry = byRank.get(place)!
+      {visualOrder.map((index) => {
+        const entry = top[index]
+        const place = (entry.rank >= 1 && entry.rank <= 3 ? entry.rank : index + 1) as PodiumPlace
         const medal = PODIUM_MEDAL[place]
         const displayName = getDisplayLabel(entry)
         const isCurrentUser = entry.user.id === currentUserId
@@ -99,7 +98,7 @@ function LeaderboardPodium({
         return (
           <Card
             key={entry.user.id}
-            className={`rounded-none ${medal.ring} ${place === 1 ? 'sm:-mt-4' : ''} ${
+            className={`rounded-none ${medal.ring} ${index === 0 ? 'sm:-mt-4' : ''} ${
               isCurrentUser ? 'bg-primary/5' : ''
             }`}
           >
@@ -111,12 +110,15 @@ function LeaderboardPodium({
                 <AvatarImage src={entry.user.avatar_url ?? undefined} alt={displayName} />
                 <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
               </Avatar>
-              <div className="min-w-0">
+              <Link
+                href={`/${locale}/profile/${entry.user.username}`}
+                className="min-w-0 hover:underline"
+              >
                 <p className="truncate font-semibold text-foreground">{displayName}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   @{entry.user.username} {isCurrentUser ? `· ${currentUserLabel}` : ''}
                 </p>
-              </div>
+              </Link>
               <Badge className={`${medal.badge} min-w-12 justify-center`}>#{place}</Badge>
               <p className="text-lg font-semibold">{formatNumber(locale, entry.score)}</p>
               <p className="text-xs text-muted-foreground">{scoreLabel}</p>
@@ -357,7 +359,10 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex min-w-0 items-center gap-3">
+                        <Link
+                          href={`/${locale}/profile/${row.user.username}`}
+                          className="flex min-w-0 items-center gap-3 hover:underline"
+                        >
                           <Avatar size="sm">
                             <AvatarImage src={row.user.avatar_url ?? undefined} alt={displayName} />
                             <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
@@ -368,7 +373,7 @@ export function LeaderboardPageClient({ locale }: LeaderboardPageClientProps) {
                               @{row.user.username} {isCurrentUser ? `· ${t('currentUser')}` : ''}
                             </p>
                           </div>
-                        </div>
+                        </Link>
                       </TableCell>
                       <TableCell className="text-right font-medium">{formatNumber(locale, row.score)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">

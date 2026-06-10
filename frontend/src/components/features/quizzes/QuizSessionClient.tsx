@@ -26,6 +26,8 @@ export function QuizSessionClient({ quizId, locale }: Props) {
     answerResult,
     finishData,
     elapsedSec,
+    timeLimitSec,
+    timeUp,
     error,
     sendAnswer,
     sendNext,
@@ -72,11 +74,19 @@ export function QuizSessionClient({ quizId, locale }: Props) {
     ? Math.round(((progress.current - 1) / progress.total) * 100)
     : 0
 
-  const elapsedLabel = (() => {
-    const m = Math.floor(elapsedSec / 60)
-    const s = elapsedSec % 60
+  const formatClock = (totalSec: number): string => {
+    const safe = Math.max(0, totalSec)
+    const m = Math.floor(safe / 60)
+    const s = safe % 60
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  })()
+  }
+
+  // With a time limit, count DOWN (so the limit visibly enforces); otherwise
+  // count up. Below 30s remaining, the clock turns red.
+  const hasLimit = timeLimitSec > 0
+  const remainingSec = hasLimit ? timeLimitSec - elapsedSec : 0
+  const timerLabel = hasLimit ? formatClock(remainingSec) : formatClock(elapsedSec)
+  const timerIsLow = hasLimit && remainingSec <= 30
 
   return (
     <div className="space-y-6">
@@ -89,13 +99,23 @@ export function QuizSessionClient({ quizId, locale }: Props) {
                 ? t('session.question', { current: progress.current, total: progress.total })
                 : null}
             </CardTitle>
-            <span className="text-sm tabular-nums text-muted-foreground">{elapsedLabel}</span>
+            <span
+              className={`text-sm tabular-nums ${timerIsLow ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}
+            >
+              {timerLabel}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <Progress value={progressPercent} className="h-2" />
         </CardContent>
       </Card>
+
+      {timeUp ? (
+        <Alert>
+          <AlertDescription>{t('session.timeUp')}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {/* Question or result */}
       {currentQuestion ? (
@@ -107,7 +127,7 @@ export function QuizSessionClient({ quizId, locale }: Props) {
             disabled={false}
           />
         ) : answerResult ? (
-          <QuizAnswerResultCard result={answerResult} onNext={sendNext} />
+          <QuizAnswerResultCard result={answerResult} question={currentQuestion} onNext={sendNext} />
         ) : null
       ) : (
         <div className="flex flex-col items-center gap-4 py-16">

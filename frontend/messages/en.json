@@ -27,7 +27,8 @@
     "register": "Register",
     "profile": "Profile",
     "settings": "Settings",
-    "sessions": "Sessions"
+    "sessions": "Sessions",
+    "toggleTheme": "Toggle theme"
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -199,6 +200,7 @@
       "fillBlankPlaceholder": "Type your answer",
       "revealButton": "Reveal",
       "answered": "Answered",
+      "correctAnswer": "Correct answer",
       "noExplanation": "No explanation provided.",
       "signals": {
         "markdownPending": "Keep reading to reach the end of the lesson.",
@@ -315,11 +317,11 @@
     "instance": {
       "title": "Instance",
       "running": "Running",
-      "stopped": "Stopped",
+      "stopped": "This instance has ended.",
       "noInstance": "No instance running.",
       "start": "Start Instance",
-      "stop": "Stop Instance",
-      "restart": "Restart Instance",
+      "stop": "End Instance",
+      "restart": "Start a New Instance",
       "timeLeft": "Time left",
       "extend": "Extend Time"
     },
@@ -424,7 +426,9 @@
       "correct": "Correct!",
       "incorrect": "Incorrect",
       "explanation": "Explanation",
+      "correctAnswer": "Correct answer",
       "score": "{score} pts",
+      "timeUp": "Time's up — finishing your session…",
       "finish": {
         "title": "Session complete",
         "score": "Score",
@@ -685,7 +689,10 @@
       "challengeTitle": "Challenge",
       "challengeDescription": "Open active challenges and submit new flags.",
       "quizTitle": "Quiz",
-      "quizDescription": "Start a new quiz session or review best scores."
+      "quizDescription": "Start a new quiz session or review best scores.",
+      "leaderboardTitle": "Leaderboard",
+      "leaderboardDescription": "See where you rank and track top performers.",
+      "cta": "Open"
     }
   },
   "adminUsers": {
@@ -1538,7 +1545,8 @@
       "killConfirm": "Kill instance for user {user}?",
       "filters": {
         "user": "Filter by username",
-        "challenge": "Filter by challenge"
+        "challenge": "Filter by challenge",
+        "search": "Search by user or challenge name…"
       },
       "columns": {
         "user": "User",

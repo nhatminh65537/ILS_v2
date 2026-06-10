@@ -27,7 +27,8 @@
     "register": "Đăng ký",
     "profile": "Hồ sơ",
     "settings": "Cài đặt",
-    "sessions": "Phiên đăng nhập"
+    "sessions": "Phiên đăng nhập",
+    "toggleTheme": "Đổi giao diện sáng/tối"
   },
   "leaderboard": {
     "title": "Bảng xếp hạng",
@@ -199,6 +200,7 @@
       "fillBlankPlaceholder": "Nhập đáp án của bạn",
       "revealButton": "Hiển thị",
       "answered": "Đã trả lời",
+      "correctAnswer": "Đáp án đúng",
       "noExplanation": "Không có giải thích.",
       "signals": {
         "markdownPending": "Tiếp tục đọc đến cuối bài học.",
@@ -315,11 +317,11 @@
     "instance": {
       "title": "Instance",
       "running": "Đang chạy",
-      "stopped": "Đã dừng",
+      "stopped": "Instance đã kết thúc.",
       "noInstance": "Chưa có instance.",
       "start": "Khởi động",
-      "stop": "Dừng",
-      "restart": "Khởi động lại",
+      "stop": "Kết thúc",
+      "restart": "Tạo instance mới",
       "timeLeft": "Thời gian còn lại",
       "extend": "Gia hạn"
     },
@@ -424,7 +426,9 @@
       "correct": "Đúng!",
       "incorrect": "Sai",
       "explanation": "Giải thích",
+      "correctAnswer": "Đáp án đúng",
       "score": "{score} điểm",
+      "timeUp": "Hết giờ — đang kết thúc phiên làm bài…",
       "finish": {
         "title": "Hoàn thành bài quiz",
         "score": "Điểm đạt được",
@@ -685,7 +689,10 @@
       "challengeTitle": "Challenge",
       "challengeDescription": "Mở thử thách đang chạy và nộp flag mới.",
       "quizTitle": "Quiz",
-      "quizDescription": "Bắt đầu phiên quiz mới hoặc xem điểm cao nhất."
+      "quizDescription": "Bắt đầu phiên quiz mới hoặc xem điểm cao nhất.",
+      "leaderboardTitle": "Bảng xếp hạng",
+      "leaderboardDescription": "Xem thứ hạng của bạn và những người dẫn đầu.",
+      "cta": "Mở"
     }
   },
   "adminUsers": {
@@ -1538,7 +1545,8 @@
       "killConfirm": "Dừng instance của người dùng {user}?",
       "filters": {
         "user": "Lọc theo username",
-        "challenge": "Lọc theo challenge"
+        "challenge": "Lọc theo challenge",
+        "search": "Tìm theo tên user hoặc challenge…"
       },
       "columns": {
         "user": "Người dùng",

@@ -22,6 +22,10 @@ interface SessionState {
   error: string | null
   /** Mirror of the active question's immediate_feedback flag (defaults true). */
   immediateFeedback: boolean
+  /** Whole-quiz time limit (sec) snapshotted from the question; 0 = unlimited. */
+  timeLimitSec: number
+  /** Set once the client-side limit is hit, so we only auto-submit once. */
+  timeUp: boolean
 }
 
 type SessionAction =
@@ -33,6 +37,7 @@ type SessionAction =
   | { type: 'FINISH'; data: WsFinishEvent }
   | { type: 'ERROR'; message: string }
   | { type: 'TICK' }
+  | { type: 'TIME_UP' }
 
 const initialState: SessionState = {
   status: 'idle',
@@ -44,6 +49,8 @@ const initialState: SessionState = {
   elapsedSec: 0,
   error: null,
   immediateFeedback: true,
+  timeLimitSec: 0,
+  timeUp: false,
 }
 
 function sessionReducer(state: SessionState, action: SessionAction): SessionState {
@@ -63,6 +70,7 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
         progress: action.progress,
         answerResult: null,
         immediateFeedback: action.question.immediate_feedback ?? true,
+        timeLimitSec: action.question.time_limit_sec ?? state.timeLimitSec,
       }
     case 'ANSWER_RESULT':
       return {
@@ -80,6 +88,8 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
       return { ...state, status: 'error', error: action.message }
     case 'TICK':
       return { ...state, elapsedSec: state.elapsedSec + 1 }
+    case 'TIME_UP':
+      return { ...state, timeUp: true }
     default:
       return state
   }
@@ -231,6 +241,22 @@ export function useQuizSession(quizId: number): UseQuizSessionReturn {
     const id = setInterval(() => dispatch({ type: 'TICK' }), 1000)
     return () => clearInterval(id)
   }, [state.status])
+
+  // Client-side time-limit enforcement: once the elapsed time reaches the
+  // whole-quiz limit, auto-submit a `next` so the server finalises the attempt
+  // (the server independently rejects late answers, so this is purely for UX —
+  // the user is not left able to keep answering past the limit).
+  useEffect(() => {
+    if (
+      state.status === 'active' &&
+      state.timeLimitSec > 0 &&
+      state.elapsedSec >= state.timeLimitSec &&
+      !state.timeUp
+    ) {
+      dispatch({ type: 'TIME_UP' })
+      send({ action: 'next' })
+    }
+  }, [state.status, state.timeLimitSec, state.elapsedSec, state.timeUp, send])
 
   const sendAnswer = useCallback(
     (answerData: { option_id?: number; option_ids?: number[]; text?: string }) => {

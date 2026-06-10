@@ -743,6 +743,37 @@ export const coursesHandlers = [
     return HttpResponse.json(learnLessonQuestionsFixture[lessonId] ?? [])
   }),
 
+  http.get('*/api/learn/lessons/:id/questions/:qid/reveal/', ({ params }) => {
+    const lessonId = parseNumericId(String(params.id))
+    const questionId = parseNumericId(String(params.qid))
+    if (!lessonId || !questionId) {
+      return notFound('Question not found')
+    }
+
+    const lesson = learnLessonsFixture[lessonId]
+    if (!lesson) {
+      return notFound('Lesson not found')
+    }
+    if (lesson.lesson_type !== LessonType.MiniQuiz) {
+      return badRequest('Lesson is not miniquiz type')
+    }
+
+    const question = quizQuestionsFixture.find((q) => q.id === questionId)
+    if (!question) {
+      return notFound('Question not found in this lesson')
+    }
+
+    const correct = (question.options ?? []).filter((o) => o.is_correct)
+    return HttpResponse.json({
+      question_id: question.id,
+      question_type: question.question_type,
+      explanation: question.explanation ?? '',
+      correct_option_ids: correct.map((o) => o.id),
+      correct_options: correct.map((o) => ({ id: o.id, content: o.content })),
+      accepted_answers: [],
+    })
+  }),
+
   http.post('*/api/learn/lessons/:id/questions/', async ({ params, request }) => {
     const lessonId = parseNumericId(String(params.id))
     if (!lessonId) {

@@ -530,6 +530,24 @@ class LearnLessonViewSet(viewsets.ViewSet):
 
         return Response(LearnLessonQuestionSerializer(mapping).data, status=status.HTTP_201_CREATED)
 
+    def reveal_question(self, request, pk=None, qid=None):
+        """GET .../questions/{qid}/reveal/ — correct answer for a mini-quiz Q.
+
+        Members may reveal (after they answer); the correct answer is resolved
+        server-side and never shipped in the question list payload.
+        """
+        lesson = self._get_lesson_or_404(pk, request.user)
+        try:
+            LessonService.require_miniquiz(lesson)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            data = LessonService.reveal_question(lesson, int(qid))
+        except LessonQuestion.DoesNotExist:
+            raise NotFound('Question not found in this lesson')
+        return Response(data)
+
     @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR)
     def link_outline(self, request, pk=None):
         """POST /learn/lessons/{id}/outline/ — link an Outline doc + import content."""

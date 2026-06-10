@@ -61,6 +61,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Persist uploaded media (challenge attachments, avatars, …) across rebuilds.
+    # MEDIA_ROOT = BASE_DIR/media → /app/media inside the container (WORKDIR=/app).
+    # Without this, redeploying the backend wipes files while the DB still
+    # references them.
+    volumes:
+      - media:/app/media
     networks:
       - public     # browser/API on the host
       - internal   # db + deployer
@@ -105,6 +111,7 @@ services:
 
 volumes:
   pgdata:
+  media:
 
 networks:
   public:

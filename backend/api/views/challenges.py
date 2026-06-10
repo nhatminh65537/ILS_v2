@@ -1,6 +1,7 @@
 ﻿import os
 
 from django.db import IntegrityError
+from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -313,7 +314,11 @@ class LearnChallengeViewSet(viewsets.ModelViewSet):
         running = ChallengeService.get_running_instance(challenge, request.user)
         if running is None:
             return Response({'detail': 'No running instance found.'}, status=status.HTTP_404_NOT_FOUND)
-        running.stop()
+        # "Stop" now terminates: the STOPPED state was a half-dead middle state
+        # (get_running_instance ignores it, so it could never be resumed and a
+        # restart just spawned a new instance). Terminating frees the partial
+        # unique index and lets the user start fresh. See docs/DATA_MODEL.md.
+        running.terminate()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @add_role_granted(BUILTIN_ROLE_ADMIN, BUILTIN_ROLE_EDITOR, BUILTIN_ROLE_MEMBER)
@@ -520,12 +525,22 @@ class ChallengeInstanceAdminView(APIView):
         challenge_id = request.query_params.get('challenge')
         user_id = request.query_params.get('user')
         instance_status = request.query_params.get('status')
+        search = (request.query_params.get('search') or '').strip()
         if challenge_id:
             qs = qs.filter(challenge_id=challenge_id)
         if user_id:
             qs = qs.filter(user_id=user_id)
         if instance_status:
             qs = qs.filter(status=instance_status)
+        if search:
+            # Free-text search by user (username/email) or challenge (title/slug),
+            # so admins can find instances by NAME rather than numeric id.
+            qs = qs.filter(
+                Q(user__username__icontains=search)
+                | Q(user__email__icontains=search)
+                | Q(challenge__title__icontains=search)
+                | Q(challenge__slug__icontains=search)
+            )
         qs = qs.order_by('-created_at')
 
         # Return a paginated envelope ({count, results, ...}) like the other admin

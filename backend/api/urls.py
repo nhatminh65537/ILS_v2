@@ -179,6 +179,11 @@ urlpatterns = [
         name='learn-lesson-questions',
     ),
     re_path(
+        r'^learn/lessons/(?P<pk>\d+)/questions/(?P<qid>\d+)/reveal/$',
+        LearnLessonViewSet.as_view({'get': 'reveal_question'}),
+        name='learn-lesson-question-reveal',
+    ),
+    re_path(
         r'^learn/lesson-questions/(?P<pk>\d+)/$',
         LearnLessonQuestionViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
         name='learn-lesson-question-detail',

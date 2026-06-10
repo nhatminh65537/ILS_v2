@@ -1,7 +1,7 @@
 # STATUS.md — ILS v2 Implementation Status
 
 > Living document. Update after each completed slice or major task.
-> Last updated: 2026-06-08 (Bugfix batch — markdown/math, Outline image proxy, quiz immediate_feedback leak, instance TTL reaping + deploy backend notify, deploy provider→socket default, outline config→learn group, admin UX: user detail dialog / Archive button removal / TruncatedCell / RBAC multi-select; xem `docs/reports/2026-06-08_bugfix-batch-markdown-outline-rbac-instance.md`)
+> Last updated: 2026-06-11 (Bugfix batch — 11 user-reported issues: course-content folder-first sort, media volume persistence, quiz time-limit enforcement (BE+FE), dashboard actionable cards, en/vi + light/dark settings now apply (next-intl middleware moved to `middleware.ts` + ThemeProvider + navbar toggles), leaderboard tie podium + profile links, admin create-user 400 surfacing, instance list name search, lesson mini-quiz server-side reveal, STOPPED instance state dropped (Stop=Terminate); xem `docs/reports/2026-06-11_bugfix-batch-11-issues.md`)
 
 Release docs gate for upcoming slices:
 - `docs/RELEASE_CHECKLIST_SLICE5_8.md` is the required consistency checklist before opening Slice 5-8 implementation PRs.

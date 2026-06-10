@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Button } from '@/components/ui/button'
 import { deriveMiniquizSignal } from '@/lib/lesson-completion'
+import { revealLearnLessonQuestion } from '@/services/lessons.service'
 import { QuestionType } from '@/types/quiz.types'
 import type {
   LearnLessonQuestionMapping,
+  LearnLessonQuestionReveal,
   LessonCompletionSignal,
   MiniquizAnswerState,
 } from '@/types/lesson.types'
@@ -29,6 +31,9 @@ const toQuestionText = (content: Record<string, unknown>): string => {
 export function LessonMiniQuizContent({ mappings, onSignalChange }: LessonMiniQuizContentProps) {
   const t = useTranslations('courses.lessonViewer')
   const [answersByQuestionId, setAnswersByQuestionId] = useState<Record<number, MiniquizAnswerState>>({})
+  // Correct answers are resolved server-side on reveal (never shipped in the
+  // initial mapping payload), keyed by question id.
+  const [revealByQuestionId, setRevealByQuestionId] = useState<Record<number, LearnLessonQuestionReveal>>({})
 
   const orderedMappings = useMemo(
     () => [...mappings].sort((a, b) => (a.position !== b.position ? a.position - b.position : a.id - b.id)),
@@ -178,6 +183,16 @@ export function LessonMiniQuizContent({ mappings, onSignalChange }: LessonMiniQu
                         revealed: true,
                       },
                     }))
+                    // Fetch the correct answer server-side (once per question).
+                    if (!revealByQuestionId[questionId]) {
+                      void revealLearnLessonQuestion(mapping.lesson, questionId)
+                        .then((data) => {
+                          setRevealByQuestionId((prev) => ({ ...prev, [questionId]: data }))
+                        })
+                        .catch(() => {
+                          /* keep the explanation-only fallback below on failure */
+                        })
+                    }
                   }}
                 >
                   {t('revealButton')}
@@ -187,8 +202,25 @@ export function LessonMiniQuizContent({ mappings, onSignalChange }: LessonMiniQu
               </div>
 
               {state.revealed ? (
-                <div className="rounded-md border border-dashed p-3 text-sm">
-                  {question.explanation ? question.explanation : t('noExplanation')}
+                <div className="space-y-2 rounded-md border border-dashed p-3 text-sm">
+                  {(() => {
+                    const reveal = revealByQuestionId[questionId]
+                    if (!reveal) return null
+                    const correctText =
+                      reveal.correct_options.length > 0
+                        ? reveal.correct_options.map((o) => o.content).join(', ')
+                        : reveal.accepted_answers.join(', ')
+                    if (!correctText) return null
+                    return (
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          {t('correctAnswer')}
+                        </p>
+                        <p className="font-medium text-green-600 dark:text-green-400">{correctText}</p>
+                      </div>
+                    )
+                  })()}
+                  <p>{question.explanation ? question.explanation : t('noExplanation')}</p>
                 </div>
               ) : null}
             </CardContent>

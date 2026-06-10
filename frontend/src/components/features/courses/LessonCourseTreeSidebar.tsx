@@ -11,8 +11,13 @@ type LessonCourseTreeSidebarProps = {
   currentLessonId: number
 }
 
+// Folder-first ordering: folders (is_item=false) before lessons (is_item=true),
+// then by author position, then id. Mirrors the catalog explorer convention.
 const sortNodes = (nodes: readonly CourseNode[]): CourseNode[] =>
   [...nodes].sort((a, b) => {
+    if (a.is_item !== b.is_item) {
+      return a.is_item ? 1 : -1
+    }
     if (a.position !== b.position) {
       return a.position - b.position
     }
