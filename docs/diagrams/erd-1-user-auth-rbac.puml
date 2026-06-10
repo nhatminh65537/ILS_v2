@@ -1,0 +1,115 @@
+@startuml erd-1-user-auth-rbac
+' ====================================================================
+'  ERD 1/3 — NGƯỜI DÙNG · XÁC THỰC · PHÂN QUYỀN (RBAC)
+'  Nguồn: docs/DATA_MODEL.md §3.1–3.2 + backend/api/models.py
+' ====================================================================
+hide circle
+hide empty methods
+skinparam monochrome true
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName "Segoe UI"
+skinparam classFontStyle bold
+skinparam classAttributeFontSize 11
+
+' ---------- USER DOMAIN ----------
+entity "user" as user {
+  * id : bigserial <<PK>>
+  --
+  * username : varchar(150) <<UQ>>
+  password : varchar(150)
+  email : varchar(254)
+  is_active : bool
+  is_staff : bool
+  is_superuser : bool
+  permission_version : int
+  last_login_ip : inet
+}
+
+entity "user_profile" as profile {
+  * id : bigserial <<PK>>
+  --
+  * user_id : bigint <<FK,UQ>>
+  display_name : varchar(100)
+  avatar_url : text
+  language / theme / timezone
+  total_learning_point : int
+  total_challenge_point : int
+  total_quiz_point : int
+  course/challenge/quiz_completed : int
+  last_active_at : timestamptz
+}
+
+entity "user_session" as session {
+  * id : bigserial <<PK>>
+  --
+  * user_id : bigint <<FK>>
+  device_info : text
+  * refresh_token_hash : text
+  last_used_at / expires_at : timestamptz
+  revoked_at : timestamptz
+  revoked_by : bigint <<FK>>
+}
+
+' ---------- AUTHORIZATION DOMAIN ----------
+entity "role" as role {
+  * id : bigserial <<PK>>
+  --
+  * name : varchar(100) <<UQ>>
+  description : text
+  is_system : bool
+}
+
+entity "permission" as perm {
+  * id : bigserial <<PK,bit-index>>
+  --
+  * name : varchar(150) <<UQ>>
+  description : text
+  is_active : bool
+}
+
+entity "role_permission" as rp <<join>> {
+  * role_id : bigint <<PK,FK>>
+  * permission_id : bigint <<PK,FK>>
+  --
+  created_at / created_by
+}
+
+entity "user_role" as ur <<join>> {
+  * user_id : bigint <<PK,FK>>
+  * role_id : bigint <<PK,FK>>
+}
+
+entity "user_permission" as up <<join,deny>> {
+  * user_id : bigint <<PK,FK>>
+  * permission_id : bigint <<PK,FK>>
+  --
+  (tồn tại = chặn quyền)
+}
+
+entity "user_permission_cache" as cache {
+  * user_id : bigint <<PK,FK>>
+  --
+  * encoded_permissions : text (base64 bitmap)
+  * permission_version : int
+  generated_at : timestamptz
+}
+
+' ---------- RELATIONSHIPS ----------
+user ||--|| profile   : "1 : 1"
+user ||--o{ session   : "1 : N (thiết bị)"
+user ||--|| cache     : "1 : 1"
+
+user   ||--o{ ur  : ""
+role   ||--o{ ur  : ""
+role   ||--o{ rp  : ""
+perm   ||--o{ rp  : ""
+user   ||--o{ up  : ""
+perm   ||--o{ up  : ""
+
+note bottom of cache
+  Bitmap quyền (≤256 bit) được mã hoá base64,
+  nhúng vào JWT access token → kiểm tra quyền
+  in-memory, không truy vấn DB mỗi request.
+end note
+@enduml

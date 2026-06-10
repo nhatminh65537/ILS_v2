@@ -1,0 +1,178 @@
+@startuml erd-3-quiz-system
+' ====================================================================
+'  ERD 3/3 — QUIZ (luyện tập WebSocket) · HỆ THỐNG · THÔNG BÁO · AUDIT
+'  Nguồn: docs/DATA_MODEL.md §3.5–3.8 + backend/api/models.py
+' ====================================================================
+hide circle
+hide empty methods
+skinparam monochrome true
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName "Segoe UI"
+skinparam classFontStyle bold
+skinparam classAttributeFontSize 11
+
+' =================== QUIZ DOMAIN ===================
+package "Quiz (Luyện tập)" {
+
+  entity "quiz_category" as qcat {
+    * id <<PK>>
+    name <<UQ>>
+  }
+
+  entity "quiz_tag" as qtag {
+    * id <<PK>>
+    name <<UQ>> / description
+  }
+
+  entity "quiz_tag_map" as qtagm <<join>> {
+    * quiz_id <<PK,FK>>
+    * tag_id <<PK,FK>>
+  }
+
+  entity "quiz" as quiz {
+    * id <<PK>>
+    --
+    title / description
+    status : content_status
+    category_id <<FK>>
+    quiz_point : int (= Σ score)
+    total_questions : int
+    time_limit_sec : int
+  }
+
+  entity "quiz_node" as qnode {
+    * id <<PK>>
+    --
+    parent_id <<FK>>
+    is_item / position / path
+    quiz_id <<FK,UQ>>
+    title
+  }
+
+  entity "quiz_question" as qq {
+    * id <<PK>>
+    --
+    * quiz_id <<FK>>
+    question_type : single|multi|fill_blank
+    status : content_status
+    content : jsonb
+    explanation
+    case_sensitive / score / position
+  }
+
+  entity "quiz_question_option" as qopt {
+    * id <<PK>>
+    * question_id <<FK>>
+    content / is_correct / position
+  }
+
+  entity "quiz_question_answer" as qans {
+    * id <<PK>>
+    * question_id <<FK>>
+    answer : text (fill_blank)
+  }
+
+  entity "user_quiz_attempt" as att {
+    * id <<PK>>
+    --
+    * quiz_id <<FK>> / user_id <<FK>>
+    config : jsonb
+    started_at / finished_at
+    total_score : int
+  }
+
+  entity "user_quiz_answer" as uqa {
+    * id <<PK>>
+    --
+    * attempt_id <<FK>>
+    * question_id <<FK>>
+    answer_data : jsonb
+    score_obtained : int
+    --
+    UQ (attempt, question)
+  }
+
+  entity "user_quiz_progress" as uqp {
+    * id <<PK>>
+    user_id <<FK>> / quiz_id <<FK>>
+    best_score / attempt_count
+    completed_at
+    UQ (user, quiz)
+  }
+
+  entity "quiz_config" as qcfg {
+    * id <<PK>>
+    quiz_id <<FK>> / user_id <<FK>>
+    total_questions / time_limit_sec
+    random_question / random_option
+    question_filter / immediate_feedback
+    allow_review / allow_retry / max_attempt
+    is_default / is_active
+    UQ (quiz, user)
+  }
+}
+
+' =================== SYSTEM / CROSS-CUTTING ===================
+package "Hệ thống · Thông báo · Audit" {
+
+  entity "system_config" as cfg {
+    * key : varchar(150) <<PK>>
+    --
+    value : jsonb
+    value_type : bool|int|string|json|secret
+    category
+    is_runtime / is_editable
+  }
+
+  entity "notification" as notif {
+    * id <<PK>>
+    --
+    user_id <<FK>>  (NULL = broadcast)
+    type : system|achievement|course|challenge|quiz
+    title / message
+    metadata : jsonb
+    event_key
+    is_read / read_at / is_broadcast
+    --
+    UQ (user_id, event_key)
+  }
+
+  entity "audit_log" as audit {
+    * id <<PK>>  (append-only)
+    --
+    timestamp
+    actor_type / actor_id / actor_username
+    aggregate_type / aggregate_id
+    action
+    metadata : jsonb
+    ip_address / user_agent
+  }
+}
+
+' ---------- QUIZ RELATIONSHIPS ----------
+qcat ||--o{ quiz   : ""
+quiz ||--o{ qtagm  : ""
+qtag ||--o{ qtagm  : ""
+quiz ||--o| qnode  : "node item"
+qnode }o--o| qnode : "parent"
+quiz ||--o{ qq     : ""
+qq   ||--o{ qopt   : "single/multi"
+qq   ||--o{ qans   : "fill_blank"
+quiz ||--o{ att    : ""
+att  ||--o{ uqa    : ""
+qq   ||--o{ uqa    : ""
+quiz ||--o{ uqp    : ""
+quiz ||--o{ qcfg   : "config / người dùng"
+
+note right of qnode
+  Không có FK quiz → quiz_node (tránh FK vòng).
+  Chỉ một chiều quiz_node.quiz_id → quiz.
+end note
+
+note bottom of audit
+  notification / audit_log / system_config là các bảng
+  dùng chung (cross-cutting) — liên kết tới user(id)
+  ở ERD 1 nhưng tách ra cho dễ trình bày.
+end note
+@enduml

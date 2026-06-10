@@ -1,0 +1,212 @@
+@startuml erd-2-learn-challenge
+' ====================================================================
+'  ERD 2/3 — HỌC TẬP (Course/Lesson) · THỬ THÁCH (Challenge/CTF)
+'  Nguồn: docs/DATA_MODEL.md §3.3–3.4 + backend/api/models.py
+' ====================================================================
+hide circle
+hide empty methods
+skinparam monochrome true
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName "Segoe UI"
+skinparam classFontStyle bold
+skinparam classAttributeFontSize 11
+
+' =================== LEARN DOMAIN ===================
+package "Learn (Học tập)" {
+
+  entity "course_category" as ccat {
+    * id <<PK>>
+    name <<UQ>> / description
+  }
+
+  entity "course_tag" as ctag {
+    * id <<PK>>
+    name <<UQ>> / description
+  }
+
+  entity "course_tag_map" as ctagm <<join>> {
+    * course_id <<PK,FK>>
+    * tag_id <<PK,FK>>
+  }
+
+  entity "course" as course {
+    * id <<PK>>
+    --
+    * slug <<UQ>> / title
+    status : content_status
+    category_id <<FK>>
+    estimated_time / learning_point : int
+    structure_version : int
+  }
+
+  entity "course_node" as cnode {
+    * id <<PK>>
+    --
+    parent_id <<FK>>
+    * course_id <<FK>>
+    is_item : bool
+    title / position / path
+    lesson_id <<FK,UQ>>
+  }
+
+  entity "lesson" as lesson {
+    * id <<PK>>
+    --
+    title
+    lesson_type : markdown|video|miniquiz
+    source : manual|outline
+    status : content_status
+    content_md / video_url
+    learning_point / learning_time
+  }
+
+  entity "lesson_outline" as lout {
+    * lesson_id <<PK,FK>>
+    --
+    outline_doc_id <<UQ>> / outline_url
+    last_synced_at / revision
+  }
+
+  entity "lesson_question" as lq <<join>> {
+    * lesson_id <<PK,FK>>
+    * question_id <<PK,FK>>
+    position : int
+  }
+
+  entity "user_course_progress" as ucp <<join>> {
+    * user_id <<PK,FK>>
+    * course_id <<PK,FK>>
+    started_at / completed_at
+    progress_percent_cache
+  }
+
+  entity "user_lesson_progress" as ulp <<join>> {
+    * user_id <<PK,FK>>
+    * lesson_id <<PK,FK>>
+    started_at / completed_at
+  }
+}
+
+' =================== CHALLENGE DOMAIN ===================
+package "Challenge (CTF)" {
+
+  entity "challenge_category" as chcat {
+    * id <<PK>>
+    name <<UQ>>
+  }
+
+  entity "challenge_tag" as chtag {
+    * id <<PK>>
+    name <<UQ>> / description
+  }
+
+  entity "challenge_tag_map" as chtagm <<join>> {
+    * challenge_id <<PK,FK>>
+    * tag_id <<PK,FK>>
+  }
+
+  entity "challenge" as chal {
+    * id <<PK>>
+    --
+    * slug <<UQ>> / title
+    status / difficulty
+    category_id <<FK>>
+    source : manual|gitlab
+    storage_path / gitlab_path
+    challenge_point : int
+    instance_required : bool
+    deploy_source_ref
+  }
+
+  entity "challenge_node" as chnode {
+    * id <<PK>>
+    --
+    parent_id <<FK>>
+    is_item : bool
+    title / position / path
+    challenge_id <<FK,UQ>>
+  }
+
+  entity "challenge_flag" as flag {
+    * id <<PK>>
+    --
+    * challenge_id <<FK>>
+    flag_value : text (server-only)
+    is_case_sensitive / is_regex
+    random_tail_length : int
+  }
+
+  entity "challenge_file" as cfile {
+    * id <<PK>>
+    --
+    * challenge_id <<FK>>
+    filename / storage_key
+    size / content_type
+    source : upload|gitlab
+  }
+
+  entity "challenge_gitlab" as cgit {
+    * challenge_id <<PK,FK>>
+    project_id / project_url
+    default_branch / last_commit_sha
+  }
+
+  entity "challenge_instance" as inst {
+    * id <<PK>>
+    --
+    * challenge_id <<FK>>
+    * user_id <<FK>>
+    instance_info : jsonb
+    flag_value / challenge_flag_id <<FK>>
+    status : running|stopped|terminated
+    expires_at / terminated_at
+    --
+    UQ (user, challenge) WHERE running
+  }
+
+  entity "user_challenge_progress" as uchp <<join>> {
+    * user_id <<PK,FK>>
+    * challenge_id <<PK,FK>>
+    completed_at
+  }
+
+  entity "user_challenge_submit" as usub {
+    * id <<PK>>
+    user_id <<FK>> / challenge_id <<FK>>
+    submitted_flag / is_correct
+    submitted_at
+  }
+}
+
+' ---------- LEARN RELATIONSHIPS ----------
+ccat   ||--o{ course  : ""
+course ||--o{ ctagm   : ""
+ctag   ||--o{ ctagm   : ""
+course ||--o{ cnode   : "cây nội dung"
+cnode  }o--o| cnode   : "parent"
+cnode  |o--|| lesson  : "node item → lesson"
+lesson ||--o| lout    : "đồng bộ Outline"
+lesson ||--o{ lq      : ""
+course ||--o{ ucp     : ""
+lesson ||--o{ ulp     : ""
+
+' ---------- CHALLENGE RELATIONSHIPS ----------
+chcat ||--o{ chal     : ""
+chal  ||--o{ chtagm   : ""
+chtag ||--o{ chtagm   : ""
+chal  ||--o| chnode   : "node item"
+chnode }o--o| chnode  : "parent"
+chal  ||--o{ flag     : ""
+chal  ||--o{ cfile    : ""
+chal  ||--o| cgit     : "nếu source=gitlab"
+chal  ||--o{ inst     : ""
+flag  |o--o{ inst     : "flag template"
+chal  ||--o{ uchp     : ""
+chal  ||--o{ usub     : ""
+
+note bottom of lq
+  lesson_question liên kết miniquiz ↔ quiz_question
+  (xem ERD 3). Dùng FullAudit vì position thay đổi được.
+end note
+@enduml

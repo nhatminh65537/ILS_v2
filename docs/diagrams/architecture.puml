@@ -1,0 +1,103 @@
+@startuml architecture
+' ====================================================================
+'  SƠ ĐỒ KIẾN TRÚC HỆ THỐNG — ILS v2
+'  Nền tảng học an ninh mạng self-hosted (Learn / Challenge / Quiz)
+'  Nguồn: docs/ARCHITECTURE.md §2,§4,§6
+' ====================================================================
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam componentStyle rectangle
+skinparam rectangleBorderThickness 1
+skinparam ArrowColor #333333
+
+actor "Người dùng\n(Member/Editor/Admin)" as user
+
+' ==================== FRONTEND ====================
+package "Frontend  —  Next.js 16 (App Router)" as FE {
+  component "User Surface\n/{locale}/(app)" as feuser
+  component "Admin Surface\n/{locale}/(admin)" as feadmin
+  component "Zustand\n(state)" as zustand
+  component "Axios\n(HTTP client)" as axios
+  component "WebSocket client\n(Quiz)" as fews
+}
+
+' ==================== BACKEND ====================
+package "Backend  —  Django 6 + DRF + Channels" as BE {
+
+  package "Cổng vào / Middleware" as gw {
+    component "DRF APIViews\n(REST)" as drf
+    component "Daphne / ASGI\n(WebSocket)" as asgi
+    component "JWT Auth\n(SimpleJWT)" as jwt
+    component "RBAC\nHasJWTPermission\n(bitmap claim)" as rbac
+  }
+
+  package "Apps" as apps {
+    component "api\n(domain viewsets)" as api
+    component "auth_app\n(JWT / session)" as authapp
+    component "realtime\n(QuizConsumer WS)" as realtime
+  }
+
+  package "Service Layer" as svc {
+    component "TokenService /\nSessionService" as authsvc
+    component "OutlineService" as outsvc
+    component "GitlabService" as gitsvc
+    component "SocketDeploymentBackend\n(Strategy)" as deploysvc
+  }
+}
+
+' ==================== DATA ====================
+database "PostgreSQL\n(dev: SQLite)" as db {
+}
+
+' ==================== EXTERNAL ====================
+package "Dịch vụ ngoài (self-hosted)" as EXT {
+  cloud "Outline\nNội dung bài học" as outline
+  cloud "GitLab\nNguồn challenge" as gitlab
+  node "Deploy Server\n(instance CTF qua TCP)" as deploysrv
+}
+
+' ==================== FLOWS ====================
+user --> FE : HTTPS
+
+feuser --> axios
+feadmin --> axios
+feuser ..> zustand
+fews --> asgi : "WS  /ws/quiz/{id}/"
+
+axios --> drf : "REST  /api/*  (Bearer JWT)"
+
+drf --> jwt
+drf --> rbac
+asgi --> realtime
+jwt --> authapp
+rbac ..> api : "kiểm tra bit quyền"
+
+drf --> api
+api --> svc
+authapp --> authsvc
+realtime --> api
+
+svc --> db : "Django ORM"
+api --> db
+authapp --> db
+
+' external integrations (server-mediated)
+outsvc --> outline     : "fetch nội dung (server-mediated)"
+gitsvc --> gitlab      : "import/sync challenge (PRIVATE-TOKEN)"
+deploysvc --> deploysrv : "JSON-TCP: deploy/status/stop"
+
+note right of rbac
+  Quyền mã hoá thành bitmap base64
+  trong JWT → kiểm tra in-memory,
+  không truy vấn DB mỗi request.
+  auth.authorization_enabled=false
+  ⇒ bypass (chỉ dùng khi dev).
+end note
+
+note bottom of EXT
+  Mọi tích hợp ngoài đều **server-mediated**:
+  frontend không gọi trực tiếp. URL/token lưu
+  trong system_config, không hardcode.
+end note
+@enduml
